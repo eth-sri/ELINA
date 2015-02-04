@@ -20,10 +20,15 @@ An Optimized Library for the Octagon Abstract Domain
     Run "sudo make install"
     
 #Using in Static Analyzer
+
   Java:
+  
       Initialize the APRON Manager as:
+      
         man = new OptOctagon();
       
   C, C++:
+  
       Initialize the APRON Manager as:
+      
         man = new opt_oct_manager();
