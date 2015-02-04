@@ -16,5 +16,14 @@ An Optimized Library for the Octagon Abstract Domain
       Run "make", it will generate "liboptoct.so" and "liblinkedlistapi.so" libraries.
       
 #Installing:
-    Run "sudo make install" to install the libraries into the directory specified in APRON's "Makefile.config" file.
-
+    Specify the install directory in APRON's "Makefile.config" file.
+    Run "sudo make install"
+    
+#Using in Static Analyzer
+  Java:
+      Initialize the APRON Manager as:
+        man = new OptOctagon();
+      
+  C, C++:
+      Initialize the APRON Manager as:
+        man = new opt_oct_manager();
