@@ -342,7 +342,7 @@ bool opt_hmat_strong_closure(opt_oct_mat_t *oo, int dim){
 /******
 	Check if the octagon is top
 *******/
-bool is_top_avx_half_double(opt_oct_mat_t *oo, int dim){
+bool is_top_half(opt_oct_mat_t *oo, int dim){
 	
 	double *m = oo->mat;
 	int size = 2*dim*(dim + 1);
@@ -447,7 +447,7 @@ bool is_top_avx_half_double(opt_oct_mat_t *oo, int dim){
 }
 
 
-bool is_equal_avx_half_double(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
+bool is_equal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 	
 	double *m1= oo1->mat;
 	double *m2 = oo2->mat;
@@ -633,7 +633,7 @@ bool is_equal_avx_half_double(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 	return true;
 }
 
-bool is_lequal_avx_half_double(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
+bool is_lequal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 	
 	double *m1 = oo1->mat;
 	double *m2 = oo2->mat;
@@ -755,7 +755,7 @@ bool is_lequal_avx_half_double(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 	return true;
 }
 
-void meet_avx_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim, bool destructive){
+void meet_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim, bool destructive){
 	
 	double *m = oo->mat;
 	double *m1 = oo1->mat;
@@ -912,7 +912,7 @@ void meet_avx_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, in
 	
 }
 
-void forget_array_avx_half(opt_oct_mat_t *oo, ap_dim_t *arr,int dim, int arr_dim, bool project){
+void forget_array_half(opt_oct_mat_t *oo, ap_dim_t *arr,int dim, int arr_dim, bool project){
 	
 	double *m = oo->mat;
 	array_comp_list_t * acl = oo->acl;
@@ -979,7 +979,7 @@ void forget_array_avx_half(opt_oct_mat_t *oo, ap_dim_t *arr,int dim, int arr_dim
 	
 }
 
-void join_avx_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim, bool destructive){
+void join_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim, bool destructive){
 	
 	double *m = oo->mat;
 	double *m1 = oo1->mat;
@@ -1265,7 +1265,7 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 	  }
 	
 	if(add){
-		forget_array_avx_half(dst_mat,add_pos,new_dim,nb_pos,false);
+		forget_array_half(dst_mat,add_pos,new_dim,nb_pos,false);
 		
 		for(i = 0; i < nb_pos; i++){
 			int i1 = add_pos[i];

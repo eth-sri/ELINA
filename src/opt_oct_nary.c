@@ -36,7 +36,7 @@ opt_oct_t* opt_oct_meet(ap_manager_t* man, bool destructive, opt_oct_t* o1, opt_
     opt_oct_mat_t * oo1 = o1->closed ? o1->closed : o1->m;
     opt_oct_mat_t * oo2 = o2->closed ? o2->closed : o2->m;
     oo = destructive ? oo1 : opt_hmat_alloc(size);
-    meet_avx_half(oo,oo1,oo2,o1->dim,destructive);
+    meet_half(oo,oo1,oo2,o1->dim,destructive);
     /* optimal, but not closed */
     return opt_oct_set_mat(pr,o1,oo,NULL,destructive);
   }
@@ -77,7 +77,7 @@ opt_oct_t* opt_oct_join(ap_manager_t* man, bool destructive, opt_oct_t* o1, opt_
    opt_oct_mat_t * oo = destructive ? oo1 : opt_hmat_alloc(size);
    size_t i;
    man->result.flag_exact = false;
-   join_avx_half(oo,oo1,oo2,o1->dim,destructive);
+   join_half(oo,oo1,oo2,o1->dim,destructive);
    if (o1->closed && o2->closed) {
      /* result is closed and optimal on Q */
      if (num_incomplete || o1->intdim) flag_incomplete;
@@ -124,7 +124,7 @@ opt_oct_t* opt_oct_widening(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
     //posix_memalign((void **)&(r->m),32,size*sizeof(double));
     if (algo==opt_oct_pre_widening || algo==-opt_oct_pre_widening) {
       /* degenerate hull: NOT A PROPER WIDENING, use with care */
-	join_avx_half(r->m,oo1,oo2,o1->dim,false);
+	join_half(r->m,oo1,oo2,o1->dim,false);
     }
     else {
       /* standard widening */

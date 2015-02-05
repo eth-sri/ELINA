@@ -73,7 +73,7 @@ opt_oct_t* opt_oct_assign_linexpr(ap_manager_t* man,
   /* intersect with dest */
   if (dest) {
     opt_oct_mat_t* src2 = dest->closed ? dest->closed : dest->m;
-    meet_avx_half(src,src,src2,o->dim,true);
+    meet_half(src,src,src2,o->dim,true);
   }
   
   if (respect_closure) return opt_oct_set_mat(pr,o,NULL,src,destructive);
@@ -173,7 +173,7 @@ opt_oct_t* opt_oct_assign_linexpr_array(ap_manager_t* man,
   /* intersect with dest */
   if (dest) {
     opt_oct_mat_t * src2 = dest->closed ? dest->closed : dest->m;
-    meet_avx_half(src,src,src2,o->dim,true);
+    meet_half(src,src,src2,o->dim,true);
   }
 
   if (inexact || o->intdim) flag_incomplete;

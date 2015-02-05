@@ -45,7 +45,7 @@ bool opt_oct_is_top(ap_manager_t* man, opt_oct_t* o)
   int i,j;
   opt_oct_mat_t* m = o->m ? o->m : o->closed;
   if (!m) return false;
-  return is_top_avx_half_double(m,o->dim);
+  return is_top_half(m,o->dim);
 }
 
 bool opt_oct_is_leq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
@@ -69,7 +69,7 @@ bool opt_oct_is_leq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
   else {
     opt_oct_mat_t *oo1 = o1->closed ? o1->closed : o1->m;
     opt_oct_mat_t *oo2 = o2->closed ? o2->closed : o2->m;
-    bool res= is_lequal_avx_half_double(oo1, oo2, o1->dim);
+    bool res= is_lequal_half(oo1, oo2, o1->dim);
     
     //if(res){
 	//opt_oct_fprint(stdout,man,oo1,NULL);
@@ -110,7 +110,7 @@ bool opt_oct_is_eq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
   else {
     opt_oct_mat_t *oo1 = o1->closed ? o1->closed : o1->m;
     opt_oct_mat_t *oo2 = o2->closed ? o2->closed : o2->m;
-    bool res = is_equal_avx_half_double(oo1,oo2,o1->dim);
+    bool res = is_equal_half(oo1,oo2,o1->dim);
     
     
     //if(eq_count==10262){

@@ -36,7 +36,7 @@ opt_oct_t* opt_oct_forget_array(ap_manager_t* man,
     int mat_size = 2*o->dim*(o->dim + 1);
     if (!destructive) oo = opt_hmat_copy(oo,o->dim);
     
-    forget_array_avx_half(oo,tdim,o->dim,size,project);
+    forget_array_half(oo,tdim,o->dim,size,project);
     
     if (o->closed) {
       /* result is exact on Q, and closed if forget, not project */
