@@ -22,7 +22,7 @@ An Optimized Library for the Octagon Abstract Domain
 #Using in Static Analyzer
 
   Java:
-  
+      Copy the files in "java_interface" directory into APRON_PATH/japron/apron
       Initialize the APRON Manager as:
         man = new OptOctagon();
       
