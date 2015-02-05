@@ -23,10 +23,12 @@ An Optimized Library for the Octagon Abstract Domain
 
   Java:
       Copy the files in "java_interface" directory into APRON_PATH/japron/apron
-      In the makefile in japron directory add the folllowing:
+      In the makefile in APRON_PATH/japron directory add the folllowing:
 		in "IFLAGS" add the option -I../src
 		in "LFLAGS" add the option -L../src
 		in "APRONMODS" add "OptOctagon"
+      run "make" in the APRON_PATH/japron
+      run "sudo make install" to install the updated "libjapron.so" file.
       Initialize the APRON Manager as:
         man = new OptOctagon();
       
