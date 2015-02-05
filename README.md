@@ -24,7 +24,7 @@ An Optimized Library for the Octagon Abstract Domain
   Java:
 	
       Copy the files in "java_interface" directory into APRON_PATH/japron/apron
-      In the makefile in APRON_PATH/japron directory add the folllowing:
+      In the Makefile in APRON_PATH/japron directory add the folllowing:
 		in "IFLAGS" add the option -I../src
 		in "LFLAGS" add the option -L../src
 		in "APRONMODS" add "OptOctagon"
@@ -34,6 +34,12 @@ An Optimized Library for the Octagon Abstract Domain
         man = new OptOctagon();
       
   C++:
-  
+      
+      Copy the files in "C++ interface" directory into APRON_PATH/apronxx
+      In the Makefile in APRON_PATH/apronxx directory add the following:
+		in "ICXXFLAGS" add the option -I../src
+		in "CCINC" add the "apxx_opt_oct.hh" and "apxx_opt_oct_inline.hh"
+      run "make" in the APRON_PATH/japron
+      run "sudo make install" to install the updated "libjapron.so" file.
       Initialize the APRON Manager as:
         man = new opt_oct_manager();
