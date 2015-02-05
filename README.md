@@ -26,7 +26,7 @@ An Optimized Library for the Octagon Abstract Domain
       Initialize the APRON Manager as:
         man = new OptOctagon();
       
-  C, C++:
+  C++:
   
       Initialize the APRON Manager as:
         man = new opt_oct_manager();
