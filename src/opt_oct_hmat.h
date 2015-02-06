@@ -34,6 +34,7 @@ extern "C" {
 #include "opt_oct_closure_dense.h"
 #include "opt_oct_incr_closure_dense.h"
 
+
 #else
 
 #include "opt_oct_closure_dense_scalar.h"

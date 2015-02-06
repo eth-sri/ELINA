@@ -76,8 +76,8 @@ bool incremental_closure_opt_dense(opt_oct_mat_t *oo, int dim, int v, bool is_in
 			}
 			double ik = m[ind_ik];
 			double ikk = m[ind_ikk];
-			__m256d vik = _mm256_set1_pd(m[ind_ik]);
-			__m256d vikk = _mm256_set1_pd(m[ind_ikk]);
+			v_double_type vik = v_set1_double(m[ind_ik]);
+			v_double_type vikk = v_set1_double(m[ind_ikk]);
 			//double ki = m[n*k + i];
 			int ind_ki, ind_kki;
 			if ( k <= i){
@@ -101,26 +101,26 @@ bool incremental_closure_opt_dense(opt_oct_mat_t *oo, int dim, int v, bool is_in
 				v in first end-point position.
 				This part is vectorized. 
 			********/		
-			for(j = 0; j <br1/4; j++){
+			for(j = 0; j <br1/v_length; j++){
 				//double kj = m[n*k + j];
-				int ind_kj = j*4 + (((k + 1)*(k + 1))/2);
-				__m256d vkj = _mm256_loadu_pd(m+ind_kj);
-				int ind_kkj = j*4 + (((kk + 1)*(kk + 1))/2);
-				__m256d vkkj = _mm256_loadu_pd(m+ind_kkj);
+				int ind_kj = j*v_length + (((k + 1)*(k + 1))/2);
+				v_double_type vkj = v_load_double(m+ind_kj);
+				int ind_kkj = j*v_length + (((kk + 1)*(kk + 1))/2);
+				v_double_type vkkj = v_load_double(m+ind_kkj);
 				//double jk = m[n*j + k];
 				//int ind_jk = k + (((j + 1)*(j + 1))/2);
 				//double jk = m[ind_jk];
 				//m[n*i + j] = min(m[n*i + j], ik + kj);
-				int ind_ij = j*4 + (((i + 1)*(i + 1))/2);
-				__m256d vij = _mm256_loadu_pd(m+ind_ij);
-				__m256d op1 = _mm256_add_pd(vik,vkj);
-				__m256d op2 = _mm256_add_pd(vikk,vkkj);
-				__m256d op3 = _mm256_min_pd(op1, op2);
-				__m256d res = _mm256_min_pd(vij,op3);
-				_mm256_storeu_pd(m+ind_ij,res);
+				int ind_ij = j*v_length + (((i + 1)*(i + 1))/2);
+				v_double_type vij = v_load_double(m+ind_ij);
+				v_double_type op1 = v_add_double(vik,vkj);
+				v_double_type op2 = v_add_double(vikk,vkkj);
+				v_double_type op3 = v_min_double(op1, op2);
+				v_double_type res = v_min_double(vij,op3);
+				v_store_double(m+ind_ij,res);
 				//m[n*j + i] = min(m[n*j + i], jk + ki);
 			}
-			for(j = (br1/4)*4; j < br1; j++){
+			for(j = (br1/v_length)*v_length; j < br1; j++){
 				int ind_kj = j + (((k + 1)*(k + 1))/2);
 				double kj = m[ind_kj];
 				int ind_kkj = j + (((kk + 1)*(kk + 1))/2);
@@ -182,9 +182,9 @@ bool incremental_closure_opt_dense(opt_oct_mat_t *oo, int dim, int v, bool is_in
 	//int pos2 = opt_matpos2((2*k)^1, 2*k);
 	int pos2 = v1 + vvi;
 	int l = (v1 + 2);
-	int mod = l%4;
+	int mod = l%v_length;
 	if(mod){
-		l = l + (4 - mod);
+		l = l + (v_length - mod);
 	}
 	//variable v in pivot position
 	for(int i = v1 + 2; i < n;i++){
@@ -233,32 +233,32 @@ bool incremental_closure_opt_dense(opt_oct_mat_t *oo, int dim, int v, bool is_in
 			//ind_ikk = (i^1) + ((((kk^1) + 1)*((kk^1) + 1))/2);
 			ind_ikk = (i^1) + vi;
 			//double ik = m[n*i + k];
-			__m256d ik = _mm256_set1_pd(m[ind_ik]);
-			__m256d ikk = _mm256_set1_pd(m[ind_ikk]);
+			v_double_type ik = v_set1_double(m[ind_ik]);
+			v_double_type ikk = v_set1_double(m[ind_ikk]);
 			double ikd = m[ind_ik];
 			double ikkd = m[ind_ikk];
-			for(j = 0; j < br/4; j++){
+			for(j = 0; j < br/v_length; j++){
 				//int ind_kj = j + (((k + 1)*(k + 1))/2);
-				int ind_kj = j*4 + vi;
+				int ind_kj = j*v_length + vi;
 				//double kj = m[n*k + j];
 				//double kj = m[ind_kj];
-				__m256d kj = _mm256_loadu_pd(m + ind_kj);
+				v_double_type kj = v_load_double(m + ind_kj);
 				//int ind_kkj = j + (((kk + 1)*(kk + 1))/2);
-				int ind_kkj = j*4 + vvi;
+				int ind_kkj = j*v_length + vvi;
 				//double kkj = m[ind_kkj];
-				__m256d kkj = _mm256_loadu_pd(m + ind_kkj);
-				int ind_ij = j*4 + (((i + 1)*(i + 1))/2);
+				v_double_type kkj = v_load_double(m + ind_kkj);
+				int ind_ij = j*v_length + (((i + 1)*(i + 1))/2);
 				//m[n*i + j] = min(m[n*i + j], ik + kj);
-				__m256d ij = _mm256_loadu_pd(m + ind_ij);
-				__m256d op1 = _mm256_add_pd(ik,kj);
-				__m256d op2 = _mm256_add_pd(ikk,kkj);
-				__m256d op3 = _mm256_min_pd(op1,op2);
-				__m256d res = _mm256_min_pd(ij,op3);
+				v_double_type ij = v_load_double(m + ind_ij);
+				v_double_type op1 = v_add_double(ik,kj);
+				v_double_type op2 = v_add_double(ikk,kkj);
+				v_double_type op3 = v_min_double(op1,op2);
+				v_double_type res = v_min_double(ij,op3);
 				//m[ind_ij] = min(m[ind_ij], ik + kj);
 				//m[ind_ij] = min(m[ind_ij], ikk + kkj);
-				_mm256_storeu_pd(m + ind_ij,res);
+				v_store_double(m + ind_ij,res);
 			}
-			for(j = (br/4)*4; j <= br; j++){
+			for(j = (br/v_length)*v_length; j <= br; j++){
 				//int ind_kj = j + (((k + 1)*(k + 1))/2);
 				int ind_kj = j + vi;
 				//double kj = m[n*k + j];
@@ -282,33 +282,33 @@ bool incremental_closure_opt_dense(opt_oct_mat_t *oo, int dim, int v, bool is_in
 			ind_ik = v1 + (((i + 1)*(i + 1))/2);				
 			ind_ikk = v2 + (((i + 1)*(i + 1))/2);				
 			//double ik = m[n*i + k];
-			__m256d ik = _mm256_set1_pd(m[ind_ik]);
-			__m256d ikk = _mm256_set1_pd(m[ind_ikk]);
+			v_double_type ik = v_set1_double(m[ind_ik]);
+			v_double_type ikk = v_set1_double(m[ind_ikk]);
 			double ikd = m[ind_ik];
 			double ikkd = m[ind_ikk];
 			int b = min(l,i2);
-			for(j = 0; j < br/4; j++){
+			for(j = 0; j < br/v_length; j++){
 				//int ind_kj = j + (((k + 1)*(k + 1))/2);
-				int ind_kj = j*4 + vi;
+				int ind_kj = j*v_length + vi;
 				//double kj = m[n*k + j];
 				//double kj = m[ind_kj];
-				__m256d kj = _mm256_loadu_pd(m + ind_kj);
+				v_double_type kj = v_load_double(m + ind_kj);
 				//int ind_kkj = j + (((kk + 1)*(kk + 1))/2);
-				int ind_kkj = j*4 + vvi;
+				int ind_kkj = j*v_length + vvi;
 				//double kkj = m[ind_kkj];
-				__m256d kkj = _mm256_loadu_pd(m + ind_kkj);
-				int ind_ij = j*4 + (((i + 1)*(i + 1))/2);
+				v_double_type kkj = v_load_double(m + ind_kkj);
+				int ind_ij = j*v_length + (((i + 1)*(i + 1))/2);
 				//m[n*i + j] = min(m[n*i + j], ik + kj);
-				__m256d ij = _mm256_loadu_pd(m + ind_ij);
-				__m256d op1 = _mm256_add_pd(ik,kj);
-				__m256d op2 = _mm256_add_pd(ikk,kkj);
-				__m256d op3 = _mm256_min_pd(op1,op2);
-				__m256d res = _mm256_min_pd(ij,op3);
+				v_double_type ij = v_load_double(m + ind_ij);
+				v_double_type op1 = v_add_double(ik,kj);
+				v_double_type op2 = v_add_double(ikk,kkj);
+				v_double_type op3 = v_min_double(op1,op2);
+				v_double_type res = v_min_double(ij,op3);
 				//m[ind_ij] = min(m[ind_ij], ik + kj);
 				//m[ind_ij] = min(m[ind_ij], ikk + kkj);
-				_mm256_storeu_pd(m + ind_ij,res);
+				v_store_double(m + ind_ij,res);
 			}
-			for(j = (br/4)*4; j <= br; j++){
+			for(j = (br/v_length)*v_length; j <= br; j++){
 				//int ind_kj = j + (((k + 1)*(k + 1))/2);
 				int ind_kj = j + vi;
 				//double kj = m[n*k + j];
@@ -334,18 +334,18 @@ bool incremental_closure_opt_dense(opt_oct_mat_t *oo, int dim, int v, bool is_in
 				m[ind_ij] = min(m[ind_ij], ikkd + kkj);
 			}
 			if(b < i2){
-				for(j = b/4; j < i2/4; j++){
-					__m256d kj = _mm256_loadu_pd(temp2 + j*4);
-					__m256d kkj = _mm256_loadu_pd(temp1 + j*4);
-					int ind_ij = j*4 + (((i + 1)*(i + 1))/2);
-					__m256d ij = _mm256_loadu_pd(m + ind_ij);
-					__m256d op1 = _mm256_add_pd(ik,kj);
-					__m256d op2 = _mm256_add_pd(ikk,kkj);
-					__m256d op3 = _mm256_min_pd(op1,op2);
-					__m256d res = _mm256_min_pd(ij,op3);
-					_mm256_storeu_pd(m + ind_ij,res);
+				for(j = b/v_length; j < i2/v_length; j++){
+					v_double_type kj = v_load_double(temp2 + j*v_length);
+					v_double_type kkj = v_load_double(temp1 + j*v_length);
+					int ind_ij = j*v_length + (((i + 1)*(i + 1))/2);
+					v_double_type ij = v_load_double(m + ind_ij);
+					v_double_type op1 = v_add_double(ik,kj);
+					v_double_type op2 = v_add_double(ikk,kkj);
+					v_double_type op3 = v_min_double(op1,op2);
+					v_double_type res = v_min_double(ij,op3);
+					v_store_double(m + ind_ij,res);
 				}
-				for(j = (i2/4)*4; j <=i2; j++){
+				for(j = (i2/v_length)*v_length; j <=i2; j++){
 					//int ind_kj = (k^1) + ((((j^1) + 1)*((j^1) + 1))/2);
 					//int ind_kj = v2 + ((((j^1) + 1)*((j^1) + 1))/2);
 					//double kj = m[n*k + j];

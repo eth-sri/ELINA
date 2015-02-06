@@ -15,9 +15,6 @@
 */
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <immintrin.h>
 #include "opt_oct_hmat.h"
 
 
@@ -49,11 +46,11 @@ void top_mat(double *m, int dim){
 	int n = 2*dim;
 	int size = 2*dim*(dim+1);
 	#if defined(VECTOR)
-		__m256d infty = _mm256_set1_pd(INFINITY);
+		v_double_type infty = v_set1_double(INFINITY);
 		
 		for(int i = 0; i < size/8; i++){
-			_mm256_storeu_pd(m + i*8, infty);
-			_mm256_storeu_pd(m + i*8 + 4, infty);
+			v_store_double(m + i*8, infty);
+			v_store_double(m + i*8 + 4, infty);
 		}
 	//}
 	#else
@@ -175,18 +172,18 @@ opt_oct_mat_t *opt_hmat_copy(opt_oct_mat_t * src_mat, int dim){
 		dst_mat->ti = true;
 		
 		#if defined(VECTOR)
-			for(int i = 0; i < size/8; i++){
-				__m256d val = _mm256_loadu_pd(src + i*8);
-				_mm256_storeu_pd(dest + i*8, val);
-				val = _mm256_loadu_pd(src + i*8 + 4);
-				_mm256_storeu_pd(dest + i*8 + 4, val);
+			for(int i = 0; i < size/(2*v_length); i++){
+				v_double_type val = v_load_double(src + i*2*v_length);
+				v_store_double(dest + i*2*v_length, val);
+				val = v_load_double(src + i*2*v_length + v_length);
+				v_store_double(dest + i*2*v_length + v_length, val);
 			}
 		
 		#else
-			int s = (size/8)*8;
+			int s = (size/(2*v_length))*(2*v_length);
 			memcpy(dest,src,s*sizeof(double));
 		#endif
-			for(int i = (size/8)*8; i < size; i++){
+			for(int i = (size/(2*v_length))*(2*v_length); i < size; i++){
 				dest[i] = src[i];
 			}
 	}	
@@ -209,17 +206,17 @@ void opt_hmat_set_array(double *dest, double *src, int size){
 		return;
 	}
 	#if defined(VECTOR)
-		for(int i = 0; i < size/8; i++){
-			__m256d t1 = _mm256_loadu_pd(src + i*8);
-			_mm256_storeu_pd(dest + i*8, t1);
-			t1 = _mm256_loadu_pd(src + i*8 + 4);
-			_mm256_storeu_pd(dest + i*8 + 4, t1);
+		for(int i = 0; i < size/(2*v_length); i++){
+			v_double_type t1 = v_load_double(src + i*2*v_length);
+			v_store_double(dest + i*2*v_length, t1);
+			t1 = v_load_double(src + i*2*v_length + v_length);
+			v_store_double(dest + i*2*v_length + v_length, t1);
 		}
 	#else
-		int s = (size/8)*8;
+		int s = (size/(2*v_length))*(2*v_length);
 		memcpy(dest,src,s*sizeof(double));
 	#endif
-	for(int i = (size/8)*8; i <size; i++){
+	for(int i = (size/(2*v_length))*(2*v_length); i <size; i++){
 		dest[i] = src[i];
 	}
 }
@@ -407,13 +404,13 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 			m[ind] = INFINITY;
 		}
 		#if defined(VECTOR)
-			__m256d infty = _mm256_set1_pd(INFINITY);
-			__m256i one = _mm256_set1_epi64x(1);
-			for(int i = 0; i < size/4; i++){
-				__m256d t1 = _mm256_loadu_pd(m + i*4);
-				__m256d res = _mm256_cmp_pd(t1,infty, _CMP_EQ_OQ);
-				__m256i op = _mm256_castpd_si256(res);
-				if(!_mm256_testc_si256(op,one)){
+			v_double_type infty = v_set1_double(INFINITY);
+			v_int_type one = v_set1_int(1);
+			for(int i = 0; i < size/v_length; i++){
+				v_double_type t1 = v_load_double(m + i*v_length);
+				v_double_type res = v_cmp_double(t1,infty, _CMP_EQ_OQ);
+				v_int_type op = v_double_to_int(res);
+				if(!v_test_int(op,one)){
 					flag = false;
 					break;
 				}
@@ -421,14 +418,14 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 			}
 	
 		#else
-			for(int i = 0; i < (size/4)*4; i++){
+			for(int i = 0; i < (size/v_length)*v_length; i++){
 				if(m[i]!=INFINITY){
 					flag = false;
 					break;
 				}
 			}
 		#endif
-		for(int i = (size/4)*4; i <size; i++){
+		for(int i = (size/v_length)*v_length; i <size; i++){
 			if(m[i] != INFINITY){
 				flag = false;
 				break;
@@ -601,27 +598,27 @@ bool is_equal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 			
 		}
 		#if defined(VECTOR)
-			__m256i one = _mm256_set1_epi64x(1);
-			for(int i = 0; i < size/4; i++){
-				__m256d t1 = _mm256_loadu_pd(m1 + i*4);
-				__m256d t2 = _mm256_loadu_pd(m2 + i*4);
-				__m256d res = _mm256_cmp_pd(t1,t2, _CMP_EQ_OQ);
-				__m256i op = _mm256_castpd_si256(res);
-				if(!_mm256_testc_si256(op,one)){
+			v_int_type one = v_set1_int(1);
+			for(int i = 0; i < size/v_length; i++){
+				v_double_type t1 = v_load_double(m1 + i*v_length);
+				v_double_type t2 = v_load_double(m2 + i*v_length);
+				v_double_type res = v_cmp_double(t1,t2, _CMP_EQ_OQ);
+				v_int_type op = v_double_to_int(res);
+				if(!v_test_int(op,one)){
 					
 					return false;
 				}
 			}
 	
 		#else
-			for(int i = 0; i < (size/4)*4;i++){
+			for(int i = 0; i < (size/v_length)*v_length;i++){
 				if(m1[i] != m2[i]){
 					
 					return false;
 				}
 			}
 		#endif
-		for(int i = (size/4)*4; i < size; i++){
+		for(int i = (size/v_length)*v_length; i < size; i++){
 			if(m1[i] != m2[i]){
 				
 				return false;
@@ -723,27 +720,27 @@ bool is_lequal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 			
 		}
 		#if defined(VECTOR)
-			__m256i one = _mm256_set1_epi64x(1);
+			v_int_type one = v_set1_int(1);
 	
-			for(int i = 0; i < size/4; i++){
-				__m256d t1 = _mm256_loadu_pd(m1 + i*4);
-				__m256d t2 = _mm256_loadu_pd(m2 + i*4);
-				__m256d res = _mm256_cmp_pd(t1,t2, _CMP_LE_OQ);
-				__m256i op = _mm256_castpd_si256(res);
-				if(!_mm256_testc_si256(op,one)){
+			for(int i = 0; i < size/v_length; i++){
+				v_double_type t1 = v_load_double(m1 + i*v_length);
+				v_double_type t2 = v_load_double(m2 + i*v_length);
+				v_double_type res = v_cmp_double(t1,t2, _CMP_LE_OQ);
+				v_int_type op = v_double_to_int(res);
+				if(!v_test_int(op,one)){
 					
 					return false;
 				}
 			}
 		#else
-			for(int i = 0; i < (size/4)*4;i++){
+			for(int i = 0; i < (size/v_length)*v_length;i++){
 				if(m1[i] > m2[i]){
 					
 					return false;
 				}
 			}
 		#endif
-		for(int i = (size/4)*4; i < size; i++){
+		for(int i = (size/v_length)*v_length; i < size; i++){
 			if(m1[i] > m2[i]){
 				
 				return false;
@@ -877,20 +874,20 @@ void meet_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 		oo->is_dense = true;
 		
 		#if defined(VECTOR)
-			for(int i = 0; i < size/4; i++){
-				__m256d t1 = _mm256_loadu_pd(m1 + i*4);
-				__m256d t2 = _mm256_loadu_pd(m2 + i*4);
-				__m256d t3 = _mm256_min_pd(t1,t2);
-				_mm256_storeu_pd(m + i*4,t3);	
+			for(int i = 0; i < size/v_length; i++){
+				v_double_type t1 = v_load_double(m1 + i*v_length);
+				v_double_type t2 = v_load_double(m2 + i*v_length);
+				v_double_type t3 = v_min_double(t1,t2);
+				v_store_double(m + i*v_length,t3);	
 				//count = count+4;
 			}
 			
 		#else
-			for(int i = 0; i < (size/4)*4;i++){
+			for(int i = 0; i < (size/v_length)*v_length;i++){
 				m[i] = min(m1[i],m2[i]);
 			}
 		#endif
-			for(int i = (size/4)*4; i < size; i++){
+			for(int i = (size/v_length)*v_length; i < size; i++){
 				m[i] = min(m1[i],m2[i]);
 			}
 	}
@@ -931,20 +928,20 @@ void forget_array_half(opt_oct_mat_t *oo, ap_dim_t *arr,int dim, int arr_dim, bo
 		int d1 = (((d + 1)*(d + 1))/2);
 		int d2 = (((d + 2)*(d + 2))/2);
 		#if defined(VECTOR)
-			__m256d infty = _mm256_set1_pd(INFINITY);	
-			for(int j = 0; j < d/4; j++){
-				_mm256_storeu_pd(m + d1 + j*4,infty);
-				_mm256_storeu_pd(m + d2 + j*4,infty);
+			v_double_type infty = v_set1_double(INFINITY);	
+			for(int j = 0; j < d/v_length; j++){
+				v_store_double(m + d1 + j*v_length,infty);
+				v_store_double(m + d2 + j*v_length,infty);
 				
 			}
 		#else
-			for(int j = 0; j < (d/4)*4;j++){
+			for(int j = 0; j < (d/v_length)*v_length;j++){
 				m[d1 + j] = INFINITY;
 				m[d2 + j] = INFINITY;
 				
 			}
 		#endif
-		for(int j = (d/4)*4; j < d; j++){
+		for(int j = (d/v_length)*v_length; j < d; j++){
 			m[d1 + j] = INFINITY;
 			m[d2 + j] = INFINITY;
 			
@@ -1054,20 +1051,20 @@ void join_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 		oo->is_dense = true;
 		
 		#if defined(VECTOR)
-			for(int i = 0; i < size/4; i++){
-				__m256d t1 = _mm256_loadu_pd(m1 + i*4);
-				__m256d t2 = _mm256_loadu_pd(m2 + i*4);
-				__m256d t3 = _mm256_max_pd(t1,t2);
-				_mm256_storeu_pd(m + i*4,t3);
+			for(int i = 0; i < size/v_length; i++){
+				v_double_type t1 = v_load_double(m1 + i*v_length);
+				v_double_type t2 = v_load_double(m2 + i*v_length);
+				v_double_type t3 = v_max_double(t1,t2);
+				v_store_double(m + i*v_length,t3);
 				
 			}
 			
 		#else
-			for(int i = 0; i < (size/4)*4;i++){
+			for(int i = 0; i < (size/v_length)*v_length;i++){
 				m[i] = max(m1[i],m2[i]);
 			}
 		#endif
-			for(int i = (size/4)*4; i <size; i++){
+			for(int i = (size/v_length)*v_length; i <size; i++){
 				m[i] = max(m1[i],m2[i]);
 			}
 	}

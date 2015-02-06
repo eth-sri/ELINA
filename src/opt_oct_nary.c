@@ -242,18 +242,18 @@ opt_oct_t* opt_oct_add_epsilon(ap_manager_t* man, opt_oct_t* o, ap_scalar_t* eps
 	    pr->tmp[0] = pr->tmp[0]*pr->tmp[1];
 	    /* enlarge bounds */
 	    #if defined(VECTOR)
-	  	__m256d val = _mm256_set1_pd(pr->tmp[0]);
-		for(i = 0; i < size/4; i++){
-			__m256d op1 = _mm256_loadu_pd(m + i*4);
-			__m256d op2 = _mm256_add_pd(val,op1);
-			_mm256_storeu_pd(mm + i*4,op2);
+	  	v_double_type val = v_set1_double(pr->tmp[0]);
+		for(i = 0; i < size/v_length; i++){
+			v_double_type op1 = v_load_double(m + i*v_length);
+			v_double_type op2 = v_add_double(val,op1);
+			v_store_double(mm + i*v_length,op2);
 		}  
 	    #else
-		for (i=0;i<(size/4)*4;i++){
+		for (i=0;i<(size/v_length)*v_length;i++){
 	      		mm[i] = m[i] + pr->tmp[0];
 	    	}
 	    #endif
-		for(i = (size/4)*4;i < size; i++){
+		for(i = (size/v_length)*v_length;i < size; i++){
 			mm[i] = m[i] + pr->tmp[0];
 		}
     }

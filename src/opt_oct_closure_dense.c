@@ -44,18 +44,18 @@ bool strengthning_int_dense(opt_oct_mat_t * oo, double *temp, int n){
 	*******/
 	for(int i = 0; i < n; i++){
 		int i2 = (i|1);
-		__m256d t1 = _mm256_set1_pd(temp[i^1]);
+		v_double_type t1 = v_set1_double(temp[i^1]);
 		double *p = m + (((i+1)*(i+1))/2);
-		for(int j = 0; j < (i2/4); j++){
+		for(int j = 0; j < (i2/v_length); j++){
 			//int ind = j*8 + (((i+1)*(i+1))/2);
-			__m256d t2 = _mm256_loadu_pd(temp + j*4);
-			__m256d op1 = _mm256_add_pd(t1,t2);
-			__m256d op2 = _mm256_loadu_pd(p + j*4);
-			__m256d res = _mm256_min_pd(op1, op2);
+			v_double_type t2 = v_load_double(temp + j*v_length);
+			v_double_type op1 = v_add_double(t1,t2);
+			v_double_type op2 = v_load_double(p + j*v_length);
+			v_double_type res = v_min_double(op1, op2);
 			//m[ind] = min(m[ind], temp[i^1] + temp[j]);
-			_mm256_storeu_pd(m + (((i+1)*(i+1))/2) + j*4, res);
+			v_store_double(m + (((i+1)*(i+1))/2) + j*v_length, res);
 		}
-		for(int j = (i2/4)*4; j<= i2; j++){
+		for(int j = (i2/v_length)*v_length; j<= i2; j++){
 			int ind = j + (((i+1)*(i+1))/2);
 			m[ind] = min(m[ind], temp[i^1] + temp[j]);
 		}
@@ -93,18 +93,18 @@ bool strengthning_dense(opt_oct_mat_t * oo, double *temp, int n){
 	*******/
 	for(int i = 0; i < n; i++){
 		int i2 = (i|1);
-		__m256d t1 = _mm256_set1_pd(temp[i^1]);
+		v_double_type t1 = v_set1_double(temp[i^1]);
 		double *p = m + (((i+1)*(i+1))/2);
-		for(int j = 0; j < (i2/4); j++){
+		for(int j = 0; j < (i2/v_length); j++){
 			//int ind = j*8 + (((i+1)*(i+1))/2);
-			__m256d t2 = _mm256_loadu_pd(temp + j*4);
-			__m256d op1 = _mm256_add_pd(t1,t2);
-			__m256d op2 = _mm256_loadu_pd(p + j*4);
-			__m256d res = _mm256_min_pd(op1, op2);
+			v_double_type t2 = v_load_double(temp + j*v_length);
+			v_double_type op1 = v_add_double(t1,t2);
+			v_double_type op2 = v_load_double(p + j*v_length);
+			v_double_type res = v_min_double(op1, op2);
 			//m[ind] = min(m[ind], temp[i^1] + temp[j]);
-			_mm256_storeu_pd(m + (((i+1)*(i+1))/2) + j*4, res);
+			v_store_double(m + (((i+1)*(i+1))/2) + j*v_length, res);
 		}
-		for(int j = (i2/4)*4; j<= i2; j++){
+		for(int j = (i2/v_length)*v_length; j<= i2; j++){
 			int ind = j + (((i+1)*(i+1))/2);
 			m[ind] = min(m[ind], temp[i^1] + temp[j]);
 		}
@@ -194,9 +194,9 @@ bool floyd_warshall_dense(opt_oct_mat_t *oo, double *temp1, double *temp2, int d
 	double *p1 = m + kki;
 	double *p2 = m + ki;
 	int l = (2*k + 2);
-	int mod = l%4;
+	int mod = l%v_length;
 	if(mod){
-		l = l + (4 - mod);
+		l = l + (v_length - mod);
 	}
 	/*******
 		This is the vectorized main loop. Apply k-th iteration on
@@ -214,28 +214,28 @@ bool floyd_warshall_dense(opt_oct_mat_t *oo, double *temp1, double *temp2, int d
 		//double t2 = m[n*((2*k)^1) + (i^1)];
 		double ft1 = m[ind2];
 		double ft2 = m[ind1];
-		__m256d t1 = _mm256_set1_pd(m[ind2]);
-		__m256d t2 = _mm256_set1_pd(m[ind1]);
+		v_double_type t1 = v_set1_double(m[ind2]);
+		v_double_type t2 = v_set1_double(m[ind1]);
 		
 		int b = min(l,i2);
 		double *p = m + (((i+1)*(i+1))/2);
-		for(int j = 0; j <br/4; j++){
+		for(int j = 0; j <br/v_length; j++){
 				
-			__m256d t3 = _mm256_loadu_pd(p1 + j*4);
-			__m256d op1 = _mm256_add_pd(t1,t3);
+			v_double_type t3 = v_load_double(p1 + j*v_length);
+			v_double_type op1 = v_add_double(t1,t3);
 			//double op2 = t2 + m[ind4];
-			__m256d t4 = _mm256_loadu_pd(p2 + j*4);
-			__m256d op2 = _mm256_add_pd(t2,t4);
+			v_double_type t4 = v_load_double(p2 + j*v_length);
+			v_double_type op2 = v_add_double(t2,t4);
 			//double op3 = min(op1, op2);
-			__m256d op3 = _mm256_min_pd(op1,op2);
-			__m256d op4 = _mm256_loadu_pd(p + j*4);
-			__m256d res = _mm256_min_pd(op3, op4);
-			_mm256_storeu_pd(p + j*4, res);
+			v_double_type op3 = v_min_double(op1,op2);
+			v_double_type op4 = v_load_double(p + j*v_length);
+			v_double_type res = v_min_double(op3, op4);
+			v_store_double(p + j*v_length, res);
 			//m[ind5] = min(m[ind5],op3 );
 			count = count + 4;
 		}
 			
-		for(int j = (br/4)*4; j<=br;j++){
+		for(int j = (br/v_length)*v_length; j<=br;j++){
 			int ind3 = j + kki;
 			int ind4 = j + ki;
 			int ind5 = j + (((i+1)*(i+1))/2);
@@ -254,21 +254,21 @@ bool floyd_warshall_dense(opt_oct_mat_t *oo, double *temp1, double *temp2, int d
 		}
 
 		if(b < i2){
-			for(int j = b/4; j <i2/4; j++){
-				__m256d t3 = _mm256_loadu_pd(temp1 + j*4);
-				__m256d op1 = _mm256_add_pd(t1,t3);
+			for(int j = b/v_length; j <i2/v_length; j++){
+				v_double_type t3 = v_load_double(temp1 + j*v_length);
+				v_double_type op1 = v_add_double(t1,t3);
 				//double op2 = t2 + temp2[j^1];
-				__m256d t4 = _mm256_loadu_pd(temp2 + j*4);
-				__m256d op2 = _mm256_add_pd(t2,t4);
+				v_double_type t4 = v_load_double(temp2 + j*v_length);
+				v_double_type op2 = v_add_double(t2,t4);
 				//double op3 = min(op1, op2);
-				__m256d op3 = _mm256_min_pd(op1, op2);
-				__m256d op4 = _mm256_loadu_pd(p + j*4);
+				v_double_type op3 = v_min_double(op1, op2);
+				v_double_type op4 = v_load_double(p + j*v_length);
 				//m[ind5] = min(m[ind5],op3 );
-				__m256d res = _mm256_min_pd(op3, op4);
-				_mm256_storeu_pd(p + j*4, res);
+				v_double_type res = v_min_double(op3, op4);
+				v_store_double(p + j*v_length, res);
 				count = count + 4;
 			}
-			for(int j = (i2/4)*4; j<=i2; j++){
+			for(int j = (i2/v_length)*v_length; j<=i2; j++){
 				int ind5 = j + (((i+1)*(i+1))/2);
 				double op1 = ft1 + temp1[j];
 				double op2 = ft2 + temp2[j];
@@ -291,13 +291,13 @@ bool floyd_warshall_dense(opt_oct_mat_t *oo, double *temp1, double *temp2, int d
 		double ft1 = m[ind1];
 		double ft2 = m[ind2];
 		
-		__m256d t1 = _mm256_set1_pd(m[ind1]);
-		__m256d t2 = _mm256_set1_pd(m[ind2]);
+		v_double_type t1 = v_set1_double(m[ind1]);
+		v_double_type t2 = v_set1_double(m[ind2]);
 		int b = min(l,i2);
 		
 		double *p = m + (((i+1)*(i+1))/2);
 	
-		for(int j = 0; j < br/4; j++){
+		for(int j = 0; j < br/v_length; j++){
 			//int ind3 = j + kki;
 			//int ind4 = matpos2( 2*k,j);
 			//int ind4 = j + ki;
@@ -307,20 +307,20 @@ bool floyd_warshall_dense(opt_oct_mat_t *oo, double *temp1, double *temp2, int d
 			//double op1 = t1 + m[n*((2*k)^1) + j];
 			//double op2 = t2 + m[n*(2*k) + j];
 			//double op1 = t1 + m[ind3];
-			__m256d t3 = _mm256_loadu_pd(p1 + j*4);
-			__m256d op1 = _mm256_add_pd(t1,t3);
+			v_double_type t3 = v_load_double(p1 + j*v_length);
+			v_double_type op1 = v_add_double(t1,t3);
 			//double op2 = t2 + m[ind4];
-			__m256d t4 = _mm256_loadu_pd(p2 + j*4);
-			__m256d op2 = _mm256_add_pd(t2,t4);
+			v_double_type t4 = v_load_double(p2 + j*v_length);
+			v_double_type op2 = v_add_double(t2,t4);
 			//double op3 = min(op1, op2);
-			__m256d op3 = _mm256_min_pd(op1,op2);
-			__m256d op4 = _mm256_loadu_pd(p + j*4);
+			v_double_type op3 = v_min_double(op1,op2);
+			v_double_type op4 = v_load_double(p + j*v_length);
 			//m[ind5] = min(m[ind5],op3 );
-			__m256d res = _mm256_min_pd(op3,op4);
-			_mm256_storeu_pd(p + j*4,res);
+			v_double_type res = v_min_double(op3,op4);
+			v_store_double(p + j*v_length,res);
 			count = count + 4;
 		}
-		for(int j = (br/4)*4; j<=br; j++){
+		for(int j = (br/v_length)*v_length; j<=br; j++){
 			int ind3 = j + kki;
 			int ind4 = j + ki;
 			int ind5 = j + (((i+1)*(i+1))/2);
@@ -339,7 +339,7 @@ bool floyd_warshall_dense(opt_oct_mat_t *oo, double *temp1, double *temp2, int d
 		}
 		if(b < i2){
 			
-			for(int j = b/4; j < i2/4; j++){
+			for(int j = b/v_length; j < i2/v_length; j++){
 				//int ind3 = matpos2(n,(2*k)^1,j);
 				//int ind4 = matpos2(n, 2*k,j);
 				//int ind2 = matpos2(k,j);
@@ -348,20 +348,20 @@ bool floyd_warshall_dense(opt_oct_mat_t *oo, double *temp1, double *temp2, int d
 				//int ind5 = matpos2(i,j);
 				//int ind5 = j + (((i+1)*(i+1))/2);
 				//double op1 = t1 + temp1[j]		
-				__m256d t3 = _mm256_loadu_pd(temp1 + j*4);
-				__m256d op1 = _mm256_add_pd(t1,t3);
+				v_double_type t3 = v_load_double(temp1 + j*v_length);
+				v_double_type op1 = v_add_double(t1,t3);
 				//double op2 = t2 + temp2[j];
-				__m256d t4 = _mm256_loadu_pd(temp2 + j*4);
-				__m256d op2 = _mm256_add_pd(t2,t4);
+				v_double_type t4 = v_load_double(temp2 + j*v_length);
+				v_double_type op2 = v_add_double(t2,t4);
 				//double op3 = min(op1, op2);
-				__m256d op3 = _mm256_min_pd(op1,op2);
-				__m256d op4 = _mm256_loadu_pd(p + j*4);
+				v_double_type op3 = v_min_double(op1,op2);
+				v_double_type op4 = v_load_double(p + j*v_length);
 				//m[ind5] = min(m[ind5],op3 );
-				__m256d res = _mm256_min_pd(op3,op4);
-				_mm256_storeu_pd(p + j*4, res);
+				v_double_type res = v_min_double(op3,op4);
+				v_store_double(p + j*v_length, res);
 				count = count + 4;
 			}
-			for(int j = (i2/4)*4; j <=i2; j++){
+			for(int j = (i2/v_length)*v_length; j <=i2; j++){
 				int ind5 = j + (((i+1)*(i+1))/2);
 				double op1 = ft1 + temp1[j];
 				double op2 = ft2 + temp2[j];

@@ -290,31 +290,31 @@ opt_oct_t* opt_oct_expand(ap_manager_t* man,
 	for (i=0;i<n;i++) {
 		int src_ind,dest_ind;
 		 #if defined(VECTOR)
-			__m256d src;
+			v_double_type src;
 	      /* copy binary constraints */
-		      for (j=0;j<(2*dim)/4;j++) {
+		      for (j=0;j<(2*dim)/v_length;j++) {
 			//mm[opt_matpos(2*(pos+i),j)] = mm[opt_matpos(2*dim,j)];
 			//int op = 2*(pos+i);
 			//op = ((op+1)*(op+1))/2;
-			dest_ind = opt_matpos(2*(pos+i),j*4);
-			src_ind = opt_matpos(2*dim,j*4);
-			src = _mm256_loadu_pd(mm+src_ind);
-			_mm256_storeu_pd(mm+dest_ind,src); 
-			dest_ind = opt_matpos(2*(pos+i)+1,j*4);
-			src_ind = opt_matpos(2*dim+1,j*4);
-			src = _mm256_loadu_pd(mm+src_ind);
-			_mm256_storeu_pd(mm+dest_ind,src); 
+			dest_ind = opt_matpos(2*(pos+i),j*v_length);
+			src_ind = opt_matpos(2*dim,j*v_length);
+			src = v_load_double(mm+src_ind);
+			v_store_double(mm+dest_ind,src); 
+			dest_ind = opt_matpos(2*(pos+i)+1,j*v_length);
+			src_ind = opt_matpos(2*dim+1,j*v_length);
+			src = v_load_double(mm+src_ind);
+			v_store_double(mm+dest_ind,src); 
 			//count = count + 8;
 			//mm[opt_matpos(2*(pos+i)+1,j)] = mm[opt_matpos(2*dim+1,j)];
 		      }
 	      #else
-		   for(j= 0; j < ((2*dim)/4)*4;j++ ){
+		   for(j= 0; j < ((2*dim)/v_length)*v_length;j++ ){
 			mm[opt_matpos(2*(pos+i),j)] = mm[opt_matpos(2*dim,j)];
 			mm[opt_matpos(2*(pos+i)+1,j)] = mm[opt_matpos(2*dim+1,j)]; 
 			//count = count + 2;
 		   }
 	      #endif
-	      for(j = ((2*dim)/4)*4;j < 2*dim; j++){
+	      for(j = ((2*dim)/v_length)*v_length;j < 2*dim; j++){
 		mm[opt_matpos(2*(pos+i),j)] = mm[opt_matpos(2*dim,j)];
 		mm[opt_matpos(2*(pos+i)+1,j)] = mm[opt_matpos(2*dim+1,j)];
 		//count = count + 2;

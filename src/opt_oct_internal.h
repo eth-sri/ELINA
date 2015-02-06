@@ -50,6 +50,7 @@ extern "C" {
 
 #if defined(VECTOR)
  #include <immintrin.h>
+ #include "vector_intrin.h"
 #endif
 
 #define num_incomplete  1
@@ -135,18 +136,18 @@ static const int opt_oct_pre_widening = 99;
 
 static inline void init_array(double *arr, int size){
 	#if defined(VECTOR)
-		__m256d OPT_ZERO = _mm256_set1_pd(0);
-		for(int i = 0; i < size/4; i++){
-			_mm256_storeu_pd(arr + i*4,OPT_ZERO);
+		v_double_type OPT_ZERO = v_set1_double(0);
+		for(int i = 0; i < size/v_length; i++){
+			v_store_double(arr + i*v_length,OPT_ZERO);
 		}
 	//}
 	#else
-		for(int i=0;i<(size/4)*4;i++){
+		for(int i=0;i<(size/v_length)*v_length;i++){
 			arr[i] = 0;
 		}
 	//}
 	#endif
-	for(int i = (size/4)*4; i < size; i++){
+	for(int i = (size/v_length)*v_length; i < size; i++){
 		arr[i] = 0;
 	}
 	
