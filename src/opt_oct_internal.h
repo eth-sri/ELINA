@@ -49,8 +49,13 @@ extern "C" {
 
 
 #if defined(VECTOR)
+
  #include <immintrin.h>
  #include "vector_intrin.h"
+
+#else
+ #define v_length 1
+
 #endif
 
 #define num_incomplete  1

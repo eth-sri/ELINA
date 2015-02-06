@@ -48,17 +48,17 @@ void top_mat(double *m, int dim){
 	#if defined(VECTOR)
 		v_double_type infty = v_set1_double(INFINITY);
 		
-		for(int i = 0; i < size/8; i++){
-			v_store_double(m + i*8, infty);
-			v_store_double(m + i*8 + 4, infty);
+		for(int i = 0; i < size/(2*v_length); i++){
+			v_store_double(m + i*2*v_length, infty);
+			v_store_double(m + i*2*v_length + v_length, infty);
 		}
 	//}
 	#else
-		for(int i = 0; i < (size/8)*8; i++){
+		for(int i = 0; i < (size/(2*v_length))*2*v_length; i++){
 			m[i] = INFINITY;
 		}
 	#endif
-	for(int i = (size/8)*8; i < size; i++){
+	for(int i = (size/(2*v_length))*(2*v_length); i < size; i++){
 		m[i] = INFINITY;
 	}
 	
@@ -1005,12 +1005,12 @@ void join_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 		}
 		else{
 			oo->acl = intersection_array_comp_list(oo1->acl,oo2->acl,dim);
+			if(destructive){
+				free_array_comp_list(temp);
+			}
 		}
 		oo->is_dense = false;
 		
-		if(destructive){
-			free_array_comp_list(temp);
-		}
 		if(!destructive){
 			oo->ti = false;
 			//top_mat(m,dim);
