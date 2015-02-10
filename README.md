@@ -21,7 +21,8 @@ An Optimized Library for the Octagon Abstract Domain
    from decomposed to dense as soon as sparsity is below the threshold. A larger value of threshold favors dense whereas smaller favors decomposed types(operators).
 
    If you want to record timing information for different octagon operators, specify DTIMING in DFLAGS.
-      Run "make", it will generate "liboptoct.so" and "liblinkedlistapi.so" libraries.
+   
+   Run "make", it will generate "liboptoct.so" and "liblinkedlistapi.so" libraries.
       
 #Installing:
     Specify the install directory in APRON's "Makefile.config" file.
