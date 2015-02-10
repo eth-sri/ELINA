@@ -1,0 +1,15 @@
+Compile Options:
+	
+	for Intel's AVX Intrinsics: specify -DVECTOR for IS_VECTOR and "-m64", "-march=native" for AFLAGS in Makefile
+	
+	For Sparsity Threshold : specify -DTHRESHOLD=value for example -DTHRESHOLD=0.9 in DFLAGS. The Threshold lies between 0 and 1 and controls switching between dense and sparse algorithms for 					 closure and incremental closure. The analysis will switch from sparse to dense as soon as sparsity exceeds the threshold. A larger value of threshold favors dense 					 whereas smaller favors sparse algorithms.
+	
+To Compile type: 
+	make
+this will generate "linkedlistapi.so" and "liboptoct.so". Default sparsity threshold is 0.75 and uses no vectorization.
+
+To install type:
+	make install
+this install required files in directory specified in Makefile.config in apron directory.
+
+

@@ -34,6 +34,7 @@ ICXXFLAGS = \
 -I../itv \
 -I../newpolka \
 -I../octagons \
+-I../optoctagons \
 -I../ppl \
 -I../products \
 -I../box \
@@ -63,7 +64,7 @@ CCINC = \
  apxx_expr1.hh               apxx_oct.hh                apxx_texpr1_inline.hh		\
  apxx_generator0.hh          apxx_oct_inline.hh         apxx_var.hh			\
  apxx_generator0_inline.hh   apxx_polka.hh              apxx_var_inline.hh		\
- apxx_t1p.hh apxx_t1p_inline.hh	
+ apxx_t1p.hh apxx_t1p_inline.hh	apxx_opt_oct.hh		apxx_opt_oct_inline.hh
 
 LIBS = -L$(GMP_PREFIX)/lib -lm -lgmp -lgmpxx -L$(MPFR_PREFIX)/lib -lmpfr -L../apron -lapron
 

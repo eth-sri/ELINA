@@ -24,7 +24,7 @@ IFLAGS = \
 -I../octagons \
 -I../ppl \
 -I../products \
--I../optoctagon3 \
+-I../optoctagons \
 -I$(JAVA_HOME)/include \
 -I$(JAVA_HOME)/include/linux \
 $(JNIINC) 
@@ -39,7 +39,7 @@ LFLAGS = \
 -L../newpolka \
 -L../octagons \
 -L../ppl \
--L../optoctagon3 \
+-L../optoctagons \
 -L../products
 
 
