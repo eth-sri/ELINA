@@ -28,7 +28,7 @@ An Optimized Library for the Octagon Abstract Domain
     Specify the install directory in APRON's "Makefile.config" file.
     Run "sudo make install"
     
-#Using in Static Analyzer
+#How to Use in Static Analyzer
 
   Java:
 	
