@@ -3,7 +3,7 @@ include ../Makefile.config
 
 AFLAGS := -D_GNU_SOURCE -pthread -fno-tree-vectorize -m64 -march=native
 
-IS_VECTOR = -DVECTOR -DSSE
+IS_VECTOR = -DVECTOR -DTIMING #-DSSE
 
 DFLAGS := -g -DNUM_DOUBLE $(AFLAGS) $(IS_VECTOR) -DTHRESHOLD=0.75
 

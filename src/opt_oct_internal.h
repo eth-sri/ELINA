@@ -58,6 +58,11 @@ extern "C" {
 
 #endif
 
+#if defined(TIMING)
+  #include "rdtsc.h"
+  		
+#endif
+
 #define num_incomplete  1
 
 #define flag_incomplete						\

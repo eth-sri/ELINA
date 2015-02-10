@@ -15,11 +15,37 @@
 */
 
 
+
 #include "opt_oct_hmat.h"
 
+#if defined(TIMING)
+	double closure_time = 0;
+	double copy_time = 0;
+	double is_equal_time = 0;
+	double is_lequal_time = 0;
+	double permute_dimension_time = 0;
+	double top_time = 0;
+	double meet_time = 0;
+	double join_time = 0;
+	double add_dimension_time = 0;
+	double widening_time = 0;
+	double free_time = 0;
+	double forget_array_time = 0;
+	double meet_lincons_time = 0;
+	double oct_to_box_time = 0;
+	double alloc_time = 0;
+	double is_top_time = 0;
+	double expand_time = 0;
+	double fold_time = 0;
+	double sat_lincons_time = 0;
+	double assign_linexpr_time = 0;
+	
+#endif
 
 opt_oct_mat_t* opt_hmat_alloc(int size){
-	
+	#if defined(TIMING)
+		start_timing();
+	#endif
 	double *m = (double *)malloc(size*sizeof(double));
 	opt_oct_mat_t *oo= (opt_oct_mat_t *)malloc(sizeof(opt_oct_mat_t));
 	oo->mat = m;
@@ -27,18 +53,24 @@ opt_oct_mat_t* opt_hmat_alloc(int size){
 	oo->acl = create_array_comp_list();
 	oo->is_dense = false;
 	oo->ti = false;
-	
+	#if defined(TIMING)
+		record_timing(alloc_time);
+	#endif
 	return oo;
 }
 
 void opt_hmat_free(opt_oct_mat_t *oo){
-	
+	#if defined(TIMING)
+		start_timing();
+	#endif
         free(oo->mat);
 	if(!oo->is_dense){
 		free_array_comp_list(oo->acl);
 	}
 	free(oo);
-	
+	#if defined(TIMING)
+		record_timing(free_time);
+	#endif
 }
 
 void top_mat(double *m, int dim){
@@ -102,7 +134,9 @@ void convert_to_dense_mat(opt_oct_mat_t * oo, int dim, bool flag){
 ******/
 
 opt_oct_mat_t * opt_hmat_alloc_top(int dim){
-	
+	#if defined(TIMING)
+		start_timing();
+	#endif
 	double *m;
 	int size = 2*dim*(dim + 1);
 	//posix_memalign((void **)&m,32,size*sizeof(double));
@@ -115,7 +149,9 @@ opt_oct_mat_t * opt_hmat_alloc_top(int dim){
 	oo->is_dense = false;
 	oo->ti = false;
 	oo->is_top = true;
-	
+	#if defined(TIMING)
+		record_timing(top_time);
+	#endif
 	return oo;
 }
 
@@ -127,7 +163,9 @@ opt_oct_mat_t *opt_hmat_copy(opt_oct_mat_t * src_mat, int dim){
 	if(!src_mat){
 		return NULL;
 	}
-	
+	#if defined(TIMING)
+		start_timing();
+	#endif
 	double *src = src_mat->mat;
 	double *dest;
 	int n = 2*dim;
@@ -198,6 +236,9 @@ opt_oct_mat_t *opt_hmat_copy(opt_oct_mat_t * src_mat, int dim){
 	else{
 		dst_mat->acl = copy_array_comp_list(src_mat->acl);
 	}
+	#if defined(TIMING)
+		record_timing(copy_time);
+	#endif
 	return dst_mat;
 }
 
@@ -243,7 +284,9 @@ double recalculate_sparsity(opt_oct_mat_t *oo, int dim){
 *****/
 
 bool opt_hmat_strong_closure(opt_oct_mat_t *oo, int dim){
-	
+	#if defined(TIMING)
+		start_timing();
+	#endif
 	double *temp1, *temp2;
 	unsigned short int *ind1, *ind2;
 	temp1 = (double *)malloc(2*dim*sizeof(double));
@@ -331,6 +374,9 @@ bool opt_hmat_strong_closure(opt_oct_mat_t *oo, int dim){
 	temp1 = NULL;
 	free(temp2);
         temp2 = NULL;
+	#if defined(TIMING)
+		record_timing(closure_time);
+	#endif
 	return res;
 
 }
@@ -340,7 +386,9 @@ bool opt_hmat_strong_closure(opt_oct_mat_t *oo, int dim){
 	Check if the octagon is top
 *******/
 bool is_top_half(opt_oct_mat_t *oo, int dim){
-	
+	#if defined(TIMING)
+		start_timing();
+	#endif
 	double *m = oo->mat;
 	int size = 2*dim*(dim + 1);
 	int n = 2*dim;
@@ -351,7 +399,9 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 			
 		******/
 		if(oo->acl->size==0){
-			
+			#if defined(TIMING)
+				record_timing(is_top_time);
+			#endif
 			return true;
 		}
 		/****
@@ -378,7 +428,10 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 						int ind = j1 + ((i1 + 1)*(i1 + 1))/2;
 						if(m[ind]!=INFINITY){
 							flag = false;
-							break;
+							#if defined(TIMING)
+								record_timing(is_top_time);
+							#endif
+							return false;
 						}
 					}
 				}
@@ -412,7 +465,10 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 				v_int_type op = v_double_to_int(res);
 				if(!v_test_int(op,one)){
 					flag = false;
-					break;
+					#if defined(TIMING)
+						record_timing(is_top_time);
+					#endif
+					return false;
 				}
 		
 			}
@@ -421,14 +477,20 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 			for(int i = 0; i < (size/v_length)*v_length; i++){
 				if(m[i]!=INFINITY){
 					flag = false;
-					break;
+					#if defined(TIMING)
+						record_timing(is_top_time);
+					#endif
+					return false;
 				}
 			}
 		#endif
 		for(int i = (size/v_length)*v_length; i <size; i++){
 			if(m[i] != INFINITY){
 				flag = false;
-				break;
+				#if defined(TIMING)
+					record_timing(is_top_time);
+				#endif
+				return false;
 			}
 		}
 		
@@ -439,13 +501,17 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 		}
 		
 	}
-	
+	#if defined(TIMING)
+		record_timing(is_top_time);
+	#endif
 	return flag;
 }
 
 
 bool is_equal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
-	
+	#if defined(TIMING)
+		start_timing();
+	#endif
 	double *m1= oo1->mat;
 	double *m2 = oo2->mat;
 	int size = 2*dim*(dim + 1);
@@ -481,6 +547,9 @@ bool is_equal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 							if(!check_trivial_relation(m1,i1,j1)){
                                 				free(ca);
 								free_array_comp_list(acl);
+								#if defined(TIMING)
+									record_timing(is_equal_time);
+								#endif
 								return false;
 							}
 						}
@@ -506,6 +575,9 @@ bool is_equal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 							if(!check_trivial_relation(m2,i1,j1)){
 								free_array_comp_list(acl);
                                 				free(ca);
+								#if defined(TIMING)
+									record_timing(is_equal_time);
+								#endif
 								return false;
 							}
 						}  
@@ -534,6 +606,9 @@ bool is_equal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 						if(m1[ind]!=m2[ind]){
                             				free(ca);
 							free_array_comp_list(acl);
+							#if defined(TIMING)
+								record_timing(is_equal_time);
+							#endif
 							return false;
 						}
 					}
@@ -567,7 +642,9 @@ bool is_equal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 						int ind = j1 + (((i1 + 1)*(i1 + 1))/2);	
 						if(m1[ind]!=m2[ind]){
 							free(ca);
-						
+							#if defined(TIMING)
+								record_timing(is_equal_time);
+							#endif
 							return false;
 						}
 					}
@@ -605,7 +682,9 @@ bool is_equal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 				v_double_type res = v_cmp_double(t1,t2, _CMP_EQ_OQ);
 				v_int_type op = v_double_to_int(res);
 				if(!v_test_int(op,one)){
-					
+					#if defined(TIMING)
+						record_timing(is_equal_time);
+					#endif
 					return false;
 				}
 			}
@@ -613,25 +692,33 @@ bool is_equal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 		#else
 			for(int i = 0; i < (size/v_length)*v_length;i++){
 				if(m1[i] != m2[i]){
-					
+					#if defined(TIMING)
+						record_timing(is_equal_time);
+					#endif
 					return false;
 				}
 			}
 		#endif
 		for(int i = (size/v_length)*v_length; i < size; i++){
 			if(m1[i] != m2[i]){
-				
+				#if defined(TIMING)
+					record_timing(is_equal_time);
+				#endif
 				return false;
 			}
 		}
 		
 	}
-	
+	#if defined(TIMING)
+		record_timing(is_equal_time);
+	#endif
 	return true;
 }
 
 bool is_lequal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
-	
+	#if defined(TIMING)
+		start_timing();
+	#endif
 	double *m1 = oo1->mat;
 	double *m2 = oo2->mat;
 	int size = 2*dim*(dim + 1);
@@ -661,6 +748,9 @@ bool is_lequal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 						if(!check_trivial_relation(m2,i1,j1)){
                             				free(ca);
 							free_array_comp_list(acl);
+							#if defined(TIMING)
+								record_timing(is_lequal_time);
+							#endif
 							return false;
 						}
 					}
@@ -690,6 +780,9 @@ bool is_lequal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 					if(m1[ind] > m2[ind]){
                         			free(ca);
 						free_array_comp_list(acl);
+						#if defined(TIMING)
+							record_timing(is_lequal_time);
+						#endif
 						return false;
 					}
 				}
@@ -728,32 +821,42 @@ bool is_lequal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 				v_double_type res = v_cmp_double(t1,t2, _CMP_LE_OQ);
 				v_int_type op = v_double_to_int(res);
 				if(!v_test_int(op,one)){
-					
+					#if defined(TIMING)
+						record_timing(is_lequal_time);
+					#endif
 					return false;
 				}
 			}
 		#else
 			for(int i = 0; i < (size/v_length)*v_length;i++){
 				if(m1[i] > m2[i]){
-					
+					#if defined(TIMING)
+						record_timing(is_lequal_time);
+					#endif
 					return false;
 				}
 			}
 		#endif
 		for(int i = (size/v_length)*v_length; i < size; i++){
 			if(m1[i] > m2[i]){
-				
+				#if defined(TIMING)
+					record_timing(is_lequal_time);
+				#endif
 				return false;
 			}
 		}
 	}
 	
-	
+	#if defined(TIMING)
+		record_timing(is_lequal_time);
+	#endif
 	return true;
 }
 
 void meet_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim, bool destructive){
-	
+	#if defined(TIMING)
+		start_timing();
+	#endif
 	double *m = oo->mat;
 	double *m1 = oo1->mat;
 	double *m2 = oo2->mat;
@@ -905,7 +1008,9 @@ void meet_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 		}
 		oo->nni = count;
 	}	
-	
+	#if defined(TIMING)
+		record_timing(meet_time);
+	#endif
 	
 }
 
@@ -977,7 +1082,9 @@ void forget_array_half(opt_oct_mat_t *oo, ap_dim_t *arr,int dim, int arr_dim, bo
 }
 
 void join_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim, bool destructive){
-	
+	#if defined(TIMING)
+		start_timing();
+	#endif
 	double *m = oo->mat;
 	double *m1 = oo1->mat;
 	double *m2 = oo2->mat;
@@ -1069,14 +1176,18 @@ void join_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 			}
 	}
 	oo->nni = min(oo1->nni,oo2->nni);
-	
+	#if defined(TIMING)
+		record_timing(join_time);
+	#endif
 }
 
 void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 			    ap_dim_t* pos, int nb_pos,
 			    int mult, int dim, bool add)
 {
-  
+  #if defined(TIMING)
+	start_timing();
+  #endif
   int i,j,new_j,org_j;
   new_j = org_j = pos[0]*2;
   double * dst = dst_mat->mat;
@@ -1281,7 +1392,9 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 	
   	free(map);
         free(add_pos);
-  	
+  	#if defined(TIMING)
+		record_timing(add_dimension_time);
+	#endif
 }
 
 
@@ -1290,7 +1403,9 @@ void opt_hmat_permute(opt_oct_mat_t* dest_mat, opt_oct_mat_t* src_mat,
 		  int dst_dim, int src_dim,
 		  ap_dim_t* permutation)
 {
-  
+  #if defined(TIMING)
+	start_timing();
+  #endif
   double *dst = dest_mat->mat;
   double *src = src_mat->mat; 
   if(!src_mat->is_dense){
@@ -1403,11 +1518,15 @@ void opt_hmat_permute(opt_oct_mat_t* dest_mat, opt_oct_mat_t* src_mat,
   }
   dest_mat->nni = src_mat->nni;
   dest_mat->is_dense = src_mat->is_dense;
- 
+  #if defined(TIMING)
+	record_timing(permute_dimension_time);
+  #endif
 }
 
 void widening_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
-	
+	#if defined(TIMING)
+		start_timing();
+  	#endif
 	double *m = oo->mat;
 	double *m1 = oo1->mat;
 	double *m2 = oo2->mat;
@@ -1486,7 +1605,9 @@ void widening_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, in
 		}
 	}
 	oo->nni = count;
-	
+	#if defined(TIMING)
+		record_timing(widening_time);
+  	#endif
 	
 }
 

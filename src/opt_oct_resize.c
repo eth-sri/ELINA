@@ -35,9 +35,13 @@ opt_oct_t* opt_oct_forget_array(ap_manager_t* man,
     opt_oct_mat_t* oo = o->closed ? o->closed : o->m;
     int mat_size = 2*o->dim*(o->dim + 1);
     if (!destructive) oo = opt_hmat_copy(oo,o->dim);
-    
+    #if defined(TIMING)
+  	start_timing();
+    #endif
     forget_array_half(oo,tdim,o->dim,size,project);
-    
+    #if defined(TIMING)
+  	record_timing(forget_array_time);
+    #endif
     if (o->closed) {
       /* result is exact on Q, and closed if forget, not project */
       if (num_incomplete || o->intdim) flag_incomplete;
@@ -209,7 +213,9 @@ opt_oct_t* opt_oct_expand(ap_manager_t* man,
     /* insert n variables at pos */
     dst = opt_hmat_alloc_top(o->dim+n);
     opt_hmat_addrem_dimensions(dst,src,&pos,1,n,o->dim,true);
-    
+    #if defined(TIMING)
+  	start_timing();
+    #endif
     double *mm = dst->mat;
     if(!src->is_dense){
 	    for (i=0;i<n;i++) {
@@ -333,7 +339,9 @@ opt_oct_t* opt_oct_expand(ap_manager_t* man,
 	    }
      
      }
-    
+     #if defined(TIMING)
+  	record_timing(expand_time);
+     #endif
   }
   int dst_dim = o->dim+n;
   int dst_size = 2*dst_dim*(dst_dim+1);
@@ -382,7 +390,9 @@ opt_oct_t* opt_oct_fold(ap_manager_t* man,
     double *m = src->mat;
     
     oo = opt_hmat_alloc(2*o->dim*(o->dim+1));
-   
+    #if defined(TIMING)
+  	start_timing();
+    #endif
     opt_hmat_set_array(oo->mat,m,2*o->dim*(o->dim+1));
     oo->is_dense = src->is_dense;
     oo->nni = src->nni;
@@ -553,7 +563,9 @@ opt_oct_t* opt_oct_fold(ap_manager_t* man,
 	
      }
     
-    
+    #if defined(TIMING)
+  	record_timing(fold_time);
+    #endif
     /* destroy all dimensions in tdim except the first one */
     dst = opt_hmat_alloc_top(o->dim-size+1);
     opt_hmat_addrem_dimensions(dst,oo,tdim+1,size-1,1,o->dim,false);

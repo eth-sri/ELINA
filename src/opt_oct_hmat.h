@@ -42,6 +42,41 @@ extern "C" {
 
 #endif
 
+#if defined(TIMING)
+	#define start_timing()				\
+		tsc_counter start, end;				\
+		double cycles;					\
+		CPUID();					\
+		RDTSC(start)						
+
+  	#define record_timing(counter)		\
+		RDTSC(end);				\
+  		CPUID();				\
+  		cycles = (double)(COUNTER_DIFF(end, start));	\
+  		counter += cycles	
+	extern double closure_time;
+	extern double copy_time;
+	extern double is_equal_time;
+	extern double is_lequal_time;
+	extern double permute_dimension_time;
+	extern double top_time;
+	extern double meet_time;
+	extern double join_time;
+	extern double add_dimension_time;
+	extern double widening_time;
+	extern double free_time;
+	extern double forget_array_time;
+	extern double meet_lincons_time;
+	extern double oct_to_box_time;
+	extern double alloc_time;
+	extern double is_top_time;
+	extern double expand_time;
+	extern double fold_time;
+	extern double sat_lincons_time;
+	extern double assign_linexpr_time;
+	
+#endif
+
 #define min fmin
 #define max fmax
 

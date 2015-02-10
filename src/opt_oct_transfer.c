@@ -51,19 +51,16 @@ opt_oct_t* opt_oct_assign_linexpr(ap_manager_t* man,
   if (!destructive) src = opt_hmat_copy(src,o->dim);
 
   /* go */
-  
-  //fprintf(stdout,"Linexpr is ");
-  
-  
-  //if(d==58){
-   //convert_to_dense_mat(src,o->dim,false);
-   //print_opt_hmat(src->mat,o->dim);
-  //}
+  #if defined(TIMING)
+  	start_timing();
+  #endif
+
   opt_hmat_assign(pr,u,src,o->dim,d,&respect_closure);
-  //if(d==58){
-   //print_opt_hmat(src->mat,o->dim);
-  //}
   
+  #if defined(TIMING)
+  	record_timing(assign_linexpr_time);
+  #endif
+
   /* exact on Q if zeroary or unary, closed arg and no conv error */
   if (u.type==OPT_BINARY || u.type==OPT_OTHER) flag_incomplete;
   else if (num_incomplete || o->intdim) flag_incomplete;
@@ -128,6 +125,9 @@ opt_oct_t* opt_oct_assign_linexpr_array(ap_manager_t* man,
 
   /* add temporary dimensions to hold destination variables */
   dst = opt_hmat_alloc_top(o->dim+size);
+  #if defined(TIMING)
+  	start_timing();
+  #endif
   opt_hmat_set_array(dst->mat,src->mat,src_size);
 
   /* coefs in expr for temporary dimensions are set to 0 */
@@ -149,7 +149,9 @@ opt_oct_t* opt_oct_assign_linexpr_array(ap_manager_t* man,
     opt_hmat_assign(pr,u,dst,o->dim+size,o->dim+i,&respect_closure);
     
   }
-
+  #if defined(TIMING)
+  	record_timing(assign_linexpr_time);
+  #endif
   /* now close & remove temporary variables */
   if (pr->funopt->algorithm>=0) {
     if (opt_hmat_strong_closure(dst,o->dim+size)) {
@@ -204,15 +206,13 @@ opt_oct_t* opt_oct_meet_lincons_array(ap_manager_t* man,
 
     /* go */
    
-    
+    #if defined(TIMING)
+  	start_timing();
+    #endif
     bool res = opt_hmat_add_lincons(pr,oo,o->intdim,o->dim,array,&exact,&respect_closure);
-    //ap_lincons0_array_fprint(stdout,array,NULL);
-    
-   
-    //if(res){
-	
-    //}
-   
+    #if defined(TIMING)
+	record_timing(meet_lincons_time);
+    #endif
     if (res) {
       /* empty */
       if (!destructive) {

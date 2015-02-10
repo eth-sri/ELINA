@@ -131,6 +131,9 @@ ap_interval_t** opt_oct_to_box(ap_manager_t* man, opt_oct_t* o)
   if (pr->funopt->algorithm>=0) {
 	opt_oct_cache_closure(pr,o);
   }
+  #if defined(TIMING)
+	start_timing();
+  #endif
   if (!o->closed && !o->m) {
     /* definitively empty */
     for (i=0;i<o->dim;i++)
@@ -172,7 +175,9 @@ ap_interval_t** opt_oct_to_box(ap_manager_t* man, opt_oct_t* o)
     else if (pr->conv) flag_conv;
    
   }
-  
+  #if defined(TIMING)
+	record_timing(oct_to_box_time);
+  #endif
   return in;
 }
 
@@ -456,9 +461,13 @@ bool opt_oct_sat_lincons_timing(ap_manager_t* man, opt_oct_t* o,
    	 return true;
    }
    else{
-	
+	#if defined(TIMING)
+		start_timing();
+  	#endif
 	bool res = opt_oct_sat_lincons(man,pr,o,lincons);
-	
+	#if defined(TIMING)
+		record_timing(sat_lincons_time);
+  	#endif
 	return res;
    }
 }

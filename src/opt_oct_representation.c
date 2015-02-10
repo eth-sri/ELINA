@@ -221,7 +221,32 @@ Print Timing Information
 ****/
 
 void opt_oct_fprint(FILE* stream, ap_manager_t* man, opt_oct_t * a,char** name_of_dim){
-	
+	#if defined(TIMING)
+		fprintf(stdout,"Top: %g CPU Cycles\n",top_time);
+		fprintf(stdout,"Free: %g CPU Cycles\n",free_time);
+		fprintf(stdout,"Copy: %g CPU Cycles\n",copy_time);
+		fprintf(stdout,"Closure: %g CPU Cycles\n",closure_time);
+		fprintf(stdout,"Is_Equal: %g CPU Cycles\n",is_equal_time);
+		fprintf(stdout,"Is_Lequal: %g CPU Cycles\n",is_lequal_time);
+		fprintf(stdout,"Meet_Abstract: %g CPU Cycles\n",meet_time);
+		fprintf(stdout,"Join: %g CPU Cycles\n",join_time);
+		fprintf(stdout,"Widening: %g CPU Cycles\n",widening_time);
+		fprintf(stdout,"Add_dimension: %g CPU Cycles\n",add_dimension_time);
+		fprintf(stdout,"Permute_dimension: %g CPU Cycles\n",permute_dimension_time);
+		fprintf(stdout,"Meet_Lincons_Array: %g CPU Cycles\n",meet_lincons_time);
+		fprintf(stdout,"Forget_Array %g CPU Cycles\n",forget_array_time);
+		fprintf(stdout,"Oct_to_Box: %g CPU Cycles\n",oct_to_box_time);
+		fprintf(stdout,"Alloc: %g CPU Cycles\n",alloc_time);
+		fprintf(stdout,"Is_Top: %g CPU Cycles\n",is_top_time);
+		fprintf(stdout,"Expand: %g CPU Cycles\n",expand_time);
+		fprintf(stdout,"Fold: %g CPU Cycles\n",fold_time);
+		fprintf(stdout,"Sat_Lincons: %g CPU Cycles\n",sat_lincons_time);
+		fprintf(stdout,"Assign Linexpr: %g CPU Cycles\n",assign_linexpr_time);
+		double total_time = top_time + free_time + copy_time + closure_time + is_equal_time + is_lequal_time + meet_time + join_time + widening_time + add_dimension_time 
+					+ permute_dimension_time + meet_lincons_time + forget_array_time + oct_to_box_time + alloc_time + is_top_time + expand_time + fold_time + sat_lincons_time + assign_linexpr_time;
+		fprintf(stdout,"Total Octagon Analysis Time: %g CPU Cycles\n",total_time);
+		fflush(stdout);
+	#endif
 }
 
 
