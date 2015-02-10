@@ -8,8 +8,8 @@ An Optimized Library for the Octagon Abstract Domain
 #Compiling:
 
     Download the source and follow the instructions below.
-    Copy the "src" folder into the directory containing APRON so that the path to new folder is: APRON_PATH/src
-    Go to the "APRON_PATH/src" folder and open the Makefile
+    Copy the "src" folder into the directory containing APRON so that the path to new folder is: APRON_PATH/optoctagon
+    Go to the "APRON_PATH/optoctagon" folder and open the Makefile
    
    If your machine supports Intel's vector intrinsics, and you would like to use vectorized operators for dense type,
       
