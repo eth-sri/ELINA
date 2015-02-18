@@ -54,6 +54,8 @@ The library uses improved algorithms, online decomposition of octagons as well a
     Run "sudo make install"
     
 #How to Use in Static Analyzer
+  The library can be used directly from C. Besides this, we also provide interfaces for C++ and Java also.
+  These interfaces can be installed as follows:
 
   Java:
 	
