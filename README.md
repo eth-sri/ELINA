@@ -5,10 +5,9 @@ The library uses improved algorithms, online decomposition of octagons as well a
 
 #Requirements:
   You need to install the following libraries:
-    1. The gmp library which can be downloaded from https://gmplib.org/
-	
-    2. The mpfr library which can be downloaded from http://www.mpfr.org/
-	
+
+    1. The gmp library which can be downloaded from https://gmplib.org/	
+    2. The mpfr library which can be downloaded from http://www.mpfr.org/	
     3. The APRON library which can be downloaded from http://apron.cri.ensmp.fr/library/
         
   
