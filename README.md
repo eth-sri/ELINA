@@ -1,5 +1,5 @@
 # OptOctagons
-An Optimized Library for static analysis with the Octagon Abstract Domain
+OptOctagons is an optimized library for static program analysis with the Octagon numerical domain. It builds on top of APRON which is a popular library for static analysis. The library uses improved algorithms, online decomposition of octagons as well as state of the art performance optimizations from linear algebra such as vectorization, locality of reference, scalar replacement and others to significantly improve the performance of static analysis with the Octagon domain.
 
 #Requirements:
   Make sure you have latest version of APRON library installed. The APRON library can be downloaded from
@@ -14,11 +14,11 @@ An Optimized Library for static analysis with the Octagon Abstract Domain
 		2. To compile the library: 
 			a. If your computer supports AVX 
 			   run "make IS_VECTOR=-DVECTOR" to compile the source. 
-			   This will use AVX vectorized operators for dense type.
+			   This will use AVX vectorized operators.
 			b. Else if your computer supports SSE 
 			   run "make IS_VECTOR=-DVECTOR IS_SSE=-DSSE" to compile the source. 
-			   This will use SSE vectorized operators for dense type.
-			c. Else run "make". This will use scalar operators for dense type.
+			   This will use SSE vectorized operators.
+			c. Else run "make". This will use scalar operators.
       
 #Installing:
     Specify the install directory in APRON's "Makefile.config" file.
