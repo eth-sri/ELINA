@@ -4,7 +4,7 @@ OptOctagons is an optimized library for static program analysis with the Octagon
 The library uses improved algorithms, online decomposition of octagons as well as state of the art performance optimizations from linear algebra such as vectorization, locality of reference, scalar replacement etc. to significantly improve the performance of static analysis with the Octagon domain.
 
 #Requirements:
-  You need to install the following libraries:
+  You need to install the following libraries
 
     1. The gmp library which can be downloaded from https://gmplib.org/	
     2. The mpfr library which can be downloaded from http://www.mpfr.org/	
