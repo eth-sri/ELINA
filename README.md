@@ -8,21 +8,17 @@ An Optimized Library for the Octagon Abstract Domain
 #Compiling:
 
     Download the source and follow the instructions below.
-    Copy the "src" folder into the directory containing APRON so that the path to new folder is: APRON_PATH/optoctagon
-    Go to the "APRON_PATH/optoctagon" folder and open the Makefile
+    Copy the "optoctagons" folder into the directory containing APRON so that the path to new folder is: APRON_PATH/optoctagon
+    Go to the "APRON_PATH/optoctagons" folder and open the Makefile
    
-   If your machine supports Intel's vector intrinsics, and you would like to use vectorized operators for dense type,
-      
-     specify -DVECTOR for IS_VECTOR and "-m64", "-march=native" for AFLAGS in Makefile
-      	If your machine only supports SSE specify the option DSSE in DFLAGS
-     otherwise comment it out and it will use scalar instructions for Dense type.
-      
-   Specify -DTHRESHOLD=value, for example -DTHRESHOLD=0.75 in DFLAGS. The Threshold lies between 0 and 1 and controls switching between dense and decomposed types (operators). The analysis will switch     
-   from decomposed to dense as soon as sparsity is below the threshold. A larger value of threshold favors dense whereas smaller favors decomposed types(operators).
-
-   If you want to record timing information for different octagon operators, specify DTIMING in DFLAGS.
-   
-   Run "make", it will generate "liboptoct.so" and "liblinkedlistapi.so" libraries.
+   Go to the "apron/optoctagons" directory in terminal
+		1. Check if your machine supports SSE or AVX as follows:
+			a. Run "cat /proc/cpuinfo | grep "sse\|avx"".
+			b. Check for strings "sse", "avx" in output.
+		2. To compile the library: 
+			a. If your computer supports AVX run "make IS_VECTOR=-DVECTOR" to compile the source. This will use AVX vectorized operators for dense type.
+			b. Else if your computer supports SSE run "make IS_VECTOR=-DVECTOR IS_SSE=-DSSE" to compile the source. This will use SSE vectorized operators for dense type.
+			c. Else run "make". This will use scalar operators for dense type.
       
 #Installing:
     Specify the install directory in APRON's "Makefile.config" file.
