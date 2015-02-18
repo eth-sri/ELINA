@@ -12,9 +12,11 @@ An Optimized Library for static analysis with the Octagon Abstract Domain
 			a. Run "cat /proc/cpuinfo | grep "sse\|avx"".
 			b. Check for strings "sse", "avx" in output.
 		2. To compile the library: 
-			a. If your computer supports AVX run "make IS_VECTOR=-DVECTOR" to compile the source. 
+			a. If your computer supports AVX 
+			   run "make IS_VECTOR=-DVECTOR" to compile the source. 
 			   This will use AVX vectorized operators for dense type.
-			b. Else if your computer supports SSE run "make IS_VECTOR=-DVECTOR IS_SSE=-DSSE" to compile the source. 
+			b. Else if your computer supports SSE 
+			   run "make IS_VECTOR=-DVECTOR IS_SSE=-DSSE" to compile the source. 
 			   This will use SSE vectorized operators for dense type.
 			c. Else run "make". This will use scalar operators for dense type.
       
