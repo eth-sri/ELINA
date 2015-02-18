@@ -5,8 +5,9 @@ The library uses improved algorithms, online decomposition of octagons as well a
 
 #Requirements:
   The installation si preferable for Linux 64-bit.
-  Install the following libraries
+  Install the following libraries.
     1. The gmp library: 	
+
 	a. Download the tar file from https://gmplib.org/.
 	b. Extract the source.
 	c. Go to the gmp folder and run:
@@ -16,6 +17,7 @@ The library uses improved algorithms, online decomposition of octagons as well a
 		sudo make install
 	d. This will install the library in "/usr/local" folder.
     2. The mpfr library:
+
 	a. Download the tar file from http://www.mpfr.org/
 	b. Extract the source.
 	c. Go to the mpfr folder and run:
