@@ -4,12 +4,31 @@ OptOctagons is an optimized library for static program analysis with the Octagon
 The library uses improved algorithms, online decomposition of octagons as well as state of the art performance optimizations from linear algebra such as vectorization, locality of reference, scalar replacement etc. to significantly improve the performance of static analysis with the Octagon domain.
 
 #Requirements:
-  You need to install the following libraries
-
-    1. The gmp library which can be downloaded from https://gmplib.org/	
-    2. The mpfr library which can be downloaded from http://www.mpfr.org/	
-    3. The APRON library which can be downloaded from http://apron.cri.ensmp.fr/library/
-        
+  The installation si preferable for Linux 64-bit.
+  Install the following libraries
+    1. The gmp library 	
+	a. Download the tar file from https://gmplib.org/.
+	b. Extract the source.
+	c. Go to the gmp folder and run:
+		./configure --enable-cxx
+		make 
+		make check
+		sudo make install
+	d. This will install the library in "/usr/local" folder.
+    2. The mpfr library
+	a. Download the tar file from http://www.mpfr.org/
+	b. Extract the source.
+	c. Go to the mpfr folder and run:
+		./configure
+		make
+		make check
+		sudo make install
+	d. This will install the library in "/usr/local" folder.
+    3. The APRON library  
+	a. Download source from http://apron.cri.ensmp.fr/library/
+        b. Go to the APRON folder.
+	c. Install the library as per README file. 
+	d. Make sure you specify correct paths for finding gmp and mpfr libraries in "Makefile.config".
   
 #Compiling:
     Copy the "optoctagons" folder into the APRON directory.
