@@ -4,7 +4,7 @@ OptOctagons is an optimized library for static program analysis with the Octagon
 The library uses improved algorithms, online decomposition of octagons as well as state of the art performance optimizations from linear algebra such as vectorization, locality of reference, scalar replacement etc. to significantly improve the performance of static analysis with the Octagon domain.
 
 #Requirements:
-  The installation is preferable for Linux 64-bit.
+  The installation is preferable for Linux 64-bit. Make sure you have latest version of gcc and g++.
 
   Install the following libraries.
 
