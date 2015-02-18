@@ -1,5 +1,5 @@
-# Octagon
-An Optimized Library for the Octagon Abstract Domain
+# OptOctagons
+An Optimized Library for static analysis with the Octagon Abstract Domain
 
 #Requirements:
   Make sure you have latest version of APRON library installed. The APRON library can be downloaded from
