@@ -16,7 +16,7 @@ The library uses improved algorithms, online decomposition of octagons as well a
 			make 
 			make check
 			sudo make install
-		d. This will install the library in "/usr/local" folder.
+		d. This will install the gmp library in "/usr/local" folder.
 
     2. The mpfr library:
 		a. Download the tar file from http://www.mpfr.org/
@@ -26,7 +26,7 @@ The library uses improved algorithms, online decomposition of octagons as well a
 			make
 			make check
 			sudo make install
-		d. This will install the library in "/usr/local" folder.
+		d. This will install the mpfr library in "/usr/local" folder.
 
     3. The APRON library:
 		a. Download source from http://apron.cri.ensmp.fr/library/
