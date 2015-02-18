@@ -7,6 +7,8 @@ The library uses improved algorithms, online decomposition of octagons as well a
   The installation is preferable for Linux 64-bit.
 
   Install the following libraries.
+
+
     1. The gmp library:
 
 	a. Download the tar file from https://gmplib.org/.
