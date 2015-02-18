@@ -6,10 +6,7 @@ An Optimized Library for static analysis with the Octagon Abstract Domain
     http://apron.cri.ensmp.fr/library/
   
 #Compiling:
-
-    Download the source and follow the instructions below.
-
-    Copy the "optoctagons" folder into the APRON directory so that the path to new folder is: APRON_PATH/optoctagons.
+    Copy the "optoctagons" folder into the APRON directory.
     Go to the "APRON_PATH/optoctagons" folder in terminal.
 		1. Check if your machine supports SSE or AVX as follows:
 			a. Run "cat /proc/cpuinfo | grep "sse\|avx"".
