@@ -258,7 +258,7 @@ ap_manager_t* opt_oct_manager_alloc(void)
   opt_oct_internal_t* pr;
 
   if (!ap_fpu_init()) {
-    ////fprintf(stderr,"opt_oct_manager_alloc cannot change the FPU rounding mode\n");
+    fprintf(stderr,"opt_oct_manager_alloc cannot change the FPU rounding mode\n");
   }
 
   pr = (opt_oct_internal_t*)malloc(sizeof(opt_oct_internal_t));
@@ -278,45 +278,41 @@ ap_manager_t* opt_oct_manager_alloc(void)
   man->funptr[AP_FUNID_COPY] = &opt_oct_copy;
   man->funptr[AP_FUNID_FREE] = &opt_oct_free;
   man->funptr[AP_FUNID_ASIZE] = &opt_oct_size;
-  //man->funptr[AP_FUNID_MINIMIZE] = &oct_minimize;
-  //man->funptr[AP_FUNID_CANONICALIZE] = &oct_canonicalize;
-  //man->funptr[AP_FUNID_HASH] = &oct_hash;
-  //man->funptr[AP_FUNID_APPROXIMATE] = &oct_approximate;
   man->funptr[AP_FUNID_FPRINT] = &opt_oct_fprint;
-  //man->funptr[AP_FUNID_FPRINTDIFF] = &oct_fprintdiff;
-  //man->funptr[AP_FUNID_FDUMP] = &oct_fdump;
-  //man->funptr[AP_FUNID_SERIALIZE_RAW] = &oct_serialize_raw;
-  //man->funptr[AP_FUNID_DESERIALIZE_RAW] = &oct_deserialize_raw;
+  //man->funptr[AP_FUNID_FPRINTDIFF] = &opt_oct_fprintdiff;
+  //man->funptr[AP_FUNID_FDUMP] = &opt_oct_fdump;
+  //man->funptr[AP_FUNID_SERIALIZE_RAW] = &opt_oct_serialize_raw;
+  //man->funptr[AP_FUNID_DESERIALIZE_RAW] = &opt_oct_deserialize_raw;
   man->funptr[AP_FUNID_BOTTOM] = &opt_oct_bottom;
   man->funptr[AP_FUNID_TOP] = &opt_oct_top;
-  //man->funptr[AP_FUNID_OF_BOX] = &oct_of_box;
+  //man->funptr[AP_FUNID_OF_BOX] = &opt_oct_of_box;
   man->funptr[AP_FUNID_DIMENSION] = &opt_oct_dimension;
   man->funptr[AP_FUNID_IS_BOTTOM] = &opt_oct_is_bottom;
   man->funptr[AP_FUNID_IS_TOP] = &opt_oct_is_top;
   man->funptr[AP_FUNID_IS_LEQ] = &opt_oct_is_leq;
   man->funptr[AP_FUNID_IS_EQ] = &opt_oct_is_eq;
-  //man->funptr[AP_FUNID_IS_DIMENSION_UNCONSTRAINED] = &oct_is_dimension_unconstrained;
-  //man->funptr[AP_FUNID_SAT_INTERVAL] = &oct_sat_interval;
+  //man->funptr[AP_FUNID_IS_DIMENSION_UNCONSTRAINED] = &opt_oct_is_dimension_unconstrained;
+  //man->funptr[AP_FUNID_SAT_INTERVAL] = &opt_oct_sat_interval;
   man->funptr[AP_FUNID_SAT_LINCONS] = &opt_oct_sat_lincons_timing;
   man->funptr[AP_FUNID_SAT_TCONS] = &opt_oct_sat_tcons;
   man->funptr[AP_FUNID_BOUND_DIMENSION] = &opt_oct_bound_dimension;
-  //man->funptr[AP_FUNID_BOUND_LINEXPR] = &oct_bound_linexpr;
-  //man->funptr[AP_FUNID_BOUND_TEXPR] = &oct_bound_texpr;
+  //man->funptr[AP_FUNID_BOUND_LINEXPR] = &opt_oct_bound_linexpr;
+  //man->funptr[AP_FUNID_BOUND_TEXPR] = &opt_oct_bound_texpr;
   man->funptr[AP_FUNID_TO_BOX] = &opt_oct_to_box;
   man->funptr[AP_FUNID_TO_LINCONS_ARRAY] = &opt_oct_to_lincons_array;
-  //man->funptr[AP_FUNID_TO_TCONS_ARRAY] = &oct_to_tcons_array;
-  //man->funptr[AP_FUNID_TO_GENERATOR_ARRAY] = &oct_to_generator_array;
+  //man->funptr[AP_FUNID_TO_TCONS_ARRAY] = &opt_oct_to_tcons_array;
+  //man->funptr[AP_FUNID_TO_GENERATOR_ARRAY] = &opt_oct_to_generator_array;
   man->funptr[AP_FUNID_MEET] = &opt_oct_meet;
-  //man->funptr[AP_FUNID_MEET_ARRAY] = &oct_meet_array;
+  //man->funptr[AP_FUNID_MEET_ARRAY] = &opt_oct_meet_array;
   man->funptr[AP_FUNID_MEET_LINCONS_ARRAY] = &opt_oct_meet_lincons_array;
   man->funptr[AP_FUNID_MEET_TCONS_ARRAY] = &opt_oct_meet_tcons_array;
   man->funptr[AP_FUNID_JOIN] = &opt_oct_join;
-  //man->funptr[AP_FUNID_JOIN_ARRAY] = &oct_join_array;
-  //man->funptr[AP_FUNID_ADD_RAY_ARRAY] = &oct_add_ray_array;
+  //man->funptr[AP_FUNID_JOIN_ARRAY] = &opt_oct_join_array;
+  //man->funptr[AP_FUNID_ADD_RAY_ARRAY] = &opt_oct_add_ray_array;
   man->funptr[AP_FUNID_ASSIGN_LINEXPR_ARRAY] = &opt_oct_assign_linexpr_array;
-  //man->funptr[AP_FUNID_SUBSTITUTE_LINEXPR_ARRAY] = &oct_substitute_linexpr_array;
+  //man->funptr[AP_FUNID_SUBSTITUTE_LINEXPR_ARRAY] = &opt_oct_substitute_linexpr_array;
     man->funptr[AP_FUNID_ASSIGN_TEXPR_ARRAY] = &opt_oct_assign_texpr_array;
-  //man->funptr[AP_FUNID_SUBSTITUTE_TEXPR_ARRAY] = &oct_substitute_texpr_array;
+  //man->funptr[AP_FUNID_SUBSTITUTE_TEXPR_ARRAY] = &opt_oct_substitute_texpr_array;
     man->funptr[AP_FUNID_ADD_DIMENSIONS] = &opt_oct_add_dimensions;
     man->funptr[AP_FUNID_REMOVE_DIMENSIONS] = &opt_oct_remove_dimensions;
     man->funptr[AP_FUNID_PERMUTE_DIMENSIONS] = &opt_oct_permute_dimensions;
@@ -325,8 +321,6 @@ ap_manager_t* opt_oct_manager_alloc(void)
     man->funptr[AP_FUNID_FOLD] = &opt_oct_fold;
     man->funptr[AP_FUNID_WIDENING] = &opt_oct_widening;
     man->funptr[AP_FUNID_CLOSURE] = &opt_oct_closure;
-    //man->funptr[AP_FUNID_SET] = &opt_oct_set;
-    //man->funptr[AP_FUNID_PRINT_TIMING] = &opt_oct_print_timing;
 	
   for (i=0;i<AP_EXC_SIZE;i++)
     ap_manager_set_abort_if_exception(man,i,false);
