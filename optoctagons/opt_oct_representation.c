@@ -279,10 +279,6 @@ ap_manager_t* opt_oct_manager_alloc(void)
   man->funptr[AP_FUNID_FREE] = &opt_oct_free;
   man->funptr[AP_FUNID_ASIZE] = &opt_oct_size;
   man->funptr[AP_FUNID_FPRINT] = &opt_oct_fprint;
-  //man->funptr[AP_FUNID_FPRINTDIFF] = &opt_oct_fprintdiff;
-  //man->funptr[AP_FUNID_FDUMP] = &opt_oct_fdump;
-  //man->funptr[AP_FUNID_SERIALIZE_RAW] = &opt_oct_serialize_raw;
-  //man->funptr[AP_FUNID_DESERIALIZE_RAW] = &opt_oct_deserialize_raw;
   man->funptr[AP_FUNID_BOTTOM] = &opt_oct_bottom;
   man->funptr[AP_FUNID_TOP] = &opt_oct_top;
   //man->funptr[AP_FUNID_OF_BOX] = &opt_oct_of_box;
