@@ -32,7 +32,7 @@ The library uses improved algorithms, online decomposition of octagons as well a
 		a. Download source from http://apron.cri.ensmp.fr/library/
         	b. Go to the APRON folder.
 		c. Install the library as per README file. 
-		d. Make sure you specify "/usr/local" for gmp and mpfr library paths in "Makefile.config".
+		d. Specify "/usr/local" for gmp and mpfr library paths in "Makefile.config".
   
 #Compiling:
     Copy the "optoctagons" folder into the APRON directory.
