@@ -62,8 +62,8 @@ The library uses improved algorithms, online decomposition of octagons as well a
 
   Java:
 	
-      Copy the files in "java_interface" directory into APRON_PATH/japron/apron
-      Replace the Makefile in japron directory with the Makefile in "java_interface" directory.
+      Copy the source files in "java_interface" directory into "japron/apron" directory
+      Replace the Makefile in "japron" directory with the Makefile in "java_interface" directory.
       run "make" in the APRON_PATH/japron
       run "sudo make install" to install the updated "libjapron.so" file.
       Initialize the APRON Manager as:
@@ -71,8 +71,8 @@ The library uses improved algorithms, online decomposition of octagons as well a
       
   C++:
       
-      Copy the files in "C++ interface" directory into APRON_PATH/apronxx
-      Replace the Makefile in apronxx directory with the Makefile in "C++ interface" directory.
+      Copy the source files in "C++ interface" directory into "apronxx" directory
+      Replace the Makefile in "apronxx" directory with the Makefile in "C++ interface" directory.
       run "make" in the APRON_PATH/japron
       run "sudo make install" to install the updated "libjapron.so" file.
       Initialize the APRON Manager as:
