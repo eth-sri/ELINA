@@ -8,7 +8,10 @@ The library uses improved algorithms, online decomposition of octagons as well a
 
   Install the following libraries.
 
-    1. The gmp library:
+    1. Install GNU m4 library:
+		sudo apt-get install m4
+
+    2. The gmp library:
 		a. Download the tar file from https://gmplib.org/.
 		b. Extract the source.
 		c. Go to the gmp folder and run:
@@ -18,7 +21,7 @@ The library uses improved algorithms, online decomposition of octagons as well a
 			sudo make install
 		d. This will install the gmp library in "/usr/local" folder.
 
-    2. The mpfr library:
+    3. The mpfr library:
 		a. Download the tar file from http://www.mpfr.org/
 		b. Extract the source.
 		c. Go to the mpfr folder and run:
@@ -28,7 +31,7 @@ The library uses improved algorithms, online decomposition of octagons as well a
 			sudo make install
 		d. This will install the mpfr library in "/usr/local" folder.
 
-    3. The APRON library:
+    4. The APRON library:
 		a. Download source from http://apron.cri.ensmp.fr/library/
         	b. Go to the APRON folder.
 		c. Install the library as per README file. 
