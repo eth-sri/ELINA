@@ -38,8 +38,8 @@ The library uses improved algorithms, online decomposition of octagons as well a
 		d. Specify "/usr/local" for gmp and mpfr library paths in "Makefile.config".
   
 #Compiling:
-    Copy the "optoctagons" folder into the APRON directory.
-    Go to the "APRON_PATH/optoctagons" folder in terminal.
+    Copy the "optoctagons" folder into the "apron" directory.
+    Go to the new "optoctagons" folder in terminal.
 		1. Check if your machine supports SSE or AVX as follows:
 			a. Run "cat /proc/cpuinfo | grep "sse\|avx"".
 			b. Check for strings "sse", "avx" in output.
@@ -64,7 +64,7 @@ The library uses improved algorithms, online decomposition of octagons as well a
 	
       Copy the source files in "java_interface" directory into "japron/apron" directory
       Replace the Makefile in "japron" directory with the Makefile in "java_interface" directory.
-      run "make" in the APRON_PATH/japron
+      run "make" in "japron" directory.
       run "sudo make install" to install the updated "libjapron.so" file.
       Initialize the APRON Manager as:
         man = new OptOctagon();
@@ -73,7 +73,7 @@ The library uses improved algorithms, online decomposition of octagons as well a
       
       Copy the source files in "C++ interface" directory into "apronxx" directory
       Replace the Makefile in "apronxx" directory with the Makefile in "C++ interface" directory.
-      run "make" in the APRON_PATH/japron
-      run "sudo make install" to install the updated "libjapron.so" file.
+      run "make" in "apronxx" directory.
+      run "sudo make install" to install the updated "libapronxx.so" file.
       Initialize the APRON Manager as:
         man = new opt_oct_manager();
