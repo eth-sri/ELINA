@@ -51,6 +51,7 @@ The library uses improved algorithms, online decomposition of octagons as well a
 			   run "make IS_VECTOR=-DVECTOR IS_SSE=-DSSE" to compile the source. 
 			   This will use SSE vectorized operators.
 			c. Else run "make". This will use scalar operators.
+		3. For 32-bit systems, disable the required architecture flags (m64, marhc=native) in Makefile inclusing DTIMING
       
 #Installing:
     Specify the install directory in APRON's "Makefile.config" file.
