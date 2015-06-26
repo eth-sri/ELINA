@@ -1,5 +1,5 @@
 /*
-	Copyright 2015 Department of Computer Science, ETH Zurich
+	Copyright 2015 Software Reliability Lab, ETH Zurich
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -97,7 +97,9 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst, opt_oct_mat_t* src,ap_dim_t
 void opt_hmat_permute(opt_oct_mat_t* dst, opt_oct_mat_t* src,int dst_dim, int src_dim,ap_dim_t* permutation);
 opt_oct_t* opt_oct_expand(ap_manager_t* man, bool destructive, opt_oct_t* o, ap_dim_t dim, size_t n);
 opt_oct_t* opt_oct_fold(ap_manager_t* man,bool destructive, opt_oct_t* o,ap_dim_t* tdim,size_t size);
-void widening_half(opt_oct_mat_t *m, opt_oct_mat_t *m1, opt_oct_mat_t *m2, int size);
+void widening_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim);
+void widening_thresholds_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, double *thresholds, int num_thresholds, int dim);
+void narrowing_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim);
 opt_uexpr opt_oct_uexpr_of_linexpr(opt_oct_internal_t* pr, double* dst, ap_linexpr0_t* e, int intdim, int dim);
 bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim, int dim, ap_lincons0_array_t* ar, bool* exact, bool* respect_closure);
 void opt_oct_fprint(FILE* stream, ap_manager_t* man, opt_oct_t * a,char** name_of_dim);
@@ -297,7 +299,7 @@ static inline void print_opt_hmat(double* d, int dim){
  for (int i=0;i<2*dim;i++) {
     for (int j=0;j<2*dim;j++) {
      if (j) fprintf(stdout,"\t");
-     fprintf(stdout,"%.15f",d[opt_matpos2(i,j)]);
+     fprintf(stdout,"%g",d[opt_matpos2(i,j)]);
     }
     fprintf(stdout,"\n");
   }

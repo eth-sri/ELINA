@@ -1,5 +1,5 @@
 /*
-	Copyright 2015 Department of Computer Science, ETH Zurich
+	Copyright 2015 Software Reliability Lab, ETH Zurich
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ extern "C" {
 
 #define flag_conv flag_incomplete
 
-#define INFINITY 1.0/0.0
+//#define INFINITY 1.0/0.0
 
 #include <stdio.h>
 
@@ -375,8 +375,10 @@ opt_oct_t* opt_oct_closure(ap_manager_t *man, bool destructive, opt_oct_t *o);
 void opt_oct_internal_free(opt_oct_internal_t *pr);
 opt_oct_t* opt_oct_of_abstract0(ap_abstract0_t* a);
 ap_abstract0_t* abstract0_of_opt_oct(ap_manager_t* man, opt_oct_t* oct);
-
-
+void opt_oct_minimize(ap_manager_t* man, opt_oct_t* o);
+void opt_oct_canonicalize(ap_manager_t* man, opt_oct_t* o);
+int opt_oct_hash(ap_manager_t* man, opt_oct_t* o);
+void opt_oct_approximate(ap_manager_t* man, opt_oct_t* o, int algorithm);
 
 /**************
 	nary operations
@@ -385,8 +387,12 @@ ap_abstract0_t* abstract0_of_opt_oct(ap_manager_t* man, opt_oct_t* oct);
 opt_oct_t* opt_oct_meet(ap_manager_t* man, bool destructive, opt_oct_t* o1, opt_oct_t* o2);
 opt_oct_t* opt_oct_join(ap_manager_t* man, bool destructive, opt_oct_t* o1, opt_oct_t* o2);
 opt_oct_t* opt_oct_widening(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
+opt_oct_t* opt_oct_widening_thresholds(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2, ap_scalar_t** array, size_t nb);
+opt_oct_t* opt_oct_narrowing(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
 opt_oct_t* opt_oct_add_epsilon(ap_manager_t* man, opt_oct_t* o, ap_scalar_t* epsilon);
 opt_oct_t* opt_oct_add_epsilon_bin(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2, ap_scalar_t* epsilon);
+opt_oct_t* opt_oct_join_array(ap_manager_t* man, opt_oct_t** tab, size_t size);
+opt_oct_t* opt_oct_meet_array(ap_manager_t* man, opt_oct_t** tab, size_t size);
 
 
 /**************
@@ -397,6 +403,7 @@ bool opt_oct_is_bottom(ap_manager_t* man, opt_oct_t* o);
 bool opt_oct_is_top(ap_manager_t* man, opt_oct_t* o);
 bool opt_oct_is_leq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
 bool opt_oct_is_eq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
+ap_tcons0_array_t opt_oct_to_tcons_array(ap_manager_t* man, opt_oct_t* o);
 ap_interval_t** opt_oct_to_box(ap_manager_t* man, opt_oct_t* o);
 ap_interval_t* opt_oct_bound_dimension(ap_manager_t* man,opt_oct_t* o, ap_dim_t dim);
 ap_lincons0_array_t opt_oct_to_lincons_array(ap_manager_t* man, opt_oct_t* o);
