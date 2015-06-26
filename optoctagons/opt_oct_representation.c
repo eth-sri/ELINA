@@ -1,5 +1,5 @@
 /*
-	Copyright 2015 Department of Computer Science, ETH Zurich
+	Copyright 2015 Software Reliability Lab, ETH Zurich
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -191,7 +191,48 @@ void opt_oct_close(opt_oct_internal_t *pr, opt_oct_t *o){
 	}
 }
 
+/*We throw an exception just like APRON */
+void opt_oct_minimize(ap_manager_t* man, opt_oct_t* o)
+{
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_MINIMIZE,0);
+  ap_manager_raise_exception(man,AP_EXC_NOT_IMPLEMENTED,pr->funid,
+			     "not implemented");
+}
 
+
+/* We throw an exception just like APRON */
+void opt_oct_canonicalize(ap_manager_t* man, opt_oct_t* o)
+{
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_CANONICALIZE,0);
+  ap_manager_raise_exception(man,AP_EXC_NOT_IMPLEMENTED,pr->funid,
+			     "not implemented");
+}
+
+/* We compute hash just like APRON */
+int opt_oct_hash(ap_manager_t* man, opt_oct_t* o)
+{
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_HASH,0);
+  if (pr->funopt->algorithm>=0) opt_oct_cache_closure(pr,o);
+  if (o->closed || o->m) {
+    int r = 0;
+    opt_oct_mat_t *oo = o->closed ? o->closed : o->m;
+    double *m = oo->mat;
+    size_t i,j;
+    for (i=0;i<2*o->dim;i++)
+      for (j=0;j<=(i|1);j++,m++)
+	r = r*37 + *m;
+    return r;
+  }
+  return 0;
+}
+
+/* We throw an exception just like APRON */
+void opt_oct_approximate(ap_manager_t* man, opt_oct_t* o, int algorithm)
+{
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_APPROXIMATE,0);
+  ap_manager_raise_exception(man,AP_EXC_NOT_IMPLEMENTED,pr->funid,
+			     "not implemented");
+}
 /****
 
 Topological closure
@@ -258,7 +299,7 @@ ap_manager_t* opt_oct_manager_alloc(void)
   opt_oct_internal_t* pr;
 
   if (!ap_fpu_init()) {
-    fprintf(stderr,"opt_oct_manager_alloc cannot change the FPU rounding mode\n");
+    ////fprintf(stderr,"opt_oct_manager_alloc cannot change the FPU rounding mode\n");
   }
 
   pr = (opt_oct_internal_t*)malloc(sizeof(opt_oct_internal_t));
@@ -269,7 +310,7 @@ ap_manager_t* opt_oct_manager_alloc(void)
   init_array(pr->tmp,pr->tmp_size);
   pr->tmp2 = calloc(pr->tmp_size,sizeof(long));
   assert(pr->tmp2);
-
+  
   man = ap_manager_alloc("opt_oct","1.0 with double", pr,
 			 (void (*)(void*))opt_oct_internal_free);
 
@@ -278,7 +319,15 @@ ap_manager_t* opt_oct_manager_alloc(void)
   man->funptr[AP_FUNID_COPY] = &opt_oct_copy;
   man->funptr[AP_FUNID_FREE] = &opt_oct_free;
   man->funptr[AP_FUNID_ASIZE] = &opt_oct_size;
+  man->funptr[AP_FUNID_MINIMIZE] = &opt_oct_minimize;
+  man->funptr[AP_FUNID_CANONICALIZE] = &opt_oct_canonicalize;
+  man->funptr[AP_FUNID_HASH] = &opt_oct_hash;
+  man->funptr[AP_FUNID_APPROXIMATE] = &opt_oct_approximate;
   man->funptr[AP_FUNID_FPRINT] = &opt_oct_fprint;
+  //man->funptr[AP_FUNID_FPRINTDIFF] = &opt_oct_fprintdiff;
+  //man->funptr[AP_FUNID_FDUMP] = &opt_oct_fdump;
+  //man->funptr[AP_FUNID_SERIALIZE_RAW] = &opt_oct_serialize_raw;
+  //man->funptr[AP_FUNID_DESERIALIZE_RAW] = &opt_oct_deserialize_raw;
   man->funptr[AP_FUNID_BOTTOM] = &opt_oct_bottom;
   man->funptr[AP_FUNID_TOP] = &opt_oct_top;
   //man->funptr[AP_FUNID_OF_BOX] = &opt_oct_of_box;
@@ -296,14 +345,14 @@ ap_manager_t* opt_oct_manager_alloc(void)
   //man->funptr[AP_FUNID_BOUND_TEXPR] = &opt_oct_bound_texpr;
   man->funptr[AP_FUNID_TO_BOX] = &opt_oct_to_box;
   man->funptr[AP_FUNID_TO_LINCONS_ARRAY] = &opt_oct_to_lincons_array;
-  //man->funptr[AP_FUNID_TO_TCONS_ARRAY] = &opt_oct_to_tcons_array;
+  man->funptr[AP_FUNID_TO_TCONS_ARRAY] = &opt_oct_to_tcons_array;
   //man->funptr[AP_FUNID_TO_GENERATOR_ARRAY] = &opt_oct_to_generator_array;
   man->funptr[AP_FUNID_MEET] = &opt_oct_meet;
-  //man->funptr[AP_FUNID_MEET_ARRAY] = &opt_oct_meet_array;
+  man->funptr[AP_FUNID_MEET_ARRAY] = &opt_oct_meet_array;
   man->funptr[AP_FUNID_MEET_LINCONS_ARRAY] = &opt_oct_meet_lincons_array;
   man->funptr[AP_FUNID_MEET_TCONS_ARRAY] = &opt_oct_meet_tcons_array;
   man->funptr[AP_FUNID_JOIN] = &opt_oct_join;
-  //man->funptr[AP_FUNID_JOIN_ARRAY] = &opt_oct_join_array;
+  man->funptr[AP_FUNID_JOIN_ARRAY] = &opt_oct_join_array;
   //man->funptr[AP_FUNID_ADD_RAY_ARRAY] = &opt_oct_add_ray_array;
   man->funptr[AP_FUNID_ASSIGN_LINEXPR_ARRAY] = &opt_oct_assign_linexpr_array;
   //man->funptr[AP_FUNID_SUBSTITUTE_LINEXPR_ARRAY] = &opt_oct_substitute_linexpr_array;
@@ -317,10 +366,11 @@ ap_manager_t* opt_oct_manager_alloc(void)
     man->funptr[AP_FUNID_FOLD] = &opt_oct_fold;
     man->funptr[AP_FUNID_WIDENING] = &opt_oct_widening;
     man->funptr[AP_FUNID_CLOSURE] = &opt_oct_closure;
+    
 	
   for (i=0;i<AP_EXC_SIZE;i++)
     ap_manager_set_abort_if_exception(man,i,false);
-
+  
   return man;
 }
 

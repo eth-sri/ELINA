@@ -1,5 +1,5 @@
 /*
-	Copyright 2015 Department of Computer Science, ETH Zurich
+	Copyright 2015 Software Reliability Lab, ETH Zurich
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ opt_oct_t* opt_oct_join(ap_manager_t* man, bool destructive, opt_oct_t* o1, opt_
  if (pr->funopt->algorithm>=0) {
    opt_oct_cache_closure(pr,o1);
    opt_oct_cache_closure(pr,o2);
+   
  }
  if (!o1->closed && !o1->m) {
    if (!o2->closed && !o2->m)
@@ -89,6 +90,86 @@ opt_oct_t* opt_oct_join(ap_manager_t* man, bool destructive, opt_oct_t* o1, opt_
      return opt_oct_set_mat(pr,o1,oo,NULL,destructive); 
    }
  }
+}
+
+/******
+	Join Array
+*******/
+
+opt_oct_t* opt_oct_join_array(ap_manager_t* man, opt_oct_t** tab, size_t size)
+{
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_JOIN_ARRAY,0);
+  int algo = pr->funopt->algorithm;
+  bool closed = true;
+  opt_oct_t* r;
+  opt_oct_mat_t * oo = NULL;
+  size_t i,k;
+  if(size <= 0){
+	return NULL;
+  }
+  r = opt_oct_alloc_internal(pr,tab[0]->dim,tab[0]->intdim);
+  for (k=0;k<size;k++) {
+    if((tab[k]->dim != r->dim) || (tab[k]->intdim != r->intdim)){
+	       opt_oct_free_internal(pr,r);
+	       return NULL;
+    }
+    if (algo>=0) opt_oct_cache_closure(pr,tab[k]);
+    /* skip definitely empty */
+    if (!tab[k]->m && !tab[k]->closed) continue;
+    if (!oo)
+      /* first non-empty */
+      oo = opt_hmat_copy(tab[k]->closed ? tab[k]->closed : tab[k]->m,r->dim);
+    else {
+      /* not first non-empty */
+      opt_oct_mat_t * ok = tab[k]->closed ? tab[k]->closed : tab[k]->m;
+      join_half(oo,oo,ok,r->dim,true);
+    }
+    if (!tab[k]->closed) closed = false;
+  }
+
+  if (!oo) {
+    /* empty result */
+  }
+  else if (closed) { 
+    /* closed, optimal result, in Q */
+    man->result.flag_exact = false;
+    r->closed = oo; 
+    if (num_incomplete || r->intdim) flag_incomplete;
+  }
+  else {
+    /* non closed, non optimal result */
+    r->m = oo;
+    flag_algo; 
+  }
+  return r;
+}
+
+
+/******
+	Meet Array 
+*******/
+opt_oct_t* opt_oct_meet_array(ap_manager_t* man, opt_oct_t** tab, size_t size){
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_MEET_ARRAY,0);
+  opt_oct_t* r;
+  size_t i,k;
+  if(size <= 0){
+	return NULL;
+  }
+  r = opt_oct_alloc_internal(pr,tab[0]->dim,tab[0]->intdim);
+  /* check whether there is an empty element */
+  for (k=0;k<size;k++)
+    if (!tab[k]->m && !tab[k]->closed) return r;
+    /* all elements are non-empty */
+    r->m = opt_hmat_copy(tab[0]->closed ? tab[0]->closed : tab[0]->m,r->dim);
+  for (k=1;k<size;k++) {
+    if((tab[k]->dim != r->dim) || (tab[k]->intdim != r->intdim)){
+	       opt_oct_free_internal(pr,r);
+	       return NULL;
+    }
+    opt_oct_mat_t * ok = tab[k]->closed ? tab[k]->closed : tab[k]->m;
+    meet_half(r->m,r->m,ok,r->dim,true);
+  }
+  return r;
 }
 
 /****
@@ -133,6 +214,103 @@ opt_oct_t* opt_oct_widening(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
   }
   return r;
 }
+
+/******
+	Widening with thresholds
+*******/
+opt_oct_t* opt_oct_widening_thresholds(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2, ap_scalar_t** array, size_t nb)
+{
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_WIDENING,nb+1);
+  int algo = pr->funopt->algorithm;
+  opt_oct_t* r;
+  if((o1->dim != o2->dim) || (o1->intdim != o2->intdim)){
+	return NULL;
+  }
+  if (algo>=0) opt_oct_cache_closure(pr,o2);
+  if (!o1->closed && !o1->m)
+    /* a1 definitively closed */
+    r = opt_oct_copy_internal(pr,o2);
+  else if (!o2->closed && !o2->m)
+   /* a2 definitively closed */
+    r = opt_oct_copy_internal(pr,o1);
+  else {
+    opt_oct_mat_t *oo1 = o1->m ? o1->m : o1->closed;
+    opt_oct_mat_t *oo2 = o2->closed? o2->closed : o2->m;
+    r = opt_oct_alloc_internal(pr, o1->dim, o1->intdim);
+    int size = 2*r->dim*(r->dim+1);
+    r->m = opt_hmat_alloc(size);
+    size_t i;
+    for(i=0; i < nb; i++){
+	opt_bound_of_scalar(pr,&pr->tmp[i],array[i],false,false);
+    }
+    pr->tmp[nb] = INFINITY;
+    widening_thresholds_half(r->m,oo1,oo2,pr->tmp,nb,r->dim);
+  }
+  return r;
+}
+
+
+/********
+	Narrowing Operator
+********/
+opt_oct_t* opt_oct_narrowing(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
+{
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_WIDENING,0);
+  opt_oct_t* r;
+  if((o1->dim != o2->dim) && (o1->intdim != o2->intdim)){
+	return NULL;
+  }
+  if (pr->funopt->algorithm>=0) {
+    opt_oct_cache_closure(pr,o1);
+    opt_oct_cache_closure(pr,o2);
+  }
+  r = opt_oct_alloc_internal(pr,o1->dim,o1->intdim);
+  if ((!o1->closed && !o1->m) || (!o2->closed && !o2->m)) {
+    /* a1 or a2 definitively closed */
+  }
+  else {
+    opt_oct_mat_t * oo1 = o1->closed ? o1->closed : o1->m;
+    opt_oct_mat_t * oo2 = o2->closed ? o2->closed : o2->m;
+    int size = 2*r->dim*(r->dim+1);
+    r->m = opt_hmat_alloc(size);
+    narrowing_half(r->m,oo1,oo2,r->dim);
+  }
+  return r;
+}
+
+
+ap_abstract0_t* 
+ap_abstract0_opt_oct_widening_thresholds(ap_manager_t* man,
+				     ap_abstract0_t* a1, 
+				     ap_abstract0_t* a2,
+				     ap_scalar_t** array,
+				     size_t nb)
+{
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_WIDENING,0);
+  opt_oct_t* o = (opt_oct_t*) (a1->value);
+  if((man->library != a1->man->library) || (man->library != a2->man->library)){
+	     return abstract0_of_opt_oct(man,opt_oct_alloc_top(pr,o->dim,o->intdim));
+  }
+  return 
+    abstract0_of_opt_oct(man,opt_oct_widening_thresholds
+		     (man,a1->value,a2->value,array,nb));
+}
+
+
+ap_abstract0_t* ap_abstract0_opt_oct_narrowing( ap_manager_t* man,
+					    ap_abstract0_t* a1,
+					    ap_abstract0_t* a2 )
+{
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_WIDENING,0);
+  opt_oct_t* o = (opt_oct_t*) (a1->value);
+  if((man->library != a1->man->library) || (man->library != a2->man->library)){
+	     return abstract0_of_opt_oct(man,opt_oct_alloc_top(pr,o->dim,o->intdim));
+  }
+  return abstract0_of_opt_oct(man,opt_oct_narrowing
+			  (man,a1->value,a2->value));
+}
+
+
 
 
 /* ============================================================ */

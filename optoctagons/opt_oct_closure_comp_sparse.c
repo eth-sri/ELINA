@@ -1,5 +1,5 @@
 /*
-	Copyright 2015 Department of Computer Science, ETH Zurich
+	Copyright 2015 Software Reliability Lab, ETH Zurich
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -571,6 +571,7 @@ bool floyd_warshall_comp_dense(opt_oct_mat_t * oo, comp_list_t * cl, int dim){
 		}
 	}
 	free(ca);
+	free_array_comp_list(ot->acl);
 	opt_hmat_free(ot);
 }
 

@@ -1,5 +1,5 @@
 /*
-	Copyright 2015 Department of Computer Science, ETH Zurich
+	Copyright 2015 Software Reliability Lab, ETH Zurich
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -456,7 +456,7 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 			int ind = i + (((i + 1)*(i + 1))/2);
 			m[ind] = INFINITY;
 		}
-		#if defined(VECTOR)
+		#if defined(VECTOR) && !defined(SSE)
 			v_double_type infty = v_set1_double(INFINITY);
 			v_int_type one = v_set1_int(1);
 			for(int i = 0; i < size/v_length; i++){
@@ -674,7 +674,7 @@ bool is_equal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 			}
 			
 		}
-		#if defined(VECTOR)
+		#if defined(VECTOR) && !defined(SSE)
 			v_int_type one = v_set1_int(1);
 			for(int i = 0; i < size/v_length; i++){
 				v_double_type t1 = v_load_double(m1 + i*v_length);
@@ -812,7 +812,7 @@ bool is_lequal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 			}
 			
 		}
-		#if defined(VECTOR)
+		#if defined(VECTOR) && !defined(SSE)
 			v_int_type one = v_set1_int(1);
 	
 			for(int i = 0; i < size/v_length; i++){
@@ -941,6 +941,9 @@ void meet_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 		}
 		free(arr_map1);
 		free(arr_map2);
+		if(!destructive && oo->acl){
+			free_array_comp_list(oo->acl);
+		}
 		oo->acl = acl;
 		if(destructive){
 			free_array_comp_list(temp);
@@ -949,7 +952,7 @@ void meet_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 	else{
 		/*****
 			Apply the dense operator,
-			If the operand is sparse, we fully initialize it,
+			If the operand is decomposed type, we fully initialize it,
 			no need to change type.
 		******/
 		if(!oo2->is_dense){
@@ -1103,15 +1106,27 @@ void join_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 			Step 1
 		******/
 		if(oo1->is_dense){
+			if(!destructive && oo->acl){
+				free_array_comp_list(oo->acl);
+			}
 			oo->acl = copy_array_comp_list(oo2->acl);
 		}
 		else if(oo2->is_dense){
 			if(!destructive){
+				if(oo->acl){
+					free_array_comp_list(oo->acl);
+				}
 				oo->acl = copy_array_comp_list(oo1->acl);
 			}
 		}
 		else{
+			if(!destructive){
+				if(oo->acl){
+					free_array_comp_list(oo->acl);
+				}
+			}
 			oo->acl = intersection_array_comp_list(oo1->acl,oo2->acl,dim);
+			// Can only destroy after computing intersection
 			if(destructive){
 				free_array_comp_list(temp);
 			}
@@ -1543,6 +1558,9 @@ void widening_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, in
 		/*******
 			Step 1
 		*******/
+		if(oo->acl!=NULL){
+			free_array_comp_list(oo->acl);
+		}
 		if(oo1->is_dense){
 			oo->acl = copy_array_comp_list(oo2->acl);
 		}
@@ -1609,6 +1627,241 @@ void widening_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, in
 		record_timing(widening_time);
   	#endif
 	
+}
+
+void widening_thresholds_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, double *thresholds, int nb, int dim){
+	#if defined(TIMING)
+		start_timing();
+  	#endif
+	double *m = oo->mat;
+	double *m1 = oo1->mat;
+	double *m2 = oo2->mat;
+	int count = 0;
+	int size = 2*dim*(dim+1);
+	if(!oo1->is_dense || !oo2->is_dense){
+		/******
+			If either oo1 or oo2 is decomposed type, apply the decomposed type operator
+			1. Compute the intersection of corresponding sets of independent components.
+			2. Operate on elements corresponding to intersection.
+		******/
+		oo->is_dense = false;
+		oo->ti = false;
+		/*******
+			Step 1
+		*******/
+		if(oo->acl!=NULL){
+			free_array_comp_list(oo->acl);
+		}
+		if(oo1->is_dense){
+			oo->acl = copy_array_comp_list(oo2->acl);
+		}
+		else if(oo2->is_dense){
+			oo->acl = copy_array_comp_list(oo1->acl);
+		}
+		else{
+			
+			oo->acl = intersection_array_comp_list(oo1->acl,oo2->acl,dim);
+			
+		}
+		/*******
+			Step 2
+		*******/
+		comp_list_t *cl = oo->acl->head;
+		
+		while(cl!=NULL){
+			unsigned short int comp_size = cl->size;
+			unsigned short int * ca = to_sorted_array(cl,dim);
+			for(int i = 0; i < 2*comp_size; i++){
+				int i1 = (i%2==0)? 2*ca[i/2] : 2*ca[i/2] + 1;
+				for(int j = 0; j < 2*comp_size; j++){
+					int j1 = (j%2==0)? 2*ca[j/2] : 2*ca[j/2] + 1;
+					if(j1 > (i1|1)){
+						break;
+					}
+					int ind = opt_matpos2(i1,j1);
+					if(m1[ind] >=m2[ind]){
+						m[ind] = m1[ind];
+					}
+					else{
+						int j;
+						for(j=0; j < nb; j++){
+							if(m2[ind] <= thresholds[j]){
+								break;
+							}
+						}
+						m[ind] = thresholds[j];
+					}
+					if(m[ind]!=INFINITY){
+						count++;
+					}
+				}
+			}
+			free(ca);
+			cl = cl->next;
+		}
+	}
+	else{
+		/*****
+			Apply the dense operator in case both operands are dense.
+		******/
+		oo->is_dense = true;
+		oo->ti = true;
+		free_array_comp_list(oo->acl);
+		for(int i = 0; i <size; i++){
+			if(m1[i] >= m2[i]){
+				m[i] = m1[i];
+			}
+			else{
+				int j;
+				for(j=0; j < nb; j++){
+					if(m2[i] <= thresholds[j]){
+						break;
+					}
+				}
+				m[i] = thresholds[j];
+			}
+			if(m[i] != INFINITY){
+				count++;
+			}
+		}
+	}
+	oo->nni = count;
+	#if defined(TIMING)
+		record_timing(widening_time);
+  	#endif
+	
+}
+
+void narrowing_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
+	double *m = oo->mat;
+	double *m1 = oo1->mat;
+	double *m2 = oo2->mat;
+	int count = 0;
+	int size = 2*dim*(dim+1);
+	if(!oo1->is_dense && !oo2->is_dense){
+		/*****
+			If both oo1 and oo2 are decomposed type, then apply the decomposed type operator,
+			1. Compute union of corresponding sets of independent components.
+			2. Initialize oo1 elements corresponding to components in union not in oo1 
+			3. Initialize oo2 elements corresponding to components in union not in oo2
+			4. Compute narrowing of oo1 and oo2 by operating on elements corresponding to union
+		*****/
+		/*****
+			Step 1
+		******/
+		array_comp_list_t * acl = union_array_comp_list(oo1->acl,oo2->acl,dim);		
+		oo->is_dense = false;
+		
+		comp_list_t * cl = acl->head;
+		char * arr_map1 = create_array_map(oo1->acl,dim);
+		char * arr_map2 = create_array_map(oo2->acl,dim);
+		while(cl!=NULL){
+			unsigned short int comp_size = cl->size;
+			unsigned short int * ca = to_sorted_array(cl,dim);
+			/*****
+				Step 2
+			******/
+			if(!oo1->ti){
+				
+				for(int i = 0; i < comp_size; i++){
+					unsigned short int i1 = ca[i];
+					unsigned short int ci = arr_map1[i1];
+					for(int j = 0; j <=i; j++){
+						unsigned short int j1 = ca[j];
+						unsigned short int cj = arr_map1[j1];
+						if(!ci || !cj || ci!=cj){
+							ini_relation(m1,i1,j1,dim);
+							//handle_binary_relation(m1,oo1->acl,i1,j1,dim);
+						}
+					}
+				}
+			}
+			/*****
+				Step 3
+			******/
+			if(!oo2->ti){
+				for(int i = 0; i < comp_size; i++){
+					unsigned short int i1 = ca[i];
+					unsigned short int ci = arr_map2[i1];
+					for(int j = 0; j <=i; j++){
+						unsigned short int j1 = ca[j];
+						unsigned short int cj = arr_map2[j1];
+						if(!ci || !cj || ci!=cj){
+							ini_relation(m2,i1,j1,dim);
+							//handle_binary_relation(m2,oo2->acl,i1,j1,dim);
+						}
+					}
+				}
+			}
+			/*****
+				Step 4
+			******/
+			for(int i = 0; i < 2*comp_size; i++){
+				int i1 = (i%2==0)? 2*ca[i/2] : 2*ca[i/2] + 1;
+				for(int j = 0; j < 2*comp_size; j++){
+					int j1 = (j%2==0)? 2*ca[j/2]: 2*ca[j/2]+1;
+					if(j1 > (i1|1)){
+						break;
+					}
+					
+					int ind = j1 + (((i1 + 1)*(i1 + 1))/2);	
+					if(m1[ind] == INFINITY){
+						m[ind] = m2[ind]; 
+					}
+					else{
+						m[ind] = m1[ind];
+					}
+					if(m[ind] != INFINITY){
+						count++;
+					}
+					
+				}
+			}
+			free(ca);
+			cl = cl->next;
+		}
+		free(arr_map1);
+		free(arr_map2);
+		if(oo->acl!=NULL){
+			free_array_comp_list(oo->acl);
+		}
+		oo->acl = acl;
+		
+	}
+	else{
+		/*****
+			Apply the dense operator,
+			If the operand is decomposed type, we fully initialize it,
+			no need to change type.
+		******/
+		if(!oo2->is_dense){
+			if(!oo2->ti){
+				oo2->ti = true;
+				convert_to_dense_mat(oo2,dim,false);
+			}
+			
+		}
+		if(!oo1->is_dense){
+			if(!oo1->ti){
+				oo1->ti = true;
+				convert_to_dense_mat(oo1,dim,false);
+			}
+			
+		}
+		oo->is_dense = true;
+		for(int i = 0; i <size; i++){
+			if(m1[i] == INFINITY){
+				m[i] = m2[i];
+			}
+			else{
+				m[i] = m1[i];
+			}
+			if(m[i] != INFINITY){
+				count++;
+			}
+		}
+	}
+	oo->nni = count;
 }
 
 opt_uexpr opt_oct_uexpr_of_linexpr(opt_oct_internal_t* pr, double* dst,

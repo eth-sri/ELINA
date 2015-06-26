@@ -1,5 +1,5 @@
 /*
-	Copyright 2015 Department of Computer Science, ETH Zurich
+	Copyright 2015 Software Reliability Lab, ETH Zurich
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -119,6 +119,11 @@ bool opt_oct_is_eq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
     //}
     return res;
   }
+}
+
+ap_tcons0_array_t opt_oct_to_tcons_array(ap_manager_t* man, opt_oct_t* o)
+{
+  return ap_generic_to_tcons_array(man,o);
 }
 
 
