@@ -342,7 +342,7 @@ ap_manager_t* opt_oct_manager_alloc(void)
   man->funptr[AP_FUNID_SAT_TCONS] = &opt_oct_sat_tcons;
   man->funptr[AP_FUNID_BOUND_DIMENSION] = &opt_oct_bound_dimension;
   //man->funptr[AP_FUNID_BOUND_LINEXPR] = &opt_oct_bound_linexpr;
-  //man->funptr[AP_FUNID_BOUND_TEXPR] = &opt_oct_bound_texpr;
+  man->funptr[AP_FUNID_BOUND_TEXPR] = &opt_oct_bound_texpr;
   man->funptr[AP_FUNID_TO_BOX] = &opt_oct_to_box;
   man->funptr[AP_FUNID_TO_LINCONS_ARRAY] = &opt_oct_to_lincons_array;
   man->funptr[AP_FUNID_TO_TCONS_ARRAY] = &opt_oct_to_tcons_array;

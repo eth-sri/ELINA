@@ -380,6 +380,7 @@ void opt_oct_canonicalize(ap_manager_t* man, opt_oct_t* o);
 int opt_oct_hash(ap_manager_t* man, opt_oct_t* o);
 void opt_oct_approximate(ap_manager_t* man, opt_oct_t* o, int algorithm);
 
+
 /**************
 	nary operations
 *************/
@@ -405,6 +406,7 @@ bool opt_oct_is_leq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
 bool opt_oct_is_eq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
 ap_tcons0_array_t opt_oct_to_tcons_array(ap_manager_t* man, opt_oct_t* o);
 ap_interval_t** opt_oct_to_box(ap_manager_t* man, opt_oct_t* o);
+ap_interval_t* opt_oct_bound_texpr(ap_manager_t* man,opt_oct_t* o, ap_texpr0_t* expr);
 ap_interval_t* opt_oct_bound_dimension(ap_manager_t* man,opt_oct_t* o, ap_dim_t dim);
 ap_lincons0_array_t opt_oct_to_lincons_array(ap_manager_t* man, opt_oct_t* o);
 bool opt_oct_sat_lincons_timing(ap_manager_t* man, opt_oct_t* o, ap_lincons0_t* lincons);

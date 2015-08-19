@@ -186,6 +186,13 @@ ap_interval_t** opt_oct_to_box(ap_manager_t* man, opt_oct_t* o)
   return in;
 }
 
+ap_interval_t* opt_oct_bound_texpr(ap_manager_t* man,
+			       opt_oct_t* o, ap_texpr0_t* expr)
+{
+  return ap_generic_bound_texpr(man,o,expr,NUM_AP_SCALAR,false);
+}
+
+
 ap_interval_t* opt_oct_bound_dimension(ap_manager_t* man,
 				   opt_oct_t* o, ap_dim_t dim)
 {

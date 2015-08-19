@@ -1,5 +1,5 @@
 /*
-	Copyright 2015 Department of Computer Science, ETH Zurich
+	Copyright 2015 Software Reliability Lab, ETH Zurich
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ typedef struct array_comp_list_t{
 /****
 Basic Linked List Insert, Delete and Find functions for Component List
 *****/
-comp_list_t * create_comp_list();
+comp_list_t * create_comp_list(void);
 comp_list_t * copy_comp_list(comp_list_t *src);
 void free_comp_list(comp_list_t *cl);
 unsigned short int comp_list_size(comp_list_t *cl);
@@ -71,7 +71,7 @@ int is_equal_map(char *map1, char *map2, unsigned short int n);
 Basic Linked List Insert, Delete and Find functions for List of Component List
 *****/
 
-array_comp_list_t * create_array_comp_list();
+array_comp_list_t * create_array_comp_list(void);
 array_comp_list_t * copy_array_comp_list(array_comp_list_t *src);
 void free_array_comp_list(array_comp_list_t * acl);
 void insert_comp_list(array_comp_list_t *acl, comp_list_t * cl);
