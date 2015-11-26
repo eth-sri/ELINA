@@ -163,7 +163,6 @@ void opt_oct_cache_closure(opt_oct_internal_t *pr, opt_oct_t *o){
 	if(o->closed || !o->m){
 		return;
 	}
-	
 	int size = 2*o->dim*(o->dim + 1);
 	o->closed = opt_hmat_copy(o->m,o->dim);
 	if(opt_hmat_strong_closure(o->closed,o->dim)){
@@ -337,7 +336,7 @@ ap_manager_t* opt_oct_manager_alloc(void)
   man->funptr[AP_FUNID_IS_TOP] = &opt_oct_is_top;
   man->funptr[AP_FUNID_IS_LEQ] = &opt_oct_is_leq;
   man->funptr[AP_FUNID_IS_EQ] = &opt_oct_is_eq;
-  man->funptr[AP_FUNID_IS_DIMENSION_UNCONSTRAINED] = &opt_oct_is_dimension_unconstrained;
+  //man->funptr[AP_FUNID_IS_DIMENSION_UNCONSTRAINED] = &opt_oct_is_dimension_unconstrained;
   //man->funptr[AP_FUNID_SAT_INTERVAL] = &opt_oct_sat_interval;
   man->funptr[AP_FUNID_SAT_LINCONS] = &opt_oct_sat_lincons_timing;
   man->funptr[AP_FUNID_SAT_TCONS] = &opt_oct_sat_tcons;
