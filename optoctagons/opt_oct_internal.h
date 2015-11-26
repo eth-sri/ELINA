@@ -409,7 +409,6 @@ ap_interval_t** opt_oct_to_box(ap_manager_t* man, opt_oct_t* o);
 ap_interval_t* opt_oct_bound_texpr(ap_manager_t* man,opt_oct_t* o, ap_texpr0_t* expr);
 ap_interval_t* opt_oct_bound_dimension(ap_manager_t* man,opt_oct_t* o, ap_dim_t dim);
 ap_lincons0_array_t opt_oct_to_lincons_array(ap_manager_t* man, opt_oct_t* o);
-bool opt_oct_is_dimension_unconstrained(ap_manager_t* man, opt_oct_t* o, ap_dim_t dim);
 bool opt_oct_sat_lincons_timing(ap_manager_t* man, opt_oct_t* o, ap_lincons0_t* lincons);
 bool opt_oct_sat_tcons(ap_manager_t* man, opt_oct_t* o, ap_tcons0_t* cons);
 
