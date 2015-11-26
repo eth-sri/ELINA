@@ -70,7 +70,6 @@ bool opt_oct_is_leq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
     opt_oct_mat_t *oo1 = o1->closed ? o1->closed : o1->m;
     opt_oct_mat_t *oo2 = o2->closed ? o2->closed : o2->m;
     bool res= is_lequal_half(oo1, oo2, o1->dim);
-    
     //if(res){
 	//opt_oct_fprint(stdout,man,oo1,NULL);
     //}
@@ -129,7 +128,6 @@ ap_tcons0_array_t opt_oct_to_tcons_array(ap_manager_t* man, opt_oct_t* o)
 
 ap_interval_t** opt_oct_to_box(ap_manager_t* man, opt_oct_t* o)
 {
-  
   opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_TO_BOX,0);
   ap_interval_t** in = ap_interval_array_alloc(o->dim);
   size_t i;
@@ -185,6 +183,13 @@ ap_interval_t** opt_oct_to_box(ap_manager_t* man, opt_oct_t* o)
   #endif
   return in;
 }
+
+ap_interval_t* opt_oct_bound_texpr(ap_manager_t* man,
+			       opt_oct_t* o, ap_texpr0_t* expr)
+{
+  return ap_generic_bound_texpr(man,o,expr,NUM_AP_SCALAR,false);
+}
+
 
 ap_interval_t* opt_oct_bound_dimension(ap_manager_t* man,
 				   opt_oct_t* o, ap_dim_t dim)
@@ -313,6 +318,69 @@ ap_lincons0_array_t opt_oct_to_lincons_array(ap_manager_t* man, opt_oct_t* o)
   }
   return ar;
 }
+
+/******************************
+ Is dimension unconstrained
+*****************************/
+bool opt_oct_is_dimension_unconstrained(ap_manager_t* man, opt_oct_t* o,
+				    ap_dim_t dim)
+{
+  opt_oct_internal_t* pr =
+    opt_oct_init_from_manager(man,AP_FUNID_IS_DIMENSION_UNCONSTRAINED,0);
+  if(dim<o->dim){
+	return false;
+  }
+  if (!o->closed && !o->m)
+    /* definitively empty */
+    return false;
+  else {
+    opt_oct_mat_t * oo = o->closed ? o->closed : o->m;
+    double * m = oo->mat;
+    size_t i, d2=2*dim;
+    if(!oo->is_dense){
+	array_comp_list_t *acl = oo->acl;
+	comp_list_t * cl = acl->head;
+	while(cl!=NULL){
+		unsigned short int *ca = to_sorted_array(cl,dim);
+		unsigned short int comp_size = cl->size;
+		unsigned short int j;
+		for(j=0; j< comp_size; j++){
+			unsigned short int j1 = ca[j];
+			if(j1==dim){
+				if(m[opt_matpos2(d2,d2+1)]!=INFINITY || m[opt_matpos2(d2+1,d2)]!=INFINITY){
+					return false;
+				}
+			}
+			else{
+				if(m[opt_matpos2(2*j1,d2)]!=INFINITY){
+					return false;
+				}
+				if(m[opt_matpos2(2*j1+1,d2)]!=INFINITY){
+					return false;
+				}
+				if(m[opt_matpos2(2*j1,d2+1)]!=INFINITY){
+					return false;
+				}
+				if(m[opt_matpos2(2*j1+1,d2+1)]!=INFINITY){
+					return false;
+				}
+			}
+		} 
+		free(ca);
+		cl = cl->next;
+	}
+    }
+    else{
+	for (i=0;i<2*o->dim;i++) {
+      		if ((m[opt_matpos2(i,d2)]!=INFINITY) && (i!=d2)) return false;
+      		if ((m[opt_matpos2(i,d2+1)]!=INFINITY) && (i!=d2+1)) return false;
+    	}
+    }
+    
+    return true;
+  }
+}
+
 
 
 /****
