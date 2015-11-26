@@ -319,6 +319,57 @@ ap_lincons0_array_t opt_oct_to_lincons_array(ap_manager_t* man, opt_oct_t* o)
   return ar;
 }
 
+/***********************************
+	Check if the bound of a variable is within the given interval
+***********************************/
+bool opt_oct_sat_interval(ap_manager_t* man, opt_oct_t* o,
+		      ap_dim_t dim, ap_interval_t* i)
+{
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_SAT_INTERVAL,0);
+  if(dim >= o->dim){
+	return false;
+  }
+  if (pr->funopt->algorithm>=0) opt_oct_cache_closure(pr,o);
+  if (!o->closed && !o->m) {
+    /* really empty */
+    return true;
+  }
+  else {
+    opt_oct_mat_t* oo = o->closed ? o->closed : o->m;
+    double *m = oo->mat;
+    ap_interval_t* b = ap_interval_alloc();
+    bool r;
+    if(!oo->is_dense){
+	array_comp_list_t *acl = oo->acl;
+	if(find(acl,dim)==NULL){
+		ap_interval_set_top(b);
+	}
+	else{
+		/* get (possibly approximated) bounds */
+		opt_interval_of_bounds(pr,b,
+		       m[opt_matpos(2*dim,2*dim+1)],m[opt_matpos(2*dim+1,2*dim)],true);
+	}
+    }
+    else{
+	/* get (possibly approximated) bounds */
+	opt_interval_of_bounds(pr,b,
+		 m[opt_matpos(2*dim,2*dim+1)],m[opt_matpos(2*dim+1,2*dim)],true);
+    }
+    
+    
+    /* compare with i */
+    r = (ap_scalar_cmp(b->inf,i->inf)>=0) && (ap_scalar_cmp(b->sup,i->sup)<=0);
+    ap_interval_free(b);
+    if (r) return true; /* definitively saturates */
+    else
+      /* definitely does not saturate on Q if closed & no conv error */
+      if (num_incomplete || o->intdim) { flag_incomplete; return false; }
+      else if (!o->closed) { flag_algo; return false; }
+      else if (pr->conv) { flag_conv; return false; }
+      else return false;
+  }
+}
+
 /******************************
  Is dimension unconstrained
 *****************************/

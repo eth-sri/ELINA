@@ -338,7 +338,7 @@ ap_manager_t* opt_oct_manager_alloc(void)
   man->funptr[AP_FUNID_IS_LEQ] = &opt_oct_is_leq;
   man->funptr[AP_FUNID_IS_EQ] = &opt_oct_is_eq;
   man->funptr[AP_FUNID_IS_DIMENSION_UNCONSTRAINED] = &opt_oct_is_dimension_unconstrained;
-  //man->funptr[AP_FUNID_SAT_INTERVAL] = &opt_oct_sat_interval;
+  man->funptr[AP_FUNID_SAT_INTERVAL] = &opt_oct_sat_interval;
   man->funptr[AP_FUNID_SAT_LINCONS] = &opt_oct_sat_lincons_timing;
   man->funptr[AP_FUNID_SAT_TCONS] = &opt_oct_sat_tcons;
   man->funptr[AP_FUNID_BOUND_DIMENSION] = &opt_oct_bound_dimension;
