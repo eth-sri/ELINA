@@ -105,7 +105,6 @@ void top_mat(double *m, int dim){
 	Fully initialize the decomposed type DBM
 *****/
 void convert_to_dense_mat(opt_oct_mat_t * oo, int dim, bool flag){
-	
 	double *src = oo->mat;
 	for(int i = 0; i < dim; i++){
 		comp_list_t * li = find(oo->acl,i);
@@ -152,6 +151,7 @@ opt_oct_mat_t * opt_hmat_alloc_top(int dim){
 	#if defined(TIMING)
 		record_timing(top_time);
 	#endif
+	
 	return oo;
 }
 
@@ -393,6 +393,7 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 	int size = 2*dim*(dim + 1);
 	int n = 2*dim;
 	bool flag = true;
+	
 	if(!oo->is_dense){
 		/******
 			For decomposed type, if the set of independent components is empty then it is top.
@@ -465,10 +466,7 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 				v_int_type op = v_double_to_int(res);
 				if(!v_test_int(op,one)){
 					flag = false;
-					#if defined(TIMING)
-						record_timing(is_top_time);
-					#endif
-					return false;
+					break;
 				}
 		
 			}
@@ -477,20 +475,14 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 			for(int i = 0; i < (size/v_length)*v_length; i++){
 				if(m[i]!=INFINITY){
 					flag = false;
-					#if defined(TIMING)
-						record_timing(is_top_time);
-					#endif
-					return false;
+					break;
 				}
 			}
 		#endif
-		for(int i = (size/v_length)*v_length; i <size; i++){
+		for(int i = (size/v_length)*v_length; (i <size) && flag; i++){
 			if(m[i] != INFINITY){
 				flag = false;
-				#if defined(TIMING)
-					record_timing(is_top_time);
-				#endif
-				return false;
+				break;
 			}
 		}
 		
@@ -722,6 +714,7 @@ bool is_lequal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 	double *m1 = oo1->mat;
 	double *m2 = oo2->mat;
 	int size = 2*dim*(dim + 1);
+	
 	if(!oo1->is_dense && !oo2->is_dense){
 		/****
 			If both oo1 and oo2 are decomposed type, apply decomposed type operator
@@ -730,6 +723,7 @@ bool is_lequal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 			2. Elements cooresponding to components in intersection should be equal  
 		****/
 		array_comp_list_t * acl = intersection_array_comp_list(oo1->acl,oo2->acl,dim);
+		
 		/****
 			Check 1
 		*****/
@@ -751,6 +745,7 @@ bool is_lequal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 							#if defined(TIMING)
 								record_timing(is_lequal_time);
 							#endif
+							
 							return false;
 						}
 					}
@@ -775,7 +770,9 @@ bool is_lequal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 					if(j1 > (i1|1)){
 						break;
 					}
-					
+					//if(i1==j1){
+					//	continue;
+					//}
 					int ind = j1 + (((i1 + 1)*(i1 + 1))/2);	
 					if(m1[ind] > m2[ind]){
                         			free(ca);
@@ -783,6 +780,7 @@ bool is_lequal_half(opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
 						#if defined(TIMING)
 							record_timing(is_lequal_time);
 						#endif
+						
 						return false;
 					}
 				}
@@ -1088,6 +1086,7 @@ void join_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 	#if defined(TIMING)
 		start_timing();
 	#endif
+	
 	double *m = oo->mat;
 	double *m1 = oo1->mat;
 	double *m2 = oo2->mat;
@@ -1158,6 +1157,7 @@ void join_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 			free(ca);
 			cl = cl->next;
 		}
+		
 	}
 	else{
 		/******
@@ -1336,7 +1336,7 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 						dst[opt_matpos2(2*ni+1,2*nj+1)] = src[opt_matpos2(2*i1+1,2*j1+1)];
 					}
 				}
-                free(ca);
+                		free(ca);
 				cl = cl->next;
 			}
 			
@@ -1423,6 +1423,7 @@ void opt_hmat_permute(opt_oct_mat_t* dest_mat, opt_oct_mat_t* src_mat,
   #endif
   double *dst = dest_mat->mat;
   double *src = src_mat->mat; 
+  
   if(!src_mat->is_dense){
 	  /******
 		If source matrix is decomposed type, then apply decomposed operator.
@@ -1979,7 +1980,6 @@ bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim,
 		      bool* respect_closure)
 {
   double *m = oo->mat;
-  
   int i, j, k, ui, uj;
   int var_pending = 0; /* delay incremental closure as long as possible */
   int closure_pending = 0;
@@ -1994,6 +1994,7 @@ bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim,
   bool (*incr_closure)(opt_oct_mat_t * ,...);
   double size = 2*dim*(dim+1);
   double sparsity = 1- ((double)(oo->nni)/size);
+  
   /******
 	Measure sparsity to decide on whether to use dense or decomposed type incremental closure.
 	We do not recalculate sparsity here (if estimate of nni is too imprecise) as it increases overhead.
