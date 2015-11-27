@@ -369,6 +369,9 @@ bool incremental_closure_opt_dense(opt_oct_mat_t *oo, int dim, int v, bool is_in
 	else{
         	res = strengthning_dense(oo, temp1, n);
 	}
+
+          free (temp1);
+          free (temp2);
 	
 	return res;
 }
