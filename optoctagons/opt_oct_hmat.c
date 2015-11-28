@@ -432,6 +432,7 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 							#if defined(TIMING)
 								record_timing(is_top_time);
 							#endif
+                            free(ca);
 							return false;
 						}
 					}
