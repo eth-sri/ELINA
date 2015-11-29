@@ -54,7 +54,7 @@ ap_abstract0_opt_oct_add_epsilon_bin(ap_manager_t* man,
 /* Widening with threshold.
      array is assumed to contain nb thresholds, sorted in increasing order. */
 ap_abstract0_t* 
-ap_abstract0_oct_widening_thresholds(ap_manager_t* man,
+ap_abstract0_opt_oct_widening_thresholds(ap_manager_t* man,
 				     ap_abstract0_t* a1,
 				     ap_abstract0_t* a2,
 				     ap_scalar_t** arr,
@@ -63,7 +63,7 @@ ap_abstract0_oct_widening_thresholds(ap_manager_t* man,
 
 /* Standard narrowing: refine only +oo constraint */
 ap_abstract0_t* 
-ap_abstract0_oct_narrowing( ap_manager_t* man,
+ap_abstract0_opt_oct_narrowing( ap_manager_t* man,
 			    ap_abstract0_t* a1,
 			    ap_abstract0_t* a2 );
   
