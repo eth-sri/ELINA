@@ -74,7 +74,7 @@ extern "C" {
 	extern double fold_time;
 	extern double sat_lincons_time;
 	extern double assign_linexpr_time;
-	
+    extern double narrowing_time;
 #endif
 
 #define min fmin
@@ -135,12 +135,12 @@ static inline void ini_self_relation(double *m, int i, int dim){
 	
 	int ind1 = opt_matpos2(2*i,2*i);
 	int ind2 = opt_matpos2(2*i+1, 2*i+1);
-	if(m[ind1] != INFINITY){
+	//if(m[ind1] != INFINITY){
 		m[ind1] = 0;
-	}
-	if(m[ind2] != INFINITY){
+	//}
+	//if(m[ind2] != INFINITY){
 		m[ind2] = 0;
-	}
+	//}
 	int ind3 = opt_matpos2(2*i, 2*i+1);
 	m[ind3] = INFINITY;
 	int ind4 = opt_matpos2(2*i+1, 2*i);

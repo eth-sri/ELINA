@@ -39,7 +39,7 @@
 	double fold_time = 0;
 	double sat_lincons_time = 0;
 	double assign_linexpr_time = 0;
-	
+    double narrowing_time = 0;
 #endif
 
 opt_oct_mat_t* opt_hmat_alloc(int size){
@@ -1735,6 +1735,9 @@ void widening_thresholds_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat
 }
 
 void narrowing_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim){
+    #if defined(TIMING)
+        start_timing();
+    #endif
 	double *m = oo->mat;
 	double *m1 = oo1->mat;
 	double *m2 = oo2->mat;
@@ -1753,7 +1756,7 @@ void narrowing_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, i
 		******/
 		array_comp_list_t * acl = union_array_comp_list(oo1->acl,oo2->acl,dim);		
 		oo->is_dense = false;
-		
+        oo->ti = false;
 		comp_list_t * cl = acl->head;
 		char * arr_map1 = create_array_map(oo1->acl,dim);
 		char * arr_map2 = create_array_map(oo2->acl,dim);
@@ -1864,6 +1867,9 @@ void narrowing_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, i
 		}
 	}
 	oo->nni = count;
+    #if defined(TIMING)
+        record_timing(narrowing_time);
+    #endif
 }
 
 opt_uexpr opt_oct_uexpr_of_linexpr(opt_oct_internal_t* pr, double* dst,

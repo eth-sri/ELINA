@@ -117,7 +117,6 @@ opt_oct_t* opt_oct_set_mat(opt_oct_internal_t* pr, opt_oct_t* o, opt_oct_mat_t* 
 opt_oct_t* opt_oct_copy(ap_manager_t* man, opt_oct_t* o)
 {
   opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_COPY,0);
-  
   opt_oct_t *res = opt_oct_copy_internal(pr,o);
   return res;
 }
@@ -285,8 +284,9 @@ void opt_oct_fprint(FILE* stream, ap_manager_t* man, opt_oct_t * a,char** name_o
 		fprintf(stdout,"Fold: %g\n",fold_time);
 		fprintf(stdout,"Sat_Lincons: %g\n",sat_lincons_time);
 		fprintf(stdout,"Assign Linexpr: %g\n",assign_linexpr_time);
-		double total_time = top_time + free_time + copy_time + closure_time + is_equal_time + is_lequal_time + meet_time + join_time + widening_time + add_dimension_time 
-					+ permute_dimension_time + meet_lincons_time + forget_array_time + oct_to_box_time + alloc_time + is_top_time + expand_time + fold_time + sat_lincons_time + assign_linexpr_time;
+        fprintf(stdout,"Narrowing Time: %g\n",narrowing_time);
+		double total_time = top_time + free_time + copy_time + closure_time + is_equal_time + is_lequal_time + meet_time + join_time + widening_time + add_dimension_time
+					+ permute_dimension_time + meet_lincons_time + forget_array_time + oct_to_box_time + alloc_time + is_top_time + expand_time + fold_time + sat_lincons_time + assign_linexpr_time + narrowing_time;
 		fprintf(stdout,"Total Octagon Analysis: %g\n",total_time);
 		fflush(stdout);
 	#endif
