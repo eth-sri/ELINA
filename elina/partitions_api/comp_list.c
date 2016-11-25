@@ -1,5 +1,5 @@
 /*
-	Copyright 2015 Department of Computer Science, ETH Zurich
+	Copyright 2015 Software Reliability Lab, ETH Zurich
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -17,20 +17,23 @@
 
 #include "comp_list.h"
 
-void print_comp_list(comp_list_t *cl, unsigned short int n){
+void fprint_comp_list(FILE* stream, comp_list_t *cl, unsigned short int n){
 	if(!cl || !cl->size){
 		return;
 	}
 	unsigned short int * ca = to_sorted_array(cl,n);
 	unsigned short int comp_size = cl->size;
 	for(unsigned short int i = 0; i < comp_size; i++){
-		fprintf(stdout,"%d ",ca[i]);
+		fprintf(stream,"%d ",ca[i]);
 	}
 	free(ca);
-	fprintf(stdout,"\n");
-	fflush(stdout);
+	fprintf(stream,"\n");
+	fflush(stream);
 }
 
+void print_comp_list(comp_list_t * cl, unsigned short int n){
+	fprint_comp_list(stdout,cl,n);
+}
 
 
 comp_list_t * create_comp_list(){
@@ -191,4 +194,20 @@ void create_comp_list_map(comp_list_t *cl, unsigned short int n,char *map){
 	}
 	
 } 
+
+unsigned short int * map_index(unsigned short int * dst, unsigned short int * src, unsigned short int comp_size){
+	unsigned short int * res = (unsigned short int *)calloc(comp_size, sizeof(unsigned short int));
+	unsigned short int i, j = 0;
+	for(i = 0; i < comp_size; i++){
+		unsigned short int num = dst[i];
+		while(src[j] != num){
+			j++;
+		}
+		res[i] = j;
+		//printf("i: %d j: %d num: %d\n",i,j,num);
+		//fflush(stdout);
+		j++;
+	}
+	return res;
+}
 

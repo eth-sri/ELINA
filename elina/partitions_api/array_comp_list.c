@@ -1,5 +1,5 @@
 /*
-	Copyright 2015 Department of Computer Science, ETH Zurich
+	Copyright 2015 Software Reliability Lab, ETH Zurich
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@
 #include "comp_list.h"
 
 void print_array_comp_list(array_comp_list_t *acl, unsigned short int n){
-	fprintf(stdout,"%d\n",acl->size);
 	if(!acl || !acl->size){
 		return;
 	}
+	fprintf(stdout,"%d\n",acl->size);
 	comp_list_t * cl = acl->head;
 	
 	while(cl!=NULL){
@@ -128,6 +128,19 @@ comp_list_t * find(array_comp_list_t *acl,unsigned short int num){
 		cl = cl->next;
 	}
 	return NULL;
+}
+
+short int find_index(array_comp_list_t *acl,comp_list_t * src){
+	unsigned short int num_comp = acl->size;
+	comp_list_t *cl = acl->head;
+	
+	for(int l = 0; l < num_comp; l++){
+		if(cl == src){
+			return l;
+		}
+		cl = cl->next;
+	}
+	return -1;
 }
 
 void remove_comp_list(array_comp_list_t *acl, comp_list_t *clr){
@@ -274,3 +287,74 @@ char * create_array_map(array_comp_list_t * acl, unsigned short int n){
 	return map;
 }
 
+short int is_comp_list_included(array_comp_list_t *acl, comp_list_t *clr, unsigned short int n){
+	comp_list_t * cl = acl->head;
+	short int l = 0;
+	while(cl!=NULL){
+		if(is_included(clr,cl,n)){
+			return l;
+		}
+		l++;
+		cl = cl->next;
+	}
+	return -1;
+}
+
+short int is_covered(array_comp_list_t *acl, comp_list_t *clr, unsigned short int n){
+	char *map = (char *)calloc(n,sizeof(unsigned short int));
+	comp_list_t *cl = acl->head;
+	while(cl!=NULL){
+		comp_t * c = cl->head;
+		while(c != NULL){
+			unsigned short int num = c->num;
+			map[num] = 1;
+			c = c->next;
+		}
+		cl = cl->next;
+	}
+	
+	comp_t * c = clr->head;
+	while(c != NULL){
+		unsigned short int num = c->num;
+		if(!map[num]){
+			free(map);
+			return 0;
+		}
+		c = c->next;	
+	}
+	return 1;
+}
+
+
+char * create_intersection_map(array_comp_list_t * acl1, array_comp_list_t * acl2, unsigned short int num){
+	char * map1 = (char *)calloc(num,sizeof(char));
+	char * map2 = (char *)calloc(num,sizeof(char));
+	char * map = (char *)calloc(num,sizeof(char));
+	comp_list_t * cl1 = acl1->head;
+	while(cl1!=NULL){
+		comp_t * c1 = cl1->head;
+		while(c1 != NULL){
+			unsigned short int num1 = c1->num;
+			map1[num1] = 1;
+			c1 = c1->next;
+		}
+		cl1 = cl1->next;
+	} 
+	comp_list_t * cl2 = acl2->head;
+	while(cl2!=NULL){
+		comp_t * c2 = cl2->head;
+		while(c2 != NULL){
+			unsigned short int num2 = c2->num;
+			map2[num2] = 1;
+			c2 = c2->next;
+		}
+		cl2 = cl2->next;
+	}
+	unsigned short int i;
+	for(i=0; i < num; i++){
+		map[i] = map1[i] & map2[i];
+	}
+	free(map1);
+	free(map2);
+	return map;
+}

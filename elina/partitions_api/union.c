@@ -1,5 +1,5 @@
 /*
-	Copyright 2015 Department of Computer Science, ETH Zurich
+	Copyright 2015 Software Reliability Lab, ETH Zurich
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 
 
 #include "comp_list.h"
-
+#include "rdtsc.h"
 /***
 
 ***/
 
+double union_time = 0;
 int is_included(comp_list_t *cl1, comp_list_t *cl2, unsigned short int n){
 	char *map = (char *)calloc(n,sizeof(char));
 	//int s = c2->size;
@@ -67,6 +68,30 @@ int is_disjoint(comp_list_t * cl1, comp_list_t *cl2, unsigned short int n){
 	return 1;
 }
 
+
+int is_disjoint_with_map(comp_list_t *cl, char *map){
+	comp_t * c = cl->head;
+	while(c!=NULL){
+		unsigned short int num = c->num;
+		if(map[num]){
+			return 0;
+		}
+		c = c->next;
+	}
+	return 1;
+}
+
+short int is_map_disjoint(unsigned short int * cmap, char *map2, unsigned short int n){
+	size_t i;
+	for(i=0; i < n; i++){
+		unsigned short int var = cmap[i];
+		if(map2[var]){
+			//printf("coming here\n");
+			return 0;
+		}
+	}
+	return 1;
+}
 
 char * create_map(comp_list_t *cl, unsigned short int n){
 	char *map = (char *)calloc(n,sizeof(char));
@@ -156,13 +181,21 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 	unsigned short int * dis_map1 = (unsigned short int *)calloc(s1,sizeof(unsigned short int));
 	unsigned short int * dis_map2 = (unsigned short int *)calloc(s2,sizeof(unsigned short int));
 	int tnc = s1+s2;
+	
 	char *overlap_map = (char *)calloc(tnc*tnc,sizeof(char));
 	comp_list_t * cl1 = acl1->head;
+       	
 	for(int i = 0; i < s1; i++){
 		comp_list_t *cl2 = acl2->head;
+		int flag = 0;
 		for(int j = 0; j < s2; j++){
-			if(is_included(cl1,cl2,n)){
+			if(flag){
+				dis_map1[i]++;
 				dis_map2[j]++;
+			}
+			else if(is_included(cl1,cl2,n)){
+				dis_map2[j]++;
+				flag = 1;
 				//continue;
 			}
 			else if(is_included(cl2,cl1,n)){
@@ -182,7 +215,7 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 		}
 		cl1 = cl1->next;
 	}
-
+	
 	array_comp_list_t *res = create_array_comp_list();
 	cl1 = acl1->head;
 	for(int i = 0; i < s1; i++){
