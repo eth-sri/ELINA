@@ -1,5 +1,5 @@
 /*
-	Copyright 2015 Software Reliability Lab, ETH Zurich
+	Copyright 2016 Software Reliability Lab, ETH Zurich
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -17,16 +17,16 @@
 package apron;
 
 /**
- * Manager factory for the OptOctagon abstract domain.
+ * Manager factory for the convex polyhedron abstract domain.
  */
-public class OptOctagon 
+public class OptPoly 
     extends Manager
 {
 
     // Internals
     ////////////
 
-    private native void init();
+    private native void init(boolean strict);
 
     private static native void class_init();
 
@@ -35,13 +35,17 @@ public class OptOctagon
 
     // Constructors
     ///////////////
-    
+
     /**
-     * Creates a new manager to create and manipulate OptOctagons.
+     * Creates a new manager to create and manipulate convex polyhedra.
+     *
+     * <p> If strict is true, then the domain can express strict
+     * inequalities, i.e., non-closed convex polyhedra.
+     * Otherwise, the domain expresses closed convex polyhedra.
      */
-    public OptOctagon()
+    public OptPoly(boolean strict)
     {
-        init(); 
+        init(strict); 
     }
 
 }
