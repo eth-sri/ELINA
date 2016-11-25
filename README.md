@@ -38,7 +38,10 @@ The library uses improved algorithms, online decomposition as well as state of t
 		d. Specify "/usr/local" for gmp and mpfr library paths in "Makefile.config".
   
 #Compiling and installing:
-    Copy the "partitions_api", "elina_oct", "elina_poly" folder into the "apron" directory. The "partitions_api" needs to be compiled and installed first by running "make" and then "sudo make install" in the "partitions_api" folder.
+    Copy the "partitions_api", "elina_oct", "elina_poly" folder into the "apron" directory. 
+    
+    The "partitions_api" needs to be compiled and installed first by running "make" and then "sudo make install" in the "partitions_api" folder.
+    
     To compile and install the Octagon domain do the following:
 		1. Check if your machine supports SSE or AVX as follows:
 			a. Run "cat /proc/cpuinfo | grep "sse\|avx"".
@@ -70,7 +73,7 @@ The library uses improved algorithms, online decomposition as well as state of t
       Initialize the APRON Manager for Octagon as:
         man = new OptOctagon();
       and for Polyhedra as:
-	man = new OptPoly(false);
+        man = new OptPoly(false);
       
   C++:
       
@@ -81,4 +84,4 @@ The library uses improved algorithms, online decomposition as well as state of t
       Initialize the APRON Manager for Octagon as:
         man = new opt_oct_manager();
       and for Polyhedra as:
-	man = new opt_pk_manager();
+        man = new opt_pk_manager();
