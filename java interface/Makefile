@@ -27,7 +27,6 @@ IFLAGS = \
 -I../optoctagon \
 -I../optpoly \
 -I../LinkedListAPI \
--I/usr/lib/jvm/java-6-openjdk-amd64/include \
 -I$(JAVA_HOME)/include \
 -I$(JAVA_HOME)/include/linux \
 $(JNIINC) 
