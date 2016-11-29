@@ -20,7 +20,7 @@
 /* ********************************************************************** */
 
 /* This header file defines operations on vectors. A vector is just an array of
-   elements of type pkint_t, as a consequence functions need to be given also
+   elements of type opt_pkint_t, as a consequence functions need to be given also
    their size. */
 
 #ifndef __OPT_PK_USER_H__
@@ -35,17 +35,6 @@
 extern "C" {
 #endif
 
-/* From ITV to PK */
-
-/* Fills the vector with the constraint:
-   dim <= bound if sgn>0,
-   dim = bound if sgn=0
-   dim >= bound if sgn<0
-
-   bound is assumed <> oo.
-
-   Returns false if equality of an integer dimension with a non-integer numbers
-*/
 
 static void print_pk_array(opt_pk_array_t * op){
 	unsigned short int nbcolumns = op->maxcols;
@@ -71,13 +60,6 @@ bool opt_vector_set_dim_bound(opt_pk_internal_t* opk,
 			  size_t intdim, size_t realdim,
 			  bool integer);
 
-//bool vector_set_linexpr_bound(pk_internal_t* pk,
-//			      numint_t* vec,
-//			      numint_t* vec2,
-//			      numrat_t numrat,
-//			      int mode,
-//			      size_t intdim, size_t realdim,
-//			      bool integer);
 
 /* Fills the vector with the quasi-linear expression (itv_linexpr) */
 void opt_vector_set_itv_linexpr(opt_pk_internal_t* opk,
@@ -103,7 +85,7 @@ bool opt_vector_set_itv_lincons_sat(opt_pk_internal_t* opk,
 				bool integer);
 
 
-/* From ITV to PK */
+
 bool opt_matrix_set_itv_lincons_array(opt_pk_internal_t* opk,
 				  opt_matrix_t** mat,
 				  itv_lincons_array_t* array,
@@ -111,8 +93,6 @@ bool opt_matrix_set_itv_lincons_array(opt_pk_internal_t* opk,
 				  bool integer);
 
 
-
-/* From PK to ELINA */
 
 elina_lincons0_t opt_lincons0_of_vector(opt_pk_internal_t* opk,
 				 opt_numint_t* ov, unsigned short int * ca,

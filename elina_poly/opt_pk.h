@@ -81,7 +81,7 @@ typedef struct opt_pk_array_t {
 /* ============================================================ */
 
 elina_manager_t* opt_pk_manager_alloc(bool strict);
-  /* Allocate a NewPolka manager for convex polyhedra.
+  /* Allocate a ELINA manager for convex polyhedra.
 
      If the Boolean parameter is true, abstract values generated with the
      manager can have strict constraints (like x>0). Otherwise they are defined
@@ -98,24 +98,16 @@ opt_pk_internal_t* opt_pk_manager_get_internal(elina_manager_t* man);
 /* For setting options when one has a elina_manager_t object, one can use the
    ELINA function elina_manager_get_internal with a cast. */
 
-//void pk_set_max_coeff_size(pk_internal_t* pk, size_t size);
 void opt_pk_set_approximate_max_coeff_size(opt_pk_internal_t* opk, size_t size);
-//size_t pk_get_max_coeff_size(pk_internal_t* pk);
-//size_t pk_get_approximate_max_coeff_size(pk_internal_t* pk);
-//void pk_print(elina_manager_t* man, pk_t* po, char** name_of_dim);
+//void opt_pk_print(elina_manager_t* man, opt_pk_t* po, char** name_of_dim);
 
 /* ============================================================ */
 /* D. Conversions */
 /* ============================================================ */
 
-//pk_t* pk_of_abstract0(elina_abstract0_t* abstract);
-  /* Extract from an abstract value the underlying NewPolka polyhedron.  There
-     is no copy, and only the argument should be freed. */
 
-//elina_abstract0_t* pk_to_abstract0(elina_manager_t* man, pk_t* poly);
-  /* Create an abstract value from the manager and the underlying NewPolka
-     polyhedron. There is no copy, and only the result should be freed
-  */
+//elina_abstract0_t* opt_pk_to_abstract0(elina_manager_t* man, opt_pk_t* poly);
+  
 
 /* ============================================================ */
 /* D. Constructor and destructor for internal manager */
@@ -161,41 +153,6 @@ void opt_pk_array_canonicalize(elina_manager_t* man, opt_pk_array_t* o);
      the integer man->option->canonicalize.algorithm is strictly positive,
      normalize equalities and lines, and also strict constraints */
 
-//int pk_hash(elina_manager_t* man, pk_t* a);
-  /* Return an hash value for the abstract value.  Two abstract values in
-     canonical from (according to @code{elina_abstract1_canonicalize}) and
-     considered as equal by the function elina_abstract0_is_eq are given the
-     same hash value (this implies more or less a canonical form).
-  */
-
-//void pk_approximate(elina_manager_t* man, pk_t* a, int algorithm);
-  /* Perform some transformation on the abstract value, guided by the
-     field algorithm.
-
-     Approximation:
-
-     - algorithm==0: do nothing
-
-     - algorithm==-1: normalize integer minimal constraints (induces a smaller
-		      polyhedron)
-
-     - algorithm==1: remove constraints with coefficients of size greater than
-		     max_coeff_size, if max_coeff_size > 0
-     - algorithm==2: in addition, keep same bounding box (more precise)
-     - algorithm==3: in addition, keep same bounding octagon (even more
-		     precise)
-
-     - algorithm==10: round constraints with too big coefficients,
-		      of size greater than
-		      approximate_max_coeff_size, if
-		      approximate_max_coeff_size>0.  Rounding is
-		      done by truncation towards zero.
-     - algorithm==11: same, but if the constraint truncated
-                      towards zero is removed, try with the
-                      constraint truncated towards -oo or +oo.
-     - algorithm==12: consider both inner and outer truncation
-                      (may increase the number of constraint
-*/
 
 /* ============================================================ */
 /* I.3 Printing */
@@ -208,36 +165,9 @@ void opt_pk_array_fprint(FILE* stream,
   /* Print the abstract value in a pretty way, using function
      name_of_dim to name dimensions */
 
-//void pk_fprintdiff(FILE* stream,
-//		   elina_manager_t* man,
-//		   pk_t* a1, pk_t* a2,
-//		   char** name_of_dim);
-  /* Print the difference between a1 (old value) and a2 (new value),
-     using function name_of_dim to name dimensions.
-     The meaning of difference is library dependent.
-
-     Not implemented */
-
-//void pk_fdump(FILE* stream, elina_manager_t* man, pk_t* a);
-  /* Dump the internal representation of an abstract value,
-     for debugging purposes */
 
 
-/* ============================================================ */
-/* I.4 Serialization */
-/* ============================================================ */
 
-//elina_membuf_t pk_serialize_raw(elina_manager_t* man, pk_t* a);
-/* Allocate a memory buffer (with malloc), output the abstract value in raw
-   binary format to it and return a pointer on the memory buffer and the size
-   of bytes written.  It is the user responsability to free the memory
-   afterwards (with free).
-   Not implemented */
-
-//pk_t* pk_deserialize_raw(elina_manager_t* man, void* ptr, size_t* size);
-/* Return the abstract value read in raw binary format from the input stream
-   and store in size the number of bytes read
-   Not implemented */
 
 /* ********************************************************************** */
 /* II. Constructor, accessors, tests and property extraction */
@@ -308,8 +238,6 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
 //bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* cons);
   /* Satisfiability of a tree expression constraint. */
 
-//bool pk_sat_interval(elina_manager_t* man, pk_t* a,
-		     //elina_dim_t dim, elina_interval_t* interval);
   /* Inclusion of a dimension in an interval
      Is always strict
      algorithm > 0: (nearly always) compute canonical form
@@ -357,7 +285,7 @@ elina_lincons0_array_t opt_pk_to_lincons_array(elina_manager_t* man, opt_pk_arra
 
      Always consider canonical form */
 
-//elina_tcons0_array_t pk_to_tcons_array(elina_manager_t* man, pk_t* a);
+//elina_tcons0_array_t opt_pk_to_tcons_array(elina_manager_t* man, opt_pk_t* a);
   /* Converts an abstract value to a
      conjunction of tree expressions constraints. */
 
@@ -412,24 +340,14 @@ opt_pk_array_t* opt_pk_assign_linexpr_array(elina_manager_t* man,
 			      size_t size,
 
 			      opt_pk_array_t* dest);
-//pk_t* pk_substitute_linexpr_array(elina_manager_t* man,
-//				  bool destructive, pk_t* a,
-//				  elina_dim_t* tdim,
-//				  elina_linexpr0_t** texpr,
-//				  size_t size,
-//				  pk_t* dest);
+
 opt_pk_array_t* opt_pk_assign_texpr_array(elina_manager_t* man,
 			    bool destructive, opt_pk_array_t* oa,
 			    elina_dim_t* tdim,
 			    elina_texpr0_t** texpr,
 			    size_t size,
 			    opt_pk_array_t* dest);
-//pk_t* pk_substitute_texpr_array(elina_manager_t* man,
-//				bool destructive, pk_t* a,
-//				elina_dim_t* tdim,
-//				elina_texpr0_t** texpr,
-//				size_t size,
-//				pk_t* dest);
+
   /* Parallel Assignement and Substitution of several dimensions by interval
      expressons. */
 
@@ -501,7 +419,6 @@ opt_pk_array_t* opt_pk_widening(elina_manager_t* man, opt_pk_array_t* o1, opt_pk
 
 /* Returns the topological closure of a possibly opened abstract value */
 
-//pk_t* pk_closure(elina_manager_t* man, bool destructive, pk_t* a);
 
 
 

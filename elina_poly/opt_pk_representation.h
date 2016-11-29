@@ -1,9 +1,23 @@
-/* ********************************************************************** */
-/* pk_representation.h: General management of polyhedra  */
-/* ********************************************************************** */
+/*
+	Copyright 2016 Software Reliability Lab, ETH Zurich
 
-/* This file is part of the APRON Library, released under LGPL license.  Please
-   read the COPYING file packaged in the distribution */
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+*/
+
+
+/* ********************************************************************** */
+/* opt_pk_representation.h: General management of polyhedra  */
+/* ********************************************************************** */
 
 #ifndef _OPT_PK_REPRESENTATION_H_
 #define _OPT_PK_REPRESENTATION_H_
@@ -42,7 +56,7 @@ void opt_pk_fprint(FILE* stream, elina_manager_t *man, opt_pk_t* op,
 
 /* Minimization function, in the sense of minimized dual representation This
    function minimizes if not already done the given polyhedron.
-   Raise an exception, but still transmit it (pk->exn not reseted).
+   Raise an exception, but still transmit it (opk->exn not reseted).
 */
 void opt_poly_chernikova(elina_manager_t* man, opt_pk_t* poly, char* msg);
 
@@ -51,30 +65,16 @@ void opt_pk_convert(elina_manager_t *man, opt_pk_array_t * op, char *msg);
    constraints. */
 void opt_poly_minimize(elina_manager_t* man, opt_pk_t* op);
 
-/* Same as poly_chernikova2, but in addition normalize matrices by Gauss
-   elimination and sorting */
-//void poly_chernikova3(elina_manager_t* man, pk_t* poly, char* msg);
-
-/* Put the polyhedron with minimized constraints and frames.  If in addition
-   the integer man->option->canonicalize.algorithm is strictly positive,
-   normalize equalities and lines, and also strict constraints */
-//void poly_canonicalize(elina_manager_t* man, pk_t* poly);
-
-/* Has the polyhedron normalized strict constraints ? */
-//static inline bool poly_is_conseps(pk_internal_t* pk, pk_t* po);
-
-/* Is the polyhedron under (strong) normal form ? */
-//bool pk_is_canonical(elina_manager_t* man, pk_t* po);
 
 /* Make available the matrix of constraints (resp. frames). The matrix will
    remain unavailable iff the polyhedron appears to be empty */
-//static inline void poly_obtain_C(elina_manager_t* man, pk_t* po, char* msg);
+
 static inline void opt_poly_obtain_F(elina_manager_t* man, opt_pk_t* po, char* msg);
 
 /* Assuming the the matrix of constraints (resp. frames) is available, sort it,
    and take care of the saturation matrices. */
 void opt_poly_obtain_sorted_C(opt_pk_internal_t* opk, opt_pk_t* op);
-//void poly_obtain_sorted_F(pk_internal_t* pk, pk_t* poly);
+
 
 /* Assuming one of the saturation matrix is available, make satC (resp. satF)
    available. */
@@ -162,14 +162,6 @@ void meet_rays(opt_pk_array_t *oa, opt_pk_t **poly, unsigned short int *rmapa,
 	       unsigned short int **ca_arr, size_t * num_vertex_a, size_t * counterF);
 
 void combine_satmat(opt_pk_internal_t *opk, opt_pk_t *poly, unsigned short int comp_size, size_t end, bool con_to_ray);
-/* Like poly_chernikova, etc, but if usual is false, take into account the fact that
-   poly_dual has been applied */ 
-//void poly_chernikova_dual(elina_manager_t* man,
-//			  pk_t* poly,
-//			  char* msg,
-//			  bool usual);
-//static inline void poly_obtain_C_dual(elina_manager_t* man,pk_t* po, char* msg, bool usual);
-//static inline void poly_obtain_F_dual(elina_manager_t* man,pk_t* po, char* msg, bool usual);
 
 static inline void opt_poly_obtain_C(elina_manager_t* man, opt_pk_t* op, char* msg)
 {
@@ -181,37 +173,7 @@ static inline void opt_poly_obtain_F(elina_manager_t* man, opt_pk_t* op, char* m
   if (!op->F) opt_poly_chernikova(man,op,msg);
 }
 
-/* ********************************************************************** */
-/* V. Checking */
-/* ********************************************************************** */
 
-/* Checks gauss elimination */
-//bool matrix_check_gauss(matrix_t* mat, size_t nbeq);
-
-/* Perform rather detailed and costly checks on a polyhedron, to detect
-   inconsistencies */
-//bool poly_check(pk_internal_t* pk, pk_t* po);
-/* Same as previous function, but usual==false mean that poly_dual has been
-   applied */
-//bool poly_check_dual(pk_internal_t* pk, pk_t* po, bool usual);
-
-/* ********************************************************************** */
-/* ********************************************************************** */
-/* INLINE DEFINITIONS */
-/* ********************************************************************** */
-
-//static inline bool poly_is_conseps(pk_internal_t* pk, pk_t* po)
-//{
-//  return (!pk->strict || 
-//	  po->realdim==0 || 
-//	  (po->status & pk_status_conseps));;
-//}
-//  static inline bool poly_is_minimaleps(pk_internal_t* pk, pk_t* po)
-//{
-//  return (!pk->strict ||
-//	  po->realdim==0 ||
-//	  (po->status & pk_status_minimaleps));
-//}
 
 
 double abs_diff(double a, opt_numint_t b);

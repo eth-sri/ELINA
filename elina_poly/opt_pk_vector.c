@@ -1,9 +1,24 @@
+/*
+	Copyright 2016 Software Reliability Lab, ETH Zurich
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+*/
+
+
 /* ********************************************************************** */
-/* pk_vector.c: operations on vectors */
+/* opt_pk_vector.c: operations on vectors */
 /* ********************************************************************** */
 
-/* This file is part of the APRON Library, released under LGPL license.  Please
-   read the COPYING file packaged in the distribution */
 
 #include "opt_pk_config.h"
 #include "opt_pk_vector.h"
@@ -162,14 +177,14 @@ void opt_vector_print(opt_numint_t* ov, unsigned short int size)
 /* ---------------------------------------------------------------------- */
 
 /* The following functions search the index and the absolute value of the
-   minimal non-zero coefficient of the vector pk->vector_numintp, of size size,
+   minimal non-zero coefficient of the vector opk->vector_numintp, of size size,
    supposed to contain positive values only.
    
    It returns its results with
    pointers index and min. If all coefficients are zero, then
    index is set to size and *min to 0.
 
-   This function uses pk->vector_numintp and pk->vector_tmp[0]. */
+   This function uses opk->vector_numintp and opk->vector_tmp[0]. */
 
 static opt_numint_t
 opt_vector_min_notzero(opt_pk_internal_t* opk,
@@ -208,7 +223,7 @@ opt_vector_min_notzero(opt_pk_internal_t* opk,
 }
 /* This function computes the pgcd of a vector.
 
-   This function uses pk->vector_numintp and pk->vector_tmp[0]. */
+   This function uses opk->vector_numintp and opk->vector_tmp[0]. */
 
 opt_numint_t opt_vector_gcd(opt_pk_internal_t* opk,
 		opt_numint_t* ov, unsigned short int size)
@@ -259,7 +274,7 @@ void opt_vector_simplify(opt_pk_internal_t *opk, opt_numint_t * ov, unsigned sho
 /* The function vector_normalize normalizes the vector considered as
    a contraint or a generator. It does not modify q[0].
 
-   This function use pk->vector_tmp[0..2] and pk->numintp. */
+   This function use opk->vector_tmp[0..2] and opk->numintp. */
 
 bool opt_vector_normalize(opt_pk_internal_t* opk,
 		      opt_numint_t* ov, unsigned short int size)
@@ -284,14 +299,14 @@ bool opt_vector_normalize(opt_pk_internal_t* opk,
 /* The function vector_normalize normalizes the vector considered as
    an expression. It modifies q[0].
 
-   This function use pk->vector_tmp[0..2] and pk->numintp. */
+   This function use opk->vector_tmp[0..2] and opk->numintp. */
 
 bool opt_vector_normalize_expr(opt_pk_internal_t* opk,
 			   opt_numint_t* ov, unsigned short int size)
 {
   unsigned short int i;
 
-  assert(size<=pk->maxcols);
+  assert(size<=opk->maxcols);
 
   /*  computation of the pgcd */
   opk->vector_tmp[1] = opt_vector_gcd(opk,&ov[0],size);
@@ -311,7 +326,7 @@ bool opt_vector_normalize_expr(opt_pk_internal_t* opk,
 
    - if strict mode, the epsilon coefficient is put to 0 or 1
  
-   This function use pk->vector_tmp[0..1] and pk->numintp. */
+   This function use opk->vector_tmp[0..1] and opk->numintp. */
 
 bool opt_vector_normalize_constraint(opt_pk_internal_t* opk,
 				 opt_numint_t* ov,
@@ -321,22 +336,8 @@ bool opt_vector_normalize_constraint(opt_pk_internal_t* opk,
   bool change = false;
   unsigned short int size = opk->dec+intdim+realdim;
   
-  assert(pk->dec+intdim+realdim <= pk->maxcols);
+  assert(opk->dec+intdim+realdim <= opk->maxcols);
 
-  //if (pk->strict && numint_sgn(q[0])!=0 && numint_sgn(q[polka_eps])<0){
-    /*  computation of the pgcd without epsilon */
-    //change = (numint_cmp_int(q[polka_eps],-1) != 0);
-    //numint_set_int(q[polka_eps],0);
-    //vector_gcd(pk,&q[1], size-1, pk->vector_tmp[1]);
-    //numint_set_int(q[polka_eps],-1);
-    /* possible division */
-    /*if (numint_cmp_int(pk->vector_tmp[1],1)>0){
-      change = true;
-      numint_divexact(q[polka_cst],q[polka_cst],pk->vector_tmp[1]);
-      for (i=pk->dec; i<size; i++)
-	numint_divexact(q[i],q[i],pk->vector_tmp[1]);
-    }
-  }
   else {*/
     return opt_vector_normalize(opk,ov,size);
   //}
@@ -351,7 +352,7 @@ bool opt_vector_normalize_constraint(opt_pk_internal_t* opk,
 
    - it implies standard constraint normalization
     
-   This function use pk->vector_tmp[0..1] and pk->numintp. */
+   This function use opk->vector_tmp[0..1] and opk->numintp. */
 
 
 
@@ -418,7 +419,7 @@ The meaning of the returned result res is:
 - =0 : they are equal
 - >0: q1 is greater than q2
 
-This function uses pk->vector_tmp[0..3] and pk->vector_numintp.
+This function uses opk->vector_tmp[0..3] and opk->vector_numintp.
 */
 
 bool opt_vector_equal(opt_pk_internal_t* opk,
@@ -481,7 +482,7 @@ int opt_vector_compare(opt_pk_internal_t* opk,
   if (opt_polka_cst<size){
     res = (ov1[opt_polka_cst] < ov2[opt_polka_cst]? -1 : ov1[opt_polka_cst] > ov2[opt_polka_cst] ? 1 : 0);
     if (res) return res;
-    //if (pk->strict && opt_polka_eps < size){
+    //if (opk->strict && opt_polka_eps < size){
       //res = numint_cmp(q1[polka_eps],q2[polka_eps]);
     //}
   }
@@ -642,7 +643,7 @@ void opt_vector_remove_dimensions(opt_pk_internal_t* opk,
 Compute the scalar product of q1 and q2 considered as vectors
 of length size. The first coefficients are never considered.
 
-This function uses pk->vector_tmp[0]. */
+This function uses opk->vector_tmp[0]. */
 
 opt_numint_t * opt_vector_neg(opt_pk_internal_t *opk, opt_numint_t *ov, unsigned short int size){
 	opt_numint_t * res = opt_vector_alloc(size);
@@ -682,7 +683,7 @@ void opt_vector_add(opt_numint_t *dst, opt_numint_t *op1, opt_numint_t *op2, uns
   return prod;
 }*/
 
-/* Same as previous function, but in case where pk->strict is
+/* Same as previous function, but in case where opk->strict is
    true, the $\epsilon$ coefficients are not taken into account. */
 
 opt_numint_t opt_vector_product_strict(opt_pk_internal_t* opk,
@@ -777,28 +778,7 @@ bool opt_vector_is_null(opt_pk_internal_t* opk,
   return res;
 }
 
-/* The function tests if the given vector projected on the
-   non-$\epsilon$ coefficients is null. */
 
-/*bool vector_is_null_strict(pk_internal_t* pk,
-			   numint_t* q, unsigned short int size)
-{
-  size_t i;
-  bool res = true;
-
-  if (size>polka_cst){
-    res = numint_sgn(q[polka_cst])==0;
-    if (res){
-      for (i=pk->dec; i<size; i++){
-	if (numint_sgn(q[i])!=0){
-	  res = false;
-	  break;
-	}
-      }
-    }
-  }
-  return res;
-}*/
 
 /* The function tests if the given vector represents a positivity
    constraint. */
@@ -870,21 +850,6 @@ bool opt_vector_is_dummy_constraint(opt_pk_internal_t* opk,
   }
 }
 
-/* The function tests if the given vector represents the strictness ray, or has a non-null epsilon component. */ 
-/*bool vector_is_dummy_or_strict_generator(pk_internal_t* pk,
-					 numint_t* q, unsigned short int size)
-{
-  if (size < pk->dec){
-    return false;
-  }
-  else if (!numint_sgn(q[0])) *//* line */
- /*   return false;
-  else if (pk->strict && numint_sgn(q[polka_eps]))
-    return true;
-  else 
-    return false;
-}*/
-
 /* Return true if all dimensions involved in the expression are integer
    dimensions */
 
@@ -901,20 +866,6 @@ bool opt_vector_is_integer(opt_pk_internal_t* opk,
   }
   return true;
 }
-
-/*long vector_hash(pk_internal_t* pk,numint_t* vec, unsigned short int size)
-{
-  long res,t;
-  size_t i;
-
-  int_set_numint(&t,vec[polka_cst]);
-  res = t;
-  for (i=pk->dec; i<size; i += ((size-pk->dec)+2)/3){
-    int_set_numint(&t,vec[i]);
-    res = res*3 + t;
-  }
-  return res;
-}*/
 
 // Assumes (size - 2) < comp_size
 opt_numint_t * opt_map_vector(opt_numint_t *q, unsigned short int *map, unsigned short int comp_size, unsigned short int size){

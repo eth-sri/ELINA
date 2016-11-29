@@ -27,7 +27,7 @@
 /* I. Constructor and destructor for internal */
 /* ********************************************************************** */
 
-/* Initialize pk with size maxdims */
+
 #if defined(TIMING)
 	double copy_time = 0;
 	double is_lequal_time = 0;
@@ -55,7 +55,7 @@
 	FILE *fp;
 #endif
 
-
+/* Initialize opk with size maxdims */
 void opt_pk_internal_init(opt_pk_internal_t* opk, size_t maxdims)
 {
   size_t i;
@@ -76,12 +76,11 @@ void opt_pk_internal_init(opt_pk_internal_t* opk, size_t maxdims)
   opk->matrix_acc = 0;
   opk->matrix_prod = 0;
 
-  /* pk->cherni_bitstringp = bitstring_alloc(bitindex_size(pk->maxrows));*/
+  /* opk->cherni_bitstringp = bitstring_alloc(bitindex_size(pk->maxrows));*/
   opk->cherni_intp = (int*)malloc(opk->maxcols * sizeof(int));
   opk->cherni_prod = 0;
 
   opk->itv = itv_internal_alloc();
-  //bound_init(pk->poly_bound);
   itv_init(opk->poly_itv);
   itv_linexpr_init(&opk->poly_itv_linexpr,maxdims);
   itv_lincons_init(&opk->poly_itv_lincons);
@@ -91,12 +90,10 @@ void opt_pk_internal_init(opt_pk_internal_t* opk, size_t maxdims)
   opk->poly_dimp = malloc(opk->maxdims*sizeof(elina_dim_t));
   opk->poly_dimp2 = malloc(opk->maxdims*sizeof(elina_dim_t));
   opk->poly_fold_dimp = malloc(opk->maxdims*sizeof(elina_dim_t));
-  /* pk->poly_bitstringp = bitstring_alloc(bitindex_size(pk->maxrows)); */
-  //pk->poly_matspecial = matrix_alloc(1,pk->maxcols,true);
   opk->poly_prod = 0;
 }
 
-/* Allocates pk and initializes it with a default size */
+/* Allocates opk and initializes it with a default size */
 opt_pk_internal_t* opt_pk_internal_alloc(bool strict)
 {
   opt_pk_internal_t* opk = (opt_pk_internal_t*)malloc(sizeof(opt_pk_internal_t));
@@ -111,7 +108,7 @@ opt_pk_internal_t* opt_pk_internal_alloc(bool strict)
   return opk;
 }
 
-/* Clear pk */
+/* Clear opk */
 void opt_pk_internal_clear(opt_pk_internal_t* opk)
 {
   size_t i;
@@ -132,7 +129,6 @@ void opt_pk_internal_clear(opt_pk_internal_t* opk)
 
   //if (opk->itv) itv_internal_free(opk->itv);
   opk->itv = NULL;
-  //bound_clear(pk->poly_bound);
   itv_clear(opk->poly_itv);
   itv_linexpr_clear(&opk->poly_itv_linexpr);
   itv_lincons_clear(&opk->poly_itv_lincons);
@@ -164,14 +160,7 @@ void opt_pk_internal_free(opt_pk_internal_t* opk)
   free(opk);
 }
 
-/* Reallocate pk */
-/*void pk_internal_realloc(pk_internal_t* pk, size_t maxdims)
-{
-  if (pk->maxdims != maxdims){
-    pk_internal_clear(pk);
-    pk_internal_init(pk,maxdims);
-  }
-}*/
+
 
 /* Reallocate opk only if a bigger dimension is required */
 void opt_pk_internal_realloc_lazy(opt_pk_internal_t* opk, size_t maxdims)
@@ -192,22 +181,11 @@ void opt_pk_internal_realloc_lazy(opt_pk_internal_t* opk, size_t maxdims)
 /* II. Options */
 /* ********************************************************************** */
 
-/*pk_internal_t* pk_manager_get_internal(elina_manager_t* man){
-  return man->internal;
-}
 
-void pk_set_max_coeff_size(pk_internal_t* pk, size_t size){
-  pk->max_coeff_size = size;
-}*/
 void opt_pk_set_approximate_max_coeff_size(opt_pk_internal_t* opk, size_t size){  
   opk->approximate_max_coeff_size = size;
 }
-/*size_t pk_get_max_coeff_size(pk_internal_t* pk){
-  return pk->max_coeff_size;
-}
-size_t pk_get_approximate_max_coeff_size(pk_internal_t* pk){
-  return pk->approximate_max_coeff_size;
-}*/
+
 
 /* ********************************************************************** */
 /* III. Initialization from manager */

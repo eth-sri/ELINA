@@ -31,17 +31,8 @@ static void elina_coeff_set_scalar_numint(elina_coeff_t* coeff, opt_numint_t *nu
   mpq_set_numint(coeff->val.scalar->val.mpq,num);
 }
 
-/* ********************************************************************** */
-/* From ITV to PK */
-/* ********************************************************************** */
 
-/* Fills the vector with the constraint:
-   dim <= num if sgn>0,
-   dim = num if sgn=0
-   dim >= -num if sgn<0 (an inferior bound is implicitly negated, as in itv).
 
-   Returns false if equality of an integer dimension with a non-integer numbers
-*/
 
 bool opt_vector_set_dim_bound(opt_pk_internal_t* opk,
 			  opt_numint_t* vec,
@@ -91,58 +82,6 @@ bool opt_vector_set_dim_bound(opt_pk_internal_t* opk,
   return true;
 }
 
-
-/* Fills the vector with the constraint:
-   expr <= bound if sgn>0,
-   expr = bound if sgn=0
-   expr >= -bound if sgn<0
-   (an inferior bound is implicitly negated, as in itv).
-
-   Returns false if equality with a non-integer numbers (like 2x=1).
-*/
-
-/*bool vector_set_linexpr_bound(pk_internal_t* pk,
-			      numint_t* vec,
-			      numint_t* vec2,
-			      numrat_t numrat,
-			      int mode,
-			      size_t intdim, size_t realdim,
-			      bool integer)
-{
-  size_t i;
-  size_t size;
-  numint_t cst;
-
-  assert (numint_sgn(numrat_denref(numrat)));
-
-  size = pk->dec+intdim+realdim;
-
-  if (vec!=vec2){
-    vector_copy(vec,vec2,size);
-  }
-
-  if (numint_cmp_int(numrat_denref(numrat),1) != 0){
-    for (i=1; i<size; i++){
-      numint_mul(vec[i],vec[i],numrat_denref(numrat));
-    }
-  }
-  numint_init(cst);
-  numint_mul(cst,numrat_numref(numrat),vec[0]);
-  if (mode>=0){
-    numint_sub(vec[polka_cst],vec[polka_cst],cst);
-    for (i=pk->dec; i<size; i++){
-      numint_neg(vec[i],vec[i]);
-    }
-  }
-  else {
-    numint_add(vec[polka_cst],vec[polka_cst],cst);
-  }
-  numint_set_int(vec[0], mode ? 1 : 0);
-  vector_normalize(pk,vec,size);
-  if (integer) vector_normalize_constraint_int(pk,vec,intdim,realdim);
-
-  return true;
-}*/
 
 /* Fills the vector with the quasi-linear expression (itv_linexpr) */
 void opt_vector_set_itv_linexpr(opt_pk_internal_t* opk,
@@ -293,143 +232,7 @@ bool opt_vector_set_itv_lincons_sat(opt_pk_internal_t* opk,
   }
  }
 
-/* ********************************************************************** */
-/* From APRON to PK */
-/* ********************************************************************** */
 
-
-/*
-static
-bool matrix_append_elina_lincons0_array(pk_internal_t* pk,
-				     matrix_t* mat,
-				     size_t** tabindex, size_t* size,
-				     elina_lincons0_array_t* array,
-				     size_t intdim, size_t realdim,
-				     bool integer)
-{
-  bool exact,res;
-  size_t nbrows,i,j,k;
-  size_t* tab;
-
-  nbrows = mat->nbrows;
-  matrix_resize_rows_lazy(mat,nbrows+2*array->size);
-
-  res = true;
-  tab = NULL;
-  j = nbrows;
-  k = 0;
-  for (i=0; i<array->size; i++){
-    if (elina_lincons0_is_unsat(&array->p[i])){
-      if (tab){
-	free(tab); tab=NULL;
-	k=0;
-      }
-      vector_clear(mat->p[0],mat->nbcolumns);
-      numint_set_int(mat->p[0][0],1);
-      numint_set_int(mat->p[0][polka_cst],-1);
-      j = 1;
-      res = true;
-      break;
-    }
-    switch (array->p[i].constyp){
-    case ELINA_CONS_EQ:
-    case ELINA_CONS_SUPEQ:
-    case ELINA_CONS_SUP:
-      if (elina_linexpr0_is_quasilinear(array->p[i].linexpr0)){
-	exact = itv_lincons_set_elina_lincons0(pk->itv,
-					    &pk->poly_itv_lincons,
-					    &array->p[i]);
-	res = res && exact;
-	j += vector_set_itv_lincons(pk,
-				    &mat->p[j], &pk->poly_itv_lincons,
-				    intdim,realdim,integer);
-      }
-      else {
-	if (tab==NULL){
-	  tab = (size_t*)malloc(array->size*sizeof(size_t));
-	}
-	tab[k] = i;
-	k++;
-      }
-      break;
-    default:
-      res = false;
-      break;
-    }
-  }
-  mat->nbrows = j;
-  if (tab){
-    tab = (size_t*)realloc(tab,k*sizeof(size_t));
-  }
-  *tabindex = tab;
-  *size = k;
-  return res;
-}
-
-bool matrix_set_elina_lincons0_array(pk_internal_t* pk,
-				  matrix_t** mat,
-				  size_t** tabindex, size_t* size,
-				  elina_lincons0_array_t* array,
-				  size_t intdim, size_t realdim,
-				  bool integer)
-{
-  *mat = matrix_alloc(2*array->size,pk->dec+intdim+realdim,false);
-  (*mat)->nbrows = 0;
-  return matrix_append_elina_lincons0_array(pk,
-					 *mat,
-					 tabindex,size,
-					 array,
-					 intdim,realdim,integer);
-}
-static
-bool matrix_append_elina_intlincons0_array(pk_internal_t* pk,
-					matrix_t* mat,
-					itv_t* titv,
-					elina_lincons0_array_t* array,
-					size_t* tab, size_t size,
-					size_t intdim, size_t realdim,
-					bool integer)
-{
-  bool exact;
-  size_t nbrows,i,j;
-
-  nbrows = mat->nbrows;
-  matrix_resize_rows_lazy(mat,nbrows+2*array->size);
-  exact = true;
-  j = nbrows;
-  for (i=0; i<size; i++){
-    size_t index = tab[i];
-
-    exact = itv_lincons_set_elina_lincons0(pk->itv,
-					&pk->poly_itv_lincons,
-					&array->p[index])
-      && exact;
-    exact = itv_quasilinearize_lincons(pk->itv,&pk->poly_itv_lincons,titv,true)
-      && exact;
-    j += vector_set_itv_lincons(pk,&mat->p[j],&pk->poly_itv_lincons,
-				intdim,realdim,integer);
-  }
-  mat->nbrows = j;
-  return exact;
-}
-
-bool matrix_set_elina_intlincons0_array(pk_internal_t* pk,
-				     matrix_t** mat,
-				     itv_t* titv,
-				     elina_lincons0_array_t* array,
-				     size_t* tab, size_t size,
-				     size_t intdim, size_t realdim,
-				     bool integer)
-{
-  *mat = matrix_alloc(2*array->size,pk->dec+intdim+realdim,false);
-  (*mat)->nbrows = 0;
-  return matrix_append_elina_intlincons0_array(pk,
-					    *mat,
-					    titv,
-					    array,tab,size,
-					    intdim,realdim,integer);
-}
-*/
 static
 bool opt_matrix_append_itv_lincons_array(opt_pk_internal_t* opk,
 				     opt_matrix_t* mat,
@@ -480,10 +283,6 @@ bool opt_matrix_set_itv_lincons_array(opt_pk_internal_t* opk,
 					 *mat,array,
 					 intdim,realdim,integer);
 }
-
-/* ********************************************************************** */
-/* From PK to APRON */
-/* ********************************************************************** */
 
 elina_lincons0_t opt_lincons0_of_vector(opt_pk_internal_t* opk,
 				 opt_numint_t* ov, unsigned short int * ca,

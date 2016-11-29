@@ -23,7 +23,7 @@
 
 /*
 A matrix is represented in the following manner: the coefficients are stored
-in an private array of pkint_t p_init of size
+in an private array of opt_pkint_t p_init of size
 _maxrows*nbcolumns. To access to elements, one use an array of
 pointers p, the $i^{\mbox{\scriptsize nth}}$ element of which points
 to the $i^{\mbox{\scriptsize nth}}$ row of the matrix. This array is
@@ -91,9 +91,6 @@ void opt_matrix_union(opt_matrix_t *op1, opt_matrix_t *op2);
 bool opt_matrix_normalize_constraint(opt_pk_internal_t* opk,
 				   opt_matrix_t* oc, 
 				   size_t intdim, size_t realdim);
-//bool matrix_normalize_constraint_int(pk_internal_t* pk,
-//				       matrix_t* mat, 
-//				       size_t intdim, size_t realdim);
 
 /* Sorting & Merging */
 void opt_matrix_sort_rows(opt_pk_internal_t* opk,
@@ -151,18 +148,6 @@ bool opt_matrix_is_bottom(opt_pk_internal_t *opk, opt_matrix_t * oc);
 
 itv_t* opt_matrix_to_box(opt_pk_internal_t* opk,
 		     opt_matrix_t* oc);
-
-
-
-/* Predicates that can be useful for users */
-//static inline 
-//bool matrix_is_row_dummy_constraint(pk_internal_t* pk,
-//				    matrix_t* mat,
-//				    size_t l)
-//{
-//  return vector_is_dummy_constraint(pk,
-//				    mat->p[l],mat->nbcolumns);
-//}
 
 
 /* Functions meant to be internal */

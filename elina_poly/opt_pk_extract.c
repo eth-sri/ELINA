@@ -192,7 +192,7 @@ elina_lincons0_array_t opt_pk_to_lincons_array(elina_manager_t* man,
 }
 
 //elina_tcons0_array_t pk_to_tcons_array(elina_manager_t* man,
-//				    pk_t* po)
+//				    opt_pk_t* op)
 //{
   //return elina_generic_to_tcons_array(man,po);
 //}

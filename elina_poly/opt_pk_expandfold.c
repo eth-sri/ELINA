@@ -1,9 +1,24 @@
+/*
+	Copyright 2016 Software Reliability Lab, ETH Zurich
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+*/
+
+
 /* ********************************************************************** */
-/* pk_expandfold.c: expanding and folding dimensions */
+/* opt_pk_expandfold.c: expanding and folding dimensions */
 /* ********************************************************************** */
 
-/* This file is part of the APRON Library, released under LGPL license.  Please
-   read the COPYING file packaged in the distribution */
 
 #include "opt_pk_config.h"
 #include "opt_pk_vector.h"
@@ -183,59 +198,6 @@ opt_pk_t* opt_pk_expand(elina_manager_t* man,
 /* Fold the last dimsup dimensions with dimension dim (not in the last dimsup
    ones) in the matrix */
 
-/* the array tdim is assumed to be sorted */
-/*static
-matrix_t* matrix_fold(pk_internal_t* pk,
-		      bool destructive,
-		      matrix_t* F,
-		      elina_dim_t* tdim, size_t size)
-{
-  matrix_t* nF;
-  size_t i,j,row,col;
-  size_t nbrows, nbcols, dimsup;
-  elina_dimchange_t* dimchange;
-
-  dimsup = size-1;
-  if (dimsup==0){
-    return destructive ? F : matrix_copy(F);
-  }
-  nbrows = F->nbrows;
-  nbcols = F->nbcolumns;
-  col = pk->dec + tdim[0];
-
-  nF = matrix_alloc( size*nbrows,
-		     nbcols - dimsup,
-		     false );
-  dimchange = elina_dimchange_alloc(0,dimsup);
-  for (i=0;i<dimsup;i++){
-    dimchange->dim[i]=tdim[i+1];
-  }
-  row = 0;
-  for(i=0; i<nbrows; i++){
-    vector_remove_dimensions(pk,nF->p[row],F->p[i],nbcols,
-			     dimchange);
-    vector_normalize(pk,nF->p[row],nbcols-dimsup);
-    row++;
-    for (j=0;j<dimsup;j++){
-      if (numint_cmp(F->p[i][col],
-		     F->p[i][pk->dec+tdim[j+1]])!=0){
-	vector_remove_dimensions(pk,
-				 nF->p[row],F->p[i],nbcols,
-				 dimchange);
-	numint_set(nF->p[row][col],F->p[i][pk->dec+tdim[j+1]]);
-	vector_normalize(pk,nF->p[row],nbcols-dimsup);
-	row++;
-      }
-    }
-  }
-  nF->nbrows = row;
-  nF->_sorted = false;
-  if (destructive){
-    matrix_free(F);
-  }
-  elina_dimchange_free(dimchange);
-  return nF;
-}*/
 
 /* the array tdim is assumed to be sorted */
 

@@ -1,3 +1,20 @@
+/*
+	Copyright 2016 Software Reliability Lab, ETH Zurich
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+*/
+
+
 /* ********************************************************************** */
 /* opt_pk_cherni.c: Conversion from one representation to the dual one.  */
 /* ********************************************************************** */
@@ -510,7 +527,6 @@ void opt_cherni_minimize(opt_pk_internal_t* opk,
 		break;
 	}
   }*/
-  //border case with one variable and one constraint, NewPolka gives wrong result
   /*if(C->nbrows==1 && C->nbcolumns==3 && C->p[0][2]!=0 && con_to_ray){
 	
 	bool is_inequality = (C->p[0][0] == 1);

@@ -1,6 +1,19 @@
+/*
+	Copyright 2016 Software Reliability Lab, ETH Zurich
 
-/* This file is part of the APRON Library, released under LGPL license.  Please
-   read the COPYING file packaged in the distribution */
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+*/
+
 
 #ifndef _OPT_PK_CONFIG_H_
 #define _OPT_PK_CONFIG_H_
@@ -39,81 +52,6 @@ static const bool true  = 1;
 static inline size_t opt_numint_size(opt_numint_t a){
 	return 1;
 }
-//#if defined (NUMINT_NATIVE)
-//{ return 1; }
-//#elif defined(NUMINT_MPZ)
-//{ return mpz_size(a); }
-//#else
-//#error "Here"
-//#endif
-
-/* size in bits */
-//#if defined (NUMINT_NATIVE)
-
-//#if defined(NUMINT_LONGINT) || defined(NUMINT_LONGLONGINT)
-//#if defined(__GNUC__)
-//static inline size_t numint_size2(numint_t a)
-//{
-//  numint_t x;
-//  if (a==0) return 0;
-//  numint_abs(x,a);
-//  return (size_t)(
-//		  sizeof(numint_t)*8 - 
-//#if defined(NUMINT_LONGINT)
-//		  __builtin_clzl((unsigned long int)(*x))
-//#else
-//		  __builtin_clzll((unsigned long long int)(*x))
-//#endif
-//		  );
-//}
-//#else
-//static inline size_t numint_size2(numint_t a)
-//{ 
-//  numint_t x;
-//  size_t nbzero;
-//  static size_t table[256] = {
-//    8,
-//    7,
-//    6,6,
-//    5,5,5,5,
-//    4,4,4,4,4,4,4,4,
-//    3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
-//    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
-//    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-//    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-//    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-//    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-//  }    
-//  if (a==0) return 0;
-//  numint_abs(x,a);
-  /* Iterate over leading zero octets */
-//#if defined(NUMINT_LONGINT)
-//  unsigned long int mask = (0xffUL << (sizeof(numint_t)-1)*8);
-//#else
-//  unsigned long long int mask = (0xffULL << (sizeof(numint_t)-1)*8);
-//#endif
-//  nbzero = 0;
-//  while ( (*x & *mask)==0 ){
-//    nbzero += 8;
-//    *mask = *mask >> 256;
-//  }
-//  *x = (*x & *mask) >> ((sizeof(numint_t)-1)*8 - nbzero);
-//  nbzero += table[*x];
-//  return (sizeof(numint_t)*8 - nbzero);
-//}
-//#endif
-//#else
-//#error "Here"
-//#endif
-
-//#elif defined(NUMINT_MPZ)
-//static inline size_t numint_size2(numint_t a)
-//{ return mpz_sizeinbase(a,2); }
-//#else
-//#error "Here"
-//#endif
 
 
 /* Do not change ! */

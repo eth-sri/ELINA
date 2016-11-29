@@ -20,8 +20,6 @@
 /* opt_matrix.c: operations on matrices */
 /* ********************************************************************** */
 
-/* This file is part of the APRON Library, released under LGPL license.  Please
-   read the COPYING file packaged in the distribution */
 
 #include "opt_pk_config.h"
 #include "opt_pk_vector.h"
@@ -300,26 +298,6 @@ bool opt_matrix_normalize_constraint(opt_pk_internal_t* opk,
     return false;
 }
 
-/*bool matrix_normalize_constraint_int(pk_internal_t* pk,
-				     matrix_t* mat, 
-				     size_t intdim, size_t realdim)
-{
-  bool change1, change2;
-  size_t i;
-  
-  if (intdim>0){
-    change2=false;
-    for (i=0; i<mat->nbrows; i++){
-      change1 = vector_normalize_constraint_int(pk,mat->p[i],intdim,realdim);
-      change2 = change2 || change1;
-    }
-    if (change2)
-      mat->_sorted = false;
-    return change2;
-  }
-  else
-    return false;
-}*/
 
 
 /* ********************************************************************** */
@@ -850,7 +828,7 @@ size_t opt_matrix_gauss_elimination(opt_pk_internal_t *opk, opt_matrix_t *oc, si
 /* ====================================================================== */
 
 /* This function backsubstitute the coefficients according to the system of
-   equations and the array pk->cherni_intp properly set by
+   equations and the array opk->cherni_intp properly set by
    gauss. */
 
 

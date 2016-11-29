@@ -19,8 +19,6 @@
 /* opt_pk_resize.c: change and permutation of dimensions  */
 /* ********************************************************************** */
 
-/* This file is part of the APRON Library, released under LGPL license.  Please
-   read the COPYING file packaged in the distribution */
 
 #include "opt_pk_config.h"
 #include "opt_pk_vector.h"
