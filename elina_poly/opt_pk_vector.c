@@ -338,7 +338,6 @@ bool opt_vector_normalize_constraint(opt_pk_internal_t* opk,
   
   assert(opk->dec+intdim+realdim <= opk->maxcols);
 
-  else {*/
     return opt_vector_normalize(opk,ov,size);
   //}
   return change;
