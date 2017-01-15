@@ -23,8 +23,6 @@ include ../Makefile.config
 
 DFLAGS = -g
 
-AFLAGS := -D_GNU_SOURCE -pthread -m64 -march=native -fno-tree-vectorize 
-
 SOINST = libpartitions.so
 
 OBJS = comp_list.o array_comp_list.o intersection.o union.o extract.o 

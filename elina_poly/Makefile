@@ -23,8 +23,6 @@
 include ../Makefile.config
 
 
-AFLAGS := -D_GNU_SOURCE -pthread -fno-tree-vectorize -m64 -march=native
-
 DFLAGS := -g  -DNUM_LONGLONGRAT -DTIMING $(AFLAGS) #-DHAS_APRON
 
 LIBDIR = $(ELINA_PREFIX)/lib
