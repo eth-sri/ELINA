@@ -1,29 +1,33 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 
 #include "opt_oct_hmat.h"
 
-opt_oct_t* opt_oct_assign_linexpr(ap_manager_t* man,
+opt_oct_t* opt_oct_assign_linexpr(elina_manager_t* man,
 			  bool destructive, opt_oct_t* o,
-			  ap_dim_t d, ap_linexpr0_t* lexpr,
+			  elina_dim_t d, elina_linexpr0_t* lexpr,
 			  opt_oct_t* dest)
 {
   opt_oct_internal_t* pr =
-    opt_oct_init_from_manager(man,AP_FUNID_ASSIGN_LINEXPR_ARRAY,2*(o->dim+1+5));
+    opt_oct_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY,2*(o->dim+1+5));
   opt_uexpr u = opt_oct_uexpr_of_linexpr(pr,pr->tmp,lexpr,o->intdim,o->dim);
   opt_oct_mat_t* src;
   bool respect_closure;
@@ -79,10 +83,10 @@ opt_oct_t* opt_oct_assign_linexpr(ap_manager_t* man,
 
 
 
-opt_oct_t* opt_oct_assign_linexpr_array(ap_manager_t* man,
+opt_oct_t* opt_oct_assign_linexpr_array(elina_manager_t* man,
 				bool destructive, opt_oct_t* o,
-				ap_dim_t* tdim,
-				ap_linexpr0_t** lexpr,
+				elina_dim_t* tdim,
+				elina_linexpr0_t** lexpr,
 				size_t size,
 				opt_oct_t* dest)
 {
@@ -90,11 +94,11 @@ opt_oct_t* opt_oct_assign_linexpr_array(ap_manager_t* man,
     return opt_oct_assign_linexpr(man,destructive,o,tdim[0],lexpr[0],dest);
 
   opt_oct_internal_t* pr =
-    opt_oct_init_from_manager(man,AP_FUNID_ASSIGN_LINEXPR_ARRAY,2*(o->dim+size+5));
-  ap_dim_t* d = (ap_dim_t*) pr->tmp2;
+    opt_oct_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY,2*(o->dim+size+5));
+  elina_dim_t* d = (elina_dim_t*) pr->tmp2;
   opt_oct_mat_t *src, *dst;
   size_t i;
-  ap_dim_t p = o->dim;
+  elina_dim_t p = o->dim;
   int inexact = 0;
   bool respect_closure = false; /* TODO */
   int src_size = 2*(o->dim)*(o->dim+1);
@@ -186,12 +190,14 @@ opt_oct_t* opt_oct_assign_linexpr_array(ap_manager_t* man,
 }
 
 
-opt_oct_t* opt_oct_meet_lincons_array(ap_manager_t* man,
+opt_oct_t* opt_oct_meet_lincons_array(elina_manager_t* man,
 			      bool destructive, opt_oct_t* o,
-			      ap_lincons0_array_t* array)
+			      elina_lincons0_array_t* array)
 {
+  printf(".");
+  fflush(stdout);
   opt_oct_internal_t* pr =
-    opt_oct_init_from_manager(man,AP_FUNID_MEET_LINCONS_ARRAY,2*(o->dim+8));
+    opt_oct_init_from_manager(man,ELINA_FUNID_MEET_LINCONS_ARRAY,2*(o->dim+8));
   if (!o->closed && !o->m)
     /* definitively empty */
     return opt_oct_set_mat(pr,o,NULL,NULL,destructive);
@@ -232,24 +238,24 @@ opt_oct_t* opt_oct_meet_lincons_array(ap_manager_t* man,
 }
 
 
-opt_oct_t* opt_oct_meet_tcons_array(ap_manager_t* man,
+opt_oct_t* opt_oct_meet_tcons_array(elina_manager_t* man,
 			    bool destructive, opt_oct_t* o,
-			    ap_tcons0_array_t* array)
+			    elina_tcons0_array_t* array)
 {
-  return ap_generic_meet_intlinearize_tcons_array(man,destructive,o,array,
-						  NUM_AP_SCALAR,
-						  AP_LINEXPR_INTLINEAR,
+  return elina_generic_meet_intlinearize_tcons_array(man,destructive,o,array,
+						  ELINA_SCALAR_DOUBLE,
+						  ELINA_LINEXPR_INTLINEAR,
 						  &opt_oct_meet_lincons_array);
 }
 
-opt_oct_t* opt_oct_assign_texpr_array(ap_manager_t* man,
+opt_oct_t* opt_oct_assign_texpr_array(elina_manager_t* man,
 			      bool destructive, opt_oct_t* o,
-			      ap_dim_t* tdim,
-			      ap_texpr0_t** texpr,
+			      elina_dim_t* tdim,
+			      elina_texpr0_t** texpr,
 			      int size,
 			      opt_oct_t* dest)
 {
-  opt_oct_t *b = ap_generic_assign_texpr_array(man,destructive,o,tdim,texpr,size,dest);
+  opt_oct_t *b = elina_generic_assign_texpr_array(man,destructive,o,tdim,texpr,size,dest);
   return b;
-  //return ap_generic_assign_texpr_array(man,destructive,o,tdim,texpr,size,dest);
+  //return elina_generic_assign_texpr_array(man,destructive,o,tdim,texpr,size,dest);
 }

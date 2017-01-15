@@ -1,18 +1,22 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 
 #include "opt_oct_hmat.h"
@@ -21,10 +25,10 @@
 Standard Meet Operator
 ****/
 
-opt_oct_t* opt_oct_meet(ap_manager_t* man, bool destructive, opt_oct_t* o1, opt_oct_t* o2)
+opt_oct_t* opt_oct_meet(elina_manager_t* man, bool destructive, opt_oct_t* o1, opt_oct_t* o2)
 {
   
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_MEET,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_MEET,0);
   opt_oct_mat_t* oo;
   
    if((o1->dim != o2->dim) || (o1->intdim != o2->intdim))return NULL;
@@ -45,9 +49,9 @@ opt_oct_t* opt_oct_meet(ap_manager_t* man, bool destructive, opt_oct_t* o1, opt_
 /*****
 Standard Join Operator
 ***/
-opt_oct_t* opt_oct_join(ap_manager_t* man, bool destructive, opt_oct_t* o1, opt_oct_t* o2)
+opt_oct_t* opt_oct_join(elina_manager_t* man, bool destructive, opt_oct_t* o1, opt_oct_t* o2)
 {
- opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_JOIN,0);
+ opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_JOIN,0);
  
  if((o1->dim != o2->dim) || (o1->intdim != o2->intdim))return NULL;
  int size = 2*(o1->dim)*(o1->dim + 1);
@@ -96,9 +100,9 @@ opt_oct_t* opt_oct_join(ap_manager_t* man, bool destructive, opt_oct_t* o1, opt_
 	Join Array
 *******/
 
-opt_oct_t* opt_oct_join_array(ap_manager_t* man, opt_oct_t** tab, size_t size)
+opt_oct_t* opt_oct_join_array(elina_manager_t* man, opt_oct_t** tab, size_t size)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_JOIN_ARRAY,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_JOIN_ARRAY,0);
   int algo = pr->funopt->algorithm;
   bool closed = true;
   opt_oct_t* r;
@@ -148,8 +152,8 @@ opt_oct_t* opt_oct_join_array(ap_manager_t* man, opt_oct_t** tab, size_t size)
 /******
 	Meet Array 
 *******/
-opt_oct_t* opt_oct_meet_array(ap_manager_t* man, opt_oct_t** tab, size_t size){
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_MEET_ARRAY,0);
+opt_oct_t* opt_oct_meet_array(elina_manager_t* man, opt_oct_t** tab, size_t size){
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_MEET_ARRAY,0);
   opt_oct_t* r;
   size_t i,k;
   if(size <= 0){
@@ -176,9 +180,9 @@ opt_oct_t* opt_oct_meet_array(ap_manager_t* man, opt_oct_t** tab, size_t size){
 	Standard Widening Operator
 ***/
 
-opt_oct_t* opt_oct_widening(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
+opt_oct_t* opt_oct_widening(elina_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_WIDENING,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_WIDENING,0);
   int algo = pr->funopt->algorithm;
   opt_oct_t* r;
   
@@ -218,9 +222,9 @@ opt_oct_t* opt_oct_widening(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
 /******
 	Widening with thresholds
 *******/
-opt_oct_t* opt_oct_widening_thresholds(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2, ap_scalar_t** array, size_t nb)
+opt_oct_t* opt_oct_widening_thresholds(elina_manager_t* man, opt_oct_t* o1, opt_oct_t* o2, elina_scalar_t** array, size_t nb)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_WIDENING,nb+1);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_WIDENING,nb+1);
   int algo = pr->funopt->algorithm;
   opt_oct_t* r;
   if((o1->dim != o2->dim) || (o1->intdim != o2->intdim)){
@@ -253,9 +257,9 @@ opt_oct_t* opt_oct_widening_thresholds(ap_manager_t* man, opt_oct_t* o1, opt_oct
 /********
 	Narrowing Operator
 ********/
-opt_oct_t* opt_oct_narrowing(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
+opt_oct_t* opt_oct_narrowing(elina_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_WIDENING,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_WIDENING,0);
   opt_oct_t* r;
   if((o1->dim != o2->dim) && (o1->intdim != o2->intdim)){
 	return NULL;
@@ -279,14 +283,14 @@ opt_oct_t* opt_oct_narrowing(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
 }
 
 
-ap_abstract0_t* 
-ap_abstract0_opt_oct_widening_thresholds(ap_manager_t* man,
-				     ap_abstract0_t* a1, 
-				     ap_abstract0_t* a2,
-				     ap_scalar_t** array,
+elina_abstract0_t* 
+elina_abstract0_opt_oct_widening_thresholds(elina_manager_t* man,
+				     elina_abstract0_t* a1, 
+				     elina_abstract0_t* a2,
+				     elina_scalar_t** array,
 				     size_t nb)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_WIDENING,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_WIDENING,0);
   opt_oct_t* o = (opt_oct_t*) (a1->value);
   if((man->library != a1->man->library) || (man->library != a2->man->library)){
 	     return abstract0_of_opt_oct(man,opt_oct_alloc_top(pr,o->dim,o->intdim));
@@ -297,11 +301,11 @@ ap_abstract0_opt_oct_widening_thresholds(ap_manager_t* man,
 }
 
 
-ap_abstract0_t* ap_abstract0_opt_oct_narrowing( ap_manager_t* man,
-					    ap_abstract0_t* a1,
-					    ap_abstract0_t* a2 )
+elina_abstract0_t* elina_abstract0_opt_oct_narrowing( elina_manager_t* man,
+					    elina_abstract0_t* a1,
+					    elina_abstract0_t* a2 )
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_WIDENING,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_WIDENING,0);
   opt_oct_t* o = (opt_oct_t*) (a1->value);
   if((man->library != a1->man->library) || (man->library != a2->man->library)){
 	     return abstract0_of_opt_oct(man,opt_oct_alloc_top(pr,o->dim,o->intdim));
@@ -317,9 +321,9 @@ ap_abstract0_t* ap_abstract0_opt_oct_narrowing( ap_manager_t* man,
 /* Perturbation */
 /* ============================================================ */
 
-opt_oct_t* opt_oct_add_epsilon(ap_manager_t* man, opt_oct_t* o, ap_scalar_t* epsilon)
+opt_oct_t* opt_oct_add_epsilon(elina_manager_t* man, opt_oct_t* o, elina_scalar_t* epsilon)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_WIDENING,2);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_WIDENING,2);
   opt_oct_t* r = opt_oct_alloc_internal(pr,o->dim,o->intdim);
   opt_oct_mat_t * oo;
   oo = o->m ? o->m : o->closed;
@@ -441,12 +445,12 @@ opt_oct_t* opt_oct_add_epsilon(ap_manager_t* man, opt_oct_t* o, ap_scalar_t* eps
   return r;
 }
 
-ap_abstract0_t* 
-ap_abstract0_opt_oct_add_epsilon(ap_manager_t* man, 
-			     ap_abstract0_t* a1, 
-			     ap_scalar_t* epsilon)
+elina_abstract0_t* 
+elina_abstract0_opt_oct_add_epsilon(elina_manager_t* man, 
+			     elina_abstract0_t* a1, 
+			     elina_scalar_t* epsilon)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_WIDENING,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_WIDENING,0);
   opt_oct_t* o = (opt_oct_t*) (a1->value);
   if(man->library!=a1->man->library){
 	     return abstract0_of_opt_oct(man,opt_oct_alloc_top(pr,o->dim,o->intdim));
@@ -454,10 +458,10 @@ ap_abstract0_opt_oct_add_epsilon(ap_manager_t* man,
   return abstract0_of_opt_oct(man,opt_oct_add_epsilon(man,o,epsilon));
 }
 
-opt_oct_t* opt_oct_add_epsilon_bin(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2, 
-			   ap_scalar_t* epsilon)
+opt_oct_t* opt_oct_add_epsilon_bin(elina_manager_t* man, opt_oct_t* o1, opt_oct_t* o2, 
+			   elina_scalar_t* epsilon)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_WIDENING,2);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_WIDENING,2);
   opt_oct_t* r;
   if((o1->dim!=o2->dim) || (o1->intdim!=o2->intdim)){
 	return NULL;
@@ -586,13 +590,13 @@ opt_oct_t* opt_oct_add_epsilon_bin(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* 
   return r;
 }
 
-ap_abstract0_t* 
-ap_abstract0_opt_oct_add_epsilon_bin(ap_manager_t* man, 
-				 ap_abstract0_t* a1, 
-				 ap_abstract0_t* a2, 
-				 ap_scalar_t* epsilon)
+elina_abstract0_t* 
+elina_abstract0_opt_oct_add_epsilon_bin(elina_manager_t* man, 
+				 elina_abstract0_t* a1, 
+				 elina_abstract0_t* a2, 
+				 elina_scalar_t* epsilon)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_WIDENING,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_WIDENING,0);
   opt_oct_t* a = (opt_oct_t*) (a1->value);
   if((man->library!=a1->man->library) || (man->library!=a2->man->library)){
 	return abstract0_of_opt_oct(man,opt_oct_alloc_top(pr,a->dim,a->intdim));

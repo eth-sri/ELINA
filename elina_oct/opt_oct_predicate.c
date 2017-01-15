@@ -1,26 +1,30 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 
 #include "opt_oct_hmat.h"
 
 
-bool opt_oct_is_bottom(ap_manager_t* man, opt_oct_t* o)
+bool opt_oct_is_bottom(elina_manager_t* man, opt_oct_t* o)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_IS_BOTTOM,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_IS_BOTTOM,0);
   if (pr->funopt->algorithm>=0){ opt_oct_cache_closure(pr,o);}
   //m = o->closed ? o->closed : o->m;
   if (o->closed) {
@@ -39,18 +43,18 @@ bool opt_oct_is_bottom(ap_manager_t* man, opt_oct_t* o)
   }
 }
 
-bool opt_oct_is_top(ap_manager_t* man, opt_oct_t* o)
+bool opt_oct_is_top(elina_manager_t* man, opt_oct_t* o)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_IS_TOP,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_IS_TOP,0);
   int i,j;
   opt_oct_mat_t* m = o->m ? o->m : o->closed;
   if (!m) return false;
   return is_top_half(m,o->dim);
 }
 
-bool opt_oct_is_leq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
+bool opt_oct_is_leq(elina_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_IS_LEQ,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_IS_LEQ,0);
    if((o1->dim != o2->dim) || (o1->intdim != o2->intdim))return false;
   if (pr->funopt->algorithm>=0){ opt_oct_cache_closure(pr,o1);}
   if (!o1->closed && !o1->m) {
@@ -78,9 +82,9 @@ bool opt_oct_is_leq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
 }
 
 
-bool opt_oct_is_eq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
+bool opt_oct_is_eq(elina_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_IS_EQ,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_IS_EQ,0);
    if((o1->dim != o2->dim) || (o1->intdim != o2->intdim))return false;
   if (pr->funopt->algorithm>=0) {
     opt_oct_cache_closure(pr,o1);
@@ -120,16 +124,16 @@ bool opt_oct_is_eq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2)
   }
 }
 
-ap_tcons0_array_t opt_oct_to_tcons_array(ap_manager_t* man, opt_oct_t* o)
+elina_tcons0_array_t opt_oct_to_tcons_array(elina_manager_t* man, opt_oct_t* o)
 {
-  return ap_generic_to_tcons_array(man,o);
+  return elina_generic_to_tcons_array(man,o);
 }
 
 
-ap_interval_t** opt_oct_to_box(ap_manager_t* man, opt_oct_t* o)
+elina_interval_t** opt_oct_to_box(elina_manager_t* man, opt_oct_t* o)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_TO_BOX,0);
-  ap_interval_t** in = ap_interval_array_alloc(o->dim);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_TO_BOX,0);
+  elina_interval_t** in = elina_interval_array_alloc(o->dim);
   size_t i;
   if (pr->funopt->algorithm>=0) {
 	opt_oct_cache_closure(pr,o);
@@ -140,7 +144,7 @@ ap_interval_t** opt_oct_to_box(ap_manager_t* man, opt_oct_t* o)
   if (!o->closed && !o->m) {
     /* definitively empty */
     for (i=0;i<o->dim;i++)
-      ap_interval_set_bottom(in[i]);
+      elina_interval_set_bottom(in[i]);
   }
   else {
     /* put variable bounds */
@@ -151,7 +155,7 @@ ap_interval_t** opt_oct_to_box(ap_manager_t* man, opt_oct_t* o)
     if(!oo->is_dense){
 	    array_comp_list_t * acl = oo->acl;
 	     for (i=0;i<o->dim;i++){
-	     	ap_interval_set_top(in[i]);
+	     	elina_interval_set_top(in[i]);
 	     }
 	    comp_list_t * cl = acl->head;
 	    while(cl!=NULL){
@@ -184,26 +188,26 @@ ap_interval_t** opt_oct_to_box(ap_manager_t* man, opt_oct_t* o)
   return in;
 }
 
-ap_interval_t* opt_oct_bound_texpr(ap_manager_t* man,
-			       opt_oct_t* o, ap_texpr0_t* expr)
+elina_interval_t* opt_oct_bound_texpr(elina_manager_t* man,
+			       opt_oct_t* o, elina_texpr0_t* expr)
 {
-  return ap_generic_bound_texpr(man,o,expr,NUM_AP_SCALAR,false);
+  return elina_generic_bound_texpr(man,o,expr,ELINA_SCALAR_DOUBLE,false);
 }
 
 
-ap_interval_t* opt_oct_bound_dimension(ap_manager_t* man,
-				   opt_oct_t* o, ap_dim_t dim)
+elina_interval_t* opt_oct_bound_dimension(elina_manager_t* man,
+				   opt_oct_t* o, elina_dim_t dim)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_BOUND_DIMENSION,0);
-  ap_interval_t* r = ap_interval_alloc();
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_BOUND_DIMENSION,0);
+  elina_interval_t* r = elina_interval_alloc();
   if(dim>=o->dim){
-	ap_interval_free(r);
+	elina_interval_free(r);
 	return NULL;
   }
   if (pr->funopt->algorithm>=0) opt_oct_cache_closure(pr,o);
   if (!o->closed && !o->m) {
     /* really empty */
-    ap_interval_set_bottom(r);
+    elina_interval_set_bottom(r);
   }
   else if (o->closed) {
     /* optimal in Q */
@@ -211,7 +215,7 @@ ap_interval_t* opt_oct_bound_dimension(ap_manager_t* man,
     double *mm = oo->mat;
     if(!oo->is_dense){
 	if(find(oo->acl,dim)==NULL){
-		ap_interval_set_top(r);
+		elina_interval_set_top(r);
 	}
 	else{
 		opt_interval_of_bounds(pr,r,
@@ -233,7 +237,7 @@ ap_interval_t* opt_oct_bound_dimension(ap_manager_t* man,
     double *mm = oo->mat;
     if(!oo->is_dense){
 	if(find(oo->acl,dim)==NULL){
-		ap_interval_set_top(r);
+		elina_interval_set_top(r);
 	}
 	else{
 		opt_interval_of_bounds(pr,r,
@@ -251,15 +255,15 @@ ap_interval_t* opt_oct_bound_dimension(ap_manager_t* man,
   return r;
 }
 
-ap_lincons0_array_t opt_oct_to_lincons_array(ap_manager_t* man, opt_oct_t* o)
+elina_lincons0_array_t opt_oct_to_lincons_array(elina_manager_t* man, opt_oct_t* o)
 {
-  ap_lincons0_array_t ar;
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_TO_LINCONS_ARRAY,0);
+  elina_lincons0_array_t ar;
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_TO_LINCONS_ARRAY,0);
   
   if (!o->closed && !o->m) {
     /* definitively empty */
-    ar = ap_lincons0_array_make(1);
-    ar.p[0] = ap_lincons0_make_unsat();
+    ar = elina_lincons0_array_make(1);
+    ar.p[0] = elina_lincons0_make_unsat();
   }
   else {
     /* put non-oo constraint bounds only */
@@ -268,7 +272,7 @@ ap_lincons0_array_t opt_oct_to_lincons_array(ap_manager_t* man, opt_oct_t* o)
     double *m = oo->mat;
     int i,j,n=0;
     int size = 2*(o->dim)*(o->dim + 1);
-    ar = ap_lincons0_array_make(size);
+    ar = elina_lincons0_array_make(size);
     if(!oo->is_dense){
 	    array_comp_list_t * acl = oo->acl;
 	    char * map = (char *)calloc(o->dim,sizeof(char));
@@ -322,10 +326,10 @@ ap_lincons0_array_t opt_oct_to_lincons_array(ap_manager_t* man, opt_oct_t* o)
 /***********************************
 	Check if the bound of a variable is within the given interval
 ***********************************/
-bool opt_oct_sat_interval(ap_manager_t* man, opt_oct_t* o,
-		      ap_dim_t dim, ap_interval_t* i)
+bool opt_oct_sat_interval(elina_manager_t* man, opt_oct_t* o,
+		      elina_dim_t dim, elina_interval_t* i)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_SAT_INTERVAL,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_SAT_INTERVAL,0);
   if(dim >= o->dim){
 	return false;
   }
@@ -337,12 +341,12 @@ bool opt_oct_sat_interval(ap_manager_t* man, opt_oct_t* o,
   else {
     opt_oct_mat_t* oo = o->closed ? o->closed : o->m;
     double *m = oo->mat;
-    ap_interval_t* b = ap_interval_alloc();
+    elina_interval_t* b = elina_interval_alloc();
     bool r;
     if(!oo->is_dense){
 	array_comp_list_t *acl = oo->acl;
 	if(find(acl,dim)==NULL){
-		ap_interval_set_top(b);
+		elina_interval_set_top(b);
 	}
 	else{
 		/* get (possibly approximated) bounds */
@@ -358,8 +362,8 @@ bool opt_oct_sat_interval(ap_manager_t* man, opt_oct_t* o,
     
     
     /* compare with i */
-    r = (ap_scalar_cmp(b->inf,i->inf)>=0) && (ap_scalar_cmp(b->sup,i->sup)<=0);
-    ap_interval_free(b);
+    r = (elina_scalar_cmp(b->inf,i->inf)>=0) && (elina_scalar_cmp(b->sup,i->sup)<=0);
+    elina_interval_free(b);
     if (r) return true; /* definitively saturates */
     else
       /* definitely does not saturate on Q if closed & no conv error */
@@ -373,11 +377,11 @@ bool opt_oct_sat_interval(ap_manager_t* man, opt_oct_t* o,
 /******************************
  Is dimension unconstrained
 *****************************/
-bool opt_oct_is_dimension_unconstrained(ap_manager_t* man, opt_oct_t* o,
-				    ap_dim_t dim)
+bool opt_oct_is_dimension_unconstrained(elina_manager_t* man, opt_oct_t* o,
+				    elina_dim_t dim)
 {
   opt_oct_internal_t* pr =
-    opt_oct_init_from_manager(man,AP_FUNID_IS_DIMENSION_UNCONSTRAINED,0);
+    opt_oct_init_from_manager(man,ELINA_FUNID_IS_DIMENSION_UNCONSTRAINED,0);
   if(dim<o->dim){
 	return false;
   }
@@ -441,29 +445,29 @@ SAT Constraints
 
 
 
-bool opt_oct_sat_lincons(ap_manager_t *man,opt_oct_internal_t* pr,opt_oct_t* o,
-		     ap_lincons0_t* lincons)
+bool opt_oct_sat_lincons(elina_manager_t *man,opt_oct_internal_t* pr,opt_oct_t* o,
+		     elina_lincons0_t* lincons)
 {
   
  
     opt_oct_mat_t * oo = o->closed ? o->closed : o->m;
     double *b = oo->mat;   
     size_t i, ui, uj;
-    ap_constyp_t c = lincons->constyp;
+    elina_constyp_t c = lincons->constyp;
     opt_uexpr u;
     bool r;
 
     switch (c) {
 
       /* skipped */
-    case AP_CONS_EQMOD:
-    case AP_CONS_DISEQ:
+    case ELINA_CONS_EQMOD:
+    case ELINA_CONS_DISEQ:
       return false;
 
       /* handled */
-    case AP_CONS_EQ:
-    case AP_CONS_SUPEQ:
-    case AP_CONS_SUP:
+    case ELINA_CONS_EQ:
+    case ELINA_CONS_SUPEQ:
+    case ELINA_CONS_SUP:
       break;
 
       /* error */
@@ -482,11 +486,11 @@ bool opt_oct_sat_lincons(ap_manager_t *man,opt_oct_internal_t* pr,opt_oct_t* o,
      }
 
     case OPT_ZERO:
-      if ((c==AP_CONS_SUPEQ && (pr->tmp[0]<=0)) ||
+      if ((c==ELINA_CONS_SUPEQ && (pr->tmp[0]<=0)) ||
 	  /* [-a,b] >= 0 <=> a <= 0 */
-	  (c==AP_CONS_SUP && (pr->tmp[0]<0)) ||
+	  (c==ELINA_CONS_SUP && (pr->tmp[0]<0)) ||
 	  /* [-a,b] > 0 <=> a < 0 */
-	  (c==AP_CONS_EQ && (pr->tmp[0]==0) && (pr->tmp[1]==0))
+	  (c==ELINA_CONS_EQ && (pr->tmp[0]==0) && (pr->tmp[1]==0))
 	  /* [-a,b] = 0 <=> a=b=0 */
 	  )
        {
@@ -518,9 +522,9 @@ bool opt_oct_sat_lincons(ap_manager_t *man,opt_oct_internal_t* pr,opt_oct_t* o,
       }
       if ((pr->tmp[0] <=0) &&
 	  /* c_i X_i + [-a,b] >= 0 <=> -c_i X_i + a <= 0 */
-	  (c!=AP_CONS_SUP || (pr->tmp[0]<0)) &&
+	  (c!=ELINA_CONS_SUP || (pr->tmp[0]<0)) &&
 	  /* c_i X_i + [-a,b] >  0 <=> -c_i X_i + a <  0 */
-	  (c!=AP_CONS_EQ || (pr->tmp[1]<=0))
+	  (c!=ELINA_CONS_EQ || (pr->tmp[1]<=0))
 	  /* c_i X_i + [-a,b] <= 0 <=>  c_i X_i + b <= 0 */
 	  ){
 	return true;
@@ -548,9 +552,9 @@ bool opt_oct_sat_lincons(ap_manager_t *man,opt_oct_internal_t* pr,opt_oct_t* o,
       }
       if ((pr->tmp[0]<=0) &&
 	  /* c_i X_i + c_j X_j + [-a,b] >= 0 <=> -c_i X_i - c_j X_j + a <= 0 */
-	  (c!=AP_CONS_SUP || (pr->tmp[0]<0)) &&
+	  (c!=ELINA_CONS_SUP || (pr->tmp[0]<0)) &&
 	  /* c_i X_i + c_j X_j + [-a,b] >  0 <=> -c_i X_i - c_j X_j + a <  0 */
-	  (c!=AP_CONS_EQ || (pr->tmp[1]<=0))
+	  (c!=ELINA_CONS_EQ || (pr->tmp[1]<=0))
 	  /* c_i X_i + c_j X_j + [-a,b] <= 0 <=>  c_i X_i + c_j X_j + b <= 0 */
 	  ){
 		return true;
@@ -574,10 +578,10 @@ bool opt_oct_sat_lincons(ap_manager_t *man,opt_oct_internal_t* pr,opt_oct_t* o,
     }
 }
 
-bool opt_oct_sat_lincons_timing(ap_manager_t* man, opt_oct_t* o,
-		     ap_lincons0_t* lincons){
+bool opt_oct_sat_lincons_timing(elina_manager_t* man, opt_oct_t* o,
+		     elina_lincons0_t* lincons){
 
-   opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_SAT_LINCONS,
+   opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_SAT_LINCONS,
 					     2*(o->dim+1));
    if (pr->funopt->algorithm>=0) opt_oct_cache_closure(pr,o);
    if (!o->closed && !o->m) {
@@ -598,9 +602,9 @@ bool opt_oct_sat_lincons_timing(ap_manager_t* man, opt_oct_t* o,
 
 
 
-bool opt_oct_sat_tcons(ap_manager_t* man, opt_oct_t* o,
-		   ap_tcons0_t* cons)
+bool opt_oct_sat_tcons(elina_manager_t* man, opt_oct_t* o,
+		   elina_tcons0_t* cons)
 {
-  return ap_generic_sat_tcons(man,o,cons,NUM_AP_SCALAR,false);
+  return elina_generic_sat_tcons(man,o,cons,ELINA_SCALAR_DOUBLE,false);
 }
 

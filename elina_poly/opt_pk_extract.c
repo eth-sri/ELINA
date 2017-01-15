@@ -1,18 +1,22 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 
 /* ********************************************************************** */
@@ -37,7 +41,7 @@
 elina_interval_t* opt_pk_bound_dimension_gen(elina_manager_t* man,
 				  opt_pk_array_t* oa,
 				  elina_dim_t dim){
-  itv_t itv;
+ 
   elina_interval_t* interval;
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_BOUND_DIMENSION);
 
@@ -75,7 +79,6 @@ elina_interval_t* opt_pk_bound_dimension_gen(elina_manager_t* man,
     return interval;
   }
 
-  itv_init(itv);
   unsigned short int * ca = to_sorted_array(cl,oa->maxcols);
   unsigned short int i, new_dim=0;
   unsigned short int comp_size = cl->size;
@@ -86,10 +89,8 @@ elina_interval_t* opt_pk_bound_dimension_gen(elina_manager_t* man,
 	}
   }
 
-  opt_generator_bound_dimension(opk,itv,new_dim,oak->F);
+  opt_generator_bound_dimension(opk,interval,new_dim,oak->F);
   free(ca);
-  elina_interval_set_itv(opk->itv,interval, itv);
-  itv_clear(itv);
   man->result.flag_exact = man->result.flag_best = 
     new_dim<oak->intdim ? false : true;
   return interval;
@@ -208,7 +209,7 @@ elina_interval_t** opt_pk_to_box(elina_manager_t* man,
        start_timing();
   #endif
   elina_interval_t** interval;
-  itv_t* titv;
+  elina_interval_t** tinterval;
   unsigned short int i,dim;
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_TO_BOX);
    unsigned short int maxcols = op->maxcols;
@@ -270,12 +271,12 @@ elina_interval_t** opt_pk_to_box(elina_manager_t* man,
   	opt_pk_t * ok = poly[k];
 	unsigned short int comp_size = cl->size;
 	unsigned short int * ca = to_sorted_array(cl,maxcols);
-	titv = opt_generator_to_box(opk,ok->F);	
+	tinterval = opt_generator_to_box(opk,ok->F);	
 	for (i=0; i<comp_size; i++){
 	     unsigned short int var = ca[i] - opk->dec;
-      	     elina_interval_set_itv(opk->itv,interval[var],titv[i]);
+	     elina_interval_set(interval[var],tinterval[i]);
     	}
-	itv_array_free(titv,comp_size);
+	elina_interval_array_free(tinterval,comp_size);
 	free(ca);
 	cl = cl->next;
   }

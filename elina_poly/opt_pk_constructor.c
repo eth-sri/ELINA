@@ -1,19 +1,22 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
-
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 
 /* ********************************************************************** */
@@ -126,43 +129,42 @@ int opt_matrix_fill_constraint_box(opt_pk_internal_t* opk,
   size_t k;
   elina_dim_t i;
   bool ok;
-  itv_t itv;
   k = start;
 
-  itv_init(itv);
   for (i=0; i<intdim+realdim; i++){
-    itv_set_elina_interval(opk->itv,itv,box[i]);
-    if (itv_is_point(opk->itv,itv)){
+    elina_interval_t * interval = box[i];
+    int res1 = elina_scalar_infty(interval->inf);
+    int res2 = elina_scalar_infty(interval->sup);
+    bool res3 = elina_scalar_equal(interval->inf,interval->sup);
+    if (!res1 && !res2 && res3){
       ok = opt_vector_set_dim_bound(opk,oc->p[k],
-				 (elina_dim_t)i, bound_numref(itv->sup), 0,
+				 (elina_dim_t)i, interval->sup, 0,
 				 intdim,realdim,
 				 integer);
       if (!ok){
-	itv_clear(itv);
 	return -1;
       }
       k++;
     }
     else {
       /* inferior bound */
-      if (!bound_infty(itv->inf)){
+      if (!res1){
 	opt_vector_set_dim_bound(opk,oc->p[k],
-			     (elina_dim_t)i, bound_numref(itv->inf), -1,
+			     (elina_dim_t)i, interval->inf, -1,
 			     intdim,realdim,
 			     integer);
 	k++;
       }
       /* superior bound */
-      if (!bound_infty(itv->sup)){
+      if (!res2){
 	opt_vector_set_dim_bound(opk,oc->p[k],
-			     (elina_dim_t)i, bound_numref(itv->sup), 1,
+			     (elina_dim_t)i, interval->sup, 1,
 			     intdim,realdim,
 			     integer);
 	k++;
       }
     }
   }
-  itv_clear(itv);
   return (int)k;
 }
 

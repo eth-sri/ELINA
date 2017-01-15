@@ -1,18 +1,22 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 
 #include "opt_oct_hmat.h"
@@ -21,12 +25,12 @@
 Projection:
 *****************/
 
-opt_oct_t* opt_oct_forget_array(ap_manager_t* man,
+opt_oct_t* opt_oct_forget_array(elina_manager_t* man,
 			bool destructive, opt_oct_t* o,
-			ap_dim_t* tdim, int size,
+			elina_dim_t* tdim, int size,
 			bool project)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_FORGET_ARRAY,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_FORGET_ARRAY,0);
   if (pr->funopt->algorithm>=0) opt_oct_cache_closure(pr,o);
   if (!o->closed && !o->m)
     /* definitively empty */
@@ -62,12 +66,12 @@ opt_oct_t* opt_oct_forget_array(ap_manager_t* man,
 Add Dimensions
 
 *****/
-opt_oct_t* opt_oct_add_dimensions(ap_manager_t* man,
+opt_oct_t* opt_oct_add_dimensions(elina_manager_t* man,
 			  bool destructive, opt_oct_t* o,
-			  ap_dimchange_t* dimchange,
+			  elina_dimchange_t* dimchange,
 			  bool project)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_ADD_DIMENSIONS,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_ADD_DIMENSIONS,0);
   opt_oct_mat_t* src = o->closed ? o->closed : o->m;
   opt_oct_mat_t* dst;
   size_t i, nb = dimchange->intdim+dimchange->realdim;
@@ -115,11 +119,11 @@ opt_oct_t* opt_oct_add_dimensions(ap_manager_t* man,
 Remove dimensions
 ********/
 
-opt_oct_t* opt_oct_remove_dimensions(ap_manager_t* man,
+opt_oct_t* opt_oct_remove_dimensions(elina_manager_t* man,
 			     bool destructive, opt_oct_t* o,
-			     ap_dimchange_t* dimchange)
+			     elina_dimchange_t* dimchange)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_REMOVE_DIMENSIONS,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_REMOVE_DIMENSIONS,0);
   opt_oct_mat_t *src, *dst;
   size_t i, nb = dimchange->intdim+dimchange->realdim;
   opt_oct_t* r;
@@ -164,11 +168,11 @@ opt_oct_t* opt_oct_remove_dimensions(ap_manager_t* man,
 Permute Dimensions
 ***********/
 
-opt_oct_t* opt_oct_permute_dimensions(ap_manager_t* man,
+opt_oct_t* opt_oct_permute_dimensions(elina_manager_t* man,
 			      bool destructive, opt_oct_t* o,
-			      ap_dimperm_t* permutation)
+			      elina_dimperm_t* permutation)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_ADD_DIMENSIONS,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_ADD_DIMENSIONS,0);
   opt_oct_mat_t* src = o->closed ? o->closed : o->m;
   opt_oct_mat_t* dst;
   if(permutation->size!=o->dim)return NULL;
@@ -195,16 +199,16 @@ opt_oct_t* opt_oct_permute_dimensions(ap_manager_t* man,
   else return opt_oct_set_mat(pr,o,dst,NULL,destructive);
 }
 
-opt_oct_t* opt_oct_expand(ap_manager_t* man,
+opt_oct_t* opt_oct_expand(elina_manager_t* man,
 		  bool destructive, opt_oct_t* o,
-		  ap_dim_t dim,
+		  elina_dim_t dim,
 		  size_t n)
 {
   
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_EXPAND,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_EXPAND,0);
   opt_oct_mat_t* src = o->closed ? o->closed : o->m;
   size_t i, j;
-  ap_dim_t pos = (dim < o->intdim) ? o->intdim : o->dim;
+  elina_dim_t pos = (dim < o->intdim) ? o->intdim : o->dim;
   opt_oct_mat_t* dst;
   opt_oct_t* r;
   if (!src) dst = NULL;
@@ -356,13 +360,13 @@ opt_oct_t* opt_oct_expand(ap_manager_t* man,
   return r;
 }
 
-opt_oct_t* opt_oct_fold(ap_manager_t* man,
+opt_oct_t* opt_oct_fold(elina_manager_t* man,
 		bool destructive, opt_oct_t* o,
-		ap_dim_t* tdim,
+		elina_dim_t* tdim,
 		size_t size)
 {
   
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_FOLD,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_FOLD,0);
   opt_oct_mat_t* src;
   opt_oct_mat_t* dst;
   opt_oct_t* r;
@@ -397,8 +401,8 @@ opt_oct_t* opt_oct_fold(ap_manager_t* man,
     oo->is_dense = src->is_dense;
     oo->nni = src->nni;
     if(!src->is_dense){
+	    free_array_comp_list(oo->acl);
     	    oo->acl = copy_array_comp_list(src->acl);
-    
 	    /* merge binary constraints */
 	    comp_list_t * cto = find(oo->acl,tdim[0]);
 	    int count = 0;
@@ -486,7 +490,6 @@ opt_oct_t* opt_oct_fold(ap_manager_t* man,
 	   }
      }
      else{
-		
 	    /* merge binary constraints */
 	    for (j=0;j<2*tdim[0];j++) {
 	      double* mm1 = oo->mat+opt_matpos2(tdim[0]*2,j);

@@ -1,18 +1,23 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
 
 
 #include <stdio.h>
@@ -31,9 +36,9 @@ opt_oct_t * opt_oct_alloc_internal(opt_oct_internal_t *pr, int dim, int intdim){
 }
 
 
-int opt_oct_size(ap_manager_t* man, opt_oct_t* o)
+int opt_oct_size(elina_manager_t* man, opt_oct_t* o)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_ASIZE,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_ASIZE,0);
   if (!o->m) return 1;
   int size = 2*(o->dim)*(o->dim + 1);
   return size;
@@ -114,31 +119,31 @@ opt_oct_t* opt_oct_set_mat(opt_oct_internal_t* pr, opt_oct_t* o, opt_oct_mat_t* 
 }
 
 
-opt_oct_t* opt_oct_copy(ap_manager_t* man, opt_oct_t* o)
+opt_oct_t* opt_oct_copy(elina_manager_t* man, opt_oct_t* o)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_COPY,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_COPY,0);
   opt_oct_t *res = opt_oct_copy_internal(pr,o);
   return res;
 }
 
 
-void opt_oct_free(ap_manager_t* man, opt_oct_t* o)
+void opt_oct_free(elina_manager_t* man, opt_oct_t* o)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_FREE,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_FREE,0);
   opt_oct_free_internal(pr,o);
   
 }
 
-opt_oct_t* opt_oct_bottom(ap_manager_t* man, int intdim, int realdim)
+opt_oct_t* opt_oct_bottom(elina_manager_t* man, int intdim, int realdim)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_BOTTOM,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_BOTTOM,0);
   opt_oct_t* o = opt_oct_alloc_internal(pr,intdim+realdim,intdim);
   return o;
 }
 
-opt_oct_t* opt_oct_top(ap_manager_t* man, int intdim, int realdim)
+opt_oct_t* opt_oct_top(elina_manager_t* man, int intdim, int realdim)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_TOP,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_TOP,0);
   opt_oct_t* r = opt_oct_alloc_internal(pr,intdim+realdim,intdim);
   int size = 2*(r->dim)*(r->dim + 1);
   r->closed = opt_hmat_alloc_top(r->dim);
@@ -146,10 +151,10 @@ opt_oct_t* opt_oct_top(ap_manager_t* man, int intdim, int realdim)
 }
 
 
-ap_dimension_t opt_oct_dimension(ap_manager_t* man, opt_oct_t* o)
+elina_dimension_t opt_oct_dimension(elina_manager_t* man, opt_oct_t* o)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_DIMENSION,0);
-  ap_dimension_t r;
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_DIMENSION,0);
+  elina_dimension_t r;
   r.intdim = o->intdim;
   r.realdim = o->dim-o->intdim;
   return r;
@@ -192,26 +197,26 @@ void opt_oct_close(opt_oct_internal_t *pr, opt_oct_t *o){
 }
 
 /*We throw an exception just like APRON */
-void opt_oct_minimize(ap_manager_t* man, opt_oct_t* o)
+void opt_oct_minimize(elina_manager_t* man, opt_oct_t* o)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_MINIMIZE,0);
-  ap_manager_raise_exception(man,AP_EXC_NOT_IMPLEMENTED,pr->funid,
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_MINIMIZE,0);
+  elina_manager_raise_exception(man,ELINA_EXC_NOT_IMPLEMENTED,pr->funid,
 			     "not implemented");
 }
 
 
 /* We throw an exception just like APRON */
-void opt_oct_canonicalize(ap_manager_t* man, opt_oct_t* o)
+void opt_oct_canonicalize(elina_manager_t* man, opt_oct_t* o)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_CANONICALIZE,0);
-  ap_manager_raise_exception(man,AP_EXC_NOT_IMPLEMENTED,pr->funid,
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_CANONICALIZE,0);
+  elina_manager_raise_exception(man,ELINA_EXC_NOT_IMPLEMENTED,pr->funid,
 			     "not implemented");
 }
 
 /* We compute hash just like APRON */
-int opt_oct_hash(ap_manager_t* man, opt_oct_t* o)
+int opt_oct_hash(elina_manager_t* man, opt_oct_t* o)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_HASH,0);
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_HASH,0);
   if (pr->funopt->algorithm>=0) opt_oct_cache_closure(pr,o);
   if (o->closed || o->m) {
     int r = 0;
@@ -227,18 +232,18 @@ int opt_oct_hash(ap_manager_t* man, opt_oct_t* o)
 }
 
 /* We throw an exception just like APRON */
-void opt_oct_approximate(ap_manager_t* man, opt_oct_t* o, int algorithm)
+void opt_oct_approximate(elina_manager_t* man, opt_oct_t* o, int algorithm)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,AP_FUNID_APPROXIMATE,0);
-  ap_manager_raise_exception(man,AP_EXC_NOT_IMPLEMENTED,pr->funid,
+  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_APPROXIMATE,0);
+  elina_manager_raise_exception(man,ELINA_EXC_NOT_IMPLEMENTED,pr->funid,
 			     "not implemented");
 }
 /****
 
 Topological closure
 ****/
-opt_oct_t* opt_oct_closure(ap_manager_t *man, bool destructive, opt_oct_t *o){
-	opt_oct_internal_t *pr = (opt_oct_internal_t *)opt_oct_init_from_manager(man, AP_FUNID_CLOSURE,0);
+opt_oct_t* opt_oct_closure(elina_manager_t *man, bool destructive, opt_oct_t *o){
+	opt_oct_internal_t *pr = (opt_oct_internal_t *)opt_oct_init_from_manager(man, ELINA_FUNID_CLOSURE,0);
 	if(destructive)return o;
 	return opt_oct_copy_internal(pr,o);
 }
@@ -261,7 +266,7 @@ Print Timing Information
 
 ****/
 
-void opt_oct_fprint(FILE* stream, ap_manager_t* man, opt_oct_t * a,char** name_of_dim){
+void opt_oct_fprint(FILE* stream, elina_manager_t* man, opt_oct_t * a,char** name_of_dim){
 	#if defined(TIMING)
 		fprintf(stdout,"Times are in CPU Cycles\n");
 		fprintf(stdout,"Top: %g\n",top_time);
@@ -293,13 +298,13 @@ void opt_oct_fprint(FILE* stream, ap_manager_t* man, opt_oct_t * a,char** name_o
 }
 
 
-ap_manager_t* opt_oct_manager_alloc(void)
+elina_manager_t* opt_oct_manager_alloc(void)
 {
   size_t i;
-  ap_manager_t* man;
+  elina_manager_t* man;
   opt_oct_internal_t* pr;
 
-  if (!ap_fpu_init()) {
+  if (!elina_fpu_init()) {
     ////fprintf(stderr,"opt_oct_manager_alloc cannot change the FPU rounding mode\n");
   }
 
@@ -312,80 +317,80 @@ ap_manager_t* opt_oct_manager_alloc(void)
   pr->tmp2 = calloc(pr->tmp_size,sizeof(long));
   assert(pr->tmp2);
   
-  man = ap_manager_alloc("opt_oct","1.0 with double", pr,
+  man = elina_manager_alloc("opt_oct","1.0 with double", pr,
 			 (void (*)(void*))opt_oct_internal_free);
 
   pr->man = man;
 
-  man->funptr[AP_FUNID_COPY] = &opt_oct_copy;
-  man->funptr[AP_FUNID_FREE] = &opt_oct_free;
-  man->funptr[AP_FUNID_ASIZE] = &opt_oct_size;
-  man->funptr[AP_FUNID_MINIMIZE] = &opt_oct_minimize;
-  man->funptr[AP_FUNID_CANONICALIZE] = &opt_oct_canonicalize;
-  man->funptr[AP_FUNID_HASH] = &opt_oct_hash;
-  man->funptr[AP_FUNID_APPROXIMATE] = &opt_oct_approximate;
-  man->funptr[AP_FUNID_FPRINT] = &opt_oct_fprint;
-  //man->funptr[AP_FUNID_FPRINTDIFF] = &opt_oct_fprintdiff;
-  //man->funptr[AP_FUNID_FDUMP] = &opt_oct_fdump;
-  //man->funptr[AP_FUNID_SERIALIZE_RAW] = &opt_oct_serialize_raw;
-  //man->funptr[AP_FUNID_DESERIALIZE_RAW] = &opt_oct_deserialize_raw;
-  man->funptr[AP_FUNID_BOTTOM] = &opt_oct_bottom;
-  man->funptr[AP_FUNID_TOP] = &opt_oct_top;
-  //man->funptr[AP_FUNID_OF_BOX] = &opt_oct_of_box;
-  man->funptr[AP_FUNID_DIMENSION] = &opt_oct_dimension;
-  man->funptr[AP_FUNID_IS_BOTTOM] = &opt_oct_is_bottom;
-  man->funptr[AP_FUNID_IS_TOP] = &opt_oct_is_top;
-  man->funptr[AP_FUNID_IS_LEQ] = &opt_oct_is_leq;
-  man->funptr[AP_FUNID_IS_EQ] = &opt_oct_is_eq;
-  man->funptr[AP_FUNID_IS_DIMENSION_UNCONSTRAINED] = &opt_oct_is_dimension_unconstrained;
-  man->funptr[AP_FUNID_SAT_INTERVAL] = &opt_oct_sat_interval;
-  man->funptr[AP_FUNID_SAT_LINCONS] = &opt_oct_sat_lincons_timing;
-  man->funptr[AP_FUNID_SAT_TCONS] = &opt_oct_sat_tcons;
-  man->funptr[AP_FUNID_BOUND_DIMENSION] = &opt_oct_bound_dimension;
-  //man->funptr[AP_FUNID_BOUND_LINEXPR] = &opt_oct_bound_linexpr;
-  man->funptr[AP_FUNID_BOUND_TEXPR] = &opt_oct_bound_texpr;
-  man->funptr[AP_FUNID_TO_BOX] = &opt_oct_to_box;
-  man->funptr[AP_FUNID_TO_LINCONS_ARRAY] = &opt_oct_to_lincons_array;
-  man->funptr[AP_FUNID_TO_TCONS_ARRAY] = &opt_oct_to_tcons_array;
-  //man->funptr[AP_FUNID_TO_GENERATOR_ARRAY] = &opt_oct_to_generator_array;
-  man->funptr[AP_FUNID_MEET] = &opt_oct_meet;
-  man->funptr[AP_FUNID_MEET_ARRAY] = &opt_oct_meet_array;
-  man->funptr[AP_FUNID_MEET_LINCONS_ARRAY] = &opt_oct_meet_lincons_array;
-  man->funptr[AP_FUNID_MEET_TCONS_ARRAY] = &opt_oct_meet_tcons_array;
-  man->funptr[AP_FUNID_JOIN] = &opt_oct_join;
-  man->funptr[AP_FUNID_JOIN_ARRAY] = &opt_oct_join_array;
-  //man->funptr[AP_FUNID_ADD_RAY_ARRAY] = &opt_oct_add_ray_array;
-  man->funptr[AP_FUNID_ASSIGN_LINEXPR_ARRAY] = &opt_oct_assign_linexpr_array;
-  //man->funptr[AP_FUNID_SUBSTITUTE_LINEXPR_ARRAY] = &opt_oct_substitute_linexpr_array;
-    man->funptr[AP_FUNID_ASSIGN_TEXPR_ARRAY] = &opt_oct_assign_texpr_array;
-  //man->funptr[AP_FUNID_SUBSTITUTE_TEXPR_ARRAY] = &opt_oct_substitute_texpr_array;
-    man->funptr[AP_FUNID_ADD_DIMENSIONS] = &opt_oct_add_dimensions;
-    man->funptr[AP_FUNID_REMOVE_DIMENSIONS] = &opt_oct_remove_dimensions;
-    man->funptr[AP_FUNID_PERMUTE_DIMENSIONS] = &opt_oct_permute_dimensions;
-    man->funptr[AP_FUNID_FORGET_ARRAY] = &opt_oct_forget_array;
-    man->funptr[AP_FUNID_EXPAND] = &opt_oct_expand;
-    man->funptr[AP_FUNID_FOLD] = &opt_oct_fold;
-    man->funptr[AP_FUNID_WIDENING] = &opt_oct_widening;
-    man->funptr[AP_FUNID_CLOSURE] = &opt_oct_closure;
+  man->funptr[ELINA_FUNID_COPY] = &opt_oct_copy;
+  man->funptr[ELINA_FUNID_FREE] = &opt_oct_free;
+  man->funptr[ELINA_FUNID_ASIZE] = &opt_oct_size;
+  man->funptr[ELINA_FUNID_MINIMIZE] = &opt_oct_minimize;
+  man->funptr[ELINA_FUNID_CANONICALIZE] = &opt_oct_canonicalize;
+  man->funptr[ELINA_FUNID_HASH] = &opt_oct_hash;
+  man->funptr[ELINA_FUNID_APPROXIMATE] = &opt_oct_approximate;
+  man->funptr[ELINA_FUNID_FPRINT] = &opt_oct_fprint;
+  //man->funptr[ELINA_FUNID_FPRINTDIFF] = &opt_oct_fprintdiff;
+  //man->funptr[ELINA_FUNID_FDUMP] = &opt_oct_fdump;
+  //man->funptr[ELINA_FUNID_SERIALIZE_RAW] = &opt_oct_serialize_raw;
+  //man->funptr[ELINA_FUNID_DESERIALIZE_RAW] = &opt_oct_deserialize_raw;
+  man->funptr[ELINA_FUNID_BOTTOM] = &opt_oct_bottom;
+  man->funptr[ELINA_FUNID_TOP] = &opt_oct_top;
+  //man->funptr[ELINA_FUNID_OF_BOX] = &opt_oct_of_box;
+  man->funptr[ELINA_FUNID_DIMENSION] = &opt_oct_dimension;
+  man->funptr[ELINA_FUNID_IS_BOTTOM] = &opt_oct_is_bottom;
+  man->funptr[ELINA_FUNID_IS_TOP] = &opt_oct_is_top;
+  man->funptr[ELINA_FUNID_IS_LEQ] = &opt_oct_is_leq;
+  man->funptr[ELINA_FUNID_IS_EQ] = &opt_oct_is_eq;
+  man->funptr[ELINA_FUNID_IS_DIMENSION_UNCONSTRAINED] = &opt_oct_is_dimension_unconstrained;
+  man->funptr[ELINA_FUNID_SAT_INTERVAL] = &opt_oct_sat_interval;
+  man->funptr[ELINA_FUNID_SAT_LINCONS] = &opt_oct_sat_lincons_timing;
+  man->funptr[ELINA_FUNID_SAT_TCONS] = &opt_oct_sat_tcons;
+  man->funptr[ELINA_FUNID_BOUND_DIMENSION] = &opt_oct_bound_dimension;
+  //man->funptr[ELINA_FUNID_BOUND_LINEXPR] = &opt_oct_bound_linexpr;
+  man->funptr[ELINA_FUNID_BOUND_TEXPR] = &opt_oct_bound_texpr;
+  man->funptr[ELINA_FUNID_TO_BOX] = &opt_oct_to_box;
+  man->funptr[ELINA_FUNID_TO_LINCONS_ARRAY] = &opt_oct_to_lincons_array;
+  man->funptr[ELINA_FUNID_TO_TCONS_ARRAY] = &opt_oct_to_tcons_array;
+  //man->funptr[ELINA_FUNID_TO_GENERATOR_ARRAY] = &opt_oct_to_generator_array;
+  man->funptr[ELINA_FUNID_MEET] = &opt_oct_meet;
+  man->funptr[ELINA_FUNID_MEET_ARRAY] = &opt_oct_meet_array;
+  man->funptr[ELINA_FUNID_MEET_LINCONS_ARRAY] = &opt_oct_meet_lincons_array;
+  man->funptr[ELINA_FUNID_MEET_TCONS_ARRAY] = &opt_oct_meet_tcons_array;
+  man->funptr[ELINA_FUNID_JOIN] = &opt_oct_join;
+  man->funptr[ELINA_FUNID_JOIN_ARRAY] = &opt_oct_join_array;
+  //man->funptr[ELINA_FUNID_ADD_RAY_ARRAY] = &opt_oct_add_ray_array;
+  man->funptr[ELINA_FUNID_ASSIGN_LINEXPR_ARRAY] = &opt_oct_assign_linexpr_array;
+  //man->funptr[ELINA_FUNID_SUBSTITUTE_LINEXPR_ARRAY] = &opt_oct_substitute_linexpr_array;
+    man->funptr[ELINA_FUNID_ASSIGN_TEXPR_ARRAY] = &opt_oct_assign_texpr_array;
+  //man->funptr[ELINA_FUNID_SUBSTITUTE_TEXPR_ARRAY] = &opt_oct_substitute_texpr_array;
+    man->funptr[ELINA_FUNID_ADD_DIMENSIONS] = &opt_oct_add_dimensions;
+    man->funptr[ELINA_FUNID_REMOVE_DIMENSIONS] = &opt_oct_remove_dimensions;
+    man->funptr[ELINA_FUNID_PERMUTE_DIMENSIONS] = &opt_oct_permute_dimensions;
+    man->funptr[ELINA_FUNID_FORGET_ARRAY] = &opt_oct_forget_array;
+    man->funptr[ELINA_FUNID_EXPAND] = &opt_oct_expand;
+    man->funptr[ELINA_FUNID_FOLD] = &opt_oct_fold;
+    man->funptr[ELINA_FUNID_WIDENING] = &opt_oct_widening;
+    man->funptr[ELINA_FUNID_CLOSURE] = &opt_oct_closure;
     
 	
-  for (i=0;i<AP_EXC_SIZE;i++)
-    ap_manager_set_abort_if_exception(man,i,false);
+  for (i=0;i<ELINA_EXC_SIZE;i++)
+    elina_manager_set_abort_if_exception(man,i,false);
   
   return man;
 }
 
-opt_oct_t* opt_oct_of_abstract0(ap_abstract0_t* a)
+opt_oct_t* opt_oct_of_abstract0(elina_abstract0_t* a)
 {
   return (opt_oct_t*)a->value;
 }
 
-ap_abstract0_t* abstract0_of_opt_oct(ap_manager_t* man, opt_oct_t* oct)
+elina_abstract0_t* abstract0_of_opt_oct(elina_manager_t* man, opt_oct_t* oct)
 {
-  ap_abstract0_t* r = malloc(sizeof(ap_abstract0_t));
+  elina_abstract0_t* r = malloc(sizeof(elina_abstract0_t));
   assert(r);
   r->value = oct;
-  r->man = ap_manager_copy(man);
+  r->man = elina_manager_copy(man);
   return r;
 }
 

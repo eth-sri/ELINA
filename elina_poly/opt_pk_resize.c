@@ -1,18 +1,22 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 
 /* ********************************************************************** */
@@ -113,7 +117,8 @@ opt_pk_array_t* opt_pk_add_dimensions_cons(elina_manager_t* man,
   /*****************************************
 	Handle independent components
   ******************************************/
-  array_comp_list_t * acl = create_comp_list();
+  
+  array_comp_list_t * acl = create_array_comp_list();
   if(project){
 	for(l=0; l < size; l++){
 		comp_list_t * cl = create_comp_list();
@@ -136,7 +141,7 @@ opt_pk_array_t* opt_pk_add_dimensions_cons(elina_manager_t* man,
 	insert_comp_list(acl,cl);
   	cla = cla->next;
   }
-  
+   
   opt_pk_t ** poly = destructive ? poly_a : (opt_pk_t **)malloc(num_compa*sizeof(opt_pk_t *));
   if(!destructive){
 	  for(k=0;  k< num_compa; k++){
@@ -148,13 +153,14 @@ opt_pk_array_t* opt_pk_add_dimensions_cons(elina_manager_t* man,
 		  poly[k1]->F = src->F ? opt_matrix_copy(src->F) : NULL;
 		  poly[k1]->satC = src->satC ? opt_satmat_copy(src->satC) : NULL;
 		  poly[k1]->satF = src->satF ? opt_satmat_copy(src->satF) : NULL;
+		  
 		  poly[k1]->nbline = src->nbline;
 		  poly[k1]->status = src->status;
 		  poly[k1]->is_minimized = src->is_minimized;
 		  //op = opt_matrix_add_dimensions(opk, destructive, oa->C, dimchange, project);
 	  }
   }
-  
+ 
   if(project){
 	unsigned short int num_comp = project ? num_compa + size : num_compa;
 	if(destructive){
@@ -189,6 +195,7 @@ opt_pk_array_t* opt_pk_add_dimensions_cons(elina_manager_t* man,
   	op = opt_pk_array_alloc(poly,acl,maxcols+size);
 	
   }
+ 
   return op;
 }
 
@@ -408,10 +415,14 @@ opt_pk_array_t* opt_pk_remove_dimensions(elina_manager_t* man,
 			dimchange1.intdim = size;
 			dimchange1.realdim = 0;
 			poly_a[k]->F = opt_matrix_remove_dimensions(opk,false,oak->F,&dimchange1);
+			//TODO: check its impact
+			//opt_matrix_free(oak->F);
+			//oak->F=NULL;
+			poly_a[k]->intdim = comp_size - size;
 			poly_a[k]->nbline = oak->nbline;
 			poly_a[k]->nbeq = 0;
 			if (opk->funopt->algorithm>0){
-			    opt_poly_chernikova(man,oak,"of the result");
+			    opt_poly_chernikova(man,poly_a[k],"of the result");
 			    if (opk->exn){
 				opk->exn = ELINA_EXC_NONE;
 			    }
@@ -419,6 +430,7 @@ opt_pk_array_t* opt_pk_remove_dimensions(elina_manager_t* man,
 			man->result.flag_best = man->result.flag_exact =
 			     dimchange1.intdim==0;
 		}
+		free(ndim);
 		cla = cla->next;
 		k++;
 	}

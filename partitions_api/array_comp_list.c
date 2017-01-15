@@ -1,19 +1,22 @@
 /*
-	Copyright 2015 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
-
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 #include "comp_list.h"
 
@@ -98,7 +101,9 @@ void insert_comp_list_with_union(array_comp_list_t * acl, comp_list_t *cl,unsign
 			continue;
 		}
 		else if(is_included(cl1,cl,n)){
-			remove_comp_list(acl,cl1);
+			comp_list_t * tmp = cl1;
+			cl1 = cl1->next;
+			remove_comp_list(acl,tmp);
 		}
 		else if(is_included(cl,cl1,n)){
 			free(map);
@@ -108,10 +113,10 @@ void insert_comp_list_with_union(array_comp_list_t * acl, comp_list_t *cl,unsign
 		
 		else{
 			union_comp_list(cl,cl1,map);
-			remove_comp_list(acl,cl1);
-			
+			comp_list_t *tmp = cl1;
+			cl1 = cl1->next;
+			remove_comp_list(acl,tmp);	
 		}
-		cl1 = cl1->next;
 	}
 	insert_comp_list(acl,cl);
 	free(map);

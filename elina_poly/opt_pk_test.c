@@ -1,18 +1,22 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 #include "opt_pk_config.h"
 #include "opt_pk.h"
@@ -23,7 +27,6 @@
 #include "opt_pk_user.h"
 #include "opt_pk_constructor.h"
 #include "opt_pk_widening.h"
-#include "itv_linearize.h"
 #include "opt_pk_meetjoin.h"
 
 
@@ -33,8 +36,6 @@
 
 bool opt_pk_is_bottom(elina_manager_t* man, opt_pk_array_t* op)
 {
-  
-  
   start_timing();
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_IS_BOTTOM);
   array_comp_list_t * acl = op->acl;
@@ -871,7 +872,7 @@ void fuse_generators_intersecting_blocks(opt_matrix_t *F, opt_pk_t ** poly_a, ar
 
 bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0_t* lincons0)
 {
-  bool exact;
+  bool exact=true;
   bool sat;
   size_t dim;
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_SAT_LINCONS);
@@ -932,7 +933,7 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
       intersect_map[k] = 1;
       num_vertex_a[k] = opt_generator_rearrange(oak->F,oak->satF);
       if(!num_vertex){
-	 num_vertex = num_vertex_a;
+	 num_vertex = num_vertex_a[k];
       }
       else{
 	 num_vertex = num_vertex*num_vertex_a[k];
@@ -947,10 +948,11 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
   unsigned short int * ca = (unsigned short int *)malloc(sizeof(unsigned short int));
   elina_lincons0_t * new_lincons0 = (elina_lincons0_t *)malloc(sizeof(elina_lincons0_t));
   for(k=0; k < num_comp; k++){
-        if(!is_disjoint(cl,aclb,maxcols)){
+        if(!is_disjoint(cl,clb,maxcols)){
 		comp_size = cl->size;
 		ca = to_sorted_array(cl,maxcols);
 		copy_lincons0_with_comp_list(opk,new_lincons0,lincons0,ca, comp_size);
+		free(ca);
 		break;
 	}       
         cl = cl->next;
@@ -963,25 +965,14 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
   //dim = po->intdim + po->realdim;
   dim = comp_size;
   if (!elina_linexpr0_is_quasilinear(lincons0->linexpr0)){
-    itv_t* env = opt_matrix_to_box(opk,F);
-    exact = itv_lincons_set_elina_lincons0(opk->itv,
-					&opk->poly_itv_lincons,
-					new_lincons0);
-    exact = itv_quasilinearize_lincons(opk->itv,
-				       &opk->poly_itv_lincons,
-				       env,
-				       false)
-      && exact;
-    itv_array_free(env,dim);
+    elina_interval_t** env = opt_matrix_to_box(opk,F);
+    exact = quasilinearize_elina_lincons0(new_lincons0, env, false,ELINA_SCALAR_MPQ) && exact;
+    elina_interval_array_free(env,dim);
   }
-  else {
-    exact = itv_lincons_set_elina_lincons0(opk->itv,
-					&opk->poly_itv_lincons,
-					new_lincons0);
-  }
-  sat = opt_vector_set_itv_lincons_sat(opk,
+  
+  sat = opt_vector_set_elina_lincons0_sat(opk,
 				   opk->poly_numintp,
-				   &opk->poly_itv_lincons,
+				   new_lincons0,
 				   comp_size, 0, true);
   if (sat){
     sat = opt_generators_sat_vector(opk,F,
@@ -1043,15 +1034,7 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
   }
   dim = po->intdim + po->realdim;
 
-  itv_t* env = opt_matrix_to_box(pk,po->F);
-  itv_intlinearize_elina_tcons0(opk->itv,&opk->poly_itv_lincons,
-			     cons,env,maxcols - 2);
-  itv_quasilinearize_lincons(pk->itv,&pk->poly_itv_lincons,env,false);
-  itv_array_free(env,po->intdim+po->realdim);
-  bool sat = vector_set_itv_lincons_sat(pk,
-					pk->poly_numintp,
-					&pk->poly_itv_lincons,
-					po->intdim, po->realdim, true);
+  elina_interval_t** env = opt_matrix_to_box(pk,po->F);
   if (sat){
     sat = do_generators_sat_vector(pk,po->F,
 				   pk->poly_numintp,

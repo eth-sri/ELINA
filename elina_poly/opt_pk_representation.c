@@ -1,18 +1,22 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 #include "opt_pk_config.h"
 #include "opt_pk_vector.h"
@@ -20,6 +24,7 @@
 #include "opt_pk.h"
 #include "opt_pk_test.h"
 #include "opt_pk_representation.h"
+
 
 opt_pk_array_t * opt_pk_array_alloc(opt_pk_t ** poly, array_comp_list_t *acl, unsigned short int maxcols){
 	opt_pk_array_t * op = (opt_pk_array_t *)malloc(sizeof(opt_pk_array_t));
@@ -165,6 +170,7 @@ void opt_poly_set(opt_pk_t* oa, opt_pk_t* ob)
     oa->nbeq = ob->nbeq;
   }
 }
+
 
 double abs_diff(double a, opt_numint_t b){
 	double tmp = (double)b;
@@ -1288,7 +1294,7 @@ void opt_pk_array_fprint(FILE* stream, elina_manager_t * man, opt_pk_array_t * o
 		fprintf(stdout,"Permute_dimension: %g\n",permute_dimension_time);
 		fprintf(stdout,"Meet_Lincons_Array: %g\n",meet_lincons_time);
 		fprintf(stdout,"Forget_Array %g\n",forget_array_time);
-		fprintf(stdout,"Oct_to_Box: %g\n",poly_to_box_time);
+		fprintf(stdout,"Poly_to_Box: %g\n",poly_to_box_time);
 		fprintf(stdout,"Is_Top: %g\n",is_top_time);
 		fprintf(stdout,"Is_Bottom: %g\n",is_bottom_time);
 		fprintf(stdout,"Expand: %g\n",expand_time);

@@ -1,19 +1,22 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
-
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 
 /* ********************************************************************** */
@@ -180,7 +183,7 @@ void opt_matrix_fprint(FILE* stream, opt_matrix_t* mat)
 	//if((j>2) && (mat->p[i][j] !=0))
 		//fprintf(stdout,"%d ",j-3);
       //numint_fprint(stream,mat->p[i][j]);
-      fprintf(stream,"%ld ",mat->p[i][j]);
+      fprintf(stream,"%lld ",mat->p[i][j]);
     }
     fprintf(stream,"\n");
   }
@@ -736,7 +739,7 @@ void opt_matrix_rearrange(opt_matrix_t *oc, size_t nbeq){
 
 
 /*********************************************************
-	Rearrange the generators so all the vertices are at the start
+	Rearrange the generators so all the vertices are at the start, satF can be NULL
 **********************************************************/
 size_t opt_generator_rearrange(opt_matrix_t *F, opt_satmat_t * satF){
 	size_t i=0,k=0;
@@ -761,7 +764,9 @@ size_t opt_generator_rearrange(opt_matrix_t *F, opt_satmat_t * satF){
 			if(i!=k){
 				
 				opt_matrix_exch_rows(F,i,k);
-				opt_satmat_exch_cols(satF,i,k);
+				if(satF!=NULL){
+					opt_satmat_exch_cols(satF,i,k);
+				}
 			}
 			i++;
 			k++;
@@ -790,7 +795,7 @@ size_t opt_matrix_gauss_elimination(opt_pk_internal_t *opk, opt_matrix_t *oc, si
 	for(k=opk->dec; k < nbcolumns; k++){
 		int s; 
 		for(i=rank; i < nbeq; i++){
-			s = opt_numint_sgn(p[i][k]);
+			s = elina_int_sgn(p[i][k]);
 			if(s){
 				break;
 			}
@@ -807,7 +812,7 @@ size_t opt_matrix_gauss_elimination(opt_pk_internal_t *opk, opt_matrix_t *oc, si
 			//}
 			p[rank][0] = 0;
 			for(j=i+1; j < nbeq; j++){
-				int sj = opt_numint_sgn(p[j][k]);
+				int sj = elina_int_sgn(p[j][k]);
 				if(s*sj < 0){
 					opt_matrix_combine_rows(opk,oc,j,rank,j,k,true);
 				}
@@ -846,9 +851,9 @@ void gauss_backsubstitute(opt_pk_internal_t* opk, opt_matrix_t* oc, size_t rank)
 	//	oc->p[k][l] = -oc->p[k][l];
 	 //}
     //}
-    int sk = opt_numint_sgn(oc->p[k][j]);
+    int sk = elina_int_sgn(oc->p[k][j]);
     for (i=0; i<oc->nbrows; i++) {
-      int si = opt_numint_sgn(oc->p[i][j]);
+      int si = elina_int_sgn(oc->p[i][j]);
       if (i != (size_t)k){
         if(sk*si < 0){
 		opt_matrix_combine_rows(opk,oc,i,(size_t)k,i,j,true);
@@ -871,7 +876,7 @@ void opt_matrix_backsubstitute(opt_pk_internal_t *opk, opt_matrix_t *oc, size_t 
 	for(k=(int)rank-1; k >=0; k++){
 		j = opk->cherni_intp[k];
 		for(i=0; i < nbcons; i++){
-			if((i!=(size_t)k) && opt_numint_sgn(p[i][j])){
+			if((i!=(size_t)k) && elina_int_sgn(p[i][j])){
 				opt_matrix_combine_rows(opk,oc,i,(size_t)k,i,j,true);
 			}
 		}
@@ -1067,7 +1072,7 @@ opt_matrix_t* opt_matrix_substitute_variable(opt_pk_internal_t* opk,
   nmat->_sorted = false;
 
   for (i=0; i<mat->nbrows; i++) {
-    if (opt_numint_sgn(mat->p[i][var])) {
+    if (elina_int_sgn(mat->p[i][var])) {
       /* The substitution must be done */
       if (!destructive){
 	/* Functional */
@@ -1192,83 +1197,99 @@ void remove_common_gen(opt_pk_internal_t *opk, opt_matrix_t * F, size_t start){
 
 
 void opt_generator_bound_dimension(opt_pk_internal_t* opk,
-			    itv_t itv,
+			    elina_interval_t * interval,
 			    elina_dim_t dim,
 			    opt_matrix_t* of)
 {
   size_t i, index;
   int sgn;
-
+  
   assert(opk->dec+dim<of->nbcolumns);
-  bound_set_infty(itv->inf,-1);
-  bound_set_infty(itv->sup,-1);
+  elina_rat_t *inf = (elina_rat_t *)malloc(sizeof(elina_rat_t));
+  elina_rat_set_infty(inf,1);
+  elina_rat_t *sup = (elina_rat_t *)malloc(sizeof(elina_rat_t));
+  elina_rat_set_infty(sup,-1);
   index = opk->dec+dim;
   for (i=0; i<of->nbrows; i++){
-    if (!opk->strict || opt_numint_sgn(of->p[i][opt_polka_eps])==0){
-      sgn = opt_numint_sgn(of->p[i][index]);
-      if (!opt_numint_sgn(of->p[i][0])){
+    if (!opk->strict || elina_int_sgn(of->p[i][opt_polka_eps])==0){
+      sgn = elina_int_sgn(of->p[i][index]);
+      if (!elina_int_sgn(of->p[i][0])){
 	/* line: result should be zero */
 	if (sgn){
-	  itv_set_top(itv);
+	  elina_interval_set_top(interval);
 	  return;
 	}
       }
-      else if (!opt_numint_sgn(of->p[i][opt_polka_cst])){
+      else if (!elina_int_sgn(of->p[i][opt_polka_cst])){
 	/* ray */
 	if (sgn > 0){
-	  bound_set_infty(itv->sup,+1);
-	  if (bound_infty(itv->inf) && bound_sgn(itv->inf)>0)
-	    return;
+	  elina_rat_set_infty(sup,+1);
+	  if (elina_rat_infty(inf) && elina_rat_sgn(inf)<0){
+		elina_scalar_set_elina_rat(interval->inf,inf);
+  		elina_scalar_set_elina_rat(interval->sup,sup);
+		return;
+	  }
+	    
 	}
 	else if (sgn < 0){
-	  bound_set_infty(itv->inf,+1);
-	  if (bound_infty(itv->sup) && bound_sgn(itv->sup)>0)
+	  elina_rat_set_infty(inf,-1);
+	  if (elina_rat_infty(sup) && elina_rat_sgn(sup)>0){
+	    elina_scalar_set_elina_rat(interval->inf,inf);
+  	    elina_scalar_set_elina_rat(interval->sup,sup);
 	    return;
+	  }
 	}
       }
       else {
 	/* point */
-	numrat_set_int2(opk->poly_numrat,
+	
+	elina_rat_set_int2(opk->poly_numrat,
 			   of->p[i][index],
 			   of->p[i][opt_polka_cst]);
-	if (bound_cmp_num(itv->sup,opk->poly_numrat)<0){
-	  bound_set_num(itv->sup,opk->poly_numrat);
+	if (elina_rat_cmp(sup,opk->poly_numrat)<0){
+	  sup->n = opk->poly_numrat->n;
+	  sup->d = opk->poly_numrat->d;
 	}
-	numrat_neg(opk->poly_numrat,opk->poly_numrat);
-	if (bound_cmp_num(itv->inf,opk->poly_numrat)<0){
-	  bound_set_num(itv->inf,opk->poly_numrat);
+	//numrat_neg(opk->poly_numrat,opk->poly_numrat);
+	if (elina_rat_cmp(inf,opk->poly_numrat)>0){
+	  inf->n = opk->poly_numrat->n;
+	  inf->d = opk->poly_numrat->d;
 	}
       }	  
     }
   }
+  elina_scalar_set_elina_rat(interval->inf,inf);
+  elina_scalar_set_elina_rat(interval->sup,sup);
+  free(inf);
+  free(sup);
 }
 
-itv_t* opt_generator_to_box(opt_pk_internal_t* opk,
+elina_interval_t ** opt_generator_to_box(opt_pk_internal_t* opk,
 		     opt_matrix_t* of)
 {
   unsigned short int i,dim;
-  itv_t* res;
+  elina_interval_t** res;
 
   assert(of);
   assert(of->nbcolumns>=opk->dec);
   dim = of->nbcolumns - opk->dec;
-  res = itv_array_alloc(dim);
+  res = elina_interval_array_alloc(dim);
   for (i=0;i<dim;i++){
     opt_generator_bound_dimension(opk,res[i],i,of);
   }
   return res;
 }
 
-itv_t* opt_matrix_to_box(opt_pk_internal_t* opk,
+elina_interval_t** opt_matrix_to_box(opt_pk_internal_t* opk,
 		     opt_matrix_t* F)
 {
   size_t i,dim;
-  itv_t* res;
+  elina_interval_t** res;
 
   assert(F);
   assert(F->nbcolumns>=opk->dec);
   dim = F->nbcolumns - opk->dec;
-  res = itv_array_alloc(dim);
+  res = elina_interval_array_alloc(dim);
   for (i=0;i<dim;i++){
     opt_generator_bound_dimension(opk,res[i],i,F);
   }

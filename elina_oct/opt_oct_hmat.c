@@ -1,18 +1,23 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
 
 
 
@@ -1016,12 +1021,12 @@ void meet_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 	
 }
 
-void forget_array_half(opt_oct_mat_t *oo, ap_dim_t *arr,int dim, int arr_dim, bool project){
+void forget_array_half(opt_oct_mat_t *oo, elina_dim_t *arr,int dim, int arr_dim, bool project){
 	
 	double *m = oo->mat;
 	array_comp_list_t * acl = oo->acl;
 	for(int i = 0; i < arr_dim; i++){
-		ap_dim_t d = 2*arr[i];
+		elina_dim_t d = 2*arr[i];
 		/*****
 			If the matrix is decomposed type,remove
 			the component part of arr if it exists
@@ -1198,7 +1203,7 @@ void join_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 }
 
 void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
-			    ap_dim_t* pos, int nb_pos,
+			    elina_dim_t* pos, int nb_pos,
 			    int mult, int dim, bool add)
 {
   #if defined(TIMING)
@@ -1209,7 +1214,7 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
   double * dst = dst_mat->mat;
   double * src = src_mat->mat;
   unsigned short int * map = (unsigned short int *)calloc(dim+1,sizeof(unsigned short int));
-  ap_dim_t * add_pos = (ap_dim_t *)calloc(nb_pos,sizeof(ap_dim_t));
+  elina_dim_t * add_pos = (elina_dim_t *)calloc(nb_pos,sizeof(elina_dim_t));
   int new_dim;
   
   if(nb_pos){
@@ -1417,7 +1422,7 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 
 void opt_hmat_permute(opt_oct_mat_t* dest_mat, opt_oct_mat_t* src_mat,
 		  int dst_dim, int src_dim,
-		  ap_dim_t* permutation)
+		  elina_dim_t* permutation)
 {
   #if defined(TIMING)
 	start_timing();
@@ -1873,7 +1878,7 @@ void narrowing_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, i
 }
 
 opt_uexpr opt_oct_uexpr_of_linexpr(opt_oct_internal_t* pr, double* dst,
-			   ap_linexpr0_t* e, int intdim, int dim)
+			   elina_linexpr0_t* e, int intdim, int dim)
 {
 #define CLASS_COEFF(idx,coef)						\
   if ((dst[2*idx+2] == -coef) &&				\
@@ -1893,14 +1898,14 @@ opt_uexpr opt_oct_uexpr_of_linexpr(opt_oct_internal_t* pr, double* dst,
   u.type = OPT_OTHER;
   
 #define COEFF(c,i)                                                      \
-  ap_coeff_reduce(&c);                                                   \
+  elina_coeff_reduce(&c);                                                   \
   if (opt_bounds_of_coeff(pr,dst + i,dst + i + 1,c,false)) u.type = OPT_EMPTY;    \
-  if (c.discr!=AP_COEFF_SCALAR || !is_integer(dst[i])) u.is_int = 0;
+  if (c.discr!=ELINA_COEFF_SCALAR || !is_integer(dst[i])) u.is_int = 0;
   opt_uexpr u = { OPT_ZERO, 0, 0, 0, 0, 1 };
   int i;
   COEFF(e->cst,0);
   switch (e->discr) {
-  case AP_LINEXPR_DENSE:
+  case ELINA_LINEXPR_DENSE:
     if(e->size > dim)return u;
     for (i=0;i<e->size;i++) {
       
@@ -1912,14 +1917,14 @@ opt_uexpr opt_oct_uexpr_of_linexpr(opt_oct_internal_t* pr, double* dst,
       dst[2*i+3] = 0;
     }
     break;
-  case AP_LINEXPR_SPARSE:
+  case ELINA_LINEXPR_SPARSE:
     for (i=0;i<dim;i++) {
       dst[2*i+2] = 0;
       dst[2*i+3] = 0;
     }
     for (i=0;i<e->size;i++) {
-      ap_dim_t d = e->p.linterm[i].dim;
-      if (d==AP_DIM_MAX) continue;
+      elina_dim_t d = e->p.linterm[i].dim;
+      if (d==ELINA_DIM_MAX) continue;
       if(d>=dim)return u;
       COEFF(e->p.linterm[i].coeff,2*d+2);
       CLASS_VAR(d);
@@ -1983,7 +1988,7 @@ void opt_bounds_mul(double a_inf, double a_sup, double b_inf, double b_sup,doubl
 
 
 bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim, int dim,
-		      ap_lincons0_array_t* ar, bool* exact,
+		      elina_lincons0_array_t* ar, bool* exact,
 		      bool* respect_closure)
 {
   double *m = oo->mat;
@@ -2031,21 +2036,21 @@ bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim,
   }
   
   for (i=0;i<ar->size;i++) {
-   ap_constyp_t c = ar->p[i].constyp;
+   elina_constyp_t c = ar->p[i].constyp;
     opt_uexpr u;
 
     switch (c) {
 
       /* skipped */
-    case AP_CONS_EQMOD:
-    case AP_CONS_DISEQ:
+    case ELINA_CONS_EQMOD:
+    case ELINA_CONS_DISEQ:
       *exact = 0;
       continue;
 
       /* handled */
-    case AP_CONS_EQ:
-    case AP_CONS_SUPEQ:
-    case AP_CONS_SUP:
+    case ELINA_CONS_EQ:
+    case ELINA_CONS_SUPEQ:
+    case ELINA_CONS_SUP:
       break;
 
       /* error */
@@ -2059,8 +2064,8 @@ bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim,
     u = opt_oct_uexpr_of_linexpr(pr,pr->tmp,ar->p[i].linexpr0,intdim,dim);
     
     /* transform e+[-a,b] > 0 into >= e+[-(a+1),b-1] >= 0 on integer constraints */
-    if (u.is_int && c==AP_CONS_SUP) {
-      c = AP_CONS_SUPEQ;
+    if (u.is_int && c==ELINA_CONS_SUP) {
+      c = ELINA_CONS_SUPEQ;
       pr->tmp[0] = pr->tmp[0] + 1;
       pr->tmp[1] = pr->tmp[1] - 1;
     }
@@ -2074,11 +2079,11 @@ bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim,
       break;
 
     case OPT_ZERO:
-      if ((c==AP_CONS_SUPEQ && (pr->tmp[1]>=0)) ||
+      if ((c==ELINA_CONS_SUPEQ && (pr->tmp[1]>=0)) ||
 	  /* [-a,b] >= 0 <=> b >= 0 */
-	  (c==AP_CONS_SUP && (pr->tmp[1]>0)) ||
+	  (c==ELINA_CONS_SUP && (pr->tmp[1]>0)) ||
 	  /* [-a,b] > 0 <=> b > 0 */
-	  (c==AP_CONS_EQ && (pr->tmp[0]>=0) && (pr->tmp[1]>=0))
+	  (c==ELINA_CONS_EQ && (pr->tmp[0]>=0) && (pr->tmp[1]>=0))
 	  /* [-a,b] = 0 <=> a >= 0 && b >= 0 */
 	  )
 	; /* trivial */
@@ -2126,7 +2131,7 @@ bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim,
 	m[opt_matpos(ui,ui^1)] = min(m[opt_matpos(ui,ui^1)], pr->tmp[1]);
       }
       /*  c_i X_i + [-a,b] >= 0 <=> -c_i X_i <= b */
-      if (c==AP_CONS_EQ) {
+      if (c==ELINA_CONS_EQ) {
 	if(m[opt_matpos(ui^1,ui)]==INFINITY){
 		m[opt_matpos(ui^1,ui)] = pr->tmp[0];
 		count++;
@@ -2136,7 +2141,7 @@ bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim,
 	}
       }
       /*  c_i X_i + [-a,b] <= 0 <=>  c_i X_i <= a */
-      if (c==AP_CONS_SUP) *exact = 0; /* not exact for strict constraints */
+      if (c==ELINA_CONS_SUP) *exact = 0; /* not exact for strict constraints */
       oo->nni = min(max_nni,count);	
       break;
 
@@ -2238,7 +2243,7 @@ bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim,
       	m[opt_matpos2(uj,ui^1)] = min(m[opt_matpos2(uj,ui^1)], pr->tmp[1]);
       }
       /*  c_i X_i + c_j X_j + [-a,b] >= 0 <=> -c_i X_i - c_j X_j <= b */
-      if (c==AP_CONS_EQ){
+      if (c==ELINA_CONS_EQ){
 	if(m[opt_matpos2(uj^1,ui)]== INFINITY){
 		m[opt_matpos2(uj^1,ui)] = pr->tmp[0];
 		count++;
@@ -2249,7 +2254,7 @@ bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim,
       }
      
       /*  c_i X_i + c_j X_j + [-a,b] <= 0 <=>  c_i X_i + c_j X_j <= a */
-      if (c==AP_CONS_SUP) *exact = 0; /* not exact for strict constraints */
+      if (c==ELINA_CONS_SUP) *exact = 0; /* not exact for strict constraints */
       oo->nni = min(max_nni,count);
       break;
 
@@ -2573,7 +2578,7 @@ bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim,
       Cbrk:
 	/* lower bound */
 	count = oo->nni;
-	if (c==AP_CONS_EQ) {
+	if (c==ELINA_CONS_EQ) {
 		
 	if (cb == INFINITY) ;
 	else if (!cinf) {

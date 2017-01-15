@@ -1,18 +1,22 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 /* ********************************************************************** */
 /* opt_pk_assign.c: Assignements and Substitutions */
@@ -117,12 +121,14 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
   opt_pk_internal_t* opk = (opt_pk_internal_t*)man->internal;
   unsigned short int maxcols = oa->maxcols;
   op = destructive ? oa : opt_pk_array_alloc(NULL,NULL,maxcols);
+ 
   /**************************
 		Handle Independent components
   ***************************/
   array_comp_list_t * acla = oa->acl;
   unsigned short int var = dim + opk->dec;
   comp_list_t *clb = linexpr0_to_comp_list(opk,linexpr0);
+   
   if(!contains_comp(clb,var)){
 	insert_comp(clb,var);
   }
@@ -131,7 +137,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
   array_comp_list_t * acl = union_array_comp_list(acla,aclb,maxcols);
   
   unsigned short int num_comp = acl->size;
-
+  
   /*************************
 		Transform the Linexpr
   *************************/
@@ -150,16 +156,14 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 	k++;
 	cl=cl->next;
   }
- 
+
   /* Convert linear expression */
-  itv_linexpr_set_elina_linexpr0(opk->itv,
-			      &opk->poly_itv_linexpr,
-			      dst);
-  opt_vector_set_itv_linexpr(opk,
+  
+  opt_vector_set_elina_linexpr0(opk,
 			 opk->poly_numintp,
-			 &opk->poly_itv_linexpr,
+			 dst,
 			 comp_size,1);
-   
+  
   unsigned short int nvar = 0;
   for(k=0; k < comp_size;k++){
 	if(ca[k]==var){
@@ -168,17 +172,20 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 	}
   }
   
-  
+   
   
   sgn = opt_numint_sgn(opk->poly_numintp[nvar+2]);
   unsigned short int num_compa = acla->size;
   
   comp_list_t * cla = acla->head;
+  //elina_lincons0_array_t arr1 = opt_pk_to_lincons_array(man,op);
+  //elina_lincons0_array_fprint(stdout,&arr1,NULL);
   unsigned short int * rmapa = (unsigned short int *)calloc(num_compa, sizeof(unsigned short int));
   size_t * nbmapa = (size_t *)calloc(num_comp,sizeof(size_t));
   size_t * nbeqmapa = (size_t *)calloc(num_comp,sizeof(size_t));
   char * disjoint_map = (char *)calloc(num_compa,sizeof(char));
   opt_pk_t ** poly_a = oa->poly;
+  
   for(k=0; k < num_compa; k++){
 	short int res_a = is_comp_list_included(acl,cla,maxcols);
 	rmapa[k] = res_a;
@@ -186,10 +193,10 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
         nbeqmapa[res_a] = nbeqmapa[res_a] + poly_a[k]->nbeq;
 	cla = cla->next;
   }
-
+  
   opt_pk_t ** poly = (opt_pk_t **)malloc(num_comp*sizeof(opt_pk_t *));
   cl = acl->head;
- 
+  
   for(k=0; k < num_comp; k++){
 	unsigned short int comp_size = cl->size;
 	poly[k] = opt_poly_alloc(comp_size,0);
@@ -235,7 +242,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 	}
 	//if(k==res){
 		if (!sgn){ /* Expression is not invertible */
-			//opt_pk_t * tmp = opt_poly_alloc(comp_size,0); 
+			//opt_pk_t * tmp = opt_poly_alloc(comp_size,0);
 			poly[res]->nbeq = nbeqmapa[res];
 			elina_dim_t tdim = nvar;
 			/*#if defined (CONVERT)
@@ -275,7 +282,6 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 	  
 	  	else { /* Expression is invertible and we have constraints */
 	    		/* Invert the expression in opk->poly_numintp2 */
-           		
 	    		opt_vector_invert_expr(opk,
 					       opk->poly_numintp2,
 					       nvar, opk->poly_numintp,
@@ -333,8 +339,10 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 	    free(disjoint_map);
 		free(ca);
     elina_linexpr0_free(dst);
+    free_array_comp_list(aclb);
     op->poly = poly;
     op->acl = acl;
+   
     return op;
 }
 
@@ -381,7 +389,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr(bool assign, bool lazy,
 	    man->result.flag_best = man->result.flag_exact = false;
 	    if (destructive){
 		opt_poly_set_top(opk,oa);
-		return op;
+		return oa;
 	    } 
 	    else {
 		return opt_pk_top(man,intdim,0);
@@ -483,12 +491,9 @@ opt_pk_array_t* opt_poly_asssub_linexpr_array_det(elina_manager_t* man,
   tvec = (opt_numint_t**)malloc(size*sizeof(opt_numint_t*));
   for (i=0; i<size; i++){
     tvec[i] = opt_vector_alloc(nbcols);
-    itv_linexpr_set_elina_linexpr0(opk->itv,
-				&opk->poly_itv_linexpr,
-				texpr[i]);
-    opt_vector_set_itv_linexpr(opk,
+    opt_vector_set_elina_linexpr0(opk,
 			   tvec[i],
-			   &opk->poly_itv_linexpr,
+			   texpr[i],
 			   intdim,1);
   }
   /* Copy tdim because of sorting */
@@ -550,7 +555,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_array(bool lazy,
       		man->result.flag_best = man->result.flag_exact = false;
       		if (destructive){
 			opt_poly_set_top(opk,oa);
-			return op;
+			return oa;
       		} else {
 			return opt_pk_top(man,intdim,0);
       		}
@@ -560,7 +565,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_array(bool lazy,
   
   /* Choose the right technique */
   if (elina_linexpr0_array_is_linear(texpr,size)){
-    //op = opt_poly_asssub_linexpr_array_det(man,destructive,oa,tdim,texpr,size);
+    op = opt_poly_asssub_linexpr_array_det(man,destructive,oa,tdim,texpr,size);
     if (ob){
       opt_poly_meet(true,lazy,man,op,op,ob);
     }
@@ -622,6 +627,7 @@ opt_pk_array_t* opt_poly_asssub_texpr_array(bool assign,
 			      elina_dim_t* tdim, elina_texpr0_t** texpr, size_t size,
 			      opt_pk_array_t* ob)
 {
+  
   opt_pk_array_t* op;
   opt_pk_internal_t* opk = (opt_pk_internal_t*)man->internal;
   array_comp_list_t * acla = oa->acl;
@@ -668,6 +674,7 @@ opt_pk_array_t* opt_poly_asssub_texpr_array(bool assign,
     elina_abstract0_t abs;
     abs.value = oa;
     abs.man = man;
+    
     if (size==1){
       elina_linexpr0_t* linexpr0 =
 	elina_intlinearize_texpr0(man,&abs,texpr[0],NULL,
@@ -706,8 +713,15 @@ opt_pk_array_t* opt_poly_asssub_texpr_array(bool assign,
 	   opk->exn = ELINA_EXC_NONE;
 	   man->result.flag_best = man->result.flag_exact = false;
       	   if (ob){ 
-	       opt_poly_set(op,ob);
-	   } else opt_poly_set_top(opk,op);
+		if(destructive){
+			opt_poly_array_clear(opk,op);
+			free(op);
+		}
+		else{
+			free(op);
+		}
+	       op = opt_pk_copy(man,ob);
+	   } else {opt_poly_set_top(opk,op);}
       			return op;
 		}
     }
@@ -741,6 +755,7 @@ opt_pk_array_t* opt_pk_assign_linexpr_array(elina_manager_t* man,
   #if defined(TIMING)
  	 start_timing();
   #endif
+ 
   op = size==1 ? opt_poly_asssub_linexpr(true, opk->funopt->algorithm<=0, man,destructive,oa,tdim[0],texpr[0],ob) :
        		 opt_poly_asssub_linexpr_array( opk->funopt->algorithm<=0,
 			      man,destructive,oa,tdim,texpr,size,ob);
@@ -759,6 +774,7 @@ opt_pk_array_t* opt_pk_assign_texpr_array(elina_manager_t* man,
 			    size_t size,
 			    opt_pk_array_t* dest)
 {
+  
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_ASSIGN_TEXPR_ARRAY);
   opt_pk_array_t* op;
   #if defined(TIMING)
@@ -767,7 +783,6 @@ opt_pk_array_t* opt_pk_assign_texpr_array(elina_manager_t* man,
   op = opt_poly_asssub_texpr_array(true,
 			       opk->funopt->algorithm<=0,
 			       man,destructive,oa,tdim,texpr,size,dest);
-  
   #if defined(TIMING)
  	 	record_timing(assign_linexpr_time);
   #endif
