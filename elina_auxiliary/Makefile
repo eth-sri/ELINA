@@ -32,7 +32,7 @@ OBJS = elina_scalar.o elina_interval.o elina_coeff.o elina_dimension.o elina_lin
 
 INCLUDES = -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include -I../elina_linearize
 
-LIBS = -lmpfr -lgmp -lm -L../elina_linearize -lelinalinearize
+LIBS = -lmpfr -lgmp -lm -L../elina_linearize
 
 INSTALL = install
 INSTALLd = install -d
