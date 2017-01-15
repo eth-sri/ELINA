@@ -35,6 +35,9 @@ INCLDIR = $(ELINA_PREFIX)/include
 
 PARTITIONSH = comp_list.h
 
+INSTALL = install
+INSTALLd = install -d
+
 all: libpartitions.so
 
 comp_list.o: comp_list.h comp_list.c

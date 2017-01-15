@@ -32,7 +32,7 @@ INCLDIR = $(ELINA_PREFIX)/include
 INSTALL = install
 INSTALLd = install -d
 
-OBJS = elina_scalar_arith.o elina_interval_arith.o  elina_coeff_arith.o elina_linexpr0_arith.o elina_linearize.o elina_linearize_texpr.o
+OBJS = elina_generic.o elina_scalar_arith.o elina_interval_arith.o  elina_coeff_arith.o elina_linexpr0_arith.o elina_linearize.o elina_linearize_texpr.o
 
 INCLUDES = -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include
 
@@ -43,9 +43,12 @@ INSTALLd = install -d
 
 SOINST = libelinalinearize.so
 
-ELINALINEARIZEH = elina_scalar_arith.h elina_interval_arith.h elina_coeff_arith.h elina_linexpr0_arith.h elina_linearize.h elina_linearize_texpr.h 
+ELINALINEARIZEH = elina_generic.h elina_scalar_arith.h elina_interval_arith.h elina_coeff_arith.h elina_linexpr0_arith.h elina_linearize.h elina_linearize_texpr.h 
 
 all :	libelinalinearize.so 
+
+elina_generic.o : elina_generic.h elina_generic.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_generic.o elina_generic.c $(LIBS)	
 
 elina_scalar_arith.o : elina_scalar_arith.h elina_scalar_arith.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_scalar_arith.o elina_scalar_arith.c $(LIBS)

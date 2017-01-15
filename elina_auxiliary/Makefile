@@ -32,7 +32,7 @@ INCLDIR = $(ELINA_PREFIX)/include
 INSTALL = install
 INSTALLd = install -d
 
-OBJS = elina_scalar.o elina_interval.o elina_coeff.o elina_dimension.o elina_linexpr0.o elina_lincons0.o elina_manager.o elina_abstract0.o elina_texpr0.o elina_tcons0.o elina_generic.o
+OBJS = elina_scalar.o elina_interval.o elina_coeff.o elina_dimension.o elina_linexpr0.o elina_lincons0.o elina_manager.o elina_abstract0.o elina_texpr0.o elina_tcons0.o
 
 INCLUDES = -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include -I../elina_linearize
 
@@ -43,7 +43,7 @@ INSTALLd = install -d
 
 SOINST = libelinaux.so
 
-ELINAAUXH = elina_config.h elina_scalar.h elina_interval.h elina_coeff.h elina_dimension.h elina_linexpr0.h elina_lincons0.h elina_manager.h elina_abstract0.h elina_texpr0.h elina_tcons0.h elina_generic.h
+ELINAAUXH = elina_config.h elina_scalar.h elina_interval.h elina_coeff.h elina_dimension.h elina_linexpr0.h elina_lincons0.h elina_manager.h elina_abstract0.h elina_texpr0.h elina_tcons0.h
 
 all :	libelinaux.so
 
@@ -77,8 +77,6 @@ elina_texpr0.o : elina_texpr0.h elina_texpr0.c
 elina_tcons0.o : elina_tcons0.h elina_tcons0.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_tcons0.o elina_tcons0.c $(LIBS)
 
-elina_generic.o : elina_generic.h elina_generic.c
-	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_generic.o elina_generic.c $(LIBS)	
 
 libelinaux.so : $(OBJS) $(ELINAAUXH)
 	$(CC) -shared $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)

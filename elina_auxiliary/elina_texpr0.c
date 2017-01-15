@@ -25,7 +25,7 @@
 
 
 #include "elina_texpr0.h"
-#include "elina_linearize.h"
+//#include "elina_linearize.h"
 
 #include <stdarg.h>
 
