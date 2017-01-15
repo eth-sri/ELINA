@@ -32,7 +32,7 @@ OBJS = elina_generic.o elina_scalar_arith.o elina_interval_arith.o  elina_coeff_
 
 INCLUDES = -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include -I../elina_auxiliary
 
-LIBS = -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm  -lelinaux
+LIBS = -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm  -L../elina_auxiliary -lelinaux
 
 INSTALL = install
 INSTALLd = install -d
