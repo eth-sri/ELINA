@@ -86,7 +86,6 @@ extern "C" {
 //#include <math.h>
 #include "opt_oct.h"
 #include "comp_list.h"
-#include "num.h"
 
 typedef struct opt_oct_internal_t{
   /* Name of function */
