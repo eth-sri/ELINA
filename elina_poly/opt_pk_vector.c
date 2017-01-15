@@ -71,16 +71,16 @@ void opt_vector_realloc(opt_numint_t** pq, unsigned short int size, unsigned sho
 void opt_vector_copy(opt_numint_t * dst, opt_numint_t * src, unsigned short int size)
 {
   unsigned short int i;
-  #if defined(VECTOR)
-	for(i=0; i < size/v_length; i++){
-		v_opt_numint_t_type val = v_load_opt_numint_t(src + i*v_length);
-		v_store_opt_numint_t(dst + i*v_length, val);
-	}
-  #else
+  //#if defined(VECTOR)
+//	for(i=0; i < size/v_length; i++){
+//		v_opt_numint_t_type val = v_load_opt_numint_t(src + i*v_length);
+//		v_store_opt_numint_t(dst + i*v_length, val);
+//	}
+ // #else
   for (i=0; i<size/v_length; i++){
     dst[i] = src[i];
   }
-  #endif
+//  #endif
   for (i=size/v_length; i < size; i++){
 	dst[i] = src[i];
   }
@@ -91,18 +91,18 @@ opt_numint_t * opt_vector_scalar_product(opt_pk_internal_t * opk, opt_numint_t *
 	opt_numint_t * res = opt_vector_alloc(size);
 	res[0] = ov[0];
 	res[1] = ov[1]*s;
-	#if defined(VECTOR)
-		v_opt_numint_t_type vs = v_set1_opt_numint_t(s);
-		for(i = opk->dec; i < size/v_length; i++){
-			v_opt_numint_t_type val = v_load_opt_numint_t(ov + i*v_length);
-			val = v_mul_opt_numint_t(val, vs);
-			v_store_opt_numint_t(res + i*v_length, val);
-		}
-	#else
+	//#if defined(VECTOR)
+	//	v_opt_numint_t_type vs = v_set1_opt_numint_t(s);
+	//	for(i = opk->dec; i < size/v_length; i++){
+	//		v_opt_numint_t_type val = v_load_opt_numint_t(ov + i*v_length);
+	//		val = v_mul_opt_numint_t(val, vs);
+	//		v_store_opt_numint_t(res + i*v_length, val);
+	//	}
+	//#else
 		for(i = opk->dec; i < size/v_length; i++){
 			res[i] = s*ov[i];
 		}
-	#endif
+	//#endif
 	for(i = size/v_length; i < size; i++){
 		res[i] = s*ov[i];
 	}
@@ -115,18 +115,18 @@ opt_numint_t * opt_vector_scalar_product(opt_pk_internal_t * opk, opt_numint_t *
 void opt_vector_sum(opt_pk_internal_t * opk, opt_numint_t * ov1, opt_numint_t *ov2, unsigned short int size){
 	unsigned short int i;
 	ov1[1] = ov1[1] + ov2[1];
-	#if defined(VECTOR)
-		for(i = opk->dec; i < size/v_length; i++){
-			v_opt_numint_t_type op1 = v_load_opt_numint_t(ov1 + i*v_length);
-			v_opt_numint_t_type op2 = v_load_opt_numint_t(ov2 + i*v_length);
-			v_opt_numint_t_type sum = v_add_opt_numint_t(op1,op2);
-			v_store_opt_numint_t(ov1 + i*v_length, sum);
-		}
-	#else
+	//#if defined(VECTOR)
+		//for(i = opk->dec; i < size/v_length; i++){
+		//	v_opt_numint_t_type op1 = v_load_opt_numint_t(ov1 + i*v_length);
+		//	v_opt_numint_t_type op2 = v_load_opt_numint_t(ov2 + i*v_length);
+		//	v_opt_numint_t_type sum = v_add_opt_numint_t(op1,op2);
+		//	v_store_opt_numint_t(ov1 + i*v_length, sum);
+		//}
+	//#else
 		for(i = opk->dec; i < size/v_length; i++){
 			ov1[i] = ov1[i] + ov2[i];
 		}
-	#endif
+	//#endif
 	for(i = size/v_length; i <size; i++){
 		ov1[i] = ov1[i] + ov2[i];
 	}
@@ -141,16 +141,16 @@ void opt_vector_free(opt_numint_t* q, unsigned short int size)
 void opt_vector_clear(opt_numint_t * ov, unsigned short int size)
 {
   unsigned short int i;
-  #if defined(VECTOR)
-	v_opt_numint_t_type zero = v_set1_opt_numint_t(0.0);
-  	for(i = 0; i < size/v_length; i++){
-		v_store_opt_numint_t(ov + i*v_length, zero);
-	}
-  #else
+  //#if defined(VECTOR)
+//	v_opt_numint_t_type zero = v_set1_opt_numint_t(0.0);
+  //	for(i = 0; i < size/v_length; i++){
+//		v_store_opt_numint_t(ov + i*v_length, zero);
+//	}
+  //#else
 	for (i = 0; i<size/v_length; i++){
 	 	ov[i] = 0;
   	}
-  #endif
+  //#endif
   for(i = size/v_length; i < size; i++){
 	ov[i] = 0;
   }
