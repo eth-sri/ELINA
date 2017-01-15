@@ -110,7 +110,7 @@ liboptoct.so : $(OBJS) $(OPTOCTH)
 	$(CC) -shared $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 elina_test_oct : elina_test_oct.c liboptoct.so
-	$(CC) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_test_oct elina_test_oct.c $(LIBS) -loptoct
+	$(CC) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_test_oct elina_test_oct.c $(LIBS) -L. -loptoct
 
 install:
 	$(INSTALLd) $(LIBDIR); \

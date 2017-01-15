@@ -107,7 +107,7 @@ liboptpoly.so : $(OBJS) $(OPTPOLYH)
 	$(CC) -shared $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 elina_test_poly : elina_test_poly.c liboptpoly.so
-	$(CC) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_test_poly elina_test_poly.c $(LIBS) -loptpoly
+	$(CC) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_test_poly elina_test_poly.c $(LIBS) -L. -loptpoly
 
 install:
 	$(INSTALLd) $(LIBDIR); \
