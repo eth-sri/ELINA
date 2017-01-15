@@ -1,17 +1,23 @@
-#	
-#	Copyright 2016 Software Reliability Lab, ETH Zurich	
-#	Licensed under the Apache License, Version 2.0 (the "License"); 
-#	you may not use this file except in compliance with the License.
-#	You may obtain a copy of the License at
 #
-#		http://www.apache.org/licenses/LICENSE-2.0
 #
-#	Unless required by applicable law or agreed to in writing, software
-#	distributed under the License is distributed on an "AS IS" BASIS,
-#	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#	See the License for the specific language governing permissions and
-#	limitations under the License.
+#  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+#  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+#  This software is distributed under GNU Lesser General Public License Version 3.0.
+#  For more information, see the ELINA project website at:
+#  http://elina.ethz.ch
 #
+#  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+#  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+#  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+#  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+#  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+#  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+#  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+#  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+#  CONTRACT, TORT OR OTHERWISE).
+#
+#
+
 
 
 include ../Makefile.config
@@ -19,30 +25,25 @@ include ../Makefile.config
 
 AFLAGS := -D_GNU_SOURCE -pthread -fno-tree-vectorize -m64 -march=native
 
-DFLAGS := -g  -DNUM_LONGLONGRAT -DTIMING -DHAS_APRON $(AFLAGS)
+DFLAGS := -g  -DNUM_LONGLONGRAT -DTIMING $(AFLAGS) #-DHAS_APRON
 
-PREFIX = $(APRON_PREFIX)
+LIBDIR = $(ELINA_PREFIX)/lib
 
-LIBDIR = $(PREFIX)/lib
-
-INCLDIR = $(PREFIX)/include 
+INCLDIR = $(ELINA_PREFIX)/include 
 
 INSTALL = install
 INSTALLd = install -d
 
-OBJS = opt_mf_qsort.o opt_pk_internal.o opt_pk_matrix.o opt_pk_test.o opt_pk_vector.o opt_pk_representation.o opt_pk_project.o opt_pk_constructor.o opt_pk_meetjoin.o opt_pk_assign.o opt_pk_widening.o opt_pk_resize.o opt_pk_expandfold.o opt_pk_extract.o opt_pk_user.o opt_pk_bit.o opt_pk_satmat.o opt_pk_cherni.o
+OBJS = opt_mf_qsort.o opt_pk_internal.o opt_pk_matrix.o opt_pk_user.o opt_pk_assign.o opt_pk_test.o opt_pk_vector.o opt_pk_representation.o opt_pk_project.o opt_pk_constructor.o opt_pk_meetjoin.o  opt_pk_widening.o opt_pk_resize.o opt_pk_expandfold.o opt_pk_extract.o  opt_pk_bit.o opt_pk_satmat.o opt_pk_cherni.o
 
 INCLUDES = \
--I../newpolka \
--I../apron \
+-I../elina_linearize \
+-I../elina_auxiliary \
 -I../mlapronidl \
--I../num \
--I../itv \
--I../octagons \
 -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include \
 -I../partitions_api
 
-LIBS = -L../partitions_api -lpartitions -L../apron -L$(APRON_PREFIX) -lapron -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm
+LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm
 
 INSTALL = install
 INSTALLd = install -d
@@ -51,7 +52,7 @@ SOINST = liboptpoly.so
 
 OPTPOLYH = opt_mf_qsort.h opt_pk_matrix.h  opt_pk_internal.h opt_pk_test.h opt_pk_config.h opt_pk.h apron_wrapper.h
 
-all : liboptpoly.so
+all : liboptpoly.so elina_test_poly
 
 opt_mf_qsort.o : opt_mf_qsort.h opt_mf_qsort.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_mf_qsort.o opt_mf_qsort.c $(LIBS)
@@ -74,11 +75,17 @@ opt_pk_constructor.o : opt_pk_constructor.h opt_pk_constructor.c
 opt_pk_project.o : opt_pk_project.c opt_pk_project.h
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_pk_project.o opt_pk_project.c $(LIBS)
 
-opt_pk_meetjoin.o : opt_pk_meetjoin.h opt_pk_representation.h opt_pk_meetjoin.c
-	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_pk_meetjoin.o opt_pk_meetjoin.c $(LIBS)
+opt_pk_user.o : opt_pk_user.h opt_pk_user.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_pk_user.o opt_pk_user.c $(LIBS)
 
 opt_pk_assign.o : opt_pk_assign.h opt_pk_assign.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_pk_assign.o opt_pk_assign.c $(LIBS)
+
+opt_pk_test.o : opt_pk_test.h opt_pk_test.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_pk_test.o opt_pk_test.c $(LIBS)
+
+opt_pk_meetjoin.o : opt_pk_meetjoin.h opt_pk_representation.h opt_pk_meetjoin.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_pk_meetjoin.o opt_pk_meetjoin.c $(LIBS)
 
 opt_pk_widening.o : opt_pk_widening.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_pk_widening.o opt_pk_widening.c $(LIBS)
@@ -92,12 +99,6 @@ opt_pk_extract.o : opt_pk_extract.c
 opt_pk_resize.o : opt_pk_resize.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_pk_resize.o opt_pk_resize.c $(LIBS)
 
-opt_pk_test.o : opt_pk_test.h opt_pk_test.c
-	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_pk_test.o opt_pk_test.c $(LIBS)
-
-opt_pk_user.o : opt_pk_user.h opt_pk_user.c
-	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_pk_user.o opt_pk_user.c $(LIBS)
-
 opt_pk_bit.o : opt_pk_bit.h opt_pk_bit.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_pk_bit.o opt_pk_bit.c $(LIBS)
 
@@ -109,6 +110,9 @@ opt_pk_cherni.o : opt_pk_cherni.h opt_pk_cherni.c
 
 liboptpoly.so : $(OBJS) $(OPTPOLYH)
 	$(CC) -shared $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
+
+elina_test_poly : elina_test_poly.c liboptpoly.so
+	$(CC) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_test_poly elina_test_poly.c $(LIBS) -loptpoly
 
 install:
 	$(INSTALLd) $(LIBDIR); \
@@ -125,3 +129,4 @@ install:
 clean:
 	-rm *.o
 	-rm *.so
+	-rm elina_test_poly
