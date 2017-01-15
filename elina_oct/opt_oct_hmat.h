@@ -1,18 +1,22 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 
 #ifndef __OPT_OCT_HMAT_H
@@ -91,18 +95,18 @@ bool is_top_half(opt_oct_mat_t *m, int dim);
 bool is_equal_half(opt_oct_mat_t *m1, opt_oct_mat_t *m2, int dim);
 bool is_lequal_half(opt_oct_mat_t *m1, opt_oct_mat_t *m2, int dim);
 void meet_half(opt_oct_mat_t *m, opt_oct_mat_t *m1, opt_oct_mat_t *m2, int dim, bool destructive);
-void forget_array_half(opt_oct_mat_t *m, ap_dim_t *arr,int dim, int arr_dim, bool project);
+void forget_array_half(opt_oct_mat_t *m, elina_dim_t *arr,int dim, int arr_dim, bool project);
 void join_half(opt_oct_mat_t *m, opt_oct_mat_t *m1, opt_oct_mat_t *m2, int dim, bool destructive);
-void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst, opt_oct_mat_t* src,ap_dim_t* pos, int nb_pos,int mult, int dim, bool add);
-void opt_hmat_permute(opt_oct_mat_t* dst, opt_oct_mat_t* src,int dst_dim, int src_dim,ap_dim_t* permutation);
-opt_oct_t* opt_oct_expand(ap_manager_t* man, bool destructive, opt_oct_t* o, ap_dim_t dim, size_t n);
-opt_oct_t* opt_oct_fold(ap_manager_t* man,bool destructive, opt_oct_t* o,ap_dim_t* tdim,size_t size);
+void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst, opt_oct_mat_t* src,elina_dim_t* pos, int nb_pos,int mult, int dim, bool add);
+void opt_hmat_permute(opt_oct_mat_t* dst, opt_oct_mat_t* src,int dst_dim, int src_dim,elina_dim_t* permutation);
+opt_oct_t* opt_oct_expand(elina_manager_t* man, bool destructive, opt_oct_t* o, elina_dim_t dim, size_t n);
+opt_oct_t* opt_oct_fold(elina_manager_t* man,bool destructive, opt_oct_t* o,elina_dim_t* tdim,size_t size);
 void widening_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim);
 void widening_thresholds_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, double *thresholds, int num_thresholds, int dim);
 void narrowing_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int dim);
-opt_uexpr opt_oct_uexpr_of_linexpr(opt_oct_internal_t* pr, double* dst, ap_linexpr0_t* e, int intdim, int dim);
-bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim, int dim, ap_lincons0_array_t* ar, bool* exact, bool* respect_closure);
-void opt_oct_fprint(FILE* stream, ap_manager_t* man, opt_oct_t * a,char** name_of_dim);
+opt_uexpr opt_oct_uexpr_of_linexpr(opt_oct_internal_t* pr, double* dst, elina_linexpr0_t* e, int intdim, int dim);
+bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim, int dim, elina_lincons0_array_t* ar, bool* exact, bool* respect_closure);
+void opt_oct_fprint(FILE* stream, elina_manager_t* man, opt_oct_t * a,char** name_of_dim);
 opt_oct_mat_t* opt_hmat_alloc(int size);
 void opt_hmat_assign(opt_oct_internal_t* pr, opt_uexpr u, opt_oct_mat_t* oo, size_t dim, size_t d, bool* respect_closure);
 

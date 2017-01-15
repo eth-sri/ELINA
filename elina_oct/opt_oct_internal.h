@@ -1,18 +1,23 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
 
 
 #ifndef __OPT_OCT_INTERNAL_H
@@ -85,10 +90,10 @@ extern "C" {
 
 typedef struct opt_oct_internal_t{
   /* Name of function */
-  ap_funid_t funid;
+  elina_funid_t funid;
 
   /* local parameters for the function */
-  ap_funopt_t* funopt;
+  elina_funopt_t* funopt;
 
   /* growing temporary buffer */
   double* tmp;
@@ -100,8 +105,8 @@ typedef struct opt_oct_internal_t{
   */
   bool conv;
 
-  /* pointer to ap_manager*/
-  ap_manager_t* man;
+  /* pointer to elina_manager*/
+  elina_manager_t* man;
 }opt_oct_internal_t;
 
 typedef struct opt_oct_mat_t{
@@ -165,7 +170,7 @@ static inline void init_array(double *arr, int size){
 
 /* called by each function to setup and get manager-local data */
 static inline opt_oct_internal_t*
-opt_oct_init_from_manager(ap_manager_t* man, ap_funid_t id, int size)
+opt_oct_init_from_manager(elina_manager_t* man, elina_funid_t id, int size)
 {
   opt_oct_internal_t* pr = (opt_oct_internal_t*) man->internal;
   pr->funid = id;
@@ -216,26 +221,16 @@ Conversion to user types
    pr->conv is set if the conversion is not exact
 */
 static inline void opt_scalar_of_upper_bound(opt_oct_internal_t* pr,
-					 ap_scalar_t* r,
+					 elina_scalar_t* r,
 					 double d,
 					 bool div2)
 {
-  ap_scalar_reinit(r,NUM_AP_SCALAR);
-  if (!isfinite(d)) ap_scalar_set_infty(r,1);
+  elina_scalar_reinit(r,ELINA_SCALAR_DOUBLE);
+  if (!isfinite(d)) elina_scalar_set_infty(r,1);
   else {
-    switch (NUM_AP_SCALAR) {
-    case AP_SCALAR_DOUBLE:
-	//The line below can cause errors
-      //if (!double_set_num(&r->val.dbl,d) || div2) pr->conv = 1;
       r->val.dbl = d;
       if(div2) pr->conv = 1;
       if (div2) r->val.dbl /= 2;
-      break;
-   //We don't handle MPQ and MPFR
-   
-    default:
-      abort();
-    }
   }
 }
 
@@ -243,31 +238,23 @@ static inline void opt_scalar_of_upper_bound(opt_oct_internal_t* pr,
    pr->conv is set if the conversion is not exact
 */
 static inline void opt_scalar_of_lower_bound(opt_oct_internal_t* pr,
-					 ap_scalar_t* r,
+					 elina_scalar_t* r,
 					 double d,
 					 bool div2)
 {
-  ap_scalar_reinit(r,NUM_AP_SCALAR);
-  if (d== INFINITY) ap_scalar_set_infty(r,-1);
+  elina_scalar_reinit(r,ELINA_SCALAR_DOUBLE);
+  if (d== INFINITY) elina_scalar_set_infty(r,-1);
   else {
-    switch (NUM_AP_SCALAR) {
-    case AP_SCALAR_DOUBLE:
       r->val.dbl = d;
       if(div2) pr->conv = 1;
       if (div2) r->val.dbl /= 2;
-      r->val.dbl = -r->val.dbl;
-      break;
-     //We don't handle MPQ and MPFR
-    
-    default:
-      abort();
-    }
+      r->val.dbl = -r->val.dbl;    
   }
 }
 
-static inline bool double_set_ap_scalar(double *r, ap_scalar_t *t){
+static inline bool double_set_elina_scalar(double *r, elina_scalar_t *t){
 	switch(t->discr){
-		case AP_SCALAR_DOUBLE:
+		case ELINA_SCALAR_DOUBLE:
 			*r = t->val.dbl;
 			return true;
 		default:
@@ -276,68 +263,69 @@ static inline bool double_set_ap_scalar(double *r, ap_scalar_t *t){
 }
 
 static inline void opt_bound_of_scalar(opt_oct_internal_t* pr,
-				   double *r, ap_scalar_t* t,
+				   double *r, elina_scalar_t* t,
 				   bool neg, bool mul2)
 {
-  if (neg) ap_scalar_neg(t,t);
-  if (!double_set_ap_scalar(r,t)) pr->conv = true;
+  if (neg) elina_scalar_neg(t,t);
+  if (!double_set_elina_scalar(r,t)) pr->conv = true;
   if (mul2) {
     *r = (*r)*2;
     pr->conv = true;
   }
-  if (neg) ap_scalar_neg(t,t);
+  if (neg) elina_scalar_neg(t,t);
 }
 
 static inline bool opt_bounds_of_coeff(opt_oct_internal_t* pr,
 				   double *minf, double *sup,
-				   ap_coeff_t c,
+				   elina_coeff_t c,
 				   bool mul2)
 {
   switch (c.discr) {
-  case AP_COEFF_SCALAR:
+  case ELINA_COEFF_SCALAR:
     opt_bound_of_scalar(pr,minf,c.val.scalar,true,mul2);
     opt_bound_of_scalar(pr,sup,c.val.scalar,false,mul2);
     return false;
-  case AP_COEFF_INTERVAL:
+  case ELINA_COEFF_INTERVAL:
     opt_bound_of_scalar(pr,minf,c.val.interval->inf,true,mul2);
     opt_bound_of_scalar(pr,sup,c.val.interval->sup,false,mul2);
-    return ap_scalar_cmp(c.val.interval->inf,c.val.interval->sup)>0;
+    return elina_scalar_cmp(c.val.interval->inf,c.val.interval->sup)>0;
   default: abort();
 	/*******
 		TODO: handle arg_assert
 		arg_assert(0,return false;);
 	********/
   }
+  
 }
 
 
-static inline ap_lincons0_t opt_lincons_of_bound(opt_oct_internal_t* pr,
+static inline elina_lincons0_t opt_lincons_of_bound(opt_oct_internal_t* pr,
 					     int i, int j,
 					     double  d)
 {
-  ap_linexpr0_t* e;
+  elina_linexpr0_t* e;
   if (i==j) {
     /* OPT_ZEROary constraint */
-    e = ap_linexpr0_alloc(AP_LINEXPR_SPARSE, 0);
+    e = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE, 0);
     opt_scalar_of_upper_bound(pr,e->cst.val.scalar,d,true);
   }
   else if (i==(j^1)) {
     /* OPT_UNARY constraint */
-    e = ap_linexpr0_alloc(AP_LINEXPR_SPARSE, 1);
+    e = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE, 1);
     e->p.linterm[0].dim = i/2;
-    ap_scalar_set_int(e->p.linterm[0].coeff.val.scalar,(i&1) ? -1 : 1);
+    elina_scalar_set_int(e->p.linterm[0].coeff.val.scalar,(i&1) ? -1 : 1);
     opt_scalar_of_upper_bound(pr,e->cst.val.scalar,d,true);
   }
   else {
     /* OPT_BINARY constraint */
-    e = ap_linexpr0_alloc(AP_LINEXPR_SPARSE, 2);
+    e = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE, 2);
     e->p.linterm[0].dim = j/2;
     e->p.linterm[1].dim = i/2;
-    ap_scalar_set_int(e->p.linterm[0].coeff.val.scalar,(j&1) ?  1 : -1);
-    ap_scalar_set_int(e->p.linterm[1].coeff.val.scalar,(i&1) ? -1 :  1);
+    elina_scalar_set_int(e->p.linterm[0].coeff.val.scalar,(j&1) ?  1 : -1);
+    elina_scalar_set_int(e->p.linterm[1].coeff.val.scalar,(i&1) ? -1 :  1);
     opt_scalar_of_upper_bound(pr,e->cst.val.scalar,d,false);
   }
-  return ap_lincons0_make(AP_CONS_SUPEQ,e,NULL);
+  return elina_lincons0_make(ELINA_CONS_SUPEQ,e,NULL);
 }
 
 
@@ -346,7 +334,7 @@ static inline ap_lincons0_t opt_lincons_of_bound(opt_oct_internal_t* pr,
    note: may output an OPT_EMPTY interval
 */
 static inline void opt_interval_of_bounds(opt_oct_internal_t* pr,
-				      ap_interval_t* i,
+				      elina_interval_t* i,
 				      double minf, double sup,
 				      bool div2)
 {
@@ -359,79 +347,79 @@ static inline void opt_interval_of_bounds(opt_oct_internal_t* pr,
 *************/
 
 opt_oct_t * opt_oct_alloc_internal(opt_oct_internal_t *pr, int dim, int intdim);
-int opt_oct_size(ap_manager_t* man, opt_oct_t* o);
+int opt_oct_size(elina_manager_t* man, opt_oct_t* o);
 opt_oct_t * opt_oct_alloc_top(opt_oct_internal_t *pr, int dim, int intdim);
 void opt_oct_free_internal(opt_oct_internal_t *pr, opt_oct_t *o);
 opt_oct_t * opt_oct_copy_internal(opt_oct_internal_t *pr, opt_oct_t *o);
 opt_oct_t* opt_oct_set_mat(opt_oct_internal_t* pr, opt_oct_t* o, opt_oct_mat_t* m, opt_oct_mat_t* closed, bool destructive);
-opt_oct_t* opt_oct_copy(ap_manager_t* man, opt_oct_t* o);
-void opt_oct_free(ap_manager_t* man, opt_oct_t* a);
-opt_oct_t* opt_oct_bottom(ap_manager_t* man, int intdim, int realdim);
-opt_oct_t* opt_oct_top(ap_manager_t* man, int intdim, int realdim);
-ap_dimension_t opt_oct_dimension(ap_manager_t* man, opt_oct_t* o);
+opt_oct_t* opt_oct_copy(elina_manager_t* man, opt_oct_t* o);
+void opt_oct_free(elina_manager_t* man, opt_oct_t* a);
+opt_oct_t* opt_oct_bottom(elina_manager_t* man, int intdim, int realdim);
+opt_oct_t* opt_oct_top(elina_manager_t* man, int intdim, int realdim);
+elina_dimension_t opt_oct_dimension(elina_manager_t* man, opt_oct_t* o);
 void opt_oct_cache_closure(opt_oct_internal_t *pr, opt_oct_t *o);
 void opt_oct_close(opt_oct_internal_t *pr, opt_oct_t *o);
-opt_oct_t* opt_oct_closure(ap_manager_t *man, bool destructive, opt_oct_t *o);
+opt_oct_t* opt_oct_closure(elina_manager_t *man, bool destructive, opt_oct_t *o);
 void opt_oct_internal_free(opt_oct_internal_t *pr);
-opt_oct_t* opt_oct_of_abstract0(ap_abstract0_t* a);
-ap_abstract0_t* abstract0_of_opt_oct(ap_manager_t* man, opt_oct_t* oct);
-void opt_oct_minimize(ap_manager_t* man, opt_oct_t* o);
-void opt_oct_canonicalize(ap_manager_t* man, opt_oct_t* o);
-int opt_oct_hash(ap_manager_t* man, opt_oct_t* o);
-void opt_oct_approximate(ap_manager_t* man, opt_oct_t* o, int algorithm);
+opt_oct_t* opt_oct_of_abstract0(elina_abstract0_t* a);
+elina_abstract0_t* abstract0_of_opt_oct(elina_manager_t* man, opt_oct_t* oct);
+void opt_oct_minimize(elina_manager_t* man, opt_oct_t* o);
+void opt_oct_canonicalize(elina_manager_t* man, opt_oct_t* o);
+int opt_oct_hash(elina_manager_t* man, opt_oct_t* o);
+void opt_oct_approximate(elina_manager_t* man, opt_oct_t* o, int algorithm);
 
 
 /**************
 	nary operations
 *************/
 
-opt_oct_t* opt_oct_meet(ap_manager_t* man, bool destructive, opt_oct_t* o1, opt_oct_t* o2);
-opt_oct_t* opt_oct_join(ap_manager_t* man, bool destructive, opt_oct_t* o1, opt_oct_t* o2);
-opt_oct_t* opt_oct_widening(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
-opt_oct_t* opt_oct_widening_thresholds(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2, ap_scalar_t** array, size_t nb);
-opt_oct_t* opt_oct_narrowing(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
-opt_oct_t* opt_oct_add_epsilon(ap_manager_t* man, opt_oct_t* o, ap_scalar_t* epsilon);
-opt_oct_t* opt_oct_add_epsilon_bin(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2, ap_scalar_t* epsilon);
-opt_oct_t* opt_oct_join_array(ap_manager_t* man, opt_oct_t** tab, size_t size);
-opt_oct_t* opt_oct_meet_array(ap_manager_t* man, opt_oct_t** tab, size_t size);
+opt_oct_t* opt_oct_meet(elina_manager_t* man, bool destructive, opt_oct_t* o1, opt_oct_t* o2);
+opt_oct_t* opt_oct_join(elina_manager_t* man, bool destructive, opt_oct_t* o1, opt_oct_t* o2);
+opt_oct_t* opt_oct_widening(elina_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
+opt_oct_t* opt_oct_widening_thresholds(elina_manager_t* man, opt_oct_t* o1, opt_oct_t* o2, elina_scalar_t** array, size_t nb);
+opt_oct_t* opt_oct_narrowing(elina_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
+opt_oct_t* opt_oct_add_epsilon(elina_manager_t* man, opt_oct_t* o, elina_scalar_t* epsilon);
+opt_oct_t* opt_oct_add_epsilon_bin(elina_manager_t* man, opt_oct_t* o1, opt_oct_t* o2, elina_scalar_t* epsilon);
+opt_oct_t* opt_oct_join_array(elina_manager_t* man, opt_oct_t** tab, size_t size);
+opt_oct_t* opt_oct_meet_array(elina_manager_t* man, opt_oct_t** tab, size_t size);
 
 
 /**************
 	predicate operations
 *************/ 
 
-bool opt_oct_is_bottom(ap_manager_t* man, opt_oct_t* o);
-bool opt_oct_is_top(ap_manager_t* man, opt_oct_t* o);
-bool opt_oct_is_leq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
-bool opt_oct_is_eq(ap_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
-ap_tcons0_array_t opt_oct_to_tcons_array(ap_manager_t* man, opt_oct_t* o);
-ap_interval_t** opt_oct_to_box(ap_manager_t* man, opt_oct_t* o);
-ap_interval_t* opt_oct_bound_texpr(ap_manager_t* man,opt_oct_t* o, ap_texpr0_t* expr);
-ap_interval_t* opt_oct_bound_dimension(ap_manager_t* man,opt_oct_t* o, ap_dim_t dim);
-ap_lincons0_array_t opt_oct_to_lincons_array(ap_manager_t* man, opt_oct_t* o);
-bool opt_oct_sat_interval(ap_manager_t* man, opt_oct_t* o, ap_dim_t dim, ap_interval_t* i);
-bool opt_oct_is_dimension_unconstrained(ap_manager_t* man, opt_oct_t* o, ap_dim_t dim);
-bool opt_oct_sat_lincons_timing(ap_manager_t* man, opt_oct_t* o, ap_lincons0_t* lincons);
-bool opt_oct_sat_tcons(ap_manager_t* man, opt_oct_t* o, ap_tcons0_t* cons);
+bool opt_oct_is_bottom(elina_manager_t* man, opt_oct_t* o);
+bool opt_oct_is_top(elina_manager_t* man, opt_oct_t* o);
+bool opt_oct_is_leq(elina_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
+bool opt_oct_is_eq(elina_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
+elina_tcons0_array_t opt_oct_to_tcons_array(elina_manager_t* man, opt_oct_t* o);
+elina_interval_t** opt_oct_to_box(elina_manager_t* man, opt_oct_t* o);
+elina_interval_t* opt_oct_bound_texpr(elina_manager_t* man,opt_oct_t* o, elina_texpr0_t* expr);
+elina_interval_t* opt_oct_bound_dimension(elina_manager_t* man,opt_oct_t* o, elina_dim_t dim);
+elina_lincons0_array_t opt_oct_to_lincons_array(elina_manager_t* man, opt_oct_t* o);
+bool opt_oct_sat_interval(elina_manager_t* man, opt_oct_t* o, elina_dim_t dim, elina_interval_t* i);
+bool opt_oct_is_dimension_unconstrained(elina_manager_t* man, opt_oct_t* o, elina_dim_t dim);
+bool opt_oct_sat_lincons_timing(elina_manager_t* man, opt_oct_t* o, elina_lincons0_t* lincons);
+bool opt_oct_sat_tcons(elina_manager_t* man, opt_oct_t* o, elina_tcons0_t* cons);
 
 
 /**************
 	resize operations
 *************/ 
 
-opt_oct_t* opt_oct_forget_array(ap_manager_t* man,bool destructive, opt_oct_t* o, ap_dim_t* tdim, int size, bool project);
-opt_oct_t* opt_oct_add_dimensions(ap_manager_t* man, bool destructive, opt_oct_t* o, ap_dimchange_t* dimchange, bool project);
-opt_oct_t* opt_oct_remove_dimensions(ap_manager_t* man, bool destructive, opt_oct_t* o, ap_dimchange_t* dimchange);
-opt_oct_t* opt_oct_permute_dimensions(ap_manager_t* man, bool destructive, opt_oct_t* o, ap_dimperm_t* permutation);
+opt_oct_t* opt_oct_forget_array(elina_manager_t* man,bool destructive, opt_oct_t* o, elina_dim_t* tdim, int size, bool project);
+opt_oct_t* opt_oct_add_dimensions(elina_manager_t* man, bool destructive, opt_oct_t* o, elina_dimchange_t* dimchange, bool project);
+opt_oct_t* opt_oct_remove_dimensions(elina_manager_t* man, bool destructive, opt_oct_t* o, elina_dimchange_t* dimchange);
+opt_oct_t* opt_oct_permute_dimensions(elina_manager_t* man, bool destructive, opt_oct_t* o, elina_dimperm_t* permutation);
 
 /***************
 	Transfer Operations
 ***************/
 
-opt_oct_t* opt_oct_meet_lincons_array(ap_manager_t* man, bool destructive, opt_oct_t* o, ap_lincons0_array_t* array);
-opt_oct_t* opt_oct_meet_tcons_array(ap_manager_t* man, bool destructive, opt_oct_t* o, ap_tcons0_array_t* array);
-opt_oct_t* opt_oct_assign_linexpr_array(ap_manager_t* man, bool destructive, opt_oct_t* o, ap_dim_t* tdim, ap_linexpr0_t** texpr, size_t size, opt_oct_t* dest);
-opt_oct_t* opt_oct_assign_texpr_array(ap_manager_t* man, bool destructive, opt_oct_t* o, ap_dim_t* tdim, ap_texpr0_t** texpr, int size, opt_oct_t* dest);
+opt_oct_t* opt_oct_meet_lincons_array(elina_manager_t* man, bool destructive, opt_oct_t* o, elina_lincons0_array_t* array);
+opt_oct_t* opt_oct_meet_tcons_array(elina_manager_t* man, bool destructive, opt_oct_t* o, elina_tcons0_array_t* array);
+opt_oct_t* opt_oct_assign_linexpr_array(elina_manager_t* man, bool destructive, opt_oct_t* o, elina_dim_t* tdim, elina_linexpr0_t** texpr, size_t size, opt_oct_t* dest);
+opt_oct_t* opt_oct_assign_texpr_array(elina_manager_t* man, bool destructive, opt_oct_t* o, elina_dim_t* tdim, elina_texpr0_t** texpr, int size, opt_oct_t* dest);
 
 #ifdef __cplusplus
 }

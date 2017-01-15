@@ -19,14 +19,34 @@
  */
 
 
+/* ************************************************************************* */
+/* elina_config.h */
+/* ************************************************************************* */
 
-#ifndef __OPT_OCT_INCR_CLOSURE_COMP_SPARSE_H
-#define __OPT_OCT_INCR_CLOSURE_COMP_SPARSE_H
+#ifndef _ELINA_CONFIG_H_
+#define _ELINA_CONFIG_H_
 
-#include "opt_oct_hmat.h"
-#include "comp_list.h"
-#include "opt_oct_closure_comp_sparse.h"
+#include <stdlib.h>
+#include <string.h>
 
-bool incremental_closure_comp_sparse(opt_oct_mat_t *oo, int dim, int v, bool is_int);
+#ifdef __cplusplus
+#define HAS_BOOL
+extern "C" {
+#endif
+
+#ifndef HAS_BOOL
+#define HAS_BOOL
+typedef char bool;
+static const bool false = 0;
+static const bool true  = 1;
+#endif
+
+#if !(defined __USE_SVID || defined __USE_BSD || defined __USE_XOPEN_EXTENDED || defined __APPLE__ || defined __CYGWIN__)
+
+#endif
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

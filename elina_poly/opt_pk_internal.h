@@ -1,18 +1,22 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 
 /* ************************************************************************* */
@@ -26,14 +30,6 @@
 #include "opt_pk_config.h"
 #include "rdtsc.h"
 #include "opt_pk.h"
-#include "num.h"
-#include "numint.h"
-#include "numrat.h"
-#include "bound.h"
-
-#include "itv.h"
-#include "itv_linexpr.h"
-#include "itv_linearize.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -113,12 +109,9 @@ struct opt_pk_internal_t {
   int* cherni_intp;                /* of size maxcols */
   opt_numint_t cherni_prod;             
 
-  itv_internal_t* itv;
+  
   //bound_t poly_bound;
-  itv_t poly_itv;
-  itv_linexpr_t poly_itv_linexpr;
-  itv_lincons_t poly_itv_lincons;
-  numrat_t poly_numrat;
+  elina_rat_t * poly_numrat;
   opt_numint_t * poly_numintp;            /* of size maxcols */
   opt_numint_t * poly_numintp2;           /* of size maxcols */
   /* bitstring_t* poly_bitstringp; */    /* of size maxrows */
@@ -149,8 +142,6 @@ static inline opt_pk_internal_t* opt_pk_init_from_manager(elina_manager_t* man, 
 static inline opt_pk_internal_t* opt_pk_init_from_manager(elina_manager_t* man, elina_funid_t funid)
 {
   opt_pk_internal_t* opk = (opt_pk_internal_t*)man->internal;
-  //printf("funid: %d\n",funid);
-  //fflush(stdout);
   opk->funid = funid;
   opk->funopt = &man->option.funopt[funid];
   man->result.flag_exact = man->result.flag_best = false;

@@ -19,14 +19,34 @@
  */
 
 
+#ifndef _ELINA_COEFF_ARITH_H_
+#define _ELINA_COEFF_ARITH_H_
 
-#ifndef __OPT_OCT_INCR_CLOSURE_COMP_SPARSE_H
-#define __OPT_OCT_INCR_CLOSURE_COMP_SPARSE_H
+#include "elina_scalar_arith.h"
+#include "elina_interval.h"
 
-#include "opt_oct_hmat.h"
-#include "comp_list.h"
-#include "opt_oct_closure_comp_sparse.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-bool incremental_closure_comp_sparse(opt_oct_mat_t *oo, int dim, int v, bool is_int);
+#include "elina_interval_arith.h"
+#include "elina_coeff.h"
+
+/***********************************************
+	Arithmetic on elina_coeff
+************************************************/
+void elina_coeff_mul_scalar(elina_coeff_t * dst, elina_coeff_t * src, elina_scalar_t * mul, elina_scalar_discr_t discr);
+
+void elina_coeff_add(elina_coeff_t * op, elina_coeff_t * op1, elina_coeff_t * op2, elina_scalar_discr_t discr);
+
+void elina_coeff_sub_num(elina_coeff_t * dst, elina_coeff_t * src, elina_scalar_t * sub, elina_scalar_discr_t discr);
+
+void elina_coeff_mul_interval(elina_coeff_t * dst, elina_coeff_t *src, elina_interval_t * interval, elina_scalar_discr_t discr);
+
+void elina_interval_set_elina_coeff(elina_interval_t *interval, elina_coeff_t *coeff);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

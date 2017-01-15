@@ -19,14 +19,34 @@
  */
 
 
+#ifndef _ELINA_LINEXPR0_ARITH_H_
+#define _ELINA_LINEXPR0_ARITH_H_
 
-#ifndef __OPT_OCT_INCR_CLOSURE_COMP_SPARSE_H
-#define __OPT_OCT_INCR_CLOSURE_COMP_SPARSE_H
+#include "elina_linexpr0.h"
+#include "elina_coeff_arith.h"
 
-#include "opt_oct_hmat.h"
-#include "comp_list.h"
-#include "opt_oct_closure_comp_sparse.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-bool incremental_closure_comp_sparse(opt_oct_mat_t *oo, int dim, int v, bool is_int);
+void elina_linexpr0_reinit(elina_linexpr0_t* expr, size_t size);
+
+void elina_linexpr0_init(elina_linexpr0_t* expr, size_t size);
+
+void elina_linexpr0_clear(elina_linexpr0_t* e);
+
+void elina_linexpr0_neg(elina_linexpr0_t* expr);
+
+void elina_linexpr0_scale(elina_linexpr0_t* expr, elina_interval_t *interval, elina_scalar_discr_t discr);
+
+void elina_linexpr0_add(elina_linexpr0_t **res, elina_linexpr0_t **exprA, elina_linexpr0_t **exprB, elina_scalar_discr_t discr);
+
+void elina_linexpr0_sub(elina_linexpr0_t **res, elina_linexpr0_t **exprA, elina_linexpr0_t **exprB, elina_scalar_discr_t discr);
+
+void elina_linexpr0_div(elina_linexpr0_t* expr, elina_interval_t *interval, elina_scalar_discr_t discr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

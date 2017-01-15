@@ -1,18 +1,22 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 
 /* ********************************************************************** */
@@ -35,6 +39,7 @@
 extern "C" {
 #endif
 
+elina_rat_t * elina_scalar_set_rat(elina_scalar_t * scalar);
 
 static void print_pk_array(opt_pk_array_t * op){
 	unsigned short int nbcolumns = op->maxcols;
@@ -55,40 +60,40 @@ static void print_pk_array(opt_pk_array_t * op){
 bool opt_vector_set_dim_bound(opt_pk_internal_t* opk,
 			  opt_numint_t* vec,
 			  elina_dim_t dim,
-			  numrat_t numrat,
+			  elina_scalar_t * numrat,
 			  int mode,
 			  size_t intdim, size_t realdim,
 			  bool integer);
 
 
-/* Fills the vector with the quasi-linear expression (itv_linexpr) */
-void opt_vector_set_itv_linexpr(opt_pk_internal_t* opk,
+/* Fills the vector with the quasi-linear expression (elina_linexpr) */
+void opt_vector_set_elina_linexpr0(opt_pk_internal_t* opk,
 			    opt_numint_t* ov,
-			    itv_linexpr_t* expr,
+			    elina_linexpr0_t* expr,
 			    size_t dim,
 			    int mode);
 
 /* Fills the vector(s) with the linear constraint cons */
-void opt_vector_set_itv_lincons(opt_pk_internal_t* opk,
+void opt_vector_set_elina_lincons0(opt_pk_internal_t* opk,
 			    opt_numint_t* ov,
-			    itv_lincons_t* cons,
+			    elina_lincons0_t* cons,
 			    size_t intdim, size_t realdim,
 			    bool integer);
 
 /* Fills the vector(s) with the linear constraint cons for testing
    satisfiability. Returns false if unsatisfiable
  */
-bool opt_vector_set_itv_lincons_sat(opt_pk_internal_t* opk,
+bool opt_vector_set_elina_lincons0_sat(opt_pk_internal_t* opk,
 				opt_numint_t* ov,
-				itv_lincons_t* cons,
+				elina_lincons0_t* cons,
 				size_t intdim, size_t realdim,
 				bool integer);
 
 
 
-bool opt_matrix_set_itv_lincons_array(opt_pk_internal_t* opk,
+bool opt_matrix_set_elina_lincons0_array(opt_pk_internal_t* opk,
 				  opt_matrix_t** mat,
-				  itv_lincons_array_t* array,
+				  elina_lincons0_array_t* array,
 				  size_t intdim, size_t realdim,
 				  bool integer);
 
@@ -97,6 +102,8 @@ bool opt_matrix_set_itv_lincons_array(opt_pk_internal_t* opk,
 elina_lincons0_t opt_lincons0_of_vector(opt_pk_internal_t* opk,
 				 opt_numint_t* ov, unsigned short int * ca,
 				 unsigned short int v_size, unsigned short int size);
+
+
 
 #ifdef __cplusplus
 }

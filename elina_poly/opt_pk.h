@@ -1,19 +1,22 @@
 /*
-	Copyright 2016 Software Reliability Lab, ETH Zurich
-
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-		http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
-*/
-
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2017 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
 
 
 /* ********************************************************************** */
@@ -29,11 +32,34 @@
 extern "C" {
 #endif
 
-//#if defined (APRON)
-#include "apron_wrapper.h"
-//#endif
-
+#include "elina_int.h"
+#include "elina_rat.h"
 #include "comp_list.h"
+
+#if defined (HAS_APRON)
+#include "apron_wrapper.h"
+#include "num.h"
+#include "numint.h"
+#include "numrat.h"
+#include "bound.h"
+
+#include "itv.h"
+#include "itv_linexpr.h"
+#include "itv_linearize.h"
+
+#else
+#include "elina_coeff.h"
+#include "elina_dimension.h"
+#include "elina_linexpr0.h"
+#include "elina_texpr0.h"
+#include "elina_lincons0.h"
+#include "elina_tcons0.h"
+#include "elina_manager.h"
+#include "elina_generic.h"
+
+#endif
+
+
 
 /* The invariant of the representation of a polyhedron is the following: if the
    polyhedron is empty, then C==F==satC==satF==0. Otherwise, we have
@@ -382,8 +408,8 @@ opt_pk_array_t* opt_pk_permute_dimensions(elina_manager_t* man,
 /* III.5 Expansion and folding of dimensions */
 /* ============================================================ */
 
-opt_pk_t* opt_pk_expand(elina_manager_t* man,
-		bool destructive, opt_pk_t* o,
+opt_pk_array_t* opt_pk_expand(elina_manager_t* man,
+		bool destructive, opt_pk_array_t* o,
 		elina_dim_t dim,
 		size_t n);
   /* Expand the dimension dim into itself + n additional dimensions.
@@ -397,8 +423,8 @@ opt_pk_t* opt_pk_expand(elina_manager_t* man,
        dimensions.
   */
 
-opt_pk_t* opt_pk_fold(elina_manager_t* man,
-	      bool destructive, opt_pk_t* o,
+opt_pk_array_t* opt_pk_fold(elina_manager_t* man,
+	      bool destructive, opt_pk_array_t* o,
 	      elina_dim_t* tdim,
 	      size_t size);
   /* Fold the dimensions in the array tdim of size n>=1 and put the result
