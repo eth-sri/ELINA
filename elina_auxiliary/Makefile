@@ -21,8 +21,6 @@
 
 include ../Makefile.config
 
-DFLAGS := -g $(AFLAGS)
-
 LIBDIR = $(ELINA_PREFIX)/lib
 
 INCLDIR = $(ELINA_PREFIX)/include 

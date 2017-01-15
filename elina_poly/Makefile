@@ -22,9 +22,6 @@
 
 include ../Makefile.config
 
-
-DFLAGS := -g  -DNUM_LONGLONGRAT -DTIMING $(AFLAGS) #-DHAS_APRON
-
 LIBDIR = $(ELINA_PREFIX)/lib
 
 INCLDIR = $(ELINA_PREFIX)/include 

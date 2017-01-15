@@ -21,8 +21,6 @@
 
 include ../Makefile.config
 
-DFLAGS = -g
-
 SOINST = libpartitions.so
 
 OBJS = comp_list.o array_comp_list.o intersection.o union.o extract.o 

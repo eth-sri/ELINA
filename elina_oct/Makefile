@@ -25,8 +25,6 @@ include ../Makefile.config
 
 IS_VECTOR = #-DVECTOR 
 
-DFLAGS := -g -DNUM_DOUBLE $(AFLAGS) $(IS_VECTOR) -DTHRESHOLD=0.75 -DTIMING #-DSSE
-
 
 #PREFIX = /usr/local
 
