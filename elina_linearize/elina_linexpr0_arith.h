@@ -22,7 +22,12 @@
 #ifndef _ELINA_LINEXPR0_ARITH_H_
 #define _ELINA_LINEXPR0_ARITH_H_
 
+#if defined (HAS_APRON)
+#include "apron_wrapper.h"
+#else
 #include "elina_linexpr0.h"
+#endif
+
 #include "elina_coeff_arith.h"
 
 #ifdef __cplusplus

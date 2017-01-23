@@ -26,7 +26,13 @@
 #include <float.h>
 #include "gmp.h"
 #include "mpfr.h"
+
+#if defined (HAS_APRON)
+#include "apron_wrapper.h"
+#else
 #include "elina_scalar.h"
+#endif
+
 #include "elina_rat.h"
 
 #ifdef __cplusplus

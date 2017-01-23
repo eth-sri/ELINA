@@ -23,9 +23,16 @@
 #ifndef _ELINA_GENERIC_H_
 #define _ELINA_GENERIC_H_
 
+#if defined (HAS_APRON)
+#include "apron_wrapper.h"
+#else
+
 #include "elina_manager.h"
-#include "elina_linearize.h"
+#include "elina_scalar.h"
 #include "elina_abstract0.h"
+#endif
+
+#include "elina_linearize.h"
 
 #ifdef __cplusplus
 extern "C" {

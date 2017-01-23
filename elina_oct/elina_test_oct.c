@@ -23,6 +23,7 @@
 #include "opt_oct_internal.h"
 #include "opt_oct_hmat.h"
 
+
 elina_linexpr0_t * generate_random_linexpr0(unsigned short int dim){
 	elina_coeff_t *cst, *coeff;
 	unsigned short int j, k;

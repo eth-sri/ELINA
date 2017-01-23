@@ -29,10 +29,16 @@
 #ifndef _ELINA_LINEARIZE_TEXPR_H_
 #define _ELINA_LINEARIZE_TEXPR_H_
 
+#if defined (HAS_APRON)
+#include "apron_wrapper.h"
+#else
 #include "elina_manager.h"
 #include "elina_linexpr0.h"
-#include "elina_rat.h"
 #include "elina_abstract0.h"
+#include "elina_linearize.h"
+#endif
+
+#include "elina_rat.h"
 #include "elina_linearize.h"
 
 #ifdef __cplusplus

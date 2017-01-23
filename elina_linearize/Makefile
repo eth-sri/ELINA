@@ -30,16 +30,20 @@ INSTALLd = install -d
 
 OBJS = elina_generic.o elina_scalar_arith.o elina_interval_arith.o  elina_coeff_arith.o elina_linexpr0_arith.o elina_linearize.o elina_linearize_texpr.o
 
+ifeq ($(IS_APRON),)
 INCLUDES = -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include -I../elina_auxiliary
-
 LIBS = -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm  -L../elina_auxiliary -lelinaux
+else
+INCLUDES = -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include -I$(APRON_PREFIX)/include -I../apron_interface
+LIBS = -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm -L$(APRON_PREFIX)/lib -lapron
+endif
 
 INSTALL = install
 INSTALLd = install -d
 
 SOINST = libelinalinearize.so
 
-ELINALINEARIZEH = elina_generic.h elina_scalar_arith.h elina_interval_arith.h elina_coeff_arith.h elina_linexpr0_arith.h elina_linearize.h elina_linearize_texpr.h 
+ELINALINEARIZEH = elina_generic.h elina_scalar_arith.h elina_interval_arith.h elina_coeff_arith.h elina_linexpr0_arith.h elina_linearize.h elina_linearize_texpr.h elina_rat.h elina_int.h
 
 all :	libelinalinearize.so 
 

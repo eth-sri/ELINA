@@ -23,7 +23,12 @@
 #define _ELINA_INTERVAL_ARITH_H_
 
 #include "elina_scalar_arith.h"
+
+#if defined (HAS_APRON)
+#include "apron_wrapper.h"
+#else
 #include "elina_interval.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {

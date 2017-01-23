@@ -28,19 +28,14 @@ extern "C" {
 #endif
 
 #if defined (HAS_APRON)
-#include "ap_generic.h"
-#include "ap_coeff.h"
-#include "ap_dimension.h"
-#include "ap_expr0.h"
-#include "ap_manager.h"
-
+#include "apron_wrapper.h"
 #else
-#include "elina_generic.h"
 #include "elina_coeff.h"
 #include "elina_dimension.h"
 #include "elina_manager.h"
 #endif
 
+#include "elina_generic.h"
 
 elina_manager_t* opt_oct_manager_alloc(void);
 

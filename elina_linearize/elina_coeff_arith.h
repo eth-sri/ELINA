@@ -22,16 +22,18 @@
 #ifndef _ELINA_COEFF_ARITH_H_
 #define _ELINA_COEFF_ARITH_H_
 
-#include "elina_scalar_arith.h"
-#include "elina_interval.h"
+#include "elina_interval_arith.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "elina_interval_arith.h"
+#if defined (HAS_APRON)
+#include "apron_wrapper.h"
+#else
 #include "elina_coeff.h"
-
+#endif
 /***********************************************
 	Arithmetic on elina_coeff
 ************************************************/

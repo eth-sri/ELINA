@@ -22,9 +22,14 @@
 #ifndef _ELINA_LINEARIZE_H_
 #define _ELINA_LINEARIZE_H_
 
+#if defined (HAS_APRON)
+#include "apron_wrapper.h"
+#else
 #include "elina_manager.h"
-#include "elina_rat.h"
 #include "elina_abstract0.h"
+#endif
+
+#include "elina_rat.h"
 #include "elina_linexpr0_arith.h"
 
 #ifdef __cplusplus
@@ -34,8 +39,6 @@ extern "C" {
 /* ********************************************************************** */
 /* Auxiliary functions for add, multiplications etc. */
 /* ********************************************************************** */
-
-bool elina_interval_sqrt(elina_interval_t *dst, elina_interval_t *src, elina_scalar_discr_t discr);
 
 void linearize_elina_lincons0_array(elina_lincons0_array_t* array, bool meet, elina_scalar_discr_t discr);
 

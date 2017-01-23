@@ -35,12 +35,15 @@
 #include <stdint.h>
 #include "gmp.h"
 #include "mpfr.h"
-#include "elina_scalar.h"
-#include "elina_int.h"
 
 #if defined (HAS_APRON)
 #include "apron_wrapper.h"
+#else
+#include "elina_scalar.h"
 #endif
+
+#include "elina_int.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -329,7 +332,7 @@ static elina_rat_t * elina_scalar_set_rat(elina_scalar_t * scalar){
 		    }
 		    break;
 		case ELINA_SCALAR_DOUBLE:
-		    if (isinf(scalar->val.dbl)) {
+		    if (scalar->val.dbl==INFINITY || scalar->val.dbl==-INFINITY) {
 		      if (scalar->val.dbl>0){ 
 			  res->n = 1;
 		      }

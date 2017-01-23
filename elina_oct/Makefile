@@ -22,10 +22,6 @@
 
 include ../Makefile.config
 
-
-IS_VECTOR = #-DVECTOR 
-
-
 #PREFIX = /usr/local
 
 LIBDIR = $(ELINA_PREFIX)/lib
@@ -44,16 +40,16 @@ CLOSUREH =  opt_oct_closure_comp_sparse.h  opt_oct_incr_closure_comp_sparse.h op
 endif
 
 
-
 OBJS = $(CLOSURE_OBJS) opt_oct_nary.o opt_oct_resize.o opt_oct_predicate.o opt_oct_representation.o opt_oct_transfer.o opt_oct_hmat.o
 
-INCLUDES = \
--I../elina_linearize \
--I../elina_auxiliary \
--I../partitions_api \
--I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include \
+ifeq ($(IS_APRON),)
+LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm
+INCLUDES = -I../elina_auxiliary -I../elina_linearize -I../partitions_api -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include 
+else
+LIBS = -L../partitions_api -lpartitions -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm 
+INCLUDES = -I$(APRON_PREFIX)/include -I../apron_interface -I../elina_linearize -I../partitions_api -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include 
+endif
 
-LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm 
 
 INSTALL = install
 INSTALLd = install -d

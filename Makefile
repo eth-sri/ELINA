@@ -31,12 +31,12 @@ c:
 	(cd elina_poly; make all)
 
 install:
+	
 	(cd elina_auxiliary; make install)
 	(cd elina_linearize; make install)
 	(cd partitions_api; make install)
 	(cd elina_oct; make install)
 	(cd elina_poly; make install)
-
 
 clean:
 	(cd elina_auxiliary; make clean)

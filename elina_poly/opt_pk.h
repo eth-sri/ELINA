@@ -38,14 +38,14 @@ extern "C" {
 
 #if defined (HAS_APRON)
 #include "apron_wrapper.h"
-#include "num.h"
-#include "numint.h"
-#include "numrat.h"
-#include "bound.h"
+//#include "num.h"
+//#include "numint.h"
+//#include "numrat.h"
+//#include "bound.h"
 
-#include "itv.h"
-#include "itv_linexpr.h"
-#include "itv_linearize.h"
+//#include "itv.h"
+//#include "itv_linexpr.h"
+//#include "itv_linearize.h"
 
 #else
 #include "elina_coeff.h"
@@ -55,10 +55,11 @@ extern "C" {
 #include "elina_lincons0.h"
 #include "elina_tcons0.h"
 #include "elina_manager.h"
-#include "elina_generic.h"
 
 #endif
 
+#include "elina_generic.h"
+#include "elina_linearize_texpr.h"
 
 
 /* The invariant of the representation of a polyhedron is the following: if the

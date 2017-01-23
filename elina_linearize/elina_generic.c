@@ -23,7 +23,6 @@
 /* ************************************************************************* */
 
 #include "elina_generic.h"
-#include "elina_scalar.h"
 
 /* These functions are dedicated to implementors of domains. They offer generic
    default implementations for some of the operations required by the ELINA
