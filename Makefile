@@ -37,7 +37,8 @@ install:
 	(cd partitions_api; make install)
 	(cd elina_oct; make install)
 	(cd elina_poly; make install)
-
+	(cd apron_interface; make install)
+	
 clean:
 	(cd elina_auxiliary; make clean)
 	(cd elina_linearize; make clean)
