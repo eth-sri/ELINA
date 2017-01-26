@@ -179,7 +179,6 @@ elina_manager_t* elina_manager_alloc(const char* library, const char* version,
 			       void (*internal_free)(void*))
 {
   elina_manager_t* man;
-
   assert(sizeof(bool)==1);
 
   man = (elina_manager_t*)malloc(sizeof(elina_manager_t));

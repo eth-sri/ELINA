@@ -92,6 +92,23 @@ void insert_comp_list(array_comp_list_t *acl, comp_list_t * cl){
 	return;
 }
 
+void insert_comp_list_tail(array_comp_list_t *acl, comp_list_t *cl){
+	comp_list_t *h = acl->head;
+	if(!h){
+		acl->head = cl;
+		acl->head->next=NULL;
+		//acl->tail = cl;
+		acl->size++;
+		return;
+	}
+	while(h->next!=NULL){
+		h = h->next;
+	}
+	h->next = cl;
+	cl->next = NULL;
+	acl->size++;
+}
+
 void insert_comp_list_with_union(array_comp_list_t * acl, comp_list_t *cl,unsigned short int n){
 	comp_list_t * cl1 = acl->head;
 	char *map = create_map(cl,n);

@@ -81,6 +81,7 @@ array_comp_list_t * create_array_comp_list(void);
 array_comp_list_t * copy_array_comp_list(array_comp_list_t *src);
 void free_array_comp_list(array_comp_list_t * acl);
 void insert_comp_list(array_comp_list_t *acl, comp_list_t * cl);
+void insert_comp_list_tail(array_comp_list_t *acl, comp_list_t * cl);
 void insert_comp_list_with_union(array_comp_list_t * acl, comp_list_t *cl,unsigned short int n);
 comp_list_t * find(array_comp_list_t *acl,unsigned short int num);
 short int find_index(array_comp_list_t *acl,comp_list_t *cl);

@@ -254,6 +254,27 @@ opt_pk_array_t* opt_pk_expand(elina_manager_t* man,
 
 /* the array tdim is assumed to be sorted */
 
+void opt_pk_fold_new_comp(opt_pk_internal_t *opk, bool destructive, 
+			  opt_pk_t ** poly, array_comp_list_t *acl, 
+			  elina_dim_t *tdim, size_t size){
+	size_t i;
+	elina_dim_t dim = tdim[0];
+	comp_list_t *cl = create_comp_list();
+	insert_comp(cl,tdim[0] + opk->dec);
+	insert_comp_list_tail(acl,cl);
+	unsigned short int comp_size = acl->size;
+	poly = (opt_pk_t **)realloc(poly,(comp_size+1)*sizeof(opt_pk_t*));
+	opt_pk_t * factor = poly[comp_size];
+	size_t fold_size = 0;
+	unsigned short int k;
+	for(k=0; k < comp_size; k++){
+	        opt_pk_t * oak = poly[k];
+		fold_size = fold_size + oak->F->nbrows;
+	}
+	factor->F = opt_matrix_alloc(fold_size,3,false);
+	cl = acl->head;
+}
+
 static
 opt_matrix_t* opt_matrix_fold_same_comp(opt_pk_internal_t* opk,
 		      bool destructive,
@@ -493,6 +514,25 @@ opt_pk_array_t* opt_pk_fold(elina_manager_t* man,
   cartesian_product_vertices_fold();*/
   unsigned short int var = tdim[0] + opk->dec;
   comp_list_t *fcl = find(acl,var);
+  bool null_flag = false;
+  if(fcl==NULL){
+	// if there is no factor containing tdim[0];
+	fcl = create_comp_list();
+	insert_comp(fcl,var);
+	insert_comp_list_tail(acl,fcl);
+	//num_compa = acl->size;
+	//poly = (opt_pk_t **)realloc(poly,acl->size*sizeof(opt_pk_t*));
+	//poly[num_compa] = opt_poly_alloc(1,0);
+	//poly[num_compa]->F = opt_matrix_alloc(1,3,true);
+	//poly[num_compa]->F->p[0][0] = 1;
+	//poly[num_compa]->F->p[0][1] = 1;
+	//opt_pk_fold_new_comp(opk,true,poly,acl,tdim,size);
+	//op->poly = poly;
+	//op->acl = acl;
+	//return op;
+	null_flag = true;
+  }
+  
   unsigned short int ndim=tdim[0]+opk->dec;
   unsigned short int *fca = to_sorted_array(fcl,maxcols);
   
@@ -511,7 +551,6 @@ opt_pk_array_t* opt_pk_fold(elina_manager_t* man,
   bool flag1 = false, flag2 = false;
   opt_matrix_t * tmp;
   while(k < num_compa){
-	 
 	 unsigned short int * ca = to_sorted_array(cl,maxcols);
 	 unsigned short int comp_size = cl->size;
 	 elina_dim_t * tdimk = (elina_dim_t *)calloc(comp_size, sizeof(elina_dim_t));
@@ -652,12 +691,19 @@ opt_pk_array_t* opt_pk_fold(elina_manager_t* man,
 	free(tdimk);
 	cl = cl->next;
   }
-  
   if(!destructive){
-	poly = (opt_pk_t **)realloc(poly,k2*sizeof(opt_pk_t*));
+	unsigned short int k3 = null_flag ? k2+1: k2;
+	poly = (opt_pk_t **)realloc(poly,k3*sizeof(opt_pk_t*));
   }
   short int ind = find_index(acl,fcl);
-	  opt_pk_t * src = poly[ind];
+ 
+  if(null_flag){
+	poly[ind] = opt_poly_alloc(1,0);
+	poly[ind]->F = opt_matrix_alloc(1,3,true);
+	poly[ind]->F->p[0][0] = 1;
+	poly[ind]->F->p[0][1] = 1; 
+  }
+   opt_pk_t * src = poly[ind];
   if(!flag1){
 	  
 	
@@ -678,10 +724,12 @@ opt_pk_array_t* opt_pk_fold(elina_manager_t* man,
 		src->nbeq = 0;
 		src->status &= ~opt_pk_status_consgauss & ~opt_pk_status_gengauss & ~opt_pk_status_minimaleps;
 	  }
-	  
-	  
+	  opt_matrix_t * tmp2 = poly[ind]->F;
 	  poly[ind]->F = opt_matrix_fold_diff_comp(opk, destructive, src->F, fold_val,
 			      ndim, size);
+	  if(!destructive){
+		opt_matrix_free(tmp2);
+	  }
   }
   /* Minimize the result */
   if (opk->funopt->algorithm>0){
@@ -708,9 +756,9 @@ opt_pk_array_t* opt_pk_fold(elina_manager_t* man,
 	op->poly = poly;
 	op->acl = acl;
 	op->is_bottom = false;
-	if(flag2 && !flag1){
-		opt_matrix_free(tmp);
-	}
+	//if(flag2 && !flag1){
+	//	opt_matrix_free(tmp);
+	//}
   }
   return op;
 }
