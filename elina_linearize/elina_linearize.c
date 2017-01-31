@@ -427,10 +427,17 @@ static void elina_lincons0_select_inf(elina_lincons0_t* cons)
 
 void elina_lincons0_set(elina_lincons0_t * dst, elina_lincons0_t * src){
 	if (dst!=src){ 
-		free(dst->linexpr0);
+		if(dst->linexpr0){
+			elina_linexpr0_free(dst->linexpr0);
+		}
 		//elina_linexpr0_clear(dst);
 		dst->linexpr0 = elina_linexpr0_copy(src->linexpr0); 
-		elina_scalar_set(dst->scalar,src->scalar); 
+		if(src->scalar){
+			elina_scalar_set(dst->scalar,src->scalar);
+		}
+		else if(dst->scalar){
+			elina_scalar_free(dst->scalar);
+		} 
 		dst->constyp = src->constyp; 
 	}
 }
@@ -767,26 +774,31 @@ bool quasilinearize_elina_lincons0_array(elina_lincons0_array_t* array, elina_in
 {
   size_t i,j,size;
   bool exact = true;
-
+  
   elina_lincons0_array_reduce(array,meet, discr);
+   
   size = array->size;
   for (i=0; i<size; i++){
+    
     if (meet &&
 	array->p[i].constyp == ELINA_CONS_EQ &&
 	!elina_linexpr0_is_quasilinear((&array->p[i])->linexpr0)){
       /* Split an equality constraint into two inequalities if it is really
 	 interval linear ==> better precision because quasilinearisation
 	 choices differ between expr>=0 and expr<=0 */
-	
       if (size>=array->size){
 	elina_lincons0_array_reinit(array,1+(5*array->size)/4);
       }
+	
       array->p[i].constyp = ELINA_CONS_SUPEQ;
       elina_lincons0_set(&array->p[size],&array->p[i]);
       elina_linexpr0_neg((&array->p[size])->linexpr0);
+	
       size++;
     }
+	
     exact = quasilinearize_elina_lincons0(&array->p[i],env,meet,discr) && exact;
+	
     if ((&array->p[i])->linexpr0->size==0 &&
 	eval_elina_cstlincons0(&array->p[i]) == 0){
       elina_lincons0_array_reinit(array,1);
@@ -795,6 +807,7 @@ bool quasilinearize_elina_lincons0_array(elina_lincons0_array_t* array, elina_in
     }
   }
   elina_lincons0_array_reinit(array,size);
+ 
   return exact;
 }
 
