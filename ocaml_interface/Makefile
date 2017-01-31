@@ -35,6 +35,7 @@ CMXSINC = $(APRON_CMXSINC) -I .
 
 APRON_CAML_INCLUDE = $(shell $(OCAMLFIND) query apron)
 
+
 #---------------------------------------
 # Files
 #---------------------------------------
@@ -130,9 +131,9 @@ elina_poly.cmxa elina_poly.a: elina_poly.cmx libelina_poly_caml.a
 # IDL rules
 #---------------------------------------
 
-%.ml %.mli %_caml.c: %.idl perlscript_caml.pl ../mlapronidl/manager.idl
+%.ml %.mli %_caml.c: %.idl perlscript_caml.pl $(MLAPRONDIR)/manager.idl
 	mkdir -p tmp
-	cp ../mlapronidl/manager.idl $*.idl tmp/
+	cp $(MLAPRONDIR)/manager.idl $*.idl tmp/
 	cd tmp && $(CAMLIDL) -no-include -nocpp $*.idl
 	cp tmp/$*_stubs.c $*_caml.c
 	$(PERL) perlscript_caml.pl < tmp/$*.ml >$*.ml
