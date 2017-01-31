@@ -19,7 +19,7 @@
 #
 
 #location of apron
-SRCROOT ?= /home/gsingh/apron_tmp/apron
+SRCROOT ?= 
 
 MLAPRONDIR = $(SRCROOT)/mlapronidl
 
