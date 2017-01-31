@@ -19,9 +19,9 @@
 #
 
 #location of apron
-SRCROOT ?= 
+SRCROOT ?= /home/gsingh/apron_tmp/apron
 
-MLAPRONDIR = 
+MLAPRONDIR = $(SRCROOT)/mlapronidl
 
 APRON_INCLUDE = $(APRON_PREFIX)/include
 APRON_LIB = $(APRON_PREFIX)/lib
