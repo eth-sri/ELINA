@@ -21,27 +21,48 @@
 
 include Makefile.config
 
-all: c
+
+
+all: c ocaml
+
+ifneq ($(HAS_OCAML),)
+ocaml : 
+	(cd ocaml_interface; make all)
+else
+ocaml : 
+endif
 
 c:
+ifeq ($(IS_APRON),)
 	(cd elina_auxiliary; make all)
+endif
 	(cd elina_linearize; make all)
 	(cd partitions_api; make all)
 	(cd elina_oct; make all)
-	(cd elina_poly; make all)
+	(cd elina_poly; make all) 
+	
 
 install:
-	
+ifeq ($(IS_APRON),)
 	(cd elina_auxiliary; make install)
+endif
 	(cd elina_linearize; make install)
 	(cd partitions_api; make install)
 	(cd elina_oct; make install)
 	(cd elina_poly; make install)
 	(cd apron_interface; make install)
+ifneq ($(HAS_OCAML),) 
+	(cd ocaml_interface; make all)
+endif
 	
 clean:
+ifeq ($(IS_APRON),)
 	(cd elina_auxiliary; make clean)
+endif
 	(cd elina_linearize; make clean)
 	(cd partitions_api; make clean)
 	(cd elina_oct; make clean)
 	(cd elina_poly; make clean)
+ifneq ($(HAS_OCAML),) 
+	(cd ocaml_interface; make clean)
+endif
