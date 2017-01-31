@@ -167,7 +167,6 @@ elina_lincons0_array_t opt_pk_to_lincons_array(elina_manager_t* man,
 	opt_matrix_t* oc = oak->C;
 	nbcons = nbcons + oc->nbrows;
   }
-
   array = elina_lincons0_array_make(nbcons);
   comp_list_t * cla = acla->head;
   l=0; 
@@ -175,11 +174,12 @@ elina_lincons0_array_t opt_pk_to_lincons_array(elina_manager_t* man,
 	opt_pk_t * oak = poly_a[k];
 	opt_matrix_t* oc = oak->C;
 	//opt_matrix_sort_rows(opk,oc);
+	
 	unsigned short int * ca = to_sorted_array(cla,oa->maxcols);
+	
 	for (i=0; i<oc->nbrows; i++){
     		if (! opt_vector_is_dummy_constraint(opk,
 				     oc->p[i], oc->nbcolumns)){
-			
       			array.p[l] = opt_lincons0_of_vector(opk, oc->p[i], ca, cla->size, oa->maxcols);
      			 l++;
     		}
@@ -189,6 +189,7 @@ elina_lincons0_array_t opt_pk_to_lincons_array(elina_manager_t* man,
   } 
   
   array.size = l;
+  
   return array;
 }
 

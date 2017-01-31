@@ -120,37 +120,33 @@ opt_pk_array_t* opt_pk_top(elina_manager_t* man, size_t intdim, size_t realdim)
 
 /* The matrix is supposed to be big enough */
 static 
-int opt_matrix_fill_constraint_box(opt_pk_internal_t* opk,
+int opt_matrix_fill_constraint_interval(opt_pk_internal_t* opk,
 				opt_matrix_t* oc, size_t start,
-				elina_interval_t** box,
+				elina_interval_t* interval,
 				size_t intdim, size_t realdim,
 				bool integer)
 {
   size_t k;
-  elina_dim_t i;
   bool ok;
   k = start;
-
-  for (i=0; i<intdim+realdim; i++){
-    elina_interval_t * interval = box[i];
-    int res1 = elina_scalar_infty(interval->inf);
-    int res2 = elina_scalar_infty(interval->sup);
-    bool res3 = elina_scalar_equal(interval->inf,interval->sup);
-    if (!res1 && !res2 && res3){
+  int res1 = elina_scalar_infty(interval->inf);
+  int res2 = elina_scalar_infty(interval->sup);
+  bool res3 = elina_scalar_equal(interval->inf,interval->sup);
+  if (!res1 && !res2 && res3){
       ok = opt_vector_set_dim_bound(opk,oc->p[k],
-				 (elina_dim_t)i, interval->sup, 0,
+				 0, interval->sup, 0,
 				 intdim,realdim,
 				 integer);
       if (!ok){
 	return -1;
       }
       k++;
-    }
-    else {
+   }
+   else {
       /* inferior bound */
       if (!res1){
 	opt_vector_set_dim_bound(opk,oc->p[k],
-			     (elina_dim_t)i, interval->inf, -1,
+			     0, interval->inf, -1,
 			     intdim,realdim,
 			     integer);
 	k++;
@@ -158,48 +154,58 @@ int opt_matrix_fill_constraint_box(opt_pk_internal_t* opk,
       /* superior bound */
       if (!res2){
 	opt_vector_set_dim_bound(opk,oc->p[k],
-			     (elina_dim_t)i, interval->sup, 1,
+			     0, interval->sup, 1,
 			     intdim,realdim,
 			     integer);
 	k++;
       }
     }
-  }
   return (int)k;
 }
 
 /* Abstract an hypercube defined by the array of intervals of size
    intdim+realdim.  */
 
-opt_pk_t* opt_pk_of_box(elina_manager_t* man,
+opt_pk_array_t* opt_pk_of_box(elina_manager_t* man,
 		size_t intdim, size_t realdim,
 		elina_interval_t** array)
 {
-  int k;
+  elina_dim_t k;
+  int res;
   size_t dim;
-  opt_pk_t* op;
+  opt_pk_array_t* op;
 
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_OF_BOX);
   opt_pk_internal_realloc_lazy(opk,intdim+realdim);
 
   dim = intdim + realdim;
-  op = opt_poly_alloc(intdim,realdim);
-  op->status = opt_pk_status_conseps;
-
-  dim = intdim + realdim;
-  op->C = opt_matrix_alloc(opk->dec-1 + 2*dim, opk->dec + dim, false);
-
-  /* constraints */
-  opt_matrix_fill_constraint_top(opk,op->C,0);
-  k = opt_matrix_fill_constraint_box(opk,op->C,opk->dec-1,array,intdim,realdim,true);
-  if (k==-1){
-    opt_matrix_free(op->C);
-    op->C = NULL;
-    return op;
+  opt_pk_t ** poly = (opt_pk_t **)malloc(dim*sizeof(opt_pk_t *));
+  array_comp_list_t *acl = create_array_comp_list();
+  for(k=0; k < dim; k++){
+	unsigned short int k1 = dim - 1 - k;
+  	poly[k1] = opt_poly_alloc(1,0);
+	poly[k1]->C = opt_matrix_alloc(3,3,false);
+	poly[k1]->status = opt_pk_status_conseps;
+	poly[k1]->C->p[0][0] = 1;
+	poly[k1]->C->p[0][1] = 1;
+	comp_list_t *cl = create_comp_list();
+	insert_comp(cl,k+opk->dec);
+	insert_comp_list(acl,cl);
+	res = opt_matrix_fill_constraint_interval(opk,poly[k1]->C,opk->dec-1,array[k],1,0,true);
+	if (res==-1){
+		unsigned short int j;
+    		for(j=0; j < dim; j++){
+			if(poly[k1]->C){
+				opt_matrix_free(poly[k1]->C);
+			}
+			free(poly[k1]);
+		}
+		free_array_comp_list(acl);
+    		return opt_pk_bottom(man,intdim,realdim);
+  	}
+  	poly[k1]->C->nbrows = (size_t)res;
   }
-  op->C->nbrows = (size_t)k;
-  
-  //assert(poly_check(pk,po));
+  op = opt_pk_array_alloc(poly,acl,intdim+realdim+opk->dec);
   man->result.flag_exact = man->result.flag_best = true;
   return op;
 }

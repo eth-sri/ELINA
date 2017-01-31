@@ -137,6 +137,7 @@ bool opt_poly_meet_elina_lincons_array(bool lazy,
   if (!quasilinear){
     	elina_interval_t ** env = opt_generator_to_box(opk,oa->F);
     	quasilinearize_elina_lincons0_array(array,env,true,ELINA_SCALAR_MPQ);
+	
 	for(k=0; k < num_var; k++){
 		elina_interval_free(env[k]);
 	}
@@ -316,8 +317,9 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
   printf(".");
   //printf("meet lincons input\n");
   //elina_lincons0_array_t arr2 = opt_pk_to_lincons_array(man,oa);
- //elina_lincons0_array_fprint(stdout,&arr2,NULL);
- // elina_lincons0_array_clear(&arr2);
+  //elina_lincons0_array_fprint(stdout,&arr2,NULL);
+  //elina_lincons0_array_clear(&arr2);
+  //elina_lincons0_array_fprint(stdout,array,NULL);
   fflush(stdout);
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_MEET_LINCONS_ARRAY);
   size_t i;
@@ -670,7 +672,7 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
   //elina_lincons0_array_t arr1 = opt_pk_to_lincons_array(man,op);
   //elina_lincons0_array_fprint(stdout,&arr1,NULL);
   //elina_lincons0_array_clear(&arr1);
-//	fflush(stdout);
+  //	fflush(stdout);
   return op;
 }
 
@@ -766,7 +768,6 @@ void combine_vertex(opt_pk_internal_t *opk, opt_numint_t *v1, opt_numint_t *v2, 
 		Join based on generator representation
 *******************************/
 opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt_pk_array_t *ob, bool destructive){
-	
 	opt_pk_internal_t *opk = opt_pk_init_from_manager(man, ELINA_FUNID_JOIN);
 	size_t i;
 	unsigned short int j,k;

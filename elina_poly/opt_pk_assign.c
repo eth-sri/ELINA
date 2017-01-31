@@ -116,6 +116,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 			      opt_pk_array_t* oa,
 			      elina_dim_t dim, elina_linexpr0_t* linexpr0)
 {
+  
   int sgn;
   opt_pk_array_t* op;
   opt_pk_internal_t* opk = (opt_pk_internal_t*)man->internal;
@@ -359,6 +360,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr(bool assign, bool lazy,
 			  elina_dim_t dim, elina_linexpr0_t* linexpr,
 			  opt_pk_array_t* ob)
 {
+  
   opt_pk_array_t* op;
   opt_pk_internal_t* opk = (opt_pk_internal_t*)man->internal;
   opt_pk_internal_realloc_lazy(opk,oa->maxcols-1);
@@ -401,7 +403,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr(bool assign, bool lazy,
 	}
      }
   }
-  
+   
   /* Choose the right technique */
   if (elina_linexpr0_is_linear(linexpr)){
     op = opt_poly_asssub_linexpr_det(assign, man,destructive,oa,dim,linexpr);
@@ -413,7 +415,6 @@ opt_pk_array_t* opt_poly_asssub_linexpr(bool assign, bool lazy,
   }
   else {
     op = elina_generic_asssub_linexpr_array(true,man,destructive,oa,&dim,&linexpr,1,ob);
-	 
   }
 
 
@@ -755,7 +756,7 @@ opt_pk_array_t* opt_pk_assign_linexpr_array(elina_manager_t* man,
   #if defined(TIMING)
  	 start_timing();
   #endif
- 
+
   op = size==1 ? opt_poly_asssub_linexpr(true, opk->funopt->algorithm<=0, man,destructive,oa,tdim[0],texpr[0],ob) :
        		 opt_poly_asssub_linexpr_array( opk->funopt->algorithm<=0,
 			      man,destructive,oa,tdim,texpr,size,ob);

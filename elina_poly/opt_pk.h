@@ -214,7 +214,7 @@ opt_pk_array_t* opt_pk_top(elina_manager_t* man, size_t intdim, size_t realdim);
   /* Create a top (universe) value */
 
 
-opt_pk_t* opt_pk_of_box(elina_manager_t* man,
+opt_pk_array_t* opt_pk_of_box(elina_manager_t* man,
 		size_t intdim, size_t realdim,
 		elina_interval_t** tinterval);
   /* Abstract an hypercube defined by the array of intervals
