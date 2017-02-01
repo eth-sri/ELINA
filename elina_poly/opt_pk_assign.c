@@ -474,47 +474,256 @@ opt_pk_array_t* opt_poly_asssub_linexpr_array_det(elina_manager_t* man,
   opt_matrix_t* mat;
   opt_pk_array_t* op;
   opt_pk_internal_t* opk = (opt_pk_internal_t*)man->internal;
-
-  op = destructive ? oa : opt_pk_array_alloc(NULL,NULL,oa->maxcols);
+  unsigned short int k;
+  //op = destructive ? oa : opt_pk_array_alloc(NULL,NULL,oa->maxcols);
+  opt_pk_t ** poly_a = oa->poly;
   array_comp_list_t * acla = oa->acl;
+  unsigned short int num_compa = acla->size;
   unsigned short int maxcols = oa->maxcols;
   unsigned short int intdim = maxcols - 2;
   /* Return empty if empty */
   if (oa->is_bottom || !acla){
     man->result.flag_best = man->result.flag_exact = true;
-    opt_poly_set_bottom(opk,op);
-    return op;
+    
+    return opt_pk_bottom(man,oa->maxcols-opk->dec,0);
   }
 
   
   /* Convert linear expressions */
   nbcols = oa->maxcols;
-  tvec = (opt_numint_t**)malloc(size*sizeof(opt_numint_t*));
+  
+  array_comp_list_t * aclb = create_array_comp_list();
+  comp_list_t ** clb_arr = (comp_list_t **)malloc(size*sizeof(comp_list_t *));
   for (i=0; i<size; i++){
-    tvec[i] = opt_vector_alloc(nbcols);
-    opt_vector_set_elina_linexpr0(opk,
-			   tvec[i],
-			   texpr[i],
-			   intdim,1);
+    
+    comp_list_t *clb = linexpr0_to_comp_list(opk,texpr[i]);
+     if(!contains_comp(clb,tdim[i]+opk->dec)){
+		insert_comp(clb,tdim[i]+opk->dec);
+     }
+     clb_arr[i] = copy_comp_list(clb);
+     insert_comp_list_with_union(aclb,clb,maxcols);	
   }
-  /* Copy tdim because of sorting */
-  tdim2 = (elina_dim_t*)malloc(size*sizeof(elina_dim_t));
-  memcpy(tdim2,tdim,size*sizeof(elina_dim_t));
-  opt_pk_asssub_isort(tdim2,tvec,size);
-  /* Perform the operation */
- // mat =
-   // opt_matrix_assign_variables(opk, oa->C, tdim2, tvec, size) :
-  /* Free allocated stuff */
-  for (i=0; i<size; i++){
-    opt_vector_free(tvec[i],nbcols);
-  }
-  free(tvec);
-  free(tdim2);
 
-  /* Update polyhedra */
-  if (destructive){
-    opt_poly_array_clear(opk,op);
+  /**********************************
+	Compute LUB of partitions
+  **********************************/
+  array_comp_list_t *acl = union_array_comp_list(acla,aclb,maxcols);
+  unsigned short int num_comp = acl->size;
+  unsigned short int ** ca_arr = (unsigned short int **)malloc(num_comp*sizeof(unsigned short int *));
+  unsigned short int * comp_size_map = (unsigned short int *)calloc(num_comp,sizeof(unsigned short int));
+  comp_list_t * cl = acl->head;
+  for(k=0; k < num_comp; k++){
+	unsigned short int comp_size = cl->size; 
+	ca_arr[k] = to_sorted_array(cl,maxcols);
+	comp_size_map[k] = comp_size;
+	cl = cl->next;
   }
+  /**********************************
+	Factor assignment statement according to LUB
+  ***********************************/
+
+  unsigned short int * rmapb = (unsigned short int *)calloc(size, sizeof(unsigned short int));
+  size_t * nbmapb = (size_t *)calloc(num_comp,sizeof(size_t));
+  elina_linexpr0_t ** expr_array = (elina_linexpr0_t **)malloc(size*sizeof(elina_linexpr0_t *));
+  for(i=0;i < size; i++){
+	unsigned short int ind = is_comp_list_included(acl,clb_arr[i],maxcols);
+	rmapb[i] = ind;
+	expr_array[i] = copy_linexpr0_with_comp_list(opk,texpr[i],ca_arr[ind],comp_size_map[ind]);
+	nbmapb[ind]++;
+  }
+ 
+
+  /*********************************
+	Factor A according to LUB
+  **********************************/
+  unsigned short int * rmapa = (unsigned short int *)calloc(num_compa, sizeof(unsigned short int));
+  size_t * nbmapa = (size_t *)calloc(num_comp,sizeof(size_t));
+  size_t * nbeqmapa = (size_t *)calloc(num_comp,sizeof(size_t));
+  char * disjoint_map = (char *)calloc(num_compa,sizeof(char));
+  size_t * nbgenmapa = (size_t *)calloc(num_comp,sizeof(size_t));
+  size_t * nblinemapa = (size_t *)calloc(num_comp,sizeof(size_t));
+  size_t * num_vertex_a = (size_t *)calloc(num_compa,sizeof(size_t));
+  size_t * num_vertex = (size_t *)calloc(num_comp,sizeof(size_t));
+  char * array_map_a = create_array_map(acla,maxcols);
+  comp_list_t * cla = acla->head;
+  for(k=0; k < num_compa; k++){
+	opt_pk_t * oak = poly_a[k];
+	short int res = is_comp_list_included(acl,cla,maxcols);
+	rmapa[k] = res;
+	nbmapa[res] = nbmapa[res] + oak->C->nbrows;
+	nbeqmapa[res] = nbeqmapa[res] + oak->nbeq;
+	opt_poly_obtain_satF(oak);
+	num_vertex_a[k] = opt_generator_rearrange(oak->F,oak->satF);
+	if(num_vertex_a[k]){
+		if(!num_vertex[res]){
+			num_vertex[res] = num_vertex_a[k];
+		}
+		else{
+			num_vertex[res] = num_vertex[res] * num_vertex_a[k];
+		}
+	}
+	nbgenmapa[res] = nbgenmapa[res] + oak->F->nbrows;
+	nblinemapa[res] = nblinemapa[res] + oak->nbline;
+	cla = cla->next;
+  }
+  
+  opt_pk_t ** poly = (opt_pk_t **)malloc(num_comp*sizeof(opt_pk_t *));
+  size_t * counterF = (size_t *)calloc(num_comp,sizeof(size_t));
+  cl = acl->head;
+  for(k=0; k < num_comp; k++){
+	unsigned short int comp_size = cl->size;
+	poly[k] = opt_poly_alloc(comp_size,0);
+	cl = cl->next;
+  }
+
+  cl = acl->head;  	
+  for(k=0; k < num_comp; k++){
+	unsigned short int l,j;
+	if(!nbmapb[k]){
+		for(l=0; l < num_compa;l++){
+			if(rmapa[l]==k){
+				break;
+			}
+		}
+		disjoint_map[l] = 1;
+		if(destructive){
+			poly[k]->C = poly_a[l]->C;
+			poly[k]->nbeq = poly_a[l]->nbeq;
+			poly[k]->F = poly_a[l]->F;
+			poly[k]->satF = poly_a[l]->satF;
+			poly[k]->satC = poly_a[l]->satC;
+			poly[k]->nbline = poly_a[l]->nbline;
+		}
+		else{
+			
+			poly[k]->C =poly_a[l]->C ? opt_matrix_copy(poly_a[l]->C) : NULL;
+			poly[k]->nbeq = poly_a[l]->nbeq;
+			poly[k]->F = poly_a[l]->F ? opt_matrix_copy(poly_a[l]->F) : NULL; 
+			poly[k]->satF = poly_a[l]->satF ? opt_satmat_copy(poly_a[l]->satF) : NULL; 
+			poly[k]->satC = poly_a[l]->satC ? opt_satmat_copy(poly_a[l]->satC) : NULL; 
+			poly[k]->nbline = poly_a[l]->nbline;
+		}
+	}
+	else{
+		unsigned short int comp_size = comp_size_map[k];
+		//poly[k]->C = opt_matrix_alloc(nbmapa[k]+1, comp_size+2,false);
+		//poly[k]->nbeq = nbeqmapa[k];		
+		unsigned short int k1;
+		unsigned short int nblines = 0;
+		unsigned short int * ca = ca_arr[k];
+		for(k1=0; k1 < comp_size; k1++){
+			unsigned short int var = ca[k1];
+			if(!array_map_a[var]){
+				nblines++;
+			}
+		}
+		poly[k]->F = opt_matrix_alloc(nbgenmapa[k]+2*num_vertex[k]+nblines+1, comp_size+2,false);
+		num_vertex[k] = 0;
+		nblines = 0;
+		for(k1=0; k1 < comp_size; k1++){
+			unsigned short int var = ca[k1];
+			if(!array_map_a[var]){
+				poly[k]->F->p[nblines][k1+2] = 1;
+				nblines++;
+			}
+		}
+		poly[k]->nbline = nblinemapa[k] + nblines;
+		if(nblines==comp_size){
+			poly[k]->F->p[nblines][0] = 1;
+			poly[k]->F->p[nblines][1] = 1;
+			nblines++;
+		}
+		counterF[k] = nblines;
+		poly[k]->F->nbrows = nblines;
+	}
+	cl = cl->next;
+  }
+  
+  free(array_map_a);
+	
+  // cartesian product of vertices
+  cartesian_product_vertices_with_map(oa, poly, rmapa, ca_arr, num_vertex_a, num_vertex, counterF, disjoint_map);
+
+  // meet of rays
+  meet_rays_with_map(oa, poly, rmapa, ca_arr, num_vertex_a, counterF, disjoint_map);
+ 
+
+  /* Copy tdim because of sorting */
+  for(k=0; k < num_comp; k++){
+        if(nbmapb[k]){
+		tvec = (opt_numint_t **)malloc(nbmapb[k]*sizeof(opt_numint_t *));
+		tdim2 = (elina_dim_t*)malloc(nbmapb[k]*sizeof(elina_dim_t));
+		unsigned short int l = 0;
+		unsigned short int comp_size = comp_size_map[k];
+		unsigned short int * ca = ca_arr[k];
+		for(i=0; i <size; i++){
+			if(rmapb[i]==k){
+				tvec[l] = opt_vector_alloc(comp_size+2);
+				opt_vector_set_elina_linexpr0(opk,tvec[l],expr_array[i],comp_size,1);
+				unsigned short int k1 = 0;
+				unsigned short int var = tdim[i] + opk->dec;
+				while(ca[k1]!=var){
+					k1++;
+				}
+				tdim2[l] = k1;
+				l++;
+			}
+			
+		}
+	  	opt_pk_asssub_isort(tdim2,tvec,nbmapb[k]);
+		opt_pk_t * oak = poly[k];
+	   	/* Perform the assignment operation */
+		opt_matrix_t * tmp = oak->F;
+	 	poly[k]->F = opt_matrix_assign_variables(opk, oak->F, tdim2, tvec, nbmapb[k]);
+		opt_matrix_free(tmp);
+	  	/* Free allocated stuff */
+		for(i=0; i < nbmapb[k]; i++){
+			opt_vector_free(tvec[i],comp_size+2);
+		}
+		free(tvec);
+		free(tdim2);
+	}
+	free(ca_arr[k]);
+  }
+  
+  for (i=0; i<size; i++){
+    	free_comp_list(clb_arr[i]);
+        elina_linexpr0_free(expr_array[i]);
+  }
+
+  /* Free up the auxilliary structures*/
+  if (destructive){
+    free_array_comp_list(oa->acl);
+    for(k=0; k < num_compa; k++){
+	if(!disjoint_map[k]){
+		opt_poly_clear(poly_a[k]);
+	}
+	free(poly_a[k]);
+    }
+    free(poly_a);
+    //opt_poly_array_clear(opk,op);
+  }
+  free(clb_arr);
+  free(rmapb);
+  free(nbmapb);
+  free(rmapa);
+  free(nbmapa);
+  free(nbeqmapa);
+  free(disjoint_map);
+  free(nbgenmapa);
+  free(nblinemapa);
+  free(num_vertex_a);
+  free(num_vertex);
+  free(expr_array);
+  free_array_comp_list(aclb);
+  free(comp_size_map);
+  free(ca_arr);
+  free(counterF);
+  op = destructive ? oa : opt_pk_array_alloc(NULL,NULL,maxcols);
+  
+  
+  op->poly = poly;
+  op->acl = acl;
   //op->status = 0;
   return op;
 }
@@ -546,11 +755,10 @@ opt_pk_array_t* opt_poly_asssub_linexpr_array(bool lazy,
   unsigned short int num_compa = acla->size;
   unsigned short int k;
   opt_pk_t ** poly_a = oa->poly;
-  /* Minimize the argument if option say so */
-  if ( !lazy){
+  /* Minimize the argument  */
+  //if ( !lazy){
     for(k=0; k < num_compa;k++){
-	opt_pk_t * oak = poly_a[k];
-    	opt_poly_minimize(man,oak);
+    	opt_poly_chernikova(man,poly_a[k],"assign linexpr array input");
     	if (opk->exn){
       		opk->exn = ELINA_EXC_NONE;
       		man->result.flag_best = man->result.flag_exact = false;
@@ -562,7 +770,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_array(bool lazy,
       		}
     	}
      }
-  }
+  //}
   
   /* Choose the right technique */
   if (elina_linexpr0_array_is_linear(texpr,size)){
@@ -581,8 +789,8 @@ opt_pk_array_t* opt_poly_asssub_linexpr_array(bool lazy,
   unsigned short int num_comp = acl->size;
   if ( !lazy){
     for(k=0; k < num_comp; k++){
-	opt_pk_t * opp = poly[k];
-    	opt_poly_minimize(man,opp);
+	//opt_pk_t * opp = poly[k];
+    	opt_poly_chernikova(man,poly[k],"assign linexpr array output");
     	if (opk->exn){
       		opk->exn = ELINA_EXC_NONE;
       		man->result.flag_best = man->result.flag_exact = false;

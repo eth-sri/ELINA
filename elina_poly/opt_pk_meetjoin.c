@@ -417,7 +417,7 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
   array_comp_list_t * aclb = lincons0_array_to_array_comp_list(opk,array,oa->maxcols, is_trivial);
   
   /**********************************
-	Compute Union of Independent components
+	Compute Union of partitions
   **********************************/
   unsigned short int maxcols = oa->maxcols;
   array_comp_list_t * acl = union_array_comp_list(acla,aclb,maxcols);

@@ -301,6 +301,14 @@ void test_fold(unsigned short int dim, size_t nbcons){
 }
 
 
+void test_parallel_assignment(unsigned short int dim, size_t nbcons){
+	unsigned short int i;
+	elina_dim_t * tdim = (elina_dim_t *)malloc(dim*sizeof(elina_dim_t));
+ 	for (i=0;i<dim;i++){
+      	     tdim[i] = i;
+    	}
+  	//oa3 = opt_pk_assign_linexpr_array(man,false,oa2,tdim, expr_array,dim,NULL);
+}
 
 int main(int argc, char **argv){
 	if(argc < 3){
@@ -324,4 +332,6 @@ int main(int argc, char **argv){
 	test_fold(dim,nbcons);
 	printf("Testing Expand\n");
 	test_expand(dim,nbcons);
+	printf("Testing Parallel Assignment\n");
+        test_parallel_assignment(dim,nbcons);
 }
