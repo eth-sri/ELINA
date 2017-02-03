@@ -989,6 +989,10 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
      false );
   elina_lincons0_clear(new_lincons0);
   free(new_lincons0);
+  free_array_comp_list(aclb);
+  free_array_comp_list(acl);
+  free(num_vertex_a);
+  opt_matrix_free(F);
   return sat;
 }
 
@@ -1112,5 +1116,9 @@ bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* 
   elina_lincons0_clear(new_lincons0);
   free(lincons0);
   free(new_lincons0);
+  free_array_comp_list(aclb);
+  free_array_comp_list(acl);
+  free(num_vertex_a);
+  opt_matrix_free(F);
   return sat;
 }
