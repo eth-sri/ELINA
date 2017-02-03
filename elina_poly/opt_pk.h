@@ -262,7 +262,7 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
      algorithm <= 0: compute dual representation only if necessary
   */
 
-//bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* cons);
+bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* cons);
   /* Satisfiability of a tree expression constraint. */
 
   /* Inclusion of a dimension in an interval

@@ -112,6 +112,10 @@ elina_lincons0_t elina_intlinearize_tcons0(elina_manager_t* man,
 				     elina_scalar_discr_t discr,
 				     bool quasilinearize, bool meet);
 
+bool elina_intlinearize_elina_tcons0(elina_lincons0_t* res,
+				   elina_tcons0_t* cons,
+				   elina_interval_t** env, size_t intdim, elina_scalar_discr_t discr);
+
 elina_lincons0_array_t elina_intlinearize_tcons0_array(elina_manager_t* man,
 						 elina_abstract0_t* abs,
 						 elina_tcons0_array_t* array,

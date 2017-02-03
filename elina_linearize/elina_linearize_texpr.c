@@ -1061,11 +1061,13 @@ bool elina_intlinearize_elina_tcons0(elina_lincons0_t* res,
     break;
   }
   elina_coeff_t * cst = &res->linexpr0->cst;
+  bool was_scalar = false;
   if(cst->discr==ELINA_COEFF_SCALAR){
 	elina_scalar_t *tmp = elina_scalar_alloc();
 	elina_scalar_set(tmp,cst->val.scalar);
 	elina_coeff_reinit(cst,ELINA_COEFF_INTERVAL,discr);
 	elina_coeff_set_interval_scalar(cst,tmp,tmp);
+	was_scalar = true;
 	elina_scalar_free(tmp);
   } 
   elina_interval_t *interval = cst->val.interval;
@@ -1076,6 +1078,9 @@ bool elina_intlinearize_elina_tcons0(elina_lincons0_t* res,
 	if(!elina_scalar_infty(interval->inf) && elina_scalar_equal(interval->inf,interval->sup)){
 		elina_coeff_reduce(cst);
 	}
+    }
+    if(was_scalar){
+	elina_coeff_reduce(cst);
     }
     res->constyp = cons->constyp;
     if (cons->scalar){

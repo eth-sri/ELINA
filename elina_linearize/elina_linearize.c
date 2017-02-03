@@ -633,7 +633,6 @@ elina_quasilinearize_choose_middle(elina_scalar_t * middle, /* the result */
 
 bool quasilinearize_elina_linexpr0(elina_linexpr0_t* expr, elina_interval_t** env, bool for_meet_inequality, elina_scalar_discr_t discr)
 {
-  
   size_t i,k,size;
   elina_dim_t dim=0;
   elina_coeff_t * coeff=NULL;
@@ -701,6 +700,8 @@ bool quasilinearize_elina_linexpr0(elina_linexpr0_t* expr, elina_interval_t** en
 	elina_coeff_mul_interval(tcoeff2,tcoeff,env[dim],discr);
 	/* Addition to the constant coefficient */
 	elina_coeff_add(&expr->cst,&expr->cst,tcoeff2,discr);
+	elina_coeff_free(tcoeff2);
+  	elina_coeff_free(tcoeff);
         elina_coeff_t *cst = &expr->cst;
 	if (cst->discr==ELINA_COEFF_INTERVAL && elina_scalar_infty(cst->val.interval->inf) && elina_scalar_infty(cst->val.interval->sup)){
 	  k = 0;
@@ -720,6 +721,7 @@ bool quasilinearize_elina_linexpr0(elina_linexpr0_t* expr, elina_interval_t** en
 	  }
 	  k++;
 	}
+       
       }
       else {
 	if (k!=i){

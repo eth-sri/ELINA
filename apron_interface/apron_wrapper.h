@@ -261,6 +261,7 @@ extern "C" {
 
 #define elina_tcons0_t ap_tcons0_t
 #define elina_tcons0_make ap_tcons0_make
+#define elina_tcons0_fprint ap_tcons0_fprint
 #define elina_tcons0_is_interval_linear ap_tcons0_is_interval_linear
 #define elina_tcons0_array_t ap_tcons0_array_t
 #define elina_tcons0_array_make ap_tcons0_array_make

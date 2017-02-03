@@ -95,7 +95,7 @@ bool opt_pk_is_bottom(elina_manager_t* man, opt_pk_array_t* op)
 
 
 
-void swap_index(unsigned short int *idx1, unsigned short int *idx2){
+void swelina_index(unsigned short int *idx1, unsigned short int *idx2){
 	unsigned  short int * tmp = idx1;
 	idx1 = idx2;
 	idx2 = tmp;
@@ -118,7 +118,7 @@ unsigned short int *sorted_index (opt_numint_t *arr, unsigned short int n)
     {
       if (arr[idx[i]] > arr[idx[j]])
       {
-        swap_index(&idx[i], &idx[j]);
+        swelina_index(&idx[i], &idx[j]);
       }
     }
   }
@@ -243,7 +243,7 @@ bool opt_generators_sat_vector(opt_pk_internal_t* opk, opt_matrix_t* F,
   if (opt_numint_sgn(tab[0])==0){
     /* 1. constraint is an equality */
     for (i=0; i<F->nbrows; i++){	
-      //opt_numint_t * fpi = opt_map_vector(F->p[i],mapF,comp_size,F->nbcolumns);
+      //opt_numint_t * fpi = opt_melina_vector(F->p[i],mapF,comp_size,F->nbcolumns);
       
       opt_numint_t prod = opt_vector_product_strict(opk, F->p[i], tab,F->nbcolumns);
 	
@@ -262,7 +262,7 @@ bool opt_generators_sat_vector(opt_pk_internal_t* opk, opt_matrix_t* F,
 
     for (i=0; i<F->nbrows; i++){
 	
-      //opt_numint_t * fpi = opt_map_vector(F->p[i],mapF,comp_size,F->nbcolumns);
+      //opt_numint_t * fpi = opt_melina_vector(F->p[i],mapF,comp_size,F->nbcolumns);
       opt_numint_t prod;
       prod = opt_vector_product_strict(opk, F->p[i], tab, F->nbcolumns);
 	
@@ -384,7 +384,7 @@ bool opt_pk_is_leq_gen(elina_manager_t * man, opt_pk_array_t *oa, opt_pk_array_t
 	Data structures for A
   *********************************/
   unsigned short int * rmapa = (unsigned short int *)calloc(num_compa, sizeof(unsigned short int));	
-  unsigned short int ** ind_map_a = (unsigned short int **)malloc(num_compa*sizeof(unsigned short int *));
+  unsigned short int ** ind_melina_a = (unsigned short int **)malloc(num_compa*sizeof(unsigned short int *));
   comp_list_t * cla = acla->head; 
   size_t * num_vertex_a = (size_t *)calloc(num_compa,sizeof(size_t));
  
@@ -393,7 +393,7 @@ bool opt_pk_is_leq_gen(elina_manager_t * man, opt_pk_array_t *oa, opt_pk_array_t
 	rmapa[ka] = inda;
 	unsigned short int * ca_a = to_sorted_array(cla,maxcols);
 	unsigned short int *ca = ca_arr[inda];
-	ind_map_a[ka] = map_index(ca_a,ca, cla->size);
+	ind_melina_a[ka] = map_index(ca_a,ca, cla->size);
 	opt_pk_t *oak = poly_a[ka];
 	nbgena[inda] = nbgena[inda] + oak->F->nbrows;
 	opt_poly_obtain_satF(oak);
@@ -403,7 +403,7 @@ bool opt_pk_is_leq_gen(elina_manager_t * man, opt_pk_array_t *oa, opt_pk_array_t
 	}
 	unsigned short int k1;
 	for(k1=0; k1 < cla->size; k1++){
-		unsigned short int num = ind_map_a[ka][k1];
+		unsigned short int num = ind_melina_a[ka][k1];
 		var_map[inda][num]++;
 	}
 	free(ca_a);
@@ -415,14 +415,14 @@ bool opt_pk_is_leq_gen(elina_manager_t * man, opt_pk_array_t *oa, opt_pk_array_t
   *********************************/
  
   unsigned short int * rmapb = (unsigned short int *)calloc(num_compb, sizeof(unsigned short int));	
-  unsigned short int ** ind_map_b = (unsigned short int **)malloc(num_compb*sizeof(unsigned short int *));
+  unsigned short int ** ind_melina_b = (unsigned short int **)malloc(num_compb*sizeof(unsigned short int *));
   comp_list_t * clb = aclb->head;
   for(kb=0; kb < num_compb; kb++){
 	short int indb = is_comp_list_included(acl,clb,maxcols);
 	rmapb[kb] = indb;
 	unsigned short int * ca_b = to_sorted_array(clb,maxcols);
 	unsigned short int *ca = ca_arr[indb];
-	ind_map_b[kb] = map_index(ca_b,ca, clb->size);
+	ind_melina_b[kb] = map_index(ca_b,ca, clb->size);
 	free(ca_b);
         opt_pk_t * obk = poly_b[kb];
 	 //if (opk->funopt->algorithm>0){
@@ -517,7 +517,7 @@ bool opt_pk_is_leq_gen(elina_manager_t * man, opt_pk_array_t *oa, opt_pk_array_t
 			size_t nbconsb = obk->C->nbrows;
 			for(i=0; i<nbconsb;i++){
 				
-				opt_numint_t * cpi = opt_map_vector(obk->C->p[i],ind_map_b[kb], comp_size_arr[indb],obk->C->nbcolumns);
+				opt_numint_t * cpi = opt_map_vector(obk->C->p[i],ind_melina_b[kb], comp_size_arr[indb],obk->C->nbcolumns);
 				
 				sat = opt_generators_sat_vector(opk,
 					  tmp[indb]->F, cpi,
@@ -554,14 +554,14 @@ bool opt_pk_is_leq_gen(elina_manager_t * man, opt_pk_array_t *oa, opt_pk_array_t
 	free(counter);
 	free(var_map);
 	for(k=0; k < num_compa; k++){
-		free(ind_map_a[k]);
+		free(ind_melina_a[k]);
 	}
-	free(ind_map_a);
+	free(ind_melina_a);
 	free(nbgena);
 	for(k=0; k < num_compb; k++){
-		free(ind_map_b[k]);
+		free(ind_melina_b[k]);
 	}
-	free(ind_map_b);
+	free(ind_melina_b);
        
 	return sat;
 }
@@ -776,6 +776,7 @@ void fuse_generators_intersecting_blocks(opt_matrix_t *F, opt_pk_t ** poly_a, ar
 				counter++;
 				num_vertex++;
 			}
+			
 			F->nbrows = counter;
 		}
 		else{
@@ -830,7 +831,7 @@ void fuse_generators_intersecting_blocks(opt_matrix_t *F, opt_pk_t ** poly_a, ar
 			}
 			counter = i3;
 		}
-		free(ca_a);
+		//free(ca_a);
 		cla = cla->next;
 	}
 	
@@ -847,7 +848,7 @@ void fuse_generators_intersecting_blocks(opt_matrix_t *F, opt_pk_t ** poly_a, ar
 		size_t nbconsa = src_mat->nbrows;
 		unsigned short int comp_size = cla->size;
 		unsigned short int * ca_a = ca_a_arr[k];
-		for(i=0; i < num_vertex_a[k]; i++){
+		for(i=num_vertex_a[k]; i < nbconsa; i++){
 			opt_numint_t * src_pi = src_p[i];
 			opt_numint_t * dst_pi = dst_p[counter];
 			dst_pi[0] = src_pi[0];
@@ -945,21 +946,20 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
   comp_list_t * cl = acl->head;
   unsigned short int num_comp = acl->size;
   unsigned short int comp_size;
-  unsigned short int * ca = (unsigned short int *)malloc(sizeof(unsigned short int));
+  unsigned short int * ca = NULL;
   elina_lincons0_t * new_lincons0 = (elina_lincons0_t *)malloc(sizeof(elina_lincons0_t));
   for(k=0; k < num_comp; k++){
         if(!is_disjoint(cl,clb,maxcols)){
 		comp_size = cl->size;
 		ca = to_sorted_array(cl,maxcols);
 		copy_lincons0_with_comp_list(opk,new_lincons0,lincons0,ca, comp_size);
-		free(ca);
 		break;
 	}       
         cl = cl->next;
   }
   opt_matrix_t * F = opt_matrix_alloc(nbgen+num_vertex,comp_size+2,false);
   fuse_generators_intersecting_blocks(F,poly_a,acla,ca,num_vertex_a,intersect_map,maxcols);
-  free(map);
+  free(ca);
   free(map);
   free(intersect_map);
   //dim = po->intdim + po->realdim;
@@ -987,42 +987,38 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
        exact && elina_linexpr0_is_real(lincons0->linexpr0,dim) ) ?
      true :
      false );
-
+  elina_lincons0_clear(new_lincons0);
+  free(new_lincons0);
   return sat;
 }
 
-/*bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* cons)
+
+bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* cons)
 {
   size_t dim;
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_SAT_LINCONS);
-
-  if(oa->is_bottom || !oa->acl){
-	man->result.flag_exact = man->result.flag_best = true;
-    	return true;
-  }
-  array-comp_list_t *acla = oa->acl;
-  unsigned short int num_compa = acla->size;
-  unsigned short int k;
   opt_pk_t ** poly_a = oa->poly;
-  unsigned short int maxcols = oa->maxcols;
+  array_comp_list_t *acla = oa->acl;
+  unsigned short int num_compa = acla->size;
+  unsigned short int maxcols = oa->maxcols; 
+  unsigned short int k;
   for(k=0; k < num_compa; k++){
-      opt_pk_t * oak = poly_a[k];
-      if (opk->funopt->algorithm>0){
-          opt_poly_chernikova(man,oak,NULL);
-      }
-      else{
-    	  opt_poly_obtain_F(man,oak,NULL);
-      }
-      if(opk->exn){
-    	  opk->exn = ELINA_EXC_NONE;
-    	  return false;
-      }
-      if (!oak->C && !oak->F){
-    	  man->result.flag_exact = man->result.flag_best = true;
-    	  return true;
-      }
+	opt_pk_t * oak = poly_a[k];
+	if (opk->funopt->algorithm>0){
+	    opt_poly_chernikova(man,oak,"sat tcons input");
+	}
+	else{
+	    opt_poly_obtain_F(man,oak,"sat tcons input");
+	}
+	if (opk->exn){
+	    opk->exn = ELINA_EXC_NONE;
+	    return false;
+	}
+	if (!oak->F){ /* the factor is empty */
+	    man->result.flag_exact = man->result.flag_best = true;
+	    return true;
+	}
   }
-  
   switch (cons->constyp){
   case ELINA_CONS_EQ:
   case ELINA_CONS_SUPEQ:
@@ -1032,15 +1028,89 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
     man->result.flag_exact = man->result.flag_best = false;
     return false;
   }
-  dim = po->intdim + po->realdim;
+  dim = maxcols - opk->dec;
 
-  elina_interval_t** env = opt_matrix_to_box(pk,po->F);
+  elina_interval_t** env = opt_pk_to_box(man,oa);
+  /*******
+	Linearize the tree expression
+  ********/
+  elina_lincons0_t *lincons0 = (elina_lincons0_t *)malloc(sizeof(elina_lincons0_t));
+  elina_linexpr0_t *linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,0);
+  elina_scalar_t *scalar = elina_scalar_alloc();
+  lincons0->constyp = cons->constyp;
+  lincons0->linexpr0 = linexpr0;
+  lincons0->scalar = scalar;
+  elina_intlinearize_elina_tcons0(lincons0,
+			     cons,env,dim,ELINA_SCALAR_MPQ);
+  quasilinearize_elina_lincons0(lincons0,env,false,ELINA_SCALAR_MPQ);
+  elina_interval_array_free(env,dim);
+
+  
+  /**************************
+		compute partition for the linearized constraint
+  ***************************/
+  comp_list_t * clb = lincons0_to_comp_list(opk,lincons0);
+  array_comp_list_t *aclb = create_array_comp_list();
+  insert_comp_list(aclb,clb);
+  array_comp_list_t * acl = union_array_comp_list(acla,aclb,maxcols);
+  char * map = create_map(clb,maxcols);
+  comp_list_t * cla = acla->head;
+  char * intersect_map = (char *)calloc(num_compa,sizeof(char));
+  size_t * num_vertex_a = (size_t *)calloc(num_compa,sizeof(size_t));
+  size_t num_vertex=0;
+  size_t nbgen=0;
+  for(k=0; k < num_compa; k++){
+      if(is_disjoint_with_map(cla,map)){
+          cla = cla->next;
+	  continue;
+      }
+      opt_pk_t * oak = poly_a[k];
+      intersect_map[k] = 1;
+      num_vertex_a[k] = opt_generator_rearrange(oak->F,oak->satF);
+      if(!num_vertex){
+	 num_vertex = num_vertex_a[k];
+      }
+      else{
+	 num_vertex = num_vertex*num_vertex_a[k];
+      }
+      nbgen = nbgen + oak->F->nbrows - num_vertex_a[k];
+      cla = cla->next;
+  }
+  
+  comp_list_t * cl = acl->head;
+  unsigned short int num_comp = acl->size;
+  unsigned short int comp_size;
+  unsigned short int * ca = NULL;
+  
+  elina_lincons0_t * new_lincons0 = (elina_lincons0_t *)malloc(sizeof(elina_lincons0_t));
+  for(k=0; k < num_comp; k++){
+        if(!is_disjoint(cl,clb,maxcols)){
+		comp_size = cl->size;
+		ca = to_sorted_array(cl,maxcols);
+		copy_lincons0_with_comp_list(opk,new_lincons0,lincons0,ca, comp_size);
+		//free(ca);
+		break;
+	}       
+        cl = cl->next;
+  }
+  opt_matrix_t * F = opt_matrix_alloc(nbgen+num_vertex,comp_size+2,false);
+  fuse_generators_intersecting_blocks(F,poly_a,acla,ca,num_vertex_a,intersect_map,maxcols);
+  free(map);
+  free(ca);
+  free(intersect_map);
+  bool sat = opt_vector_set_elina_lincons0_sat(opk,
+					opk->poly_numintp,
+					new_lincons0,
+					comp_size, 0, true);
   if (sat){
-    sat = do_generators_sat_vector(pk,po->F,
-				   pk->poly_numintp,
+    sat = opt_generators_sat_vector(opk,F,
+				   opk->poly_numintp,
 				   cons->constyp==ELINA_CONS_SUP);
   }
   man->result.flag_exact = man->result.flag_best = sat;
+  elina_lincons0_clear(lincons0);
+  elina_lincons0_clear(new_lincons0);
+  free(lincons0);
+  free(new_lincons0);
   return sat;
-}*/
-
+}

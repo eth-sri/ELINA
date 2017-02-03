@@ -611,7 +611,9 @@ opt_pk_array_t* opt_pk_permute_dimensions(elina_manager_t* man,
   else{
 	//
         op = oa;
+	//free_array_comp_list(oa->acl);
 	op->acl = copy_array_comp_list(acl);
+	free_array_comp_list(acl);
   }
   cla = acla->head;
   

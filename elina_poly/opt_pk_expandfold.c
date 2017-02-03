@@ -231,11 +231,13 @@ opt_pk_array_t* opt_pk_expand(elina_manager_t* man,
 	}
 	cl = cl->next;
   }
+   
    if(!destructive){
 	op->poly = poly;
 	op->acl = acl;
 	op->is_bottom = false;
    }
+  
   //assert(poly_check(pk,po));
   return op;
 }

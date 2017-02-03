@@ -219,7 +219,7 @@ elina_manager_t* opt_pk_manager_alloc(bool strict)
   funptr[ELINA_FUNID_IS_DIMENSION_UNCONSTRAINED] = &opt_pk_is_dimension_unconstrained;
   //funptr[ELINA_FUNID_SAT_INTERVAL] = &opt_pk_sat_interval;
   funptr[ELINA_FUNID_SAT_LINCONS] = &opt_pk_sat_lincons;
-  //funptr[ELINA_FUNID_SAT_TCONS] = &opt_pk_sat_tcons;
+  funptr[ELINA_FUNID_SAT_TCONS] = &opt_pk_sat_tcons;
   funptr[ELINA_FUNID_BOUND_DIMENSION] = &opt_pk_bound_dimension;
   //funptr[ELINA_FUNID_BOUND_LINEXPR] = &opt_pk_bound_linexpr;
   //funptr[ELINA_FUNID_BOUND_TEXPR] = &opt_pk_bound_texpr;

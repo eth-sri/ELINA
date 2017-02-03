@@ -95,6 +95,7 @@ void elina_coeff_add(elina_coeff_t * op, elina_coeff_t * op1, elina_coeff_t * op
 			elina_scalar_add(inf,inf1,inf2,discr);
 		}
 		else{
+			
 			scalar = op->val.scalar;
 			scalar1 = op1->val.scalar;
 			scalar2 = op2->val.scalar;
@@ -102,7 +103,6 @@ void elina_coeff_add(elina_coeff_t * op, elina_coeff_t * op1, elina_coeff_t * op
 			
 		}
 	}
-	
 }
 
 

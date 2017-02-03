@@ -20,6 +20,7 @@
 
 #include <time.h>
 #include "opt_pk.h"
+#include "pk.h"
 
 elina_linexpr0_t * generate_random_linexpr0(unsigned short int dim){
 	elina_coeff_t *cst, *coeff;
@@ -267,7 +268,7 @@ void test_fold(unsigned short int dim, size_t nbcons){
 	opt_pk_array_t * oa2 = opt_pk_meet_lincons_array(man,false,oa1,&lincons0);
 
 
-	// Print the ELINA result
+	// Print the ELINA input
 	printf("ELINA Input Polyhedron\n");
 	elina_lincons0_array_t arr3 = opt_pk_to_lincons_array(man,oa2);
   	elina_lincons0_array_fprint(stdout,&arr3,NULL);
@@ -301,13 +302,47 @@ void test_fold(unsigned short int dim, size_t nbcons){
 }
 
 
-void test_parallel_assignment(unsigned short int dim, size_t nbcons){
-	unsigned short int i;
-	elina_dim_t * tdim = (elina_dim_t *)malloc(dim*sizeof(elina_dim_t));
- 	for (i=0;i<dim;i++){
-      	     tdim[i] = i;
-    	}
-  	//oa3 = opt_pk_assign_linexpr_array(man,false,oa2,tdim, expr_array,dim,NULL);
+void test_sat_lincons(unsigned short int dim, size_t nbcons){
+	elina_manager_t * man = opt_pk_manager_alloc(false);
+	opt_pk_array_t * oa1 = opt_pk_top(man, dim,0);
+	//generate random constraints
+	elina_lincons0_array_t lincons0 = generate_random_lincons0_array(dim,nbcons);
+	//generate the polyhedra
+	opt_pk_array_t * oa2 = opt_pk_meet_lincons_array(man,false,oa1,&lincons0);
+	elina_lincons0_t cons;
+	elina_coeff_t *cst, *coeff;
+	unsigned short int j, k;
+	cons.constyp = rand() %2 ? ELINA_CONS_SUPEQ : ELINA_CONS_EQ;
+	int r = rand()%10;
+	elina_linexpr0_t * linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,dim);
+	cst = &linexpr0->cst;
+	elina_scalar_set_to_int(cst->val.scalar,r,ELINA_SCALAR_MPQ);
+	k = 0;
+	for(j=0; j < dim/3+1; j++, k++){
+			elina_linterm_t * linterm = &linexpr0->p.linterm[k];
+			linterm->dim = j;
+			coeff = &linterm->coeff;
+			int r = rand()%5;
+			elina_scalar_set_to_int(coeff->val.scalar,r,ELINA_SCALAR_MPQ);
+	}
+	elina_linexpr0_reinit(linexpr0,k);
+	cons.linexpr0 = linexpr0;
+	// Print the ELINA input
+	printf("ELINA Input Polyhedron\n");
+	elina_lincons0_array_t arr = opt_pk_to_lincons_array(man,oa2);
+  	elina_lincons0_array_fprint(stdout,&arr,NULL);
+	printf("\n");
+	printf("Linear constraint\n");
+	elina_lincons0_fprint(stdout,&cons,NULL);
+	printf("\n");
+	elina_lincons0_array_clear(&arr);
+	bool sat = opt_pk_sat_lincons(man,oa2,&cons);
+	printf("sat: %d\n",sat);
+	opt_pk_free(man,oa1);
+	opt_pk_free(man,oa2);
+	elina_lincons0_array_clear(&lincons0);
+	elina_lincons0_clear(&cons);
+	elina_manager_free(man);
 }
 
 int main(int argc, char **argv){
@@ -332,6 +367,6 @@ int main(int argc, char **argv){
 	test_fold(dim,nbcons);
 	printf("Testing Expand\n");
 	test_expand(dim,nbcons);
-	printf("Testing Parallel Assignment\n");
-        test_parallel_assignment(dim,nbcons);
+	printf("Testing Sat Lincons\n ");
+	test_sat_lincons(dim,nbcons);
 }
