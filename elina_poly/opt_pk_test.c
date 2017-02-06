@@ -1048,8 +1048,32 @@ bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* 
 			     cons,env,dim,ELINA_SCALAR_MPQ);
   quasilinearize_elina_lincons0(lincons0,env,false,ELINA_SCALAR_MPQ);
   elina_interval_array_free(env,dim);
+  elina_linexpr0_t * expr = lincons0->linexpr0;
+  if(is_linexpr_zero(expr)){
+	int sgn = elina_coeff_sgn(&expr->cst);
+	if(lincons0->constyp==ELINA_CONS_EQ){
+		if(sgn){
+			elina_lincons0_clear(lincons0);
+			free(lincons0);
+			return false;
+		}
+	}
+	else if(lincons0->constyp==ELINA_CONS_SUPEQ){
+		if(sgn< 0){
+			elina_lincons0_clear(lincons0);
+			free(lincons0);
+			return false;
+		}
+	}
+	else if(lincons0->constyp==ELINA_CONS_SUP){
+		if(sgn <= 0){
+			elina_lincons0_clear(lincons0);
+			free(lincons0);
+			return false;
+		}
+	}
+  }
 
-  
   /**************************
 		compute partition for the linearized constraint
   ***************************/
@@ -1085,7 +1109,6 @@ bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* 
   unsigned short int num_comp = acl->size;
   unsigned short int comp_size;
   unsigned short int * ca = NULL;
-  
   elina_lincons0_t * new_lincons0 = (elina_lincons0_t *)malloc(sizeof(elina_lincons0_t));
   for(k=0; k < num_comp; k++){
         if(!is_disjoint(cl,clb,maxcols)){
@@ -1098,6 +1121,7 @@ bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* 
         cl = cl->next;
   }
   opt_matrix_t * F = opt_matrix_alloc(nbgen+num_vertex,comp_size+2,false);
+  
   fuse_generators_intersecting_blocks(F,poly_a,acla,ca,num_vertex_a,intersect_map,maxcols);
   free(map);
   free(ca);

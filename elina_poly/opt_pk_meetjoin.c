@@ -399,7 +399,7 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
 			}
 		}
 		else if(constyp==ELINA_CONS_SUP){
-			if(sgn < 0){
+			if(sgn <= 0){
 				is_bottom = true;
 				break;
 			}

@@ -80,7 +80,6 @@ extern "C" {
 #define elina_coeff_zero ap_coeff_zero
 #define elina_coeff_set ap_coeff_set
 #define elina_coeff_neg ap_coeff_neg
-#define elina_coeff_sgn ap_coeff_sgn
 #define elina_coeff_reinit ap_coeff_reinit
 #define elina_coeff_reduce ap_coeff_reduce
 #define elina_coeff_set_scalar ap_coeff_set_scalar

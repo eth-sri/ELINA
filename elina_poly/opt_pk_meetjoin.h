@@ -59,6 +59,10 @@ elina_linexpr0_t * copy_linexpr0_with_comp_list(opt_pk_internal_t *opk, elina_li
 void copy_lincons0_with_comp_list(opt_pk_internal_t *opk, elina_lincons0_t * dst, 
 				  elina_lincons0_t * src, unsigned short int * ca, unsigned short int comp_size);
 
+bool is_linexpr_zero(elina_linexpr0_t * expr);
+
+int elina_coeff_sgn(elina_coeff_t * coeff);
+
 #ifdef __cplusplus
 }
 #endif

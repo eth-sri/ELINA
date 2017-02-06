@@ -105,7 +105,7 @@ opt_matrix_t* opt_matrix_expand(opt_pk_internal_t* opk,
 }
 
 /* ---------------------------------------------------------------------- */
-/* Polyhedra */
+/* Polyhedra Expand */
 /* ---------------------------------------------------------------------- */
 
 opt_pk_array_t* opt_pk_expand(elina_manager_t* man,
@@ -178,7 +178,12 @@ opt_pk_array_t* opt_pk_expand(elina_manager_t* man,
   free_array_comp_list(tcla);
   comp_list_t * ecl = find(acl,var);
   if(ecl==NULL){
-	return (destructive ? oa : opt_pk_copy(man,oa));
+	if(!destructive){
+		free(op);
+		op = opt_pk_copy(man,oa);
+		op->maxcols = nmaxcols;
+	}
+	return op;
   }
   for(j=maxcols; j < nmaxcols; j++){
 	insert_comp(ecl,j);
