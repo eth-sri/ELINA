@@ -468,10 +468,10 @@ static void elina_linexpr0_round_float_lin(elina_linexpr0_t* l ,elina_float_cons
   elina_scalar_add(scalar,scalar,f->min->sup,discr);
   elina_interval_enlarge_bound(interval,interval,scalar,discr);
   elina_linexpr0_ForeachLinterm(l,i,dim,coeff) {
-    if(cst->discr==ELINA_COEFF_SCALAR){
+    if(coeff->discr==ELINA_COEFF_SCALAR){
 	elina_scalar_set(scalar,coeff->val.scalar);
-	elina_coeff_reinit(cst,ELINA_COEFF_INTERVAL,discr);
-	elina_coeff_set_interval_scalar(cst,scalar,scalar);
+	elina_coeff_reinit(coeff,ELINA_COEFF_INTERVAL,discr);
+	elina_coeff_set_interval_scalar(coeff,scalar,scalar);
     }
     interval = coeff->val.interval;
     elina_interval_magnitude(scalar,interval);
@@ -1042,6 +1042,7 @@ bool elina_intlinearize_elina_tcons0(elina_lincons0_t* res,
   i = elina_interval_alloc();
   bound = elina_interval_alloc();
   elina_interval_reinit(bound,discr);
+  elina_interval_reinit(i,discr);
   elina_interval_intlinearize_texpr0_rec(cons->texpr0,env,intdim,&res->linexpr0,i,discr);
   /* checks that the contraint is satisfiable */
   switch (cons->constyp){

@@ -299,14 +299,27 @@ int elina_coeff_sgn(elina_coeff_t * coeff){
     else{
 	int si = elina_scalar_sgn(coeff->val.interval->inf);
 	int ss = elina_scalar_sgn(coeff->val.interval->sup);
-	if(!si && !ss){
-		return 0;
+	if(!si){
+		if(!ss){
+			return 0;
+		}
+		else{
+			return 2;
+		}
 	}
-	if(si < 0){
-		return -1;
+	else if(si > 0){
+		return 1;
 	}
 	else{
-		return 1;
+		if(!ss){
+			return -2;
+		}
+		else if(ss > 0){
+			return -3;
+		}
+		else{
+			return -1;
+		}
 	}
     }
 	
@@ -399,7 +412,7 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
 			}
 		}
 		else if(constyp==ELINA_CONS_SUP){
-			if(sgn <= 0){
+			if(sgn != 1){
 				is_bottom = true;
 				break;
 			}

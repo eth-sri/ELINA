@@ -914,6 +914,36 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
                man->result.flag_exact = man->result.flag_best = false;
                return false;
   }  
+
+  elina_linexpr0_t * expr = lincons0->linexpr0;
+  if(is_linexpr_zero(expr)){
+	int sgn = elina_coeff_sgn(&expr->cst);
+	if(lincons0->constyp==ELINA_CONS_EQ){
+		if(sgn){
+			return false;
+		}
+		else{
+			return true;
+		}
+	}
+	else if(lincons0->constyp==ELINA_CONS_SUPEQ){
+		if(sgn< 0){
+			return false;
+		}
+		else{
+			return true;
+		}
+	}
+	else if(lincons0->constyp==ELINA_CONS_SUP){
+		if(sgn != 1){
+			return false;
+		}
+		else{
+			return true;
+		}
+	}
+  }
+
   comp_list_t * clb = lincons0_to_comp_list(opk,lincons0);
   array_comp_list_t *aclb = create_array_comp_list();
   insert_comp_list(aclb,clb);
@@ -948,6 +978,7 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
   unsigned short int comp_size;
   unsigned short int * ca = NULL;
   elina_lincons0_t * new_lincons0 = (elina_lincons0_t *)malloc(sizeof(elina_lincons0_t));
+  new_lincons0->scalar = NULL;
   for(k=0; k < num_comp; k++){
         if(!is_disjoint(cl,clb,maxcols)){
 		comp_size = cl->size;
@@ -975,9 +1006,14 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
 				   new_lincons0,
 				   comp_size, 0, true);
   if (sat){
-    sat = opt_generators_sat_vector(opk,F,
-				   opk->poly_numintp,
-				   new_lincons0->constyp==ELINA_CONS_SUP);
+    if(F->nbrows ==0){
+	sat = false;
+    }
+    else{
+	    sat = opt_generators_sat_vector(opk,F,
+					   opk->poly_numintp,
+					   new_lincons0->constyp==ELINA_CONS_SUP);
+    }
   }
   man->result.flag_exact = man->result.flag_best =
     sat ?
@@ -1001,8 +1037,12 @@ bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* 
 {
   size_t dim;
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_SAT_LINCONS);
-  opt_pk_t ** poly_a = oa->poly;
   array_comp_list_t *acla = oa->acl;
+  if (oa->is_bottom || !acla){ /* oa is empty */
+    man->result.flag_exact = man->result.flag_best = true;
+    return true;
+  }
+  opt_pk_t ** poly_a = oa->poly;
   unsigned short int num_compa = acla->size;
   unsigned short int maxcols = oa->maxcols; 
   unsigned short int k;
@@ -1049,27 +1089,37 @@ bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* 
   quasilinearize_elina_lincons0(lincons0,env,false,ELINA_SCALAR_MPQ);
   elina_interval_array_free(env,dim);
   elina_linexpr0_t * expr = lincons0->linexpr0;
+  //elina_lincons0_fprint(stdout,lincons0,NULL);
   if(is_linexpr_zero(expr)){
 	int sgn = elina_coeff_sgn(&expr->cst);
 	if(lincons0->constyp==ELINA_CONS_EQ){
+		elina_lincons0_clear(lincons0);
+		free(lincons0);
 		if(sgn){
-			elina_lincons0_clear(lincons0);
-			free(lincons0);
 			return false;
+		}
+		else{
+			return true;
 		}
 	}
 	else if(lincons0->constyp==ELINA_CONS_SUPEQ){
+		elina_lincons0_clear(lincons0);
+		free(lincons0);
 		if(sgn< 0){
-			elina_lincons0_clear(lincons0);
-			free(lincons0);
 			return false;
+		}
+		else{
+			return true;
 		}
 	}
 	else if(lincons0->constyp==ELINA_CONS_SUP){
-		if(sgn <= 0){
-			elina_lincons0_clear(lincons0);
-			free(lincons0);
+		elina_lincons0_clear(lincons0);
+		free(lincons0);
+		if(sgn != 1){
 			return false;
+		}
+		else{
+			return true;
 		}
 	}
   }
@@ -1110,6 +1160,7 @@ bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* 
   unsigned short int comp_size;
   unsigned short int * ca = NULL;
   elina_lincons0_t * new_lincons0 = (elina_lincons0_t *)malloc(sizeof(elina_lincons0_t));
+  new_lincons0->scalar = NULL;
   for(k=0; k < num_comp; k++){
         if(!is_disjoint(cl,clb,maxcols)){
 		comp_size = cl->size;
@@ -1130,10 +1181,16 @@ bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* 
 					opk->poly_numintp,
 					new_lincons0,
 					comp_size, 0, true);
+  
   if (sat){
-    sat = opt_generators_sat_vector(opk,F,
-				   opk->poly_numintp,
-				   cons->constyp==ELINA_CONS_SUP);
+    if(F->nbrows==0){
+	sat = false;
+    }
+    else{
+	    sat = opt_generators_sat_vector(opk,F,
+					   opk->poly_numintp,
+					   cons->constyp==ELINA_CONS_SUP);
+   }
   }
   man->result.flag_exact = man->result.flag_best = sat;
   elina_lincons0_clear(lincons0);
