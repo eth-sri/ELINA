@@ -1086,10 +1086,10 @@ bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* 
   lincons0->scalar = scalar;
   elina_intlinearize_elina_tcons0(lincons0,
 			     cons,env,dim,ELINA_SCALAR_MPQ);
+  elina_lincons0_fprint(stdout,lincons0,NULL);
   quasilinearize_elina_lincons0(lincons0,env,false,ELINA_SCALAR_MPQ);
   elina_interval_array_free(env,dim);
   elina_linexpr0_t * expr = lincons0->linexpr0;
-  //elina_lincons0_fprint(stdout,lincons0,NULL);
   if(is_linexpr_zero(expr)){
 	int sgn = elina_coeff_sgn(&expr->cst);
 	if(lincons0->constyp==ELINA_CONS_EQ){

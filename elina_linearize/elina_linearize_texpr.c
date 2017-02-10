@@ -408,17 +408,17 @@ static void elina_make_float_const(int frac_bits, int exp_bits, int exp_bias,
 
   elina_scalar_set_to_int(b,1,discr);
   elina_scalar_mul_2exp(b,b,-frac_bits,discr);
-  elina_scalar_set(cst->ulp->inf,b);
+  elina_scalar_neg(cst->ulp->inf,b);
   elina_scalar_set(cst->ulp->sup,b);
 
   elina_scalar_set_to_int(b,1,discr);
   elina_scalar_mul_2exp(b,b,1-exp_bias-frac_bits,discr);
-  elina_scalar_set(cst->min->inf,b);
+  elina_scalar_neg(cst->min->inf,b);
   elina_scalar_set(cst->min->sup,b);
 
   elina_scalar_set_to_int(b,1,discr);
   elina_scalar_mul_2exp(b,b,1-exp_bias,discr);
-  elina_scalar_set(cst->min_normal->inf,b);
+  elina_scalar_neg(cst->min_normal->inf,b);
   elina_scalar_set(cst->min_normal->sup,b);
 
   elina_scalar_set_to_int(b,2,discr);
@@ -426,14 +426,13 @@ static void elina_make_float_const(int frac_bits, int exp_bits, int exp_bias,
   elina_scalar_mul_2exp(c,c,-frac_bits,discr);
   elina_scalar_sub(b,b,c,discr);
   elina_scalar_mul_2exp(b,b,(1<<exp_bits)-2-exp_bias,discr);
-  elina_scalar_set(cst->max->inf,b);
+  elina_scalar_neg(cst->max->inf,b);
   elina_scalar_set(cst->max->sup,b);
 
   elina_scalar_set_to_int(b,1,discr);
   elina_scalar_mul_2exp(b,b,frac_bits,discr);
-  elina_scalar_set(cst->max_exact->inf,b);
+  elina_scalar_neg(cst->max_exact->inf,b);
   elina_scalar_set(cst->max_exact->sup,b);
-
   elina_scalar_free(b); 
   elina_scalar_free(c);
 }
@@ -536,6 +535,7 @@ elina_texpr0_to_int(elina_linexpr0_t* l /* in/out */, elina_interval_t *i /* in 
 elina_texpr_rtype_t elina_texpr0_round(elina_linexpr0_t* l /* in/out */, elina_interval_t *i /* in/out */,
 		elina_texpr_rtype_t org, elina_texpr_rtype_t dst, elina_texpr_rdir_t d, elina_scalar_discr_t discr)
 {
+  
   elina_float_const* float_cst;
   if (dst==ELINA_RTYPE_REAL) return org;
   switch (dst) {
@@ -562,6 +562,7 @@ elina_texpr_rtype_t elina_texpr0_round(elina_linexpr0_t* l /* in/out */, elina_i
       return org;
     float_cst = (elina_float_const*)malloc(sizeof(elina_float_const));
     elina_make_float_const(63,15,16383,float_cst,discr);
+    
     elina_linexpr0_round_float_lin(l,float_cst,discr);
     elina_float_const_clear(float_cst);
     break;
@@ -576,7 +577,7 @@ elina_texpr_rtype_t elina_texpr0_round(elina_linexpr0_t* l /* in/out */, elina_i
   default:
     assert(0);
   }
-
+  
   elina_interval_round(i,i,dst,d,discr);
   return dst;
 }
@@ -681,6 +682,7 @@ static elina_texpr_rtype_t elina_texpr0_node_intlinearize(elina_texpr0_node_t* n
 
   case ELINA_TEXPR_SQRT:
     /* intlinearize argument, lres is not used */
+	
     elina_interval_intlinearize_texpr0_rec(n->exprA,env,intdim,dlres,ires,discr);
     /* interval square root */
     elina_interval_sqrt(ires,ires,discr);
@@ -737,6 +739,7 @@ static elina_texpr_rtype_t elina_texpr0_node_intlinearize(elina_texpr0_node_t* n
     break;
 
   case ELINA_TEXPR_DIV:
+	
     i1 = elina_interval_alloc();
     //elina_linexpr0_init(&l1,0);
     l1 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,0);
@@ -750,13 +753,16 @@ static elina_texpr_rtype_t elina_texpr0_node_intlinearize(elina_texpr0_node_t* n
     }
     else {
       /* divide linear form & interval */
-      elina_linexpr0_div(lres,i1,discr);
 	
+	
+      elina_linexpr0_div(lres,i1,discr);
       elina_interval_div(ires,ires,i1,discr);
       /* round */
       elina_texpr0_round(lres,ires,ELINA_RTYPE_REAL,n->type,n->dir,discr);
       /* reduce */
+	
       elina_texpr0_reduce(env,lres,ires,discr);
+	
     }
     elina_interval_free(i1);
     elina_linexpr0_free(l1);
@@ -777,9 +783,9 @@ static elina_texpr_rtype_t elina_texpr0_node_intlinearize(elina_texpr0_node_t* n
     }
     else {
       /* multiply one linear form with the other interval */
+	
       if (elina_texpr0_cmp_range(l1,i1,lres,ires,discr))  {
 	/* res = ires * l1 */
-	
 	elina_linexpr0_clear(lres);
 	elina_linexpr0_scale(l1,ires,discr);
 	**dlres = *l1;
@@ -800,7 +806,6 @@ static elina_texpr_rtype_t elina_texpr0_node_intlinearize(elina_texpr0_node_t* n
 		      n->type,n->dir,discr);
       /* reduce */
       elina_texpr0_reduce(env,lres,ires,discr);
-	
     }
     elina_interval_free(i1);
 	
@@ -905,6 +910,7 @@ static elina_texpr_rtype_t elina_interval_intlinearize_texpr0_rec(elina_texpr0_t
     t = (expr->val.dim<intdim) ? ELINA_RTYPE_INT : ELINA_RTYPE_REAL;
     break;
   case ELINA_TEXPR_NODE:
+	
     t = elina_texpr0_node_intlinearize(expr->val.node,env,intdim,dlres,ires,discr);
     break;
   default:
@@ -1093,11 +1099,13 @@ bool elina_intlinearize_elina_tcons0(elina_lincons0_t* res,
     exc = false;
   }
   else {
+	
     elina_lincons0_set_bool(res,false, discr);
     exc = true;
   }
   elina_interval_free(i);
   elina_interval_free(bound);
+   
   return exc;
 }
 

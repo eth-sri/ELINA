@@ -128,7 +128,9 @@ static inline void elina_scalar_add_uint_mpfr(mpfr_t a, mpfr_t b, unsigned long 
 
 void elina_scalar_add_uint(elina_scalar_t *a, elina_scalar_t * b, unsigned long int c, elina_scalar_discr_t discr)
 {
-  elina_scalar_reinit(a,discr);
+  if(a!=b){
+  	elina_scalar_reinit(a,discr);
+  }
   if (elina_scalar_infty(b)){
 	 elina_scalar_set_infty(a,elina_scalar_sgn(b));
   }
@@ -251,7 +253,9 @@ static inline void elina_scalar_sub_uint_mpfr(mpfr_t a, mpfr_t b, unsigned long 
 
 void elina_scalar_sub_uint(elina_scalar_t *a, elina_scalar_t * b, unsigned long int c, elina_scalar_discr_t discr)
 {
-  elina_scalar_reinit(a,discr);
+  if(a!=b){
+  	elina_scalar_reinit(a,discr);
+  }
   if (elina_scalar_infty(b)){
 	 elina_scalar_set_infty(a,elina_scalar_sgn(b));
   }
@@ -285,7 +289,9 @@ void elina_scalar_sub(elina_scalar_t *a, elina_scalar_t *b, elina_scalar_t *c, e
 
 
 void elina_scalar_div_2(elina_scalar_t * dst, elina_scalar_t *src){
-	elina_scalar_reinit(dst,src->discr);
+	if(dst!=src){
+		elina_scalar_reinit(dst,src->discr);
+	}
 	switch(src->discr){
 		case ELINA_SCALAR_MPQ:
 			mpq_div_2exp(dst->val.mpq,src->val.mpq,1);
@@ -302,7 +308,9 @@ void elina_scalar_div_2(elina_scalar_t * dst, elina_scalar_t *src){
 
 void elina_scalar_div(elina_scalar_t *a, elina_scalar_t *b, elina_scalar_t *c, elina_scalar_discr_t discr)
 {
-  elina_scalar_reinit(a,discr);
+  if(a!=b && a != c){
+  	elina_scalar_reinit(a,discr);
+  }
   elina_scalar_convert(b,discr);
   elina_scalar_convert(c,discr);
   int sgnb = elina_scalar_sgn(b);
@@ -396,8 +404,12 @@ static inline void elina_scalar_sqrt_mpfr(mpfr_t up, mpfr_t down, mpfr_t b)
 
 void elina_scalar_sqrt(elina_scalar_t *up, elina_scalar_t *down, elina_scalar_t *b, elina_scalar_discr_t discr)
 {
-  elina_scalar_reinit(up,discr);
-  elina_scalar_reinit(down,discr);
+  if(up!=b){
+  	elina_scalar_reinit(up,discr);
+  }
+  if(down!=b){
+  	elina_scalar_reinit(down,discr);
+  }
   //elina_scalar_reinit(b,discr);
   if (elina_scalar_infty(b)) {
     elina_scalar_set_infty(up,1);
@@ -416,6 +428,7 @@ void elina_scalar_sqrt(elina_scalar_t *up, elina_scalar_t *down, elina_scalar_t 
 		break;
     }
   }
+  
 }
 
 
@@ -483,8 +496,12 @@ static inline int  elina_scalar_pow_mpfr(mpfr_t up, mpfr_t down, mpfr_t b, unsig
 
 void elina_scalar_pow(elina_scalar_t *up, elina_scalar_t *down, elina_scalar_t *b, unsigned long n, elina_scalar_discr_t discr)
 {
-  elina_scalar_reinit(up,discr);
-  elina_scalar_reinit(down,discr);
+  if(up!=b){
+  	elina_scalar_reinit(up,discr);
+  }
+  if(down!=b){
+  	elina_scalar_reinit(down,discr);
+  }
   //elina_scalar_reinit(b,discr);
   if (elina_scalar_infty(b)) {
     elina_scalar_set_infty(up, 1);
@@ -529,7 +546,9 @@ static inline void elina_scalar_trunc_mpfr(mpfr_t a, mpfr_t b){
 }
 
 void elina_scalar_trunc(elina_scalar_t *a, elina_scalar_t *b, elina_scalar_discr_t discr){
-  elina_scalar_reinit(a,discr);
+  if(a!=b){
+  	elina_scalar_reinit(a,discr);
+  }
   //elina_scalar_reinit(b,discr);
   if (elina_scalar_infty(b)){
 	 elina_scalar_set_infty(a,elina_scalar_sgn(b));
@@ -570,7 +589,9 @@ static inline void elina_scalar_ceil_mpfr(mpfr_t a, mpfr_t b){
 
 
 void elina_scalar_ceil(elina_scalar_t *a, elina_scalar_t *b, elina_scalar_discr_t discr){
-	elina_scalar_reinit(a,discr);
+	if(a!=b){
+		elina_scalar_reinit(a,discr);
+	}
   	//elina_scalar_reinit(b,discr);
 	 if (elina_scalar_infty(b)){
 	 	elina_scalar_set_infty(a,elina_scalar_sgn(b));
@@ -612,7 +633,9 @@ static inline void elina_scalar_floor_mpfr(mpfr_t a, mpfr_t b){
 
 
 void elina_scalar_floor(elina_scalar_t *a, elina_scalar_t *b, elina_scalar_discr_t discr){
-	elina_scalar_reinit(a,discr);
+	if(a!=b){
+		elina_scalar_reinit(a,discr);
+	}
   	//elina_scalar_reinit(b,discr);
 	 if (elina_scalar_infty(b)){
 	 	elina_scalar_set_infty(a,elina_scalar_sgn(b));
@@ -677,6 +700,7 @@ void elina_scalar_to_float(elina_scalar_t *a, elina_scalar_t *b, elina_scalar_di
     double d;
     elina_double_set_scalar(&d,b,GMP_RNDU);
     elina_scalar_set_double(a,(double)((float)d));
+    elina_scalar_convert(a,discr);
   }
 }
 
@@ -719,6 +743,7 @@ void elina_scalar_to_double(elina_scalar_t *a, elina_scalar_t *b, elina_scalar_d
     double d;
     elina_double_set_scalar(&d,b,GMP_RNDU);
     elina_scalar_set_double(a,d);
+    elina_scalar_convert(a,discr);
   }
 }
 
@@ -771,7 +796,9 @@ static inline void elina_scalar_mul_2exp_mpfr(mpfr_t a, mpfr_t b, int c){
 
 
 void elina_scalar_mul_2exp(elina_scalar_t *a, elina_scalar_t *b, int c , elina_scalar_discr_t discr){
-	elina_scalar_reinit(a,discr);
+	if(a!=b){
+		elina_scalar_reinit(a,discr);
+	}
 	switch(discr){
 		case ELINA_SCALAR_MPQ:
 			elina_scalar_mul_2exp_mpq(a->val.mpq,b->val.mpq,c);

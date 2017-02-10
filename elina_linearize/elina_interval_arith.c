@@ -199,8 +199,10 @@ void elina_interval_to_float(elina_interval_t *a, elina_interval_t *b, elina_sca
 /* convert to double precision float */
 /* ********************************************************************** */
 void elina_interval_to_double(elina_interval_t *a, elina_interval_t *b, elina_scalar_discr_t discr){
+	
  	elina_scalar_to_double(a->sup,b->sup,discr); 
  	elina_scalar_to_double(a->inf,b->inf,discr); 
+	
 }
 
 
@@ -359,7 +361,7 @@ bool elina_interval_is_int(elina_interval_t *a, elina_scalar_discr_t discr)
 void elina_interval_magnitude(elina_scalar_t *a, elina_interval_t *b)
 {
   if (elina_scalar_sgn(b->inf)>=0) elina_scalar_set(a,b->sup);
-  else if (elina_scalar_sgn(b->sup)<=0) elina_scalar_set(a,b->inf);
+  else if (elina_scalar_sgn(b->sup)<=0) elina_scalar_neg(a,b->inf);
   else elina_scalar_max(a,b->inf,b->sup);
 }
 
@@ -379,8 +381,11 @@ void elina_interval_range_rel(elina_scalar_t *a, elina_interval_t *b, elina_scal
 void elina_interval_enlarge_bound(elina_interval_t *a, elina_interval_t *b, elina_scalar_t *c, elina_scalar_discr_t discr)
 {
   elina_scalar_t * tmp = elina_scalar_alloc();
+  //elina_scalar_neg(tmp,c);
   elina_scalar_neg(tmp,c);
+  //elina_scalar_add(a->inf,b->inf,tmp,discr);
   elina_scalar_add(a->inf,b->inf,tmp,discr);
+  //elina_scalar_neg(tmp,tmp);
   elina_scalar_add(a->sup,b->sup,c,discr);
   elina_scalar_free(tmp);
 }
