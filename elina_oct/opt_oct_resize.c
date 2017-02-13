@@ -370,7 +370,7 @@ opt_oct_t* opt_oct_fold(elina_manager_t* man,
   opt_oct_mat_t* src;
   opt_oct_mat_t* dst;
   opt_oct_t* r;
-  opt_oct_mat_t *oo;
+  opt_oct_mat_t *oo = NULL;
   if (pr->funopt->algorithm>=0) opt_oct_cache_closure(pr,o);
   src = o->closed ? o->closed : o->m;
   if (!src) dst = NULL;
@@ -595,8 +595,10 @@ opt_oct_t* opt_oct_fold(elina_manager_t* man,
   }
   r->dim -= size-1;
   if (tdim[0]<r->intdim) r->intdim -= size-1;
-  opt_hmat_free(oo); 
-   
+ 
+  if(oo){
+  	opt_hmat_free(oo); 
+  } 
   return r;
 }
 
