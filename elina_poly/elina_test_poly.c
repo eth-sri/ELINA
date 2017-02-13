@@ -20,7 +20,6 @@
 
 #include <time.h>
 #include "opt_pk.h"
-#include "pk.h"
 
 elina_linexpr0_t * generate_random_linexpr0(unsigned short int dim){
 	elina_coeff_t *cst, *coeff;
