@@ -1102,7 +1102,7 @@ bool elina_intlinearize_elina_tcons0(elina_lincons0_t* res,
     elina_scalar_max(i->inf,i->inf,bound->inf);
     elina_scalar_min(i->sup,i->sup,bound->sup);
     break;
-  case ELINA_CONS_SUPEQ:
+  case ELINA_CONS_SUPEQ: 
   case ELINA_CONS_SUP:
     elina_interval_set_top(bound);
     elina_scalar_set_to_int(bound->inf,0,discr);
