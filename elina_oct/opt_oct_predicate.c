@@ -449,7 +449,6 @@ bool opt_oct_sat_lincons(elina_manager_t *man,opt_oct_internal_t* pr,opt_oct_t* 
 		     elina_lincons0_t* lincons)
 {
   
- 
     opt_oct_mat_t * oo = o->closed ? o->closed : o->m;
     double *b = oo->mat;   
     size_t i, ui, uj;
@@ -474,9 +473,7 @@ bool opt_oct_sat_lincons(elina_manager_t *man,opt_oct_internal_t* pr,opt_oct_t* 
     default:
       assert(0);
     }
-
     u = opt_oct_uexpr_of_linexpr(pr,pr->tmp,lincons->linexpr0,o->intdim,o->dim);
-
     switch (u.type) {
 
     case OPT_EMPTY:

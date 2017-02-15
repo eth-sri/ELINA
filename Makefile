@@ -23,13 +23,20 @@ include Makefile.config
 
 
 
-all: c ocaml
+all: c ocaml java
 
 ifneq ($(HAS_OCAML),)
 ocaml : 
 	(cd ocaml_interface; make all)
 else
 ocaml : 
+endif
+
+ifneq ($(HAS_JAVA),)
+java : 
+	(cd java_interface; make all)
+else
+java : 
 endif
 
 c:
@@ -54,6 +61,9 @@ endif
 ifneq ($(HAS_OCAML),) 
 	(cd ocaml_interface; make all)
 endif
+ifneq ($(HAS_JAVA),) 
+	(cd java_interface; make all)
+endif
 	
 clean:
 ifeq ($(IS_APRON),)
@@ -66,3 +76,7 @@ endif
 ifneq ($(HAS_OCAML),) 
 	(cd ocaml_interface; make clean)
 endif
+ifneq ($(HAS_JAVA),) 
+	(cd java_interface; make clean)
+endif
+

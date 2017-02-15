@@ -204,7 +204,6 @@ opt_oct_t* opt_oct_expand(elina_manager_t* man,
 		  elina_dim_t dim,
 		  size_t n)
 {
-  
   opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_EXPAND,0);
   opt_oct_mat_t* src = o->closed ? o->closed : o->m;
   size_t i, j;

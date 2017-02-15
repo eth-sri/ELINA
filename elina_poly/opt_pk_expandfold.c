@@ -447,6 +447,7 @@ opt_pk_array_t* opt_pk_fold(elina_manager_t* man,
 	      bool destructive, opt_pk_array_t* oa,
 	      elina_dim_t* tdim, size_t size)
 {
+ 
   short int dimsup;
   opt_pk_array_t* op;
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_FOLD);
@@ -466,6 +467,13 @@ opt_pk_array_t* opt_pk_fold(elina_manager_t* man,
   else {
     op = (opt_pk_array_t *)malloc(sizeof(opt_pk_array_t));
     op->maxcols = maxcols - dimsup;
+    op->acl = NULL;
+  }
+  if(oa->acl->size==0){
+	if(!destructive){
+		opt_poly_set_top(opk,op);
+	}
+	return op;
   }
 
   for(k=0; k < num_compa; k++){
@@ -496,7 +504,7 @@ opt_pk_array_t* opt_pk_fold(elina_manager_t* man,
   array_comp_list_t *acl = destructive ? acla : copy_array_comp_list(tacl);
   free_array_comp_list(tacl);
   opt_pk_t ** poly = destructive? poly_a : (opt_pk_t **)malloc(num_compa*sizeof(opt_pk_t*));
-  
+ 
   /*******************
 	take cartesian product of factors corresponding to blocks containing
 	tdim[1..size-1] and the factor corresponding to block containing
@@ -732,6 +740,7 @@ opt_pk_array_t* opt_pk_fold(elina_manager_t* man,
 		src->status &= ~opt_pk_status_consgauss & ~opt_pk_status_gengauss & ~opt_pk_status_minimaleps;
 	  }
 	  opt_matrix_t * tmp2 = poly[ind]->F;
+	 
 	  poly[ind]->F = opt_matrix_fold_diff_comp(opk, destructive, src->F, fold_val,
 			      ndim, size);
 	  if(!destructive){

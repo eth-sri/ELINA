@@ -162,6 +162,8 @@ opt_pk_array_t* opt_pk_add_dimensions_cons(elina_manager_t* man,
   }
  
   if(project){
+	printf("PROJECT\n");
+	fflush(stdout);
 	unsigned short int num_comp = project ? num_compa + size : num_compa;
 	if(destructive){
 		 poly = (opt_pk_t **)realloc(poly_a, num_comp*sizeof(opt_pk_t*));

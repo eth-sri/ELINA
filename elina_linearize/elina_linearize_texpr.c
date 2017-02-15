@@ -210,19 +210,27 @@ elina_interval_t* elina_eval_texpr0(elina_manager_t* man,
 			      elina_scalar_discr_t discr,
 			      bool* pexact)
 {
-  elina_interval_t*** env = NULL;
+  elina_interval_t** env = NULL;
   elina_dimension_t dim = {0,0};
   elina_interval_t* r = elina_interval_alloc();
-
+  size_t i, size;
   if (pexact) *pexact = false;
   if (elina_texpr0_is_interval_cst(expr)){
     elina_interval_eval_elina_texpr0(r,expr,discr,NULL);
   }
   else {
-    elina_intlinearize_alloc(man,abs,env,&dim,discr);
-    elina_interval_eval_elina_texpr0(r,expr,discr,*env);
+    //elina_intlinearize_alloc(man,abs,env,&dim,discr);
+    assert(!elina_abstract0_is_bottom(man,abs));
+    env = elina_abstract0_to_box(man,abs);
+  
+    dim = elina_abstract0_dimension(man,abs);
+    size = dim.intdim+dim.realdim;
+    for(i=0; i < size; i++){
+	elina_interval_convert(env[i],discr);
+    }
+    elina_interval_eval_elina_texpr0(r,expr,discr,env);
   }
-  if(env)elina_interval_array_free(*env,dim.intdim+dim.realdim);
+  if(env)elina_interval_array_free(env,dim.intdim+dim.realdim);
   return r;
 }
 
@@ -964,23 +972,41 @@ elina_linexpr0_t* elina_intlinearize_texpr0(elina_manager_t* man,
 				      elina_scalar_discr_t discr,
 				      bool quasilinearize)
 {
-  elina_interval_t*** env = NULL;
+  elina_interval_t** env = NULL;
   elina_dimension_t dim = {0,0};
   elina_linexpr0_t* res = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,0);
-
+  size_t i, size;
   if (pexact) *pexact = false;
   if (elina_texpr0_is_interval_linear(expr)){
     elina_intlinearize_elina_texpr0_intlinear(&res, expr, discr);
   }
   else {
-    elina_intlinearize_alloc(man,abs,env,&dim,discr);
-    elina_interval_intlinearize_elina_texpr0(&res, expr, *env,  dim.intdim,discr);
+    //elina_intlinearize_alloc(man,abs,env,&dim,discr);
+    assert(!elina_abstract0_is_bottom(man,abs));
+    env = elina_abstract0_to_box(man,abs);
+  
+    dim = elina_abstract0_dimension(man,abs);
+    size = dim.intdim+dim.realdim;
+    for(i=0; i < size; i++){
+	 elina_interval_convert(env[i],discr);
+    }
+    elina_interval_intlinearize_elina_texpr0(&res, expr, env,  dim.intdim,discr);
   }
   if (quasilinearize && !elina_linexpr0_is_quasilinear(res)){
-    if (!env) elina_intlinearize_alloc(man,abs,env,&dim,discr);
-    quasilinearize_elina_linexpr0(res,*env,false,discr);
+   if (!env){
+	assert(!elina_abstract0_is_bottom(man,abs));
+        env = elina_abstract0_to_box(man,abs);
+  
+        dim = elina_abstract0_dimension(man,abs);
+        size = dim.intdim+dim.realdim;
+        for(i=0; i < size; i++){
+	    elina_interval_convert(env[i],discr);
+        } 
+	//elina_intlinearize_alloc(man,abs,env,&dim,discr);
+    }
+    quasilinearize_elina_linexpr0(res,env,false,discr);
   }
-  if(env)elina_interval_array_free(*env,dim.intdim+dim.realdim);
+  if(env)elina_interval_array_free(env,dim.intdim+dim.realdim);
   return res;
 }
 
@@ -992,9 +1018,9 @@ elina_linexpr0_t** elina_intlinearize_texpr0_array(elina_manager_t* man,
 					     bool quasilinearize)
 {
   elina_dimension_t dim = {0,0};
-  elina_interval_t*** env = NULL;
+  elina_interval_t** env = NULL;
   elina_linexpr0_t** res;
-  size_t i;
+  size_t i, abs_size;
 
   if (pexact) *pexact = false;
   
@@ -1005,15 +1031,35 @@ elina_linexpr0_t** elina_intlinearize_texpr0_array(elina_manager_t* man,
       elina_intlinearize_elina_texpr0_intlinear(&res[i], texpr0[i],discr);
     }
     else {
-      if (!env) elina_intlinearize_alloc(man,abs,env,&dim,discr);
-      elina_interval_intlinearize_elina_texpr0(&res[i], texpr0[i], *env, dim.intdim,discr);
+      if (!env){
+	    assert(!elina_abstract0_is_bottom(man,abs));
+	    env = elina_abstract0_to_box(man,abs);
+	  
+	    dim = elina_abstract0_dimension(man,abs);
+	    abs_size = dim.intdim+dim.realdim;
+	    for(i=0; i < abs_size; i++){
+		 elina_interval_convert(env[i],discr);
+	    }
+	 //elina_intlinearize_alloc(man,abs,env,&dim,discr);
+      }
+      elina_interval_intlinearize_elina_texpr0(&res[i], texpr0[i], env, dim.intdim,discr);
     }
     if (quasilinearize && !elina_linexpr0_is_quasilinear(res[i])){
-      if (!env) elina_intlinearize_alloc(man,abs,env,&dim,discr);
-      quasilinearize_elina_linexpr0(res[i],*env,false,discr);
+      if (!env){ 
+	    assert(!elina_abstract0_is_bottom(man,abs));
+	    env = elina_abstract0_to_box(man,abs);
+	  
+	    dim = elina_abstract0_dimension(man,abs);
+	    abs_size = dim.intdim+dim.realdim;
+	    for(i=0; i < abs_size; i++){
+		 elina_interval_convert(env[i],discr);
+	    }
+		//elina_intlinearize_alloc(man,abs,env,&dim,discr);
+      }
+      quasilinearize_elina_linexpr0(res[i],env,false,discr);
     }
   }
-  if(env)elina_interval_array_free(*env,dim.intdim+dim.realdim);
+  if(env)elina_interval_array_free(env,dim.intdim+dim.realdim);
   return res;
 }
 
@@ -1118,8 +1164,9 @@ elina_lincons0_t elina_intlinearize_tcons0(elina_manager_t* man,
 				     bool quasilinearize, bool meet)
 {
   elina_dimension_t dim = {0,0};
-  elina_interval_t*** env = NULL;
+  elina_interval_t** env = NULL;
   elina_lincons0_t res;
+  size_t i, size;
   elina_linexpr0_t *linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,0);
   elina_scalar_t *scalar = elina_scalar_alloc();
   res.constyp = cons->constyp;
@@ -1130,15 +1177,34 @@ elina_lincons0_t elina_intlinearize_tcons0(elina_manager_t* man,
     elina_intlinearize_elina_tcons0_intlinear(&res, cons,discr);
   }
   else {
-    elina_intlinearize_alloc(man,abs,env,&dim,discr);
-    elina_intlinearize_elina_tcons0(&res, cons, *env,
+	assert(!elina_abstract0_is_bottom(man,abs));
+  	env = elina_abstract0_to_box(man,abs);
+  
+  	dim = elina_abstract0_dimension(man,abs);
+  	size = dim.intdim+dim.realdim;
+  	for(i=0; i < size; i++){
+		elina_interval_convert(env[i],discr);
+  	}
+	
+    //elina_intlinearize_alloc(man,abs,env,&dim,discr);
+    elina_intlinearize_elina_tcons0(&res, cons, env,
 			       dim.intdim,discr);
   }
   if (quasilinearize && !elina_linexpr0_is_quasilinear(res.linexpr0)){
-    if (!env) elina_intlinearize_alloc(man,abs,env,&dim,discr);
-    quasilinearize_elina_lincons0(&res,*env,meet,discr);
+  if (!env){
+	assert(!elina_abstract0_is_bottom(man,abs));
+  	env = elina_abstract0_to_box(man,abs);
+  
+  	dim = elina_abstract0_dimension(man,abs);
+  	size = dim.intdim+dim.realdim;
+  	for(i=0; i < size; i++){
+		elina_interval_convert(env[i],discr);
+  	}
+	 //elina_intlinearize_alloc(man,abs,env,&dim,discr);
+    }
+    quasilinearize_elina_lincons0(&res,env,meet,discr);
   }
-  if(env)elina_interval_array_free(*env,dim.intdim+dim.realdim);
+  if(env)elina_interval_array_free(env,dim.intdim+dim.realdim);
   return res;
 }
 

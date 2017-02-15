@@ -266,12 +266,13 @@ static inline void opt_bound_of_scalar(opt_oct_internal_t* pr,
 				   bool neg, bool mul2)
 {
   if (neg) elina_scalar_neg(t,t);
-  if (!double_set_elina_scalar(r,t)) pr->conv = true;
+  if (!elina_double_set_scalar(r,t,GMP_RNDU)) pr->conv = true;
   if (mul2) {
     *r = (*r)*2;
     pr->conv = true;
   }
   if (neg) elina_scalar_neg(t,t);
+ 
 }
 
 static inline bool opt_bounds_of_coeff(opt_oct_internal_t* pr,
@@ -279,6 +280,7 @@ static inline bool opt_bounds_of_coeff(opt_oct_internal_t* pr,
 				   elina_coeff_t c,
 				   bool mul2)
 {
+  
   switch (c.discr) {
   case ELINA_COEFF_SCALAR:
     opt_bound_of_scalar(pr,minf,c.val.scalar,true,mul2);
