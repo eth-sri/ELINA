@@ -207,6 +207,14 @@ opt_oct_t* opt_oct_expand(elina_manager_t* man,
   opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_EXPAND,0);
   opt_oct_mat_t* src = o->closed ? o->closed : o->m;
   size_t i, j;
+  if(n==0){
+	if(destructive){
+		return o;
+	}
+	else{
+		return opt_oct_copy(man,o);
+	}
+  }
   elina_dim_t pos = (dim < o->intdim) ? o->intdim : o->dim;
   opt_oct_mat_t* dst;
   opt_oct_t* r;
@@ -350,8 +358,9 @@ opt_oct_t* opt_oct_expand(elina_manager_t* man,
   int dst_size = 2*dst_dim*(dst_dim+1);
   int src_size = 2*o->dim*(o->dim+1);
   /*  exact, generally not closed */
-  dst->nni = min(dst_size,src->nni + dst_size-src_size);
-  
+  if(dst!=NULL){
+  	dst->nni = min(dst_size,src->nni + dst_size-src_size);
+  }
   r = opt_oct_set_mat(pr,o,dst,NULL,destructive);
   r->dim += n;
   if (dim<o->intdim) r->intdim += n;

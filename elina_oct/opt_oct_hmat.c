@@ -1245,7 +1245,6 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 				ac++;
 				l++;
 			}
-		
 			map[k] = p;
 			k++;
 			p++;
@@ -1307,7 +1306,9 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 		}
 		
      }
-     dst_mat->is_dense = src_mat->is_dense;
+     else{
+	new_dim = dim;
+     }
      if(!src_mat->is_dense){
 		/*****
 			If the source matrix is decomposed type,
@@ -1354,6 +1355,10 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 		If the source matrix is dense type,
 		apply the dense type operator.
 	 *****/
+	if(!dst_mat->is_dense){
+		convert_to_dense_mat(dst_mat,new_dim,false);
+	}
+	
 	  opt_hmat_set_array(dst,src,org_j*(org_j/2 + 1));
 	  for (j=0;j<nb_pos;j++) {
 	    /* skip lines */
@@ -1409,7 +1414,7 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 	}	
 	dst_mat->ti = true;
       }
-	
+	dst_mat->is_dense = src_mat->is_dense;
 	
   	free(map);
         free(add_pos);

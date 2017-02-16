@@ -27,19 +27,24 @@
 elina_linexpr0_t * generate_random_linexpr0(unsigned short int dim){
 	elina_coeff_t *cst, *coeff;
 	unsigned short int j, k;
-	elina_linexpr0_t * linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,dim);
+	elina_linexpr0_t * linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,2);
 	cst = &linexpr0->cst;
-	int r = rand()%10;
-	elina_scalar_set_to_int(cst->val.scalar,r,ELINA_SCALAR_DOUBLE);
-	k = 0;
-	for(j=0; j < dim/3; j++, k++){
-		elina_linterm_t * linterm = &linexpr0->p.linterm[k];
-		linterm->dim = j;
-		coeff = &linterm->coeff;
-		int r = rand()%5;
-		elina_scalar_set_to_int(coeff->val.scalar,r,ELINA_SCALAR_DOUBLE);
+	elina_scalar_set_to_int(cst->val.scalar,rand()%10,ELINA_SCALAR_DOUBLE);
+	elina_linterm_t * linterm = &linexpr0->p.linterm[0];
+	int r = rand()%dim, r1;
+	linterm->dim = r;
+	coeff = &linterm->coeff;
+	elina_scalar_set_to_int(coeff->val.scalar, rand()%2==0? -1 :1,ELINA_SCALAR_DOUBLE);
+	linterm = &linexpr0->p.linterm[1];
+	while(1){
+		r1 = rand()%dim;
+		if(r1!=r){
+			break;
+		}
 	}
-	elina_linexpr0_reinit(linexpr0,k);
+	linterm->dim = r1;
+	coeff = &linterm->coeff;
+	elina_scalar_set_to_int(coeff->val.scalar, rand()%2==0? -1 :1,ELINA_SCALAR_DOUBLE);
 	return linexpr0;
 }
 
@@ -48,57 +53,26 @@ elina_lincons0_array_t generate_random_lincons0_array(unsigned short int dim, si
 	unsigned short int j, k; 
 	elina_coeff_t *cst, *coeff;
 	elina_lincons0_array_t  lincons0 = elina_lincons0_array_make(nbcons);
-	for(i=0; i < nbcons/3; i++){
+	for(i=0; i < nbcons; i++){
 		lincons0.p[i].constyp = rand() %2 ? ELINA_CONS_SUPEQ : ELINA_CONS_EQ;
-		int r = rand()%10;
-		elina_linexpr0_t * linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,dim);
+		elina_linexpr0_t * linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,2);
 		cst = &linexpr0->cst;
-		elina_scalar_set_to_int(cst->val.scalar,r,ELINA_SCALAR_DOUBLE);
-		k = 0;
-		for(j=0; j < dim/3+1; j++, k++){
-			elina_linterm_t * linterm = &linexpr0->p.linterm[k];
-			linterm->dim = j;
-			coeff = &linterm->coeff;
-			int r = rand()%5;
-			elina_scalar_set_to_int(coeff->val.scalar,r,ELINA_SCALAR_DOUBLE);
+		elina_scalar_set_to_int(cst->val.scalar,rand()%10,ELINA_SCALAR_DOUBLE);
+		elina_linterm_t * linterm = &linexpr0->p.linterm[0];
+		int r = rand()%dim, r1;
+		linterm->dim = r;
+		coeff = &linterm->coeff;
+		elina_scalar_set_to_int(coeff->val.scalar, rand()%2==0? -1 :1,ELINA_SCALAR_DOUBLE);
+		linterm = &linexpr0->p.linterm[1];
+		while(1){
+			r1 = rand()%dim;
+			if(r1!=r){
+				break;
+			}
 		}
-		elina_linexpr0_reinit(linexpr0,k);
-		lincons0.p[i].linexpr0 = linexpr0;
-	}
-	
-	for(i=nbcons/3; i < (2*nbcons)/3; i++){
-		lincons0.p[i].constyp = ELINA_CONS_SUPEQ;
-		int r = rand()%10;
-		elina_linexpr0_t * linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,dim);
-		cst = &linexpr0->cst;
-		elina_scalar_set_to_int(cst->val.scalar,r,ELINA_SCALAR_DOUBLE);
-		k = 0;
-		for(j=dim/3+1; j < (2*dim)/3; j++, k++){
-			elina_linterm_t * linterm = &linexpr0->p.linterm[k];
-			linterm->dim = j;
-			coeff = &linterm->coeff;
-			int r = rand()%3;
-			elina_scalar_set_to_int(coeff->val.scalar,r,ELINA_SCALAR_DOUBLE);
-		}
-		elina_linexpr0_reinit(linexpr0,k);
-		lincons0.p[i].linexpr0 = linexpr0;
-	}
-	
-	for(i=(2*nbcons)/3; i < nbcons; i++){
-		lincons0.p[i].constyp = ELINA_CONS_SUPEQ;
-		int r = rand()%10;
-		elina_linexpr0_t * linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,dim);
-		cst = &linexpr0->cst;
-		elina_scalar_set_to_int(cst->val.scalar,r,ELINA_SCALAR_DOUBLE);
-		k = 0;
-		for(j=(2*dim)/3; j < dim; j++, k++){
-			elina_linterm_t * linterm = &linexpr0->p.linterm[k];
-			linterm->dim = j;
-			coeff = &linterm->coeff;
-			int r = rand()%3;
-			elina_scalar_set_to_int(coeff->val.scalar,r,ELINA_SCALAR_DOUBLE);
-		}
-		elina_linexpr0_reinit(linexpr0,k);
+		linterm->dim = r1;
+		coeff = &linterm->coeff;
+		elina_scalar_set_to_int(coeff->val.scalar, rand()%2==0? -1 :1,ELINA_SCALAR_DOUBLE);
 		lincons0.p[i].linexpr0 = linexpr0;
 	}
 	return lincons0;
@@ -109,7 +83,8 @@ void test_meetjoin(unsigned short int dim, size_t nbcons, bool meet){
 	//generate random cosntraints	
 	elina_lincons0_array_t lincons1 = generate_random_lincons0_array(dim,nbcons);
 	elina_lincons0_array_t lincons2 = generate_random_lincons0_array(dim,nbcons);
-
+	elina_lincons0_array_fprint(stdout,&lincons1,NULL);
+	elina_lincons0_array_fprint(stdout,&lincons2,NULL);
 	elina_manager_t * man = opt_oct_manager_alloc();
 	//generate first input
 	opt_oct_t * oa1 = opt_oct_top(man, dim,0);
