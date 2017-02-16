@@ -24,27 +24,20 @@
 #include "opt_oct_hmat.h"
 
 
-elina_linexpr0_t * generate_random_linexpr0(unsigned short int dim){
+elina_linexpr0_t * generate_random_linexpr0(unsigned short int dim, int v1, int v2, int coeff1, int coeff2){
 	elina_coeff_t *cst, *coeff;
 	unsigned short int j, k;
 	elina_linexpr0_t * linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,2);
 	cst = &linexpr0->cst;
 	elina_scalar_set_to_int(cst->val.scalar,rand()%10,ELINA_SCALAR_DOUBLE);
 	elina_linterm_t * linterm = &linexpr0->p.linterm[0];
-	int r = rand()%dim, r1;
-	linterm->dim = r;
+	linterm->dim = v1;
 	coeff = &linterm->coeff;
-	elina_scalar_set_to_int(coeff->val.scalar, rand()%2==0? -1 :1,ELINA_SCALAR_DOUBLE);
+	elina_scalar_set_to_int(coeff->val.scalar,coeff1,ELINA_SCALAR_DOUBLE);
 	linterm = &linexpr0->p.linterm[1];
-	while(1){
-		r1 = rand()%dim;
-		if(r1!=r){
-			break;
-		}
-	}
-	linterm->dim = r1;
+	linterm->dim = v2;
 	coeff = &linterm->coeff;
-	elina_scalar_set_to_int(coeff->val.scalar, rand()%2==0? -1 :1,ELINA_SCALAR_DOUBLE);
+	elina_scalar_set_to_int(coeff->val.scalar,coeff2,ELINA_SCALAR_DOUBLE);
 	return linexpr0;
 }
 
@@ -55,24 +48,17 @@ elina_lincons0_array_t generate_random_lincons0_array(unsigned short int dim, si
 	elina_lincons0_array_t  lincons0 = elina_lincons0_array_make(nbcons);
 	for(i=0; i < nbcons; i++){
 		lincons0.p[i].constyp = rand() %2 ? ELINA_CONS_SUPEQ : ELINA_CONS_EQ;
-		elina_linexpr0_t * linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,2);
-		cst = &linexpr0->cst;
-		elina_scalar_set_to_int(cst->val.scalar,rand()%10,ELINA_SCALAR_DOUBLE);
-		elina_linterm_t * linterm = &linexpr0->p.linterm[0];
-		int r = rand()%dim, r1;
-		linterm->dim = r;
-		coeff = &linterm->coeff;
-		elina_scalar_set_to_int(coeff->val.scalar, rand()%2==0? -1 :1,ELINA_SCALAR_DOUBLE);
-		linterm = &linexpr0->p.linterm[1];
+		int v1 = rand()%dim;
+		int v2;
 		while(1){
-			r1 = rand()%dim;
-			if(r1!=r){
+			v2 = rand()%dim;
+			if(v1!=v2){
 				break;
 			}
 		}
-		linterm->dim = r1;
-		coeff = &linterm->coeff;
-		elina_scalar_set_to_int(coeff->val.scalar, rand()%2==0? -1 :1,ELINA_SCALAR_DOUBLE);
+		int coeff1 = rand()%2==0? -1 :1;
+		int coeff2 = rand()%2==0? -1 :1;
+		elina_linexpr0_t * linexpr0 = generate_random_linexpr0(dim,v1,v2,coeff1,coeff2);
 		lincons0.p[i].linexpr0 = linexpr0;
 	}
 	return lincons0;
@@ -244,7 +230,17 @@ void test_assign(unsigned short int dim, size_t nbcons){
 	elina_dim_t * tdim = (elina_dim_t *)malloc(sizeof(elina_dim_t));
 	tdim[0] = rand()%dim;
 	elina_linexpr0_t ** expr_array = (elina_linexpr0_t**)malloc(sizeof(elina_linexpr0_t*));
-	elina_linexpr0_t * linexpr0 = generate_random_linexpr0(dim);
+	int v1 = rand()%dim;
+	int v2;
+	while(1){
+		v2 = rand()%dim;
+		if(v1!=v2){
+			break;
+		}
+	}
+	int coeff1 = rand()%2==0? -1 :1;
+	int coeff2 = rand()%2==0? -1 :1;
+	elina_linexpr0_t * linexpr0 = generate_random_linexpr0(dim,v1,v2,coeff1,coeff2);
 	expr_array[0] = linexpr0;
 	printf("ELINA Input Octagon\n");
 	elina_lincons0_array_t arr1 = opt_oct_to_lincons_array(man,oa2);
