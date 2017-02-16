@@ -111,7 +111,6 @@ opt_pk_array_t* opt_pk_add_dimensions_cons(elina_manager_t* man,
 		k++;
 	}
 	cmap[i] = k;
-	//printf("cmap[%d]: %d\n",i,k);
 	k++;
   }
   /*****************************************
@@ -119,14 +118,6 @@ opt_pk_array_t* opt_pk_add_dimensions_cons(elina_manager_t* man,
   ******************************************/
   
   array_comp_list_t * acl = create_array_comp_list();
-  if(project){
-	for(l=0; l < size; l++){
-		comp_list_t * cl = create_comp_list();
-		insert_comp(cl,ncmap[l]);
-		insert_comp_list(acl,cl);
-	}
-  }
-
   comp_list_t * cla = acla->head;
   while(cla != NULL){
 	comp_list_t * cl = create_comp_list();
@@ -138,14 +129,13 @@ opt_pk_array_t* opt_pk_add_dimensions_cons(elina_manager_t* man,
 		insert_comp(cl,num);
 		c = c->next;
 	}
-	insert_comp_list(acl,cl);
+	insert_comp_list_tail(acl,cl);
   	cla = cla->next;
   }
-   
   opt_pk_t ** poly = destructive ? poly_a : (opt_pk_t **)malloc(num_compa*sizeof(opt_pk_t *));
   if(!destructive){
 	  for(k=0;  k< num_compa; k++){
-		  unsigned short int k1 = num_compa - k - 1;
+		  unsigned short int k1 =  k;
 		  opt_pk_t * src = poly_a[k];
 		  poly[k1] = opt_poly_alloc(src->intdim,src->realdim);
 		  poly[k1]->nbeq = src->nbeq;
@@ -162,27 +152,32 @@ opt_pk_array_t* opt_pk_add_dimensions_cons(elina_manager_t* man,
   }
  
   if(project){
-	printf("PROJECT\n");
-	fflush(stdout);
-	unsigned short int num_comp = project ? num_compa + size : num_compa;
-	if(destructive){
-		 poly = (opt_pk_t **)realloc(poly_a, num_comp*sizeof(opt_pk_t*));
-	}else{
-		poly = (opt_pk_t **)realloc(poly, num_comp*sizeof(opt_pk_t*));
-	}
+	unsigned short int num_comp = num_compa + size;
+	//if(destructive){
+	poly = (opt_pk_t **)realloc(poly, num_comp*sizeof(opt_pk_t*));
+	//}else{
+	//	poly = (opt_pk_t **)realloc(poly, num_comp*sizeof(opt_pk_t*));
+	//}
 	// Handle project with generators
 	for(i = 0; i < size; i++){
-		unsigned short int i1 = num_comp - i - 1;
+		unsigned short int i1 = num_compa + i;
 		poly[i1] = opt_poly_alloc(1,0);
 		poly[i1]->nbeq = 1;
-		opt_matrix_t *mat = opt_matrix_alloc(1,maxcols + size,false);
-		opt_numint_t **p = mat->p;
+		poly[i1]->C = opt_matrix_alloc(2,1+opk->dec,false);
+		opt_numint_t **p = poly[i1]->C->p;
 		opt_numint_t *pi = p[0];
 		pi[0] = 0;
 		pi[1] = 0;
-		pi[ncmap[i]] = 1;
-		poly[i1]->C = mat;
+		pi[2] = 1;
+		pi = p[1];
+                pi[0] = 1;
+		pi[1] = 1;
+		pi[2] = 0;
 		poly[i1]->is_minimized = true;
+		comp_list_t * cl = create_comp_list();
+		insert_comp(cl,ncmap[i]);
+		insert_comp_list_tail(acl,cl);
+
 	}
   }
   free(cmap);
@@ -191,7 +186,7 @@ opt_pk_array_t* opt_pk_add_dimensions_cons(elina_manager_t* man,
 	op = oa;
 	op->maxcols = maxcols + size;
 	free(acla);
-	op->acl = copy_array_comp_list(acl);
+	op->acl = acl;
   }
   else{
   	op = opt_pk_array_alloc(poly,acl,maxcols+size);

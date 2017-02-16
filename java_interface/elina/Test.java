@@ -323,6 +323,8 @@ public class Test
         try { xa0.isEqual(man, xac9); assert false; } catch (IllegalArgumentException e) { /* expected */ }
         System.out.println("unify: " + xac9.unifyCopy(man, xa0));
         Abstract1 xac10 = new Abstract1(man, xa0);
+        xac10.unify(man, xac9);
+        assert xac9.unifyCopy(man, xa0).isEqual(man, xac10);
         
         String[] xorg = { "a" };
         String[] xdst = { "zz99" };

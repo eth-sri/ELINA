@@ -2843,7 +2843,6 @@ void opt_hmat_assign(opt_oct_internal_t* pr, opt_uexpr u, opt_oct_mat_t* oo, siz
   size_t i,k;
   double *m = oo->mat;
   bool (*incr_closure)(opt_oct_mat_t * ,...);
-  
   double size = 2*dim*(dim+1);
   double sparsity = 1- ((double)(oo->nni)/size);
   int count = oo->nni;
@@ -3206,6 +3205,9 @@ void opt_hmat_assign(opt_oct_internal_t* pr, opt_uexpr u, opt_oct_mat_t* oo, siz
     cb = 2*pr->tmp[0];
     Cb = 2*pr->tmp[1];
     for (i=0;i<dim;i++) {
+	 if((!oo->ti) && (!oo->is_dense) && (find(oo->acl,i)==NULL)){
+		ini_relation(m,i,i,dim);
+	  }
       opt_bounds_mul(m[opt_matpos(2*i,2*i+1)],m[opt_matpos(2*i+1,2*i)],
 		 pr->tmp[2*i+2],pr->tmp[2*i+3], &tmpa,&tmpb);
       if (tmpa==INFINITY) { cinf++; ci = i; } else cb += tmpa;
@@ -3213,7 +3215,6 @@ void opt_hmat_assign(opt_oct_internal_t* pr, opt_uexpr u, opt_oct_mat_t* oo, siz
     }
 
     opt_hmat_forget_var(oo,dim,d);
-    
     /* upper bounds */
     if (!Cinf) {
       /* no bound is infinite */

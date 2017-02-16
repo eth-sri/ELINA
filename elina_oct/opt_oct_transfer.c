@@ -58,9 +58,7 @@ opt_oct_t* opt_oct_assign_linexpr(elina_manager_t* man,
   #if defined(TIMING)
   	start_timing();
   #endif
-
   opt_hmat_assign(pr,u,src,o->dim,d,&respect_closure);
-  
   #if defined(TIMING)
   	record_timing(assign_linexpr_time);
   #endif

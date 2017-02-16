@@ -113,13 +113,23 @@ opt_pk_array_t* opt_pk_expand(elina_manager_t* man,
 		elina_dim_t dim, size_t dimsup)
 {
   size_t intdimsup,realdimsup;
+  opt_pk_array_t* op;
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_EXPAND);
+  if(oa->is_bottom || !oa->acl){
+	if(destructive){
+		oa->maxcols = oa->maxcols + dimsup;
+		return oa;
+	}
+	else{
+		op = opt_pk_bottom(man,oa->maxcols + dimsup-opk->dec,0);
+		return op;
+	}
+  }
   unsigned short int maxcols = oa->maxcols;
   unsigned short int var = dim+opk->dec;
   unsigned short int num_var = maxcols - opk->dec;
   opt_pk_internal_realloc_lazy(opk,num_var+dimsup);
   unsigned short int j,k,nmaxcols;
-  opt_pk_array_t* op;
   man->result.flag_best = man->result.flag_exact = true;   
 
   //if (dim<oa->intdim){
