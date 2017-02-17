@@ -766,7 +766,7 @@ void elina_scalar_set_to_int(elina_scalar_t *a, elina_int_t i, elina_scalar_disc
 			mpq_set_si(a->val.mpq,i,1);
 			break;
 		case ELINA_SCALAR_DOUBLE:
-			a->val.dbl = (elina_int_t)i;
+			a->val.dbl = (double)i;
 			break;
 		case ELINA_SCALAR_MPFR:
 			mpfr_set_si(a->val.mpfr,i,GMP_RNDU);
