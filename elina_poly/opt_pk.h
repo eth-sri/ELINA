@@ -28,13 +28,14 @@
 #define __OPT_PK_H__
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "elina_int.h"
 #include "elina_rat.h"
 #include "comp_list.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #if defined (HAS_APRON)
 #include "apron_wrapper.h"
