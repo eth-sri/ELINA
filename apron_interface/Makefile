@@ -1,3 +1,5 @@
+include ../Makefile.config
+
 INSTALL = install
 INSTALLd = install -d
 
