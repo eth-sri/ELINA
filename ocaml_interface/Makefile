@@ -33,6 +33,13 @@ ICFLAGS += $(BASE_ICFLAGS) $(ML_ICFLAGS)
 LDFLAGS += $(BASE_LIFLAGS)
 CMXSINC = $(APRON_CMXSINC) -I .
 
+ICFLAGS += -I ../partitions_api -I ../elina_linearize -I ../elina_auxiliary -I ../elina_poly -I ../elina_oct
+
+LDFLAGS += -L../partitions_api -L../elina_linearize  -L../elina_auxiliary -L../elina_poly -L../elina_oct -L.
+
+LDFLAGS +=  -R../partitions_api -R../elina_linearize  -R../elina_auxiliary -R../elina_poly  -cclib -R../elina_oct -R.
+
+
 APRON_CAML_INCLUDE = $(shell $(OCAMLFIND) query apron)
 
 
@@ -59,7 +66,7 @@ LIBS = -lapron -lmpfr -lgmp -lm
 # Rules
 #---------------------------------------
 
-all: ml mlexample.byte
+all: ml mlexample.byte mlexample.opt
 
 ml: elina_poly.mli elina_poly.ml elina_poly.cmi mllib 
 
@@ -75,6 +82,9 @@ endif
 
 mlexample.byte: mlexample.ml elina_poly.cma
 	$(OCAMLC) $(OCAMLFLAGS) -I $(MLGMPIDL_LIB) -I $(APRON_CAML_INCLUDE) -o $@ bigarray.cma gmp.cma apron.cma elina_poly.cma $<
+
+mlexample.opt: mlexample.ml elina_poly.cmxa
+	$(OCAMLOPT) $(OCAMLFLAGS) -I $(MLGMPIDL_LIB) -I $(APRON_CAML_INCLUDE) -o $@ bigarray.cmxa gmp.cmxa apron.cmxa elina_poly.cmxa $<
 
 clean:
 	/bin/rm -f *.[ao] *.so
