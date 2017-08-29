@@ -369,12 +369,12 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
                                 }
                                 poly[res]->nbeq = nbeq;
 
-                                elina_dim_t tdim[1];
+                                elina_dim_t *tdim =
+                                    (elina_dim_t *)malloc(sizeof(elina_dim_t));
                                 tdim[0] = nvar;
-                                opt_poly_projectforget_array(
-                                    false, man, poly[res], poly[res], &tdim, 1,
-                                    true);
-                                size_t nbcons = poly[res]->C->nbrows;
+				opt_poly_projectforget_array(false,
+						  man,poly[res],poly[res],tdim,1,true);
+			    	size_t nbcons = poly[res]->C->nbrows;
 			    	opt_matrix_resize_rows(poly[res]->C,nbcons+1);
 				opt_numint_t * ov = opk->poly_numintp;
 				opt_numint_t * dpi = poly[res]->C->p[nbcons];
@@ -737,7 +737,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_array_det(bool assign, elina_manager_t* 
   
   opt_pk_t ** poly = (opt_pk_t **)malloc(num_comp*sizeof(opt_pk_t *));
   size_t * counterF = (size_t *)calloc(num_comp,sizeof(size_t));
-  char *pos_con_map = (size_t *)calloc(num_comp, sizeof(char));
+  char * pos_con_map = (char *)calloc(num_comp,sizeof(char));
   cl = acl->head;
   for(k=0; k < num_comp; k++){
 	unsigned short int comp_size = cl->size;
