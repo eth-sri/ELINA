@@ -75,26 +75,7 @@ static inline elina_int_t elina_int_cdiv_q(elina_int_t a, elina_int_t b)
 /* mpz -> elina_int */
 static inline bool elina_int_set_mpz(elina_int_t *a, mpz_t b)
 {
-  int sgn;
-  size_t count;
-  unsigned long int tab[2];
-
-  sgn = mpz_sgn(b);
-  mpz_export(&tab, &count, 1, sizeof(long int), 0, 0, b);
-  if (count == 0) {
-    *a = 0;
-  } else {
-    *a = tab[0];
-    if (count == 2) {
-      *a = *a << (sizeof(long int) * 8);
-      *a = *a + (long long int)(tab[1]);
-      if (*a < 0) {
-        assert(0);
-      }
-    }
-    if (sgn < 0)
-      *a = -(*a);
-  }
+   *a = mpz_get_si(b);
   return true;
 }
 
@@ -140,15 +121,7 @@ static inline elina_int_t elina_int_lcm(elina_int_t b, elina_int_t c)
 
 static inline bool mpz_set_elina_int(mpz_t a, elina_int_t b)
 {
-  unsigned long long int n;
-  unsigned long int rep[2];
-
-  n = llabs(b);
-  rep[1] = n & ULONG_MAX;
-  rep[0] = n >> (sizeof(long int) * 8);
-  mpz_import(a, 2, 1, sizeof(unsigned long int), 0, 0, rep);
-  if (b < 0)
-    mpz_neg(a, a);
+  mpz_set_si(a,b);
   return true;
 }
 
