@@ -127,6 +127,7 @@ opt_pk_array_t* opt_pk_expand(elina_manager_t* man,
   }
   unsigned short int maxcols = oa->maxcols;
   unsigned short int var = dim+opk->dec;
+
   unsigned short int num_var = maxcols - opk->dec;
   opt_pk_internal_realloc_lazy(opk,num_var+dimsup);
   unsigned short int j,k,nmaxcols;
@@ -193,7 +194,8 @@ opt_pk_array_t* opt_pk_expand(elina_manager_t* man,
 		op = opt_pk_copy(man,oa);
 		op->maxcols = nmaxcols;
 	}
-	return op;
+
+        return op;
   }
   for(j=maxcols; j < nmaxcols; j++){
 	insert_comp(ecl,j);
@@ -477,8 +479,8 @@ opt_pk_array_t* opt_pk_fold(elina_manager_t* man,
 		return oa;
 	}
 	else{
-          return opt_pk_bottom(man, oa->maxcols - dimsup, 0);
-        }
+		return opt_pk_bottom(man,oa->maxcols-dimsup-opk->dec,0);	
+	}
   }
   num_compa = acla->size;
   opt_pk_t ** poly_a = oa->poly;
