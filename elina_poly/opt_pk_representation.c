@@ -150,7 +150,7 @@ opt_pk_array_t* opt_pk_copy(elina_manager_t* man, opt_pk_array_t* src)
   }
   
   opt_pk_array_t * dst = opt_pk_array_alloc(poly,acl,maxcols);
-  
+  dst->is_bottom = src->is_bottom;
   #if defined(TIMING)
 		record_timing(copy_time);
   #endif
@@ -392,7 +392,7 @@ char meet_cons_one_comp(opt_pk_internal_t *opk, opt_pk_t **poly_a, array_comp_li
 	unsigned short int j,k;
 	size_t i;
 	comp_list_t * cla = acla->head;
-	char is_pos_con = 1;
+	char is_pos_con = 0;
 	size_t  counter = 0;
 	for(k = 0; k < num_compa; k++){
 		if(map[k]){
@@ -409,13 +409,13 @@ char meet_cons_one_comp(opt_pk_internal_t *opk, opt_pk_t **poly_a, array_comp_li
 		opt_numint_t ** src_p = src_mat->p;
 		opt_numint_t ** dst_p = dst_mat->p;
 		size_t i1 = counter;
-		bool flag = false;		
+		//bool flag = false;		
 		for(i = 0; i < nbconsa; i++){
 			opt_numint_t * src_pi = src_p[i];
 			opt_numint_t * dst_pi = dst_p[i1];
 			if(opt_vector_is_positivity_constraint(opk,src_pi,comp_size+2)){
 				//map[ind] = 1;
-				flag = true;
+				is_pos_con = 1;
 				continue;
 			}
 			dst_pi[0] = src_pi[0];
@@ -430,9 +430,9 @@ char meet_cons_one_comp(opt_pk_internal_t *opk, opt_pk_t **poly_a, array_comp_li
 			}
 			i1++;
 		}  
-		if(!flag){
-			is_pos_con = 0;
-		}
+		//if(!flag){
+		//	is_pos_con = 0;
+		//}
 		counter = i1;
 		dst_mat->nbrows = counter;
 		cla = cla->next;
