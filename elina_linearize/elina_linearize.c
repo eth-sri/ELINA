@@ -850,8 +850,13 @@ void elina_lincons0_reduce_integer(elina_lincons0_t* cons, size_t intdim, elina_
     }
     if (elina_int_sgn(rat->n)==0)
       return;
+    
     elina_linexpr0_ForeachLinterm(expr,i,dim,coeff) {
       elina_rat_set_elina_scalar(tmp,coeff->val.scalar);
+      if((tmp->n==ELINA_INT_MIN)&&(rat->n==-1)){
+		elina_lincons0_set_bool(cons,true,discr);
+		return;
+      }
       tmp->n = tmp->n/rat->n;
       tmp->n = tmp->n*rat->d;
       tmp->n = tmp->n/tmp->d;
