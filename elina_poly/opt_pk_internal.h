@@ -142,7 +142,6 @@ static inline opt_pk_internal_t* opt_pk_init_from_manager(elina_manager_t* man, 
 /* ********************************************************************** */
 static inline opt_pk_internal_t* opt_pk_init_from_manager(elina_manager_t* man, elina_funid_t funid)
 {
-  
   opt_pk_internal_t* opk = (opt_pk_internal_t*)man->internal;
   opk->funid = funid;
   opk->funopt = &man->option.funopt[funid];

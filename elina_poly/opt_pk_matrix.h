@@ -186,6 +186,7 @@ void opt_generator_init(opt_pk_internal_t *opk, opt_matrix_t * mat, unsigned sho
 ********************************/
 void remove_common_gen(opt_pk_internal_t *opk, opt_matrix_t * F, size_t start);
 
+void remove_common_gen_upto(opt_pk_internal_t *opk, opt_matrix_t * F, size_t start,size_t end);
 
 /*******************************
 	Compute bounds for a variable
