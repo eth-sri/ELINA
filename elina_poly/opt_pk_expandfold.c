@@ -231,14 +231,14 @@ opt_pk_array_t* opt_pk_expand(elina_manager_t* man,
 					ndim,cl->size - dimsup ,dimsup);
   		/* Minimize the result */
   		if (opk->funopt->algorithm>0){
-                  opt_poly_minimize(man, poly[k]);
-                  if (opk->exn) {
-                    opk->exn = ELINA_EXC_NONE;
-                    if (!poly[k]->C) {
-                      man->result.flag_best = man->result.flag_exact = false;
-                      opt_poly_set_top(opk, op);
-                      return op;
-                    }
+    			opt_poly_chernikova(man,poly[k],"expand");
+    			if (opk->exn){
+      				opk->exn = ELINA_EXC_NONE;
+      				if (!poly[k]->C){
+					man->result.flag_best = man->result.flag_exact = false;   
+					opt_poly_set_top(opk,op);
+					return op;
+      				}
     			}
   		}
 	}
