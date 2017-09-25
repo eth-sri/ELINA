@@ -332,6 +332,8 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
   //elina_lincons0_array_fprint(stdout,&arr2,NULL);
   //elina_lincons0_array_clear(&arr2);
   //elina_lincons0_array_fprint(stdout,array,NULL);
+
+  //print_array_comp_list(oa->acl,oa->maxcols);
   fflush(stdout);
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_MEET_LINCONS_ARRAY);
   size_t i;
@@ -422,6 +424,7 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
   if(is_bottom){
 	man->result.flag_best = man->result.flag_exact = true;
     	opt_poly_set_bottom(opk,op);
+	
     	return op;
   }
 
@@ -711,7 +714,7 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
   //for(k=0; k<num_comp; k++){
 //	opt_matrix_fprint(stdout,poly[k]->F);
  // }
-  //printf("meet lincons output\n");
+ // printf("meet lincons output\n");
   //elina_lincons0_array_t arr1 = opt_pk_to_lincons_array(man,op);
   //elina_lincons0_array_fprint(stdout,&arr1,NULL);
   //elina_lincons0_array_clear(&arr1);
@@ -898,6 +901,7 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
 		//fflush(stdout);
 		opt_poly_obtain_satF(oak);
 		num_vertex_a[k] = opt_generator_rearrange(oak->F,oak->satF);
+		
 		cla = cla->next;
 	}	
 	
@@ -934,6 +938,7 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
 		}
 		opt_poly_obtain_satF(obk);
 		num_vertex_b[k] = opt_generator_rearrange(obk->F,obk->satF);
+		
 		clb = clb->next;
 	}
 	
@@ -1221,7 +1226,7 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
 		if(!nbmapFa[k] || !nbmapFb[k]){
 			pos_con_map[k] = 3;
 		}
-		else if(opt_poly_leq(opk,Ca,Fb)&&opt_poly_leq(opk,Cb,Fa)){
+		else if((opt_poly_leq(opk,Ca,Fb)==1)&&(opt_poly_leq(opk,Cb,Fa)==1)){
 			num_comp_res++;
 			// take B
 			pos_con_map[k] = 2;
@@ -1353,9 +1358,11 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
 		combine_satmat(opk,poly[0],comp_size,begin,false);			
 		size_t num = F->nbrows - begin;
 		opt_matrix_sort_rows_from(opk,F,begin,num);
+		
 		opt_poly_dual(poly[0]);
 		opt_cherni_add_and_minimize(opk,false,poly[0],begin);
 		opt_poly_dual(poly[0]);
+		
 		if(opk->exn){
 			opk->exn = ELINA_EXC_NONE;
 			opt_pk_t *tmp = poly[0];
@@ -1441,6 +1448,16 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
 
 opt_pk_array_t* opt_pk_join(elina_manager_t* man, bool destructive, opt_pk_array_t* oa, opt_pk_array_t* ob)
 {
+	//printf("JOIN INPUT\n");
+	//elina_lincons0_array_t arr1 = opt_pk_to_lincons_array(man,oa);
+        //elina_lincons0_array_fprint(stdout,&arr1,NULL);
+	//elina_lincons0_array_t arr2 = opt_pk_to_lincons_array(man,ob);
+        //elina_lincons0_array_fprint(stdout,&arr2,NULL);
+	//elina_lincons0_array_clear(&arr1);
+	//elina_lincons0_array_clear(&arr2);
+	//print_array_comp_list(oa->acl,oa->maxcols);
+	//print_array_comp_list(ob->acl,ob->maxcols);
+	//fflush(stdout);
   opt_pk_array_t * res;
   #if defined (TIMING)
 	start_timing();
@@ -1449,6 +1466,11 @@ opt_pk_array_t* opt_pk_join(elina_manager_t* man, bool destructive, opt_pk_array
   #if defined (TIMING)
 	record_timing(join_time);
   #endif
+	//printf("JOIN OUTPUT\n");
+	//elina_lincons0_array_t arr3 = opt_pk_to_lincons_array(man,res);
+        //elina_lincons0_array_fprint(stdout,&arr3,NULL);
+	//elina_lincons0_array_clear(&arr3);
+	//fflush(stdout);
   return res;
 }
 
