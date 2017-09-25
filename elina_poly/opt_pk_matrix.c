@@ -1274,6 +1274,57 @@ void remove_common_gen(opt_pk_internal_t *opk, opt_matrix_t *F, size_t start) {
   F->nbrows = nbrows;
 }
 
+void remove_common_gen_upto(opt_pk_internal_t *opk, opt_matrix_t *F,
+                            size_t start, size_t end) {
+  size_t nbrows = F->nbrows;
+  size_t nb = end;
+  assert(start < nbrows && end < nbrows);
+  unsigned short int nbcolumns;
+  nbcolumns = F->nbcolumns;
+  // size_t nb = nbcons;
+  // size_t nbeq = o->nbeq;
+  char *rmap = (char *)calloc(end - start, sizeof(char));
+  char *map = (char *)calloc(end, sizeof(char));
+  int i, j;
+  // opt_matrix_fprint(stdout,F);
+  for (i = start; i < end; i++) {
+    opt_numint_t *pi = F->p[i];
+    unsigned short int ind = 0;
+    for (j = 0; j < start; j++) {
+      opt_numint_t *pj = F->p[j];
+      if (!map[j] && opt_vector_equal(opk, pi, pj, nbcolumns, &ind)) {
+        rmap[i - start] = 1;
+        map[j] = 1;
+        break;
+      }
+    }
+    for (j = i + 1; j < end; j++) {
+      opt_numint_t *pj = F->p[j];
+      if (!map[j] && opt_vector_equal(opk, pi, pj, nbcolumns, &ind)) {
+        rmap[i - start] = 1;
+        map[j] = 1;
+        break;
+      }
+    }
+  }
+  j = end - 1;
+  for (i = start; i < nb; i++) {
+    if (rmap[i - start]) {
+      nbrows--;
+      while ((j > i) && rmap[j - start]) {
+        j--;
+      }
+      if (j > i) {
+        opt_matrix_exch_rows(F, i, j);
+      }
+      j--;
+    }
+  }
+  free(map);
+  free(rmap);
+  F->nbrows = nbrows;
+}
+
 /***********************
 	Compute the bounds for a variable
 ************************/
@@ -1284,7 +1335,6 @@ void opt_generator_bound_dimension(opt_pk_internal_t* opk,
 {
   size_t i, index;
   int sgn;
-  
   assert(opk->dec+dim<of->nbcolumns);
   elina_rat_t *inf = (elina_rat_t *)malloc(sizeof(elina_rat_t));
   elina_rat_set_infty(inf,1);

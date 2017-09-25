@@ -1348,8 +1348,8 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
                 free(ca);
                 opt_matrix_t * F = poly[0]->F;
 		opt_matrix_t * C = poly[0]->C;
-		//remove_common_gen(opk,F,begin);
-		opt_matrix_sort_rows(opk,C);
+                remove_common_gen_upto(opk, F, 0, begin);
+                opt_matrix_sort_rows(opk,C);
 		/************************
 			Combine satmat of A
 		*************************/
