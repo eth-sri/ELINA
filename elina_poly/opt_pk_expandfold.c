@@ -231,7 +231,7 @@ opt_pk_array_t* opt_pk_expand(elina_manager_t* man,
 					ndim,cl->size - dimsup ,dimsup);
   		/* Minimize the result */
   		if (opk->funopt->algorithm>0){
-    			opt_poly_minimize(man,poly[k]);
+    			opt_poly_chernikova(man,poly[k],"expand");
     			if (opk->exn){
       				opk->exn = ELINA_EXC_NONE;
       				if (!poly[k]->C){
