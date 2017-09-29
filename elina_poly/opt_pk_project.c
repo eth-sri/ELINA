@@ -290,6 +290,7 @@ bool fourier_motzkin(opt_pk_internal_t *opk, elina_dim_t dim, opt_matrix_t * oc)
 		}
 	}
 	size_t s = 0;
+	bool flag = false;
 	for(i = 0; i < nbcons1; i++){
 	   size_t mind = ocm[i];
 	   opt_numint_t * pi = oc->p[mind];
@@ -318,6 +319,12 @@ bool fourier_motzkin(opt_pk_internal_t *opk, elina_dim_t dim, opt_matrix_t * oc)
 		if(!opt_vector_is_null_expr(opk,tmp1,nbcolumns)){
 			opt_numint_t * dst = oc->p[s+nbcons];
 			opt_vector_copy(dst,tmp1,nbcolumns);
+			s++;
+		}
+		else if(!flag && opt_vector_is_positivity_constraint(opk,tmp1,nbcolumns)){
+			opt_numint_t * dst = oc->p[s+nbcons];
+			opt_vector_copy(dst,tmp1,nbcolumns);
+			flag = true;
 			s++;
 		}
 		else if(tmp1[1] < 0){
