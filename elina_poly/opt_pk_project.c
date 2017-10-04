@@ -514,7 +514,8 @@ opt_pk_array_t* opt_pk_forget_array(elina_manager_t* man, bool destructive, opt_
 	/********************************
 		Handle the destructive case
 	*********************************/
-	if(destructive){
+        // char * exc_map = (char *)calloc(num_compa,sizeof(char));
+        if(destructive){
 		k = 0;
 		while(k < num_compa){
 			unsigned short int * ca = to_sorted_array(cla,maxcols);
@@ -667,14 +668,43 @@ opt_pk_array_t* opt_pk_forget_array(elina_manager_t* man, bool destructive, opt_
 				free(nca);
 				poly_a[k]->F = dst_mat;
 				opt_poly_chernikova(man,poly_a[k],"forget destructive");
-			}
+                                if (opk->exn) {
+                                  opk->exn = ELINA_EXC_NONE;
+                                  man->result.flag_best =
+                                      man->result.flag_exact = false;
+                                  opt_poly_set_top(opk, oa);
+                                  return oa;
+                                  // exc_map[k] = 1;
+                                }
+                        }
 			cla = cla->next;
 			k++;
 		}
 		#if defined(TIMING)
  	 		record_timing(forget_array_time);
    		#endif
-		return oa;
+                        /*unsigned short int k1=0;
+                        unsigned short int bound = oa->acl->size;
+                        cl = oa->acl->head;
+                        for(k=0; k < num_comp;k++){
+                                opt_pk_t *oak = oa->poly[k1];
+                                if(exc_map[k]){
+                                        comp_list_t * tmp = cl;
+                                        cl = cl->next;
+                                        remove_comp_list(acl,tmp);
+                                        unsigned short int k2;
+                                        for(k2=k1; k2 < bound - 1; k2++){
+                                                poly[k2] = poly[k2+1];
+                                        }
+                                        opt_poly_clear(oak);
+                                        bound--;
+                                }
+                                else{
+                                        k1++;
+                                        cl=cl->next;
+                                }
+                        }*/
+                        return oa;
 	}
 	/********************************
 		Handle non destructive case
@@ -734,7 +764,8 @@ opt_pk_array_t* opt_pk_forget_array(elina_manager_t* man, bool destructive, opt_
 					   if(opk->funopt->algorithm>=0){
 					      opt_poly_chernikova(man,src,"of the result");
 					   }
-					}
+
+                                        }
 					else {
 	   				     /* Forget */
 	   				     opt_matrix_t *F = opt_matrix_alloc(size,src->F->nbcolumns,false);
@@ -814,7 +845,14 @@ opt_pk_array_t* opt_pk_forget_array(elina_manager_t* man, bool destructive, opt_
 					free(nca);
 					poly[k1]->F = dst_mat;
 					opt_poly_chernikova(man,poly[k1],"forget non destructive");
-				}
+                                        if (opk->exn) {
+                                          opk->exn = ELINA_EXC_NONE;
+                                          man->result.flag_best =
+                                              man->result.flag_exact = false;
+                                          return opt_pk_top(man,
+                                                            oa->maxcols - 2, 0);
+                                        }
+                                }
 				else{
 					poly[k1] = opt_poly_alloc(src->intdim,src->realdim);
 					opt_poly_copy(poly[k1],src);
