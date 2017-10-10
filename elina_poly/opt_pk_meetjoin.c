@@ -1327,7 +1327,7 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
 		size_t count = 0;
 		//combine all overlapping vertices of A into one
 		count = cartesian_product_vertices_one_comp(poly1,acl,ca_arr,num_vertex1,poly[0],count,ca,pos_con_map);
-		remove_common_gen_upto(opk,poly[0]->F,0,poly[0]->F->nbrows);
+	//	remove_common_gen(opk,poly[0]->F,0);
 		//combine all overlapping rays of A into one		
 
 		meet_rays_one_comp(poly1,acl,ca_arr,nblinemapa,poly[0],num_vertex1,ca,count,pos_con_map);
