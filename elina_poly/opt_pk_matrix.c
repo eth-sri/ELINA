@@ -904,8 +904,8 @@ size_t  opt_matrix_assign_variable(opt_pk_internal_t* opk,opt_matrix_t *nmat,
 
   var = opk->dec + dim;
   den = (tab[0] > 1);
- 
-  
+  bool flag = false;
+
   size_t i1 = 0;
 	
   //nmat->_sorted = false;
@@ -914,15 +914,18 @@ size_t  opt_matrix_assign_variable(opt_pk_internal_t* opk,opt_matrix_t *nmat,
     opk->matrix_prod = opt_vector_product(opk, mat->p[i],
 		   tab,mat->nbcolumns);
     /* columns != var */
-   
-      /* Side-effect */
-      for (j=0; j<mat->nbcolumns; j++){
-	if (j!=var){
-	  if (den)
-	    mat->p[i][j] = mat->p[i][j]*tab[0];
-	  else
-	    mat->p[i][j] = mat->p[i][j];
-	}
+    opt_numint_t abs_tab = opt_numint_abs(tab[0]);
+    opt_numint_t x1 = INT64_MAX / abs_tab;
+    opt_numint_t x2 = INT64_MIN / abs_tab;
+    /* Side-effect */
+    for (j = 0; j < mat->nbcolumns; j++) {
+      if (j != var) {
+        if (den)
+          flag = flag ||
+                 opt_int64_mult(mat->p[i][j], tab[0], x1, x2, &mat->p[i][j]);
+        else
+          mat->p[i][j] = mat->p[i][j];
+      }
       }
 	
     /* var column */
@@ -938,7 +941,12 @@ size_t  opt_matrix_assign_variable(opt_pk_internal_t* opk,opt_matrix_t *nmat,
     }
   }
   nmat->nbrows = i1;
-  
+  if (flag) {
+    printf("exception assign variable\n");
+    fflush(stdout);
+    opk->exn = ELINA_EXC_OVERFLOW;
+    return nbline;
+  }
   return nbline;
 }
 
@@ -1051,7 +1059,7 @@ opt_matrix_t* opt_matrix_substitute_variable(opt_pk_internal_t* opk,
   size_t i,j,var;
   bool den;
   opt_matrix_t* nmat;
-  
+  bool flag = false;
   //matrix_fprint(stdout,mat);
   var = opk->dec + dim;
   den = tab[0] > 1;
@@ -1069,37 +1077,75 @@ opt_matrix_t* opt_matrix_substitute_variable(opt_pk_internal_t* opk,
 	/* Functional */
 	nmat->p[i][0] = mat->p[i][0];
 	/* columns != var */
-	for (j=1; j<mat->nbcolumns; j++) {
+        opt_numint_t abs_tab, x1, x2;
+        abs_tab = opt_numint_abs(tab[0]);
+        x1 = INT64_MAX / abs_tab;
+        x2 = INT64_MIN / abs_tab;
+        for (j=1; j<mat->nbcolumns; j++) {
 	  if (j!=var){
 	    if (den){
 	      nmat->p[i][j] = 0;
-	      nmat->p[i][j] = mat->p[i][j]*tab[0];
-	    }
+              flag = flag || opt_int64_mult(mat->p[i][j], tab[0], x1, x2,
+                                            &nmat->p[i][j]);
+            }
 	    else {
 	      nmat->p[i][j] = mat->p[i][j];
 	    }
-	    opk->matrix_prod = mat->p[i][var]*tab[j];
-	    nmat->p[i][j] = nmat->p[i][j] + opk->matrix_prod;
-	  }
+            if (tab[j]) {
+              opt_numint_t abs_tab_j = opt_numint_abs(tab[j]);
+              opt_numint_t x1_j = INT64_MAX / abs_tab_j;
+              opt_numint_t x2_j = INT64_MIN / abs_tab_j;
+              flag = flag || opt_int64_mult(mat->p[i][var], tab[j], x1_j, x2_j,
+                                            &opk->matrix_prod);
+              // opk->matrix_prod = mat->p[i][var]*tab[j];
+              flag = flag || opt_int64_add(nmat->p[i][j], opk->matrix_prod,
+                                           &nmat->p[i][j]);
+              // nmat->p[i][j] = nmat->p[i][j] + opk->matrix_prod;
+            }
+          }
 	}
 	/* var column */
 	nmat->p[i][var]  = 0;
-	nmat->p[i][var] = mat->p[i][var] * tab[var];
+        opt_numint_t abs_tab_var = opt_numint_abs(tab[var]);
+        opt_numint_t x1_var = INT64_MAX / abs_tab_var;
+        opt_numint_t x2_var = INT64_MIN / abs_tab_var;
+        flag = flag || opt_int64_mult(mat->p[i][var], tab[var], x1_var, x2_var,
+                                      &nmat->p[i][var]);
+        // nmat->p[i][var] = mat->p[i][var] * tab[var];
       }
       else {
 	/* Side-effect */
 	/* columns != var */
-	for (j=1; j<mat->nbcolumns; j++) {
+        opt_numint_t abs_tab = opt_numint_abs(tab[0]);
+        opt_numint_t x1 = INT64_MAX / abs_tab;
+        opt_numint_t x2 = INT64_MIN / abs_tab;
+        for (j=1; j<mat->nbcolumns; j++) {
 	  if (j!=var){
 	    if (den){
-	      nmat->p[i][j] = nmat->p[i][j]*tab[0];
-	    }
-	    opk->matrix_prod = mat->p[i][var]*tab[j];
-	    nmat->p[i][j] = nmat->p[i][j] + opk->matrix_prod;
-	  }
+              flag = flag || opt_int64_mult(nmat->p[i][j], tab[0], x1, x2,
+                                            &nmat->p[i][j]);
+              // nmat->p[i][j] = nmat->p[i][j]*tab[0];
+            }
+            if (tab[j]) {
+              opt_numint_t abs_tab_j = opt_numint_abs(tab[j]);
+              opt_numint_t x1_j = INT64_MAX / abs_tab_j;
+              opt_numint_t x2_j = INT64_MIN / abs_tab_j;
+              flag = flag || opt_int64_mult(mat->p[i][var], tab[j], x1_j, x2_j,
+                                            &opk->matrix_prod);
+              // opk->matrix_prod = mat->p[i][var]*tab[j];
+              flag = flag || opt_int64_add(nmat->p[i][j], opk->matrix_prod,
+                                           &nmat->p[i][j]);
+              // nmat->p[i][j] = nmat->p[i][j] + opk->matrix_prod;
+            }
+          }
 	}
 	/* var column */
-	nmat->p[i][var] = nmat->p[i][var]*tab[var];
+        opt_numint_t abs_tab_var = opt_numint_abs(tab[var]);
+        opt_numint_t x1_var = INT64_MAX / abs_tab_var;
+        opt_numint_t x2_var = INT64_MIN / abs_tab_var;
+        flag = flag || opt_int64_mult(nmat->p[i][var], tab[var], x1_var, x2_var,
+                                      &nmat->p[i][var]);
+        // nmat->p[i][var] = nmat->p[i][var]*tab[var];
       }
       opt_matrix_normalize_row(opk,nmat,i);
     }
@@ -1111,6 +1157,12 @@ opt_matrix_t* opt_matrix_substitute_variable(opt_pk_internal_t* opk,
 	}
       }
     }
+  }
+  if (flag) {
+    printf("exception substiture variable\n");
+    fflush(stdout);
+    opk->exn = ELINA_EXC_OVERFLOW;
+    return nmat;
   }
   return nmat;
 }
@@ -1301,6 +1353,7 @@ void remove_common_gen_upto(opt_pk_internal_t *opk, opt_matrix_t *F,
     for (j = i + 1; j < end; j++) {
       opt_numint_t *pj = F->p[j];
       if (!map[j] && opt_vector_equal(opk, pi, pj, nbcolumns, &ind)) {
+        printf("equal %d %d\n", i, j);
         rmap[i - start] = 1;
         map[j] = 1;
         break;
@@ -1310,6 +1363,7 @@ void remove_common_gen_upto(opt_pk_internal_t *opk, opt_matrix_t *F,
   j = end - 1;
   for (i = start; i < nb; i++) {
     if (rmap[i - start]) {
+
       nbrows--;
       while ((j > i) && rmap[j - start]) {
         j--;
