@@ -1159,7 +1159,7 @@ opt_matrix_t* opt_matrix_substitute_variable(opt_pk_internal_t* opk,
     }
   }
   if (flag) {
-    printf("exception substiture variable\n");
+    printf("exception substitute variable\n");
     fflush(stdout);
     opk->exn = ELINA_EXC_OVERFLOW;
     return nmat;
