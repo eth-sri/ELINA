@@ -598,6 +598,9 @@ bool opt_pk_is_leq(elina_manager_t *man, opt_pk_array_t *oa, opt_pk_array_t *ob)
 		#endif
 		return false;
 	}
+	if(ob->acl->size==0){
+		return true;
+	}
 	bool res = opt_pk_is_leq_gen(man,oa,ob);
 	#if defined(TIMING)
 		record_timing(is_lequal_time);
