@@ -1087,7 +1087,7 @@ opt_matrix_t* opt_matrix_substitute_variable(opt_pk_internal_t* opk,
 	  if (j!=var){
 	    if (den){
 	      nmat->p[i][j] = 0;
-	      flag = flag || opt_int64_mult(mat->p[i][j],abs_tab,x1,x2,&nmat->p[i][j]);
+	      flag = flag || opt_int64_mult(mat->p[i][j],tab[0],x1,x2,&nmat->p[i][j]);
 	    }
 	    else {
 	      nmat->p[i][j] = mat->p[i][j];
@@ -1096,7 +1096,7 @@ opt_matrix_t* opt_matrix_substitute_variable(opt_pk_internal_t* opk,
 		    opt_numint_t abs_tab_j = opt_numint_abs(tab[j]);
 	       	    opt_numint_t x1_j = INT64_MAX/abs_tab_j;
 	       	    opt_numint_t x2_j = INT64_MIN/abs_tab_j; 
-		    flag = flag || opt_int64_mult(mat->p[i][var],abs_tab_j,x1_j,x2_j,&opk->matrix_prod);
+		    flag = flag || opt_int64_mult(mat->p[i][var],tab[j],x1_j,x2_j,&opk->matrix_prod);
 		    //opk->matrix_prod = mat->p[i][var]*tab[j];
 		    flag = flag || opt_int64_add(nmat->p[i][j],opk->matrix_prod,&nmat->p[i][j]);
 		    //nmat->p[i][j] = nmat->p[i][j] + opk->matrix_prod;
@@ -1108,7 +1108,7 @@ opt_matrix_t* opt_matrix_substitute_variable(opt_pk_internal_t* opk,
 	opt_numint_t abs_tab_var = opt_numint_abs(tab[var]);
        	opt_numint_t x1_var = INT64_MAX/abs_tab_var;
        	opt_numint_t x2_var = INT64_MIN/abs_tab_var; 
-	flag = flag || opt_int64_mult(mat->p[i][var],abs_tab_var,x1_var,x2_var,&nmat->p[i][var]);
+	flag = flag || opt_int64_mult(mat->p[i][var],tab[var],x1_var,x2_var,&nmat->p[i][var]);
 	//nmat->p[i][var] = mat->p[i][var] * tab[var];
       }
       else {
@@ -1121,14 +1121,14 @@ opt_matrix_t* opt_matrix_substitute_variable(opt_pk_internal_t* opk,
 	for (j=1; j<mat->nbcolumns; j++) {
 	  if (j!=var){
 	    if (den){
-	      flag = flag || opt_int64_mult(nmat->p[i][j],abs_tab,x1,x2,&nmat->p[i][j]);
+	      flag = flag || opt_int64_mult(nmat->p[i][j],tab[0],x1,x2,&nmat->p[i][j]);
 	      //nmat->p[i][j] = nmat->p[i][j]*tab[0];
 	    }
 	    if(tab[j]){
 		    opt_numint_t abs_tab_j = opt_numint_abs(tab[j]);
 	       	    opt_numint_t x1_j = INT64_MAX/abs_tab_j;
 	       	    opt_numint_t x2_j = INT64_MIN/abs_tab_j; 
-		    flag = flag || opt_int64_mult(mat->p[i][var],abs_tab_j,x1_j,x2_j,&opk->matrix_prod);
+		    flag = flag || opt_int64_mult(mat->p[i][var],tab[j],x1_j,x2_j,&opk->matrix_prod);
 		    //opk->matrix_prod = mat->p[i][var]*tab[j];
 		    flag = flag || opt_int64_add(nmat->p[i][j],opk->matrix_prod,&nmat->p[i][j]);
 		    //nmat->p[i][j] = nmat->p[i][j] + opk->matrix_prod;
@@ -1140,7 +1140,7 @@ opt_matrix_t* opt_matrix_substitute_variable(opt_pk_internal_t* opk,
 	opt_numint_t abs_tab_var = opt_numint_abs(tab[var]);
        	opt_numint_t x1_var = INT64_MAX/abs_tab_var;
        	opt_numint_t x2_var = INT64_MIN/abs_tab_var; 
-	flag = flag || opt_int64_mult(nmat->p[i][var],abs_tab_var,x1_var,x2_var,&nmat->p[i][var]);
+	flag = flag || opt_int64_mult(nmat->p[i][var],tab[var],x1_var,x2_var,&nmat->p[i][var]);
 	//nmat->p[i][var] = nmat->p[i][var]*tab[var];
       }
       opt_matrix_normalize_row(opk,nmat,i);

@@ -520,7 +520,7 @@ bool opt_int64_mult(opt_numint_t x, opt_numint_t y, opt_numint_t x1, opt_numint_
     if (x > 0 && y > 0 && x > x1) return true;
     if (x < 0 && y > 0 && x < x2) return true;
     if (x > 0 && y < 0 && y < INT64_MIN / x) return true;
-    if (x < 0 && y < 0 && (x <= INT64_MIN || y <= INT64_MIN || -x > -x1))
+    if (x < 0 && y < 0 && (x <= INT64_MIN || y <= INT64_MIN || -x > x1))
         return 1;
     *result = x * y;
     return false;
