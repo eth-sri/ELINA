@@ -250,6 +250,7 @@ bool opt_generators_sat_vector(opt_pk_internal_t* opk, opt_matrix_t* F,
 
       if(opk->exn){
 	opk->exn = ELINA_EXC_NONE;
+
         return top;
       }
       if (opt_numint_sgn(prod)) {
@@ -534,6 +535,7 @@ bool opt_pk_is_leq_gen(elina_manager_t * man, opt_pk_array_t *oa, opt_pk_array_t
 
                                 // free(cpi);
                                 if (!sat || sat == top) {
+
                                   goto opt_pk_is_leq_gen_exit;
                                 }
                         }
@@ -672,7 +674,10 @@ bool opt_pk_is_eq(elina_manager_t* man, opt_pk_array_t* oa, opt_pk_array_t* ob)
 			return false;
 		}
     		bool res2 = opt_pk_is_leq(man,ob,oa);
-    		bool res = res1 && res2;
+                if (res1 == top && res2 == top) {
+                  return top;
+                }
+                bool res = res1 && res2;
 		return res;
 	}
   }
