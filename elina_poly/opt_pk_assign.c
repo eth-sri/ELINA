@@ -396,12 +396,13 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 				poly[res]->C = opt_matrix_substitute_variable(opk,true, matC, nvar, opk->poly_numintp);
 				if(!opk->exn){
 					opt_poly_chernikova(man,poly[res],"non invertible assign");
-				}
+
+                                }
 				else{
 					opk->exn = ELINA_EXC_NONE;
 					exc_map[res] = 1;
 				}
-			}
+                        }
 				
 				//opt_matrix_t * cons = opt_matrix_alloc(1,comp_size+2,true);
 
@@ -425,11 +426,13 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 			if(assign){
 				
 				poly[res]->C = opt_matrix_substitute_variable(opk,true,matC, nvar, opk->poly_numintp2);
-				if(opk->exn){
+
+                                if(opk->exn){
 					opk->exn = ELINA_EXC_NONE;
 					exc_map[res] = 1;
 				}
-			}
+
+                        }
 			else{
 				poly[res]->F = opt_matrix_alloc(matF->nbrows,matF->nbcolumns,false);
 				poly[res]->nbline =  opt_matrix_assign_variable(opk,poly[res]->F,matF, nvar, opk->poly_numintp2);
@@ -443,6 +446,10 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 			//poly[res]->nbeq = nbeqmapa[res];
 			//poly[res]->is_minimized = true;
 			opt_poly_chernikova(man,poly[res],"gen to cons");
+			if(opk->exn){
+				opk->exn = ELINA_EXC_NONE;
+				exc_map[res] = 1;
+			}
 	  	}
 		
 	//}
@@ -494,6 +501,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
     free_array_comp_list(aclb);
     k=0;
     cl = acl->head;
+
     while(k < num_comp){
 	opt_pk_t *oak = poly[k];
 	if(exc_map[k]){
@@ -512,6 +520,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 		cl=cl->next;
 	}
     }
+
     op->poly = poly;
     op->acl = acl;
     free(exc_map);
