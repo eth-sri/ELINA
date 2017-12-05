@@ -88,7 +88,7 @@ size_t opt_cherni_conversion(opt_pk_internal_t* opk,
       //ray->p[i][0] = opt_vector_product_with_index(opk, ray->p[i],
 	//     con->p[k.index],nz);
        ray->p[i][0] = opt_vector_product(opk,ray->p[i],con->p[k.index],nbcols);
-       if (opk->exn) {goto cherni_conversion_exit0;}
+	if (opk->exn) {goto cherni_conversion_exit0;}
       if (index_non_zero == nbrows && opt_numint_sgn(ray->p[i][0])){
 	index_non_zero = i;
       }
@@ -395,6 +395,7 @@ int opt_cherni_simplify(opt_pk_internal_t* opk,
     }
   }
   /* remove redundant equalities and update nbeq */
+
   rank = opt_matrix_gauss_elimination(opk,con, nbeq); /* gauss pivot to simplify equalities */
   opk->exn = ELINA_EXC_NONE;
 
@@ -482,9 +483,7 @@ int opt_cherni_simplify(opt_pk_internal_t* opk,
   }
   con->nbrows = satf->nbrows = nbcons;
   /* back substitution of remaining constraints */
-  
   gauss_backsubstitute(opk, con, nbeq);
-	
   opk->exn = ELINA_EXC_NONE;
 
   return nbeq;
@@ -517,7 +516,7 @@ void opt_cherni_minimize(opt_pk_internal_t* opk,
   C = op->C;
   assert(opt_matrix_is_sorted(C) && 
 	 op->F==NULL && op->satC==NULL && op->satF==NULL);
-  //printf("cherni start %d %d\n",C->nbrows, C->nbcolumns);
+ // printf("cherni start %d %d\n",C->nbrows, C->nbcolumns);
   //opt_matrix_fprint(stdout,C);
   //fflush(stdout);
   /* initialization of F and sat */
@@ -671,7 +670,11 @@ void opt_cherni_add_and_minimize(opt_pk_internal_t* opk,
   op->nbline = opt_cherni_conversion(opk,
 				 C,start,F,satC,op->nbline);
   
-  
+  //printf("output\n");
+  //opt_matrix_fprint(stdout,C);
+  //opt_matrix_fprint(stdout,F);
+  //opt_satmat_fprint(stdout,satC);
+  //fflush(stdout);
    
   if (opk->exn){
     /* out of space, overflow */
@@ -709,9 +712,13 @@ void opt_cherni_add_and_minimize(opt_pk_internal_t* opk,
     op->satF = opt_satmat_transpose(satC,C->nbrows);
     opt_satmat_free(satC);
     op->satC = NULL;
-   
+    //printf("simplify input\n");
+    //opt_matrix_fprint(stdout,C);
+    //fflush(stdout);
     op->nbeq = opt_cherni_simplify(opk,C,F,op->satF,op->nbline);
-     
+     //printf("simplify output\n");
+    //opt_matrix_fprint(stdout,C);
+    //fflush(stdout);
     if (F->nbrows && (F->_maxrows > 3*F->nbrows/2)){
       opt_matrix_resize_rows(F,F->nbrows);
       opt_satmat_resize_cols(op->satF,opt_bitindex_size(F->nbrows));

@@ -132,6 +132,9 @@ static inline void opt_poly_array_dual(opt_pk_array_t* op)
 char meet_cons_one_comp(opt_pk_internal_t *opk, opt_pk_t **poly_a, array_comp_list_t *acla, 
 			unsigned short int **ca_arr, opt_pk_t *poly, unsigned short int *ca,  char * map);
 
+//char meet_cons_one_comp_remove_unconstrained(opt_pk_internal_t *opk, opt_pk_t **poly_a, array_comp_list_t *acla, 
+//			unsigned short int **ca_arr, opt_pk_t *poly, unsigned short int *ca,  char * map);
+
 void meet_cons_with_map(opt_pk_internal_t *opk, opt_pk_array_t *oa, opt_pk_t **poly, unsigned short int *rmapa, 
 		unsigned short int **ca_arr, size_t *counterC,  char * map, char * exclusion_map);
 
@@ -143,6 +146,10 @@ void meet_cons(opt_pk_internal_t *opk, opt_pk_array_t *oa, opt_pk_t **poly, unsi
 size_t cartesian_product_vertices_one_comp(opt_pk_t **poly_a, array_comp_list_t *acl,
 					 unsigned short int ** ca_arr, size_t * num_vertex_a,
 					 opt_pk_t * poly, size_t counter, unsigned short int  *ca, char * map);
+
+//size_t cartesian_product_vertices_one_comp_remove_unconstrained(opt_pk_internal_t * opk, opt_pk_t **poly_a, array_comp_list_t *acl,
+//					 unsigned short int ** ca_arr, size_t * num_vertex_a,
+//					 opt_pk_t * poly, size_t counter, unsigned short int  *ca, char * map);
 
 void cartesian_product_vertices_with_map(opt_pk_array_t *oa, opt_pk_t ** poly, 
 				 unsigned short int *rmapa, unsigned short int ** ca_arr, 
@@ -157,6 +164,11 @@ void cartesian_product_vertices(opt_pk_array_t *oa, opt_pk_t ** poly,
 void meet_rays_one_comp(opt_pk_t **poly_a, array_comp_list_t *acla, unsigned short int **ca_arr,
 	       		size_t * nblinemap, opt_pk_t *poly, size_t * num_vertex_a,
 	        	unsigned short int  * ca, size_t start, char * map);
+
+//void meet_rays_one_comp_remove_unconstrained(opt_pk_internal_t *opk, opt_pk_t **poly_a, array_comp_list_t *acla, unsigned short int **ca_arr,
+//	       		size_t * nblinemap, opt_pk_t *poly, size_t * num_vertex_a,
+//	        	unsigned short int  * ca, size_t start, char * map);
+
 
 void meet_rays_with_map(opt_pk_array_t *oa, opt_pk_t **poly, unsigned short int *rmapa, 
 	       unsigned short int **ca_arr, size_t * num_vertex_a, size_t * counterF,

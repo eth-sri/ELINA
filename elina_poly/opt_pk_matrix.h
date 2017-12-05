@@ -184,9 +184,8 @@ void opt_generator_init(opt_pk_internal_t *opk, opt_matrix_t * mat, unsigned sho
 /*******************************
 	Remove common generators
 ********************************/
-void remove_common_gen(opt_pk_internal_t *opk, opt_matrix_t * F, size_t start);
+size_t remove_common_gen(opt_pk_internal_t *opk, opt_matrix_t * F, size_t start);
 
-void remove_common_gen_upto(opt_pk_internal_t *opk, opt_matrix_t * F, size_t start,size_t end);
 
 /*******************************
 	Compute bounds for a variable
@@ -204,6 +203,19 @@ elina_interval_t ** opt_generator_to_box(opt_pk_internal_t* opk,
 **********************************/
 void opt_generator_bound_elina_linexpr0(opt_pk_internal_t *opk, elina_rat_t *inf, elina_rat_t *sup,
 				     elina_linexpr0_t *expr, opt_matrix_t * F);
+
+/*********************************
+	Remove unconstrained variables
+*********************************/
+size_t opt_matrix_remove_unconstrained(opt_pk_internal_t* opk, opt_matrix_t *noc,
+				   opt_matrix_t* oc,
+				   elina_dimchange_t* dimchange);
+
+size_t split_matrix(opt_pk_internal_t * opk, opt_matrix_t * dst, 
+		    opt_matrix_t *src, unsigned short int * ind_map, 
+		    unsigned short int comp_size, bool *is_pos);
+
+void remove_positivity_constraint(opt_pk_internal_t * opk, opt_matrix_t *oc);
 
 #ifdef __cplusplus
 }
