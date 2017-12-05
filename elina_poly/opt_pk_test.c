@@ -239,7 +239,6 @@ unsigned short int * insertion_sort(unsigned short int *arr, unsigned short int 
 bool opt_generators_sat_vector(opt_pk_internal_t* opk, opt_matrix_t* F,  
 			       opt_numint_t* tab, bool is_strict)
 {
-
   size_t i;
   if (opt_numint_sgn(tab[0])==0){
     /* 1. constraint is an equality */
@@ -247,12 +246,10 @@ bool opt_generators_sat_vector(opt_pk_internal_t* opk, opt_matrix_t* F,
       //opt_numint_t * fpi = opt_melina_vector(F->p[i],mapF,comp_size,F->nbcolumns);
       
       opt_numint_t prod = opt_vector_product_strict(opk, F->p[i], tab,F->nbcolumns);
-
       if(opk->exn){
 	opk->exn = ELINA_EXC_NONE;
-
-        return top;
-      }
+	return false;
+      }	
       if (opt_numint_sgn(prod)) {
 		//free(fpi);
 		return false;
@@ -273,8 +270,8 @@ bool opt_generators_sat_vector(opt_pk_internal_t* opk, opt_matrix_t* F,
       prod = opt_vector_product_strict(opk, F->p[i], tab, F->nbcolumns);
       if(opk->exn){
 	opk->exn = ELINA_EXC_NONE;
-        return top;
-      }
+	return false;
+      }	
       sign = opt_numint_sgn(prod);
 
       if (sign<0){
@@ -534,11 +531,10 @@ bool opt_pk_is_leq_gen(elina_manager_t * man, opt_pk_array_t *oa, opt_pk_array_t
 					  opt_numint_sgn(obk->C->p[i][opt_polka_eps])<0);
 
                                 // free(cpi);
-                                if (!sat || sat == top) {
-
-                                  goto opt_pk_is_leq_gen_exit;
-                                }
-                        }
+                                if(!sat){ 
+	 				goto opt_pk_is_leq_gen_exit;
+      				}
+			}
 			
 		//}
 	   //clb = clb->next;
@@ -601,10 +597,7 @@ bool opt_pk_is_leq(elina_manager_t *man, opt_pk_array_t *oa, opt_pk_array_t *ob)
 		#endif
 		return false;
 	}
-        if (ob->acl->size == 0) {
-          return true;
-        }
-        bool res = opt_pk_is_leq_gen(man,oa,ob);
+	bool res = opt_pk_is_leq_gen(man,oa,ob);
 	#if defined(TIMING)
 		record_timing(is_lequal_time);
 	#endif
@@ -674,10 +667,7 @@ bool opt_pk_is_eq(elina_manager_t* man, opt_pk_array_t* oa, opt_pk_array_t* ob)
 			return false;
 		}
     		bool res2 = opt_pk_is_leq(man,ob,oa);
-                if (res1 == top && res2 == top) {
-                  return top;
-                }
-                bool res = res1 && res2;
+    		bool res = res1 && res2;
 		return res;
 	}
   }
@@ -694,9 +684,6 @@ bool opt_pk_is_eq(elina_manager_t* man, opt_pk_array_t* oa, opt_pk_array_t* ob)
 bool opt_pk_is_dimension_unconstrained(elina_manager_t* man, opt_pk_array_t* oa,
 					elina_dim_t dim)
 {
-#if defined(TIMING)
-  start_timing();
-#endif
   size_t i,j;
   bool res;
   opt_matrix_t* F;
@@ -705,37 +692,24 @@ bool opt_pk_is_dimension_unconstrained(elina_manager_t* man, opt_pk_array_t* oa,
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_IS_DIMENSION_UNCONSTRAINED);
   if(oa->is_bottom || !oa->acl){
 	man->result.flag_exact = man->result.flag_best = true;
-#if defined(TIMING)
-        record_timing(poly_is_unconstrained_time);
-#endif
-        return false;
+    	return false;
   }
 
   comp_list_t * cl = find(oa->acl,var);
   if(cl==NULL){
 	man->result.flag_exact = man->result.flag_best = true;
-#if defined(TIMING)
-        record_timing(poly_is_unconstrained_time);
-#endif
-        return true;
+    	return true;
   }
   short int k = find_index(oa->acl,cl);
   opt_pk_t ** poly_a = oa->poly;
   opt_pk_t * oak = poly_a[k];
-
   opt_poly_chernikova(man,oak,NULL);
   if (opk->exn){
     opk->exn = ELINA_EXC_NONE;
-#if defined(TIMING)
-    record_timing(poly_is_unconstrained_time);
-#endif
     return false;
   }
   if (!oak->F){ /* po is empty */
     man->result.flag_exact = man->result.flag_best = true;
-#if defined(TIMING)
-    record_timing(poly_is_unconstrained_time);
-#endif
     return false;
   }
   unsigned short int * ca = to_sorted_array(cl,oa->maxcols);
@@ -763,9 +737,6 @@ bool opt_pk_is_dimension_unconstrained(elina_manager_t* man, opt_pk_array_t* oa,
     }
   }
   man->result.flag_exact = man->result.flag_best = true;
-#if defined(TIMING)
-  record_timing(poly_is_unconstrained_time);
-#endif
   return res;
 }
 

@@ -158,11 +158,6 @@ void opt_vector_bound_elina_linexpr0(opt_pk_internal_t* opk,
 			      elina_linexpr0_t* linexpr,
 			      opt_numint_t* vec, size_t size);
 
-bool opt_int64_add(opt_numint_t x, opt_numint_t y, opt_numint_t *result);
-
-bool opt_int64_mult(opt_numint_t x, opt_numint_t y, opt_numint_t x1,
-                    opt_numint_t x2, opt_numint_t *result);
-
 #ifdef __cplusplus
 }
 #endif

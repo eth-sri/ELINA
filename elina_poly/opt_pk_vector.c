@@ -520,8 +520,8 @@ bool opt_int64_mult(opt_numint_t x, opt_numint_t y, opt_numint_t x1, opt_numint_
     if (x > 0 && y > 0 && x > x1) return true;
     if (x < 0 && y > 0 && x < x2) return true;
     if (x > 0 && y < 0 && y < INT64_MIN / x) return true;
-    if (x < 0 && y < 0 && (x <= INT64_MIN || y <= INT64_MIN || -x > x1))
-      return 1;
+    if (x < 0 && y < 0 && (x <= INT64_MIN || y <= INT64_MIN || -x > -x1))
+        return 1;
     *result = x * y;
     return false;
 }
@@ -533,23 +533,13 @@ void opt_vector_combine(opt_pk_internal_t* opk,
 {
     unsigned short int j;
     //ov3[0] = (ov1[0] | ov2[0]);
-
+    //printf("input\n");
+    //opt_vector_print(ov1,size);
+    //opt_vector_print(ov2,size);
+    //fflush(stdout);
     opk->vector_tmp[0] = opt_numint_gcd(ov1[k],ov2[k]);
-
     bool flag = false;
-    if (ov1[k] == ELINA_INT_MIN && opk->vector_tmp[0] == -1) {
-      printf("exception division\n");
-      fflush(stdout);
-      opk->exn = ELINA_EXC_OVERFLOW;
-      return;
-    }
     opk->vector_tmp[1] = opt_numint_abs(ov1[k]/opk->vector_tmp[0]);
-    if (ov2[k] == ELINA_INT_MIN && opk->vector_tmp[0] == -1) {
-      printf("exception division\n");
-      fflush(stdout);
-      opk->exn = ELINA_EXC_OVERFLOW;
-      return;
-    }
     opk->vector_tmp[2] = opt_numint_abs(ov2[k]/opk->vector_tmp[0]);
     
     // optimize the overflow detection by precomputing the division
@@ -564,7 +554,7 @@ void opt_vector_combine(opt_pk_internal_t* opk,
         if (j!=k){
             flag=flag || opt_int64_mult(ov1[j],opk->vector_tmp[2],x1,x2,&opk->vector_tmp[3]);
             flag=flag || opt_int64_mult(ov2[j],opk->vector_tmp[1],x3,x4,&opk->vector_tmp[4]);
-
+            
             if(add){
                 flag=flag || opt_int64_add(opk->vector_tmp[3],opk->vector_tmp[4],&ov3[j]);
             }
@@ -595,6 +585,9 @@ void opt_vector_combine(opt_pk_internal_t* opk,
     //if (opk->max_coeff_size){
     
     //}
+    //printf("output\n");
+    //opt_vector_print(ov3,size);
+    //fflush(stdout);
 }
 
 
@@ -789,10 +782,12 @@ opt_numint_t opt_vector_product_strict(opt_pk_internal_t* opk,
   return prod;
 }
 
+
+
 /*opt_numint_t opt_vector_product_strict_comp(opt_pk_internal_t* opk,
-                           opt_numint_t* q1, opt_numint_t* q2, unsigned short
-int * ind_map1, unsigned short int *ind_map2, unsigned short int size1, unsigned
-short int size2, unsigned short int size)
+			   opt_numint_t* q1, opt_numint_t* q2, unsigned short int * ind_map1,
+			   unsigned short int *ind_map2, unsigned short int size1, 
+			   unsigned short int size2, unsigned short int size)
 {
   opt_numint_t prod;
   if (opt_polka_cst<size){
@@ -804,30 +799,30 @@ short int size2, unsigned short int size)
   }
   opt_numint_t * tmp = opt_vector_alloc(size);
   unsigned short int j;
-
+  //printf("check1\n");
+  //fflush(stdout);
   for(j=opk->dec; j<size1; j++){
-        unsigned short int ind = ind_map1[j-2];
-        tmp[ind+2] = q1[j];
+	unsigned short int ind = ind_map1[j-2];
+	tmp[ind+2] = q1[j];
   }
-
+  //printf("check2\n");
+  //fflush(stdout);
   for(j=opk->dec; j<size2; j++){
-        unsigned short int ind = ind_map2[j-2];
-        tmp[ind+2] = tmp[ind+2]*q2[j];
+	unsigned short int ind = ind_map2[j-2];
+	tmp[ind+2] = tmp[ind+2]*q2[j];
   }
-
+  //printf("check3\n");
+  //fflush(stdout);
   for (j=opk->dec; j<size; j++){
-
+   
     prod = prod + tmp[j];
   }
-
+  //printf("check4\n");
+  //fflush(stdout);
   free(tmp);
-  if(flag){
-             printf("exception vector product\n");
-             fflush(stdout);
-             opk->exn = ELINA_EXC_OVERFLOW;
-  }
   return prod;
 }*/
+
 /* ********************************************************************** */
 /* VI. Predicates */
 /* ********************************************************************** */
@@ -971,7 +966,6 @@ opt_numint_t opt_vector_product(opt_pk_internal_t* opk,
   size_t j;
   opt_numint_t prod = 0;
   bool flag = false;
-
   for (j=1; j<size; j++){
 	if((q2[j]!=0) && (q1[j]!=0)){
 		opk->vector_tmp[0] = opt_numint_abs(q2[j]);
@@ -998,6 +992,7 @@ opt_numint_t opt_vector_product(opt_pk_internal_t* opk,
   
   return prod;
 }
+
 
 unsigned short int * build_index_vector(opt_numint_t *ov, unsigned short int size){
 	unsigned short int i,s = 0;
@@ -1043,7 +1038,6 @@ opt_numint_t opt_vector_product_with_index(opt_pk_internal_t* opk,
   }
   return prod;
 }
-
 bool is_vertex(opt_numint_t * v){
 	return (v[0] && v[1]);
 }

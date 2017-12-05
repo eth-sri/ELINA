@@ -406,25 +406,23 @@ elina_interval_t** opt_pk_to_box(elina_manager_t* man,
       }
 	
   }
-
   comp_list_t * cl = acl->head;
   for(k=0; k < num_comp; k++){
   	opt_pk_t * ok = poly[k];
 	unsigned short int comp_size = cl->size;
 	unsigned short int * ca = to_sorted_array(cl,maxcols);
-        tinterval = opt_generator_to_box(opk, ok->F);
-        for (i=0; i<comp_size; i++){
+	tinterval = opt_generator_to_box(opk,ok->F);	
+	for (i=0; i<comp_size; i++){
 	     unsigned short int var = ca[i] - opk->dec;
 	     elina_interval_set(interval[var],tinterval[i]);
-        }
-
-        elina_interval_array_free(tinterval,comp_size);
+    	}
+	elina_interval_array_free(tinterval,comp_size);
 	free(ca);
 	cl = cl->next;
   }
   man->result.flag_exact = man->result.flag_best = true;
 
-#if defined(TIMING)
+  #if defined(TIMING)
        record_timing(poly_to_box_time);
   #endif
   return interval;

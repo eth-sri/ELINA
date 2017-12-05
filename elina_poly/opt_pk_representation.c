@@ -413,9 +413,9 @@ char meet_cons_one_comp(opt_pk_internal_t *opk, opt_pk_t **poly_a, array_comp_li
 			opt_numint_t * src_pi = src_p[i];
 			opt_numint_t * dst_pi = dst_p[i1];
 			if(opt_vector_is_positivity_constraint(opk,src_pi,comp_size+2)){
-                          // is_pos_con = 0;
-                          flag = true;
-                          continue;
+				//map[ind] = 1;
+				flag = true;
+				continue;
 			}
 			dst_pi[0] = src_pi[0];
 			dst_pi[1] = src_pi[1];
@@ -438,6 +438,7 @@ char meet_cons_one_comp(opt_pk_internal_t *opk, opt_pk_t **poly_a, array_comp_li
 	}
 	return is_pos_con;
 }
+
 
 
 /*******************
@@ -664,6 +665,8 @@ size_t cartesian_product_vertices_one_comp(opt_pk_t **poly_a, array_comp_list_t 
 	
 	return counter;
 }
+
+
 
 void cartesian_product_vertices_with_map(opt_pk_array_t *oa, opt_pk_t ** poly, 
 				  unsigned short int *rmapa, unsigned short int ** ca_arr, 
@@ -976,6 +979,8 @@ void meet_rays_one_comp(opt_pk_t **poly_a, array_comp_list_t *acla, unsigned sho
 	}
 	dst_mat->nbrows = i1;
 }
+
+
 
 
 
@@ -1305,10 +1310,9 @@ for(k=0; k < num_comp; k++){
   fprintf(stdout, "Assign Linexpr: %g\n", assign_linexpr_time);
   fprintf(stdout, "Substitute Linexpr: %g\n", substitute_linexpr_time);
   fprintf(stdout, "Bound Dimension: %g\n", bound_dimension_time);
-  fprintf(stdout, "Conversion time: %g\n", opt_conversion_time);
-  fprintf(stdout, "Poly is unconstrained time: %g\n",
-          poly_is_unconstrained_time);
-  fprintf(stdout, "join count: %lld\n", join_count);
+  // fprintf(stdout,"Conversion time: %g\n",opt_conversion_time);
+  fprintf(stdout, "Poly is unconstrained: %g\n", poly_is_unconstrained_time);
+  // fprintf(stdout,"Join Count: %lld\n",join_count);
   double total_time =
       top_time + free_time + copy_time + bottom_time + remove_dimension_time +
       is_lequal_time + meet_time + join_time + widening_time +
@@ -1317,7 +1321,7 @@ for(k=0; k < num_comp; k++){
       is_top_time + is_bottom_time + expand_time + fold_time +
       sat_lincons_time + assign_linexpr_time + substitute_linexpr_time +
       poly_is_unconstrained_time;
-  fprintf(stdout, "Total OptOctagon Analysis: %g\n", total_time);
+  fprintf(stdout, "Total OptPoly Analysis: %g\n", total_time);
   fflush(stdout);
 #endif
 }

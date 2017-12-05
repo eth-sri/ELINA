@@ -46,7 +46,6 @@ extern "C" {
 typedef char bool;
 static const bool false = 0;
 static const bool true  = 1;
-static const bool top = 2;
 #endif
 
 #define opt_numint_t long long int
