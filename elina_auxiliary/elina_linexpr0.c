@@ -294,6 +294,7 @@ void elina_linexpr0_print(elina_linexpr0_t* a, char** name_of_dim)
 { elina_linexpr0_fprint(stdout,a,name_of_dim); }
 
 
+
 void elina_linexpr0_fprint(FILE* stream, elina_linexpr0_t* a, char** name_of_dim)
 {
   size_t i;
@@ -303,33 +304,26 @@ void elina_linexpr0_fprint(FILE* stream, elina_linexpr0_t* a, char** name_of_dim
   elina_dim_t dim;
   bool first;
   int sgn;
-  int size = 0;
+
   scalar = elina_scalar_alloc();
-  elina_linexpr0_ForeachLinterm(a,i,dim,coeff){
-    if (! elina_coeff_zero(coeff)){
-	size++;
-    }
-  }
-  fprintf(stream," %d ",size);
+
   first = true;
   elina_linexpr0_ForeachLinterm(a,i,dim,coeff){
     if (! elina_coeff_zero(coeff)){
       switch(coeff->discr){
       case ELINA_COEFF_SCALAR:
 	pscalar = coeff->val.scalar;
-	//sgn = elina_scalar_sgn(pscalar);
-	//if (sgn > 0){
-	  //elina_scalar_set(scalar,pscalar);
-	  //if (!first)
-	    //fprintf(stream," + ");
-	//} else {
-	  //elina_scalar_neg(scalar,pscalar);
-	  //fprintf(stream, first ? "-" : " - ");
-	//}
-	//if (!elina_scalar_equal_int(scalar,1))
-	  //elina_scalar_fprint(stream,scalar);
-        elina_scalar_fprint(stream,pscalar);
-        fprintf(stream," ");
+	sgn = elina_scalar_sgn(pscalar);
+	if (sgn > 0){
+	  elina_scalar_set(scalar,pscalar);
+	  if (!first)
+	    fprintf(stream," + ");
+	} else {
+	  elina_scalar_neg(scalar,pscalar);
+	  fprintf(stream, first ? "-" : " - ");
+	}
+	if (!elina_scalar_equal_int(scalar,1))
+	  elina_scalar_fprint(stream,scalar);
 	break;
       case ELINA_COEFF_INTERVAL:
 	if (!first)
@@ -340,29 +334,25 @@ void elina_linexpr0_fprint(FILE* stream, elina_linexpr0_t* a, char** name_of_dim
       if (name_of_dim)
 	fprintf(stream,"%s",name_of_dim[dim]);
       else
-	//fprintf(stream,"x%lu",(unsigned long)dim);
-	fprintf(stream," %lu ",(unsigned long)dim);
+	fprintf(stream,"x%lu",(unsigned long)dim);
       first = false;
     }
   }
   /* Constant */
-  //if (first || !elina_coeff_zero(&a->cst)){
+  if (first || !elina_coeff_zero(&a->cst)){
     switch (a->cst.discr){
     case ELINA_COEFF_SCALAR:
       pscalar = a->cst.val.scalar;
-      //sgn = elina_scalar_sgn(pscalar);
-      //if (sgn >= 0){
-	//elina_scalar_set(scalar,pscalar);
-	//if (!first)
-	  //fprintf(stream," + ");
-      //} else {
-	//elina_scalar_neg(scalar,pscalar);
-	//fprintf(stream, first ? "-" : " - ");
-      //}
-      //elina_scalar_fprint(stream,scalar);
-	
-      elina_scalar_fprint(stream,pscalar);
-	fprintf(stream," ");
+      sgn = elina_scalar_sgn(pscalar);
+      if (sgn >= 0){
+	elina_scalar_set(scalar,pscalar);
+	if (!first)
+	  fprintf(stream," + ");
+      } else {
+	elina_scalar_neg(scalar,pscalar);
+	fprintf(stream, first ? "-" : " - ");
+      }
+      elina_scalar_fprint(stream,scalar);
       break;
     case ELINA_COEFF_INTERVAL:
       if (!first)
@@ -370,7 +360,7 @@ void elina_linexpr0_fprint(FILE* stream, elina_linexpr0_t* a, char** name_of_dim
       elina_interval_fprint(stream, a->cst.val.interval);
       break;
     }
-  //}
+  }
   elina_scalar_free(scalar);
 }
 
