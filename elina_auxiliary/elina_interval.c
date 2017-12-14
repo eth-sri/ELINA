@@ -204,6 +204,13 @@ long elina_interval_hash(elina_interval_t* itv)
   else return 5*elina_scalar_hash(itv->inf) + 7*elina_scalar_hash(itv->sup);
 }
 
+ 
+void elina_interval_print(elina_interval_t* a)
+{ elina_interval_fprint(stdout,a); }
+  /* Printing */
+
+void elina_interval_swap(elina_interval_t* a, elina_interval_t* b)
+{ elina_interval_t t = *a; *a = *b; *b = t; }
 
 /* ====================================================================== */
 /* Array of intervals */

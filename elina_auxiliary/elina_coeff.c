@@ -368,3 +368,11 @@ long elina_coeff_hash(elina_coeff_t* coeff)
     return 0;
   }
 }
+
+void elina_coeff_print(elina_coeff_t* a)
+{ elina_coeff_fprint(stdout,a); }
+
+
+void elina_coeff_swap(elina_coeff_t* a, elina_coeff_t* b)
+{ elina_coeff_t t = *a; *a = *b; *b = t; }
+

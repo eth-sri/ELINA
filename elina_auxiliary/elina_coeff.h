@@ -64,16 +64,14 @@ void elina_coeff_reinit(elina_coeff_t* coeff, elina_coeff_discr_t elina_coeff_di
 void elina_coeff_free(elina_coeff_t* a);
   /* Free a coefficient */
 void elina_coeff_fprint(FILE* stream, elina_coeff_t* a);
-static inline 
-void elina_coeff_print(elina_coeff_t* a)
-{ elina_coeff_fprint(stdout,a); }
+
+void elina_coeff_print(elina_coeff_t* a);
   /* Printing */
 
 void elina_coeff_reduce(elina_coeff_t* coeff);
   /* If the coefficient is an interval [a;a], convert it to a scalar */
-static inline
-void elina_coeff_swap(elina_coeff_t* a, elina_coeff_t* b)
-{ elina_coeff_t t = *a; *a = *b; *b = t; }
+void elina_coeff_swap(elina_coeff_t* a, elina_coeff_t* b);
+
   /* Exchange */
 
 /* ====================================================================== */

@@ -76,7 +76,7 @@ void elina_scalar_free(elina_scalar_t* scalar);
 void elina_scalar_reinit(elina_scalar_t* scalar, elina_scalar_discr_t d);
   /* Change the type of an already allocated scalar
      (mainly for internal use */
-static inline 
+
 void elina_scalar_print(elina_scalar_t* a);
 void elina_scalar_fprint(FILE* stream, elina_scalar_t* a);
   /* Printing */
@@ -86,7 +86,7 @@ extern int elina_scalar_print_prec;
      Defaults to 20.
    */
 
-static inline
+
 void elina_scalar_swap(elina_scalar_t* a, elina_scalar_t* b);
   /* Exchange */
 
@@ -217,10 +217,7 @@ void elina_scalar_clear(elina_scalar_t* scalar)
 }
 
 
-static inline void elina_scalar_print(elina_scalar_t* a)
-{ elina_scalar_fprint(stdout,a); }
-static inline
-void elina_scalar_swap(elina_scalar_t* a, elina_scalar_t* b){ elina_scalar_t t = *a; *a = *b; *b = t; }
+
 
 #ifdef __cplusplus
 }

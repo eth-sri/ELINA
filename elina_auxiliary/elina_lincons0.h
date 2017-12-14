@@ -74,7 +74,7 @@ typedef struct elina_lincons0_array_t {
 /* I.1 Memory management and printing */
 /* ====================================================================== */
 
-static inline
+
 elina_lincons0_t elina_lincons0_make(elina_constyp_t constyp, 
 			       elina_linexpr0_t* linexpr,
 			       elina_scalar_t* scalar);
@@ -84,11 +84,11 @@ elina_lincons0_t elina_lincons0_make(elina_constyp_t constyp,
 elina_lincons0_t elina_lincons0_make_unsat(void);
   /* Create the constraint -1>=0 */
 
-static inline
+
 elina_lincons0_t elina_lincons0_copy(elina_lincons0_t* cons);
   /* Duplication */
 
-static inline
+
 void elina_lincons0_clear(elina_lincons0_t* cons);
   /* Free the linear expression of the constraint and set pointer to NULL */
 
@@ -111,17 +111,17 @@ bool elina_lincons0_is_sat(elina_lincons0_t* cons);
 /* I.3 Change of dimensions and permutations */
 /* ====================================================================== */
 
-static inline
+
 void elina_lincons0_add_dimensions_with(elina_lincons0_t* cons,
 				     elina_dimchange_t* dimchange);
-static inline
+
 elina_lincons0_t elina_lincons0_add_dimensions(elina_lincons0_t* cons,
 					 elina_dimchange_t* dimchange);
 
-static inline
+
 void elina_lincons0_permute_dimensions_with(elina_lincons0_t* cons,
 					 elina_dimperm_t* perm);
-static inline
+
 elina_lincons0_t elina_lincons0_permute_dimensions(elina_lincons0_t* cons,
 					     elina_dimperm_t* perm);
 
@@ -166,60 +166,6 @@ void elina_lincons0_array_permute_dimensions_with(elina_lincons0_array_t* array,
 elina_lincons0_array_t elina_lincons0_array_permute_dimensions(elina_lincons0_array_t* array,
 							 elina_dimperm_t* perm);
 
-/* ********************************************************************** */
-/* III. Inline functions definitions */
-/* ********************************************************************** */
-
-static inline elina_lincons0_t elina_lincons0_make(elina_constyp_t constyp, elina_linexpr0_t* linexpr, elina_scalar_t* scalar)
-{
-  elina_lincons0_t cons;
-  cons.constyp = constyp;
-  cons.linexpr0 = linexpr;
-  cons.scalar = scalar;
-  return cons;
-}
-static inline elina_lincons0_t elina_lincons0_copy(elina_lincons0_t* cons)
-{
-  return elina_lincons0_make(cons->constyp, 
-			  cons->linexpr0 ? elina_linexpr0_copy(cons->linexpr0) : NULL,
-			  cons->scalar ? elina_scalar_alloc_set(cons->scalar) : NULL);
-}
-static inline void elina_lincons0_clear(elina_lincons0_t* lincons)
-{
-  if (lincons->linexpr0){
-    elina_linexpr0_free(lincons->linexpr0);
-  }
-  lincons->linexpr0 = NULL;
-  if (lincons->scalar){
-        elina_scalar_free(lincons->scalar);
-  }
-  lincons->scalar = NULL;
-}
-
-static inline
-void elina_lincons0_add_dimensions_with(elina_lincons0_t* cons,
-				     elina_dimchange_t* dimchange)
-{ elina_linexpr0_add_dimensions_with(cons->linexpr0,dimchange); }
-static inline
-elina_lincons0_t elina_lincons0_add_dimensions(elina_lincons0_t* cons,
-					 elina_dimchange_t* dimchange)
-{
-  return elina_lincons0_make(cons->constyp,
-			  elina_linexpr0_add_dimensions(cons->linexpr0,dimchange),
-			  cons->scalar ? elina_scalar_alloc_set(cons->scalar) : NULL);
-}
-static inline
-void elina_lincons0_permute_dimensions_with(elina_lincons0_t* cons,
-					 elina_dimperm_t* perm)
-{ elina_linexpr0_permute_dimensions_with(cons->linexpr0,perm); }
-static inline
-elina_lincons0_t elina_lincons0_permute_dimensions(elina_lincons0_t* cons,
-					     elina_dimperm_t* perm)
-{
-  return elina_lincons0_make(cons->constyp,
-			  elina_linexpr0_permute_dimensions(cons->linexpr0,perm),
-			  cons->scalar ? elina_scalar_alloc_set(cons->scalar) : NULL);
-}
   
 #ifdef __cplusplus
 }

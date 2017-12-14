@@ -52,13 +52,12 @@ void elina_interval_reinit(elina_interval_t* interval, elina_scalar_discr_t elin
 void elina_interval_free(elina_interval_t* interval);
   /* Free an interval */
 void elina_interval_fprint(FILE* stream, elina_interval_t* a);
-static inline 
-void elina_interval_print(elina_interval_t* a)
-{ elina_interval_fprint(stdout,a); }
+
+void elina_interval_print(elina_interval_t* a);
+
   /* Printing */
-static inline
-void elina_interval_swap(elina_interval_t* a, elina_interval_t* b)
-{ elina_interval_t t = *a; *a = *b; *b = t; }
+void elina_interval_swap(elina_interval_t* a, elina_interval_t* b);
+
   /* Exchange */
 
 /* ====================================================================== */
