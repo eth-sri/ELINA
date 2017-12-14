@@ -35,23 +35,15 @@ void elina_lincons0_fprint(FILE* stream, elina_lincons0_t* cons, char** name_of_
 {
   elina_linexpr0_fprint(stream,cons->linexpr0,name_of_dim);
   fprintf(stream,
-          cons->constyp == ELINA_CONS_EQ || cons->constyp == ELINA_CONS_EQMOD
-              ?
-              //" = 0" :
-              " 0 "
-              : (cons->constyp == ELINA_CONS_SUPEQ
-                     ?
-                     // " >= 0" :
-                     " 1 "
-                     : (cons->constyp == ELINA_CONS_SUP
-                            ?
-                            //" > 0" :
-                            " 2 "
-                            : (cons->constyp == ELINA_CONS_DISEQ
-                                   ?
-                                   //" != 0" :
-                                   " 3 "
-                                   : "\"ERROR in elina_lincons0_fprint\""))));
+	  cons->constyp == ELINA_CONS_EQ || cons->constyp == ELINA_CONS_EQMOD ?
+	  " = 0" :
+	  ( cons->constyp == ELINA_CONS_SUPEQ ?
+	   " >= 0" :
+	    (cons->constyp == ELINA_CONS_SUP ?
+	     " > 0" :
+	     (cons->constyp == ELINA_CONS_DISEQ ?
+	      " != 0" :
+	      "\"ERROR in elina_lincons0_fprint\""))));
   if (cons->constyp == ELINA_CONS_EQMOD){
     assert(cons->scalar!=NULL);
     fprintf(stream," mod ");
@@ -231,17 +223,17 @@ void elina_lincons0_array_fprint(FILE* stream,
   size_t i;
   fprintf(stream,"%lu\n",
 	    (unsigned long)array->size);
-  // if (array->size==0){
-  // fprintf(stream,"empty array of constraints\n");
-  //} else {
-  // fprintf(stream,"array of constraints of size %lu\n",
-  //    (unsigned long)array->size);
-  for (i = 0; i < array->size; i++) {
-    // fprintf(stream,"%2lu: ",(unsigned long)i);
-    elina_lincons0_fprint(stream, &array->p[i], name_of_dim);
-    fprintf(stream, "\n");
+  if (array->size==0){
+    fprintf(stream,"empty array of constraints\n");
+  } else {
+    fprintf(stream,"array of constraints of size %lu\n",
+	    (unsigned long)array->size);
+    for (i=0; i<array->size; i++){
+      fprintf(stream,"%2lu: ",(unsigned long)i);
+      elina_lincons0_fprint(stream,&array->p[i],name_of_dim);
+      fprintf(stream,"\n");
     }
-    // }
+  }
 }
 
 elina_linexpr_type_t elina_lincons0_array_type(elina_lincons0_array_t* array)
