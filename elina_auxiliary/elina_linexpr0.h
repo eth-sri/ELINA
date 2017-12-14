@@ -150,11 +150,13 @@ bool elina_linexpr0_array_is_quasilinear(elina_linexpr0_t** texpr, size_t size);
 /* III. Access */
 /* ====================================================================== */
 
-static inline size_t elina_linexpr0_size(elina_linexpr0_t *expr);
-/* Get the size of the linear expression */
 
-static inline elina_coeff_t *elina_linexpr0_cstref(elina_linexpr0_t *expr);
-/* Get a reference to the constant. Do not free it. */
+size_t elina_linexpr0_size(elina_linexpr0_t* expr);
+  /* Get the size of the linear expression */
+
+
+elina_coeff_t* elina_linexpr0_cstref(elina_linexpr0_t* expr);
+  /* Get a reference to the constant. Do not free it. */
 
 elina_coeff_t* elina_linexpr0_coeffref(elina_linexpr0_t* expr, elina_dim_t dim);
   /* Get a reference to the coefficient associated to the dimension.
@@ -166,73 +168,42 @@ elina_coeff_t* elina_linexpr0_coeffref(elina_linexpr0_t* expr, elina_dim_t dim);
      In case of sparse representation, dim==ELINA_DIM_MAX.
  */
 
-static inline void elina_linexpr0_get_cst(elina_coeff_t *coeff,
-                                          elina_linexpr0_t *expr);
-/* Get the constant and assign it to coeff */
+
+void elina_linexpr0_get_cst(elina_coeff_t* coeff, elina_linexpr0_t* expr);
+  /* Get the constant and assign it to coeff */
 
 bool elina_linexpr0_get_coeff(elina_coeff_t* coeff, elina_linexpr0_t* expr, elina_dim_t dim);
   /* Get coefficient of dimension dim in the expression and assign it to coeff
      Return true in case elina_linexpr0_coeffref returns NULL */
 
 /* Set the constant of the linear expression */
-static inline void elina_linexpr0_set_cst(elina_linexpr0_t *expr,
-                                          elina_coeff_t *cst);
-static inline void elina_linexpr0_set_cst_scalar(elina_linexpr0_t *expr,
-                                                 elina_scalar_t *scalar);
-static inline void elina_linexpr0_set_cst_scalar_int(elina_linexpr0_t *expr,
-                                                     int num);
-static inline void elina_linexpr0_set_cst_scalar_frac(elina_linexpr0_t *expr,
-                                                      long int num,
-                                                      unsigned long int den);
-static inline void elina_linexpr0_set_cst_scalar_double(elina_linexpr0_t *expr,
-                                                        double num);
-static inline void elina_linexpr0_set_cst_interval(elina_linexpr0_t *expr,
-                                                   elina_interval_t *itv);
-static inline void elina_linexpr0_set_cst_interval_scalar(
-    elina_linexpr0_t *expr, elina_scalar_t *inf, elina_scalar_t *sup);
-static inline void elina_linexpr0_set_cst_interval_int(elina_linexpr0_t *expr,
-                                                       int inf, int sup);
-static inline void
-elina_linexpr0_set_cst_interval_frac(elina_linexpr0_t *expr, long int numinf,
-                                     unsigned long int deninf, long int numsup,
-                                     unsigned long int densup);
-static inline void
-elina_linexpr0_set_cst_interval_double(elina_linexpr0_t *expr, double inf,
-                                       double sup);
+ void elina_linexpr0_set_cst(elina_linexpr0_t* expr, elina_coeff_t* cst);
+ void elina_linexpr0_set_cst_scalar(elina_linexpr0_t* expr, elina_scalar_t* scalar);
+ void elina_linexpr0_set_cst_scalar_int(elina_linexpr0_t* expr, int num);
+ void elina_linexpr0_set_cst_scalar_frac(elina_linexpr0_t* expr, long int num, unsigned long int den);
+ void elina_linexpr0_set_cst_scalar_double(elina_linexpr0_t* expr, double num);
+ void elina_linexpr0_set_cst_interval(elina_linexpr0_t* expr, elina_interval_t* itv);
+ void elina_linexpr0_set_cst_interval_scalar(elina_linexpr0_t* expr, elina_scalar_t* inf, elina_scalar_t* sup);
+ void elina_linexpr0_set_cst_interval_int(elina_linexpr0_t* expr, int inf, int sup);
+ void elina_linexpr0_set_cst_interval_frac(elina_linexpr0_t* expr,
+							 long int numinf, unsigned long int deninf,
+							 long int numsup, unsigned long int densup);
+ void elina_linexpr0_set_cst_interval_double(elina_linexpr0_t* expr, double inf, double sup);
 
 /* Set the coefficient of dimension dim in the expression.
    Return true in case elina_linexpr0_coeffref returns NULL */
-static inline bool elina_linexpr0_set_coeff(elina_linexpr0_t *expr,
-                                            elina_dim_t dim,
-                                            elina_coeff_t *coeff);
-static inline bool elina_linexpr0_set_coeff_scalar(elina_linexpr0_t *expr,
-                                                   elina_dim_t dim,
-                                                   elina_scalar_t *scalar);
-static inline bool elina_linexpr0_set_coeff_scalar_int(elina_linexpr0_t *expr,
-                                                       elina_dim_t dim,
-                                                       int num);
-static inline bool elina_linexpr0_set_coeff_scalar_frac(elina_linexpr0_t *expr,
-                                                        elina_dim_t dim,
-                                                        long int num,
-                                                        unsigned long int den);
-static inline bool
-elina_linexpr0_set_coeff_scalar_double(elina_linexpr0_t *expr, elina_dim_t dim,
-                                       double num);
-static inline bool elina_linexpr0_set_coeff_interval(elina_linexpr0_t *expr,
-                                                     elina_dim_t dim,
-                                                     elina_interval_t *itv);
-static inline bool
-elina_linexpr0_set_coeff_interval_scalar(elina_linexpr0_t *expr,
-                                         elina_dim_t dim, elina_scalar_t *inf,
-                                         elina_scalar_t *sup);
-static inline bool elina_linexpr0_set_coeff_interval_int(elina_linexpr0_t *expr,
-                                                         elina_dim_t dim,
-                                                         int inf, int sup);
-static inline bool elina_linexpr0_set_coeff_interval_frac(
-    elina_linexpr0_t *expr, elina_dim_t dim, long int numinf,
-    unsigned long int deninf, long int numsup, unsigned long int densup);
-static inline bool elina_linexpr0_set_coeff_interval_double(
-    elina_linexpr0_t *expr, elina_dim_t dim, double inf, double sup);
+ bool elina_linexpr0_set_coeff(elina_linexpr0_t* expr, elina_dim_t dim, elina_coeff_t* coeff);
+ bool elina_linexpr0_set_coeff_scalar(elina_linexpr0_t* expr, elina_dim_t dim, elina_scalar_t* scalar);
+ bool elina_linexpr0_set_coeff_scalar_int(elina_linexpr0_t* expr, elina_dim_t dim, int num);
+ bool elina_linexpr0_set_coeff_scalar_frac(elina_linexpr0_t* expr, elina_dim_t dim, long int num, unsigned long int den);
+ bool elina_linexpr0_set_coeff_scalar_double(elina_linexpr0_t* expr, elina_dim_t dim, double num);
+ bool elina_linexpr0_set_coeff_interval(elina_linexpr0_t* expr, elina_dim_t dim, elina_interval_t* itv);
+ bool elina_linexpr0_set_coeff_interval_scalar(elina_linexpr0_t* expr, elina_dim_t dim, elina_scalar_t* inf, elina_scalar_t* sup);
+ bool elina_linexpr0_set_coeff_interval_int(elina_linexpr0_t* expr, elina_dim_t dim, int inf, int sup);
+ bool elina_linexpr0_set_coeff_interval_frac(elina_linexpr0_t* expr, elina_dim_t dim,
+							  long int numinf, unsigned long int deninf,
+							  long int numsup, unsigned long int densup);
+ bool elina_linexpr0_set_coeff_interval_double(elina_linexpr0_t* expr, elina_dim_t dim, double inf, double sup);
 
 /*
 bool elina_linexpr0_set_format_generic(elina_coeff_t* (*get_pcoeff)(char*,va_list*,void*,bool*),
@@ -344,188 +315,6 @@ int elina_linexpr0_compare(elina_linexpr0_t* expr1,
 
 /* Free the array of expressions of size size */
 void elina_linexpr0_array_free(elina_linexpr0_t** texpr, size_t size);
-
-/* ====================================================================== */
-/* VI. Inline function definitions */
-/* ====================================================================== */
-
-static inline size_t elina_linexpr0_size(elina_linexpr0_t *expr) {
-  return expr->size;
-}
-
-static inline elina_coeff_t *elina_linexpr0_cstref(elina_linexpr0_t *expr) {
-  return &expr->cst;
-}
-
-static inline void elina_linexpr0_get_cst(elina_coeff_t *coeff,
-                                          elina_linexpr0_t *expr) {
-  elina_coeff_set(coeff, &expr->cst);
-}
-
-static inline void elina_linexpr0_set_cst(elina_linexpr0_t *expr,
-                                          elina_coeff_t *cst) {
-  elina_coeff_set(&expr->cst, cst);
-}
-
-static inline void elina_linexpr0_set_cst_scalar(elina_linexpr0_t *expr,
-                                                 elina_scalar_t *scalar) {
-  elina_coeff_set_scalar(&expr->cst, scalar);
-}
-
-static inline void elina_linexpr0_set_cst_scalar_int(elina_linexpr0_t *expr,
-                                                     int num) {
-  elina_coeff_set_scalar_int(&expr->cst, num);
-}
-
-static inline void elina_linexpr0_set_cst_scalar_frac(elina_linexpr0_t *expr,
-                                                      long int num,
-                                                      unsigned long int den) {
-  elina_coeff_set_scalar_frac(&expr->cst, num, den);
-}
-
-static inline void elina_linexpr0_set_cst_scalar_double(elina_linexpr0_t *expr,
-                                                        double num) {
-  elina_coeff_set_scalar_double(&expr->cst, num);
-}
-
-static inline void elina_linexpr0_set_cst_interval(elina_linexpr0_t *expr,
-                                                   elina_interval_t *itv) {
-  elina_coeff_set_interval(&expr->cst, itv);
-}
-
-static inline void elina_linexpr0_set_cst_interval_int(elina_linexpr0_t *expr,
-                                                       int inf, int sup) {
-  elina_coeff_set_interval_int(&expr->cst, inf, sup);
-}
-
-static inline void elina_linexpr0_set_cst_interval_scalar(
-    elina_linexpr0_t *expr, elina_scalar_t *inf, elina_scalar_t *sup) {
-  elina_coeff_set_interval_scalar(&expr->cst, inf, sup);
-}
-
-static inline void
-elina_linexpr0_set_cst_interval_frac(elina_linexpr0_t *expr, long int numinf,
-                                     unsigned long int deninf, long int numsup,
-                                     unsigned long int densup) {
-  elina_coeff_set_interval_frac(&expr->cst, numinf, deninf, numsup, densup);
-}
-
-static inline void
-elina_linexpr0_set_cst_interval_double(elina_linexpr0_t *expr, double inf,
-                                       double sup) {
-  elina_coeff_set_interval_double(&expr->cst, inf, sup);
-}
-
-static inline bool elina_linexpr0_set_coeff(elina_linexpr0_t *expr,
-                                            elina_dim_t dim,
-                                            elina_coeff_t *coeff) {
-  elina_coeff_t *ecoeff = elina_linexpr0_coeffref(expr, dim);
-  if (ecoeff) {
-    elina_coeff_set(ecoeff, coeff);
-    return false;
-  } else
-    return true;
-}
-
-static inline bool elina_linexpr0_set_coeff_scalar(elina_linexpr0_t *expr,
-                                                   elina_dim_t dim,
-                                                   elina_scalar_t *scalar) {
-  elina_coeff_t *ecoeff = elina_linexpr0_coeffref(expr, dim);
-  if (ecoeff) {
-    elina_coeff_set_scalar(ecoeff, scalar);
-    return false;
-  } else
-    return true;
-}
-
-static inline bool elina_linexpr0_set_coeff_scalar_int(elina_linexpr0_t *expr,
-                                                       elina_dim_t dim,
-                                                       int num) {
-  elina_coeff_t *ecoeff = elina_linexpr0_coeffref(expr, dim);
-  if (ecoeff) {
-    elina_coeff_set_scalar_int(ecoeff, num);
-    return false;
-  } else
-    return true;
-}
-
-static inline bool elina_linexpr0_set_coeff_scalar_frac(elina_linexpr0_t *expr,
-                                                        elina_dim_t dim,
-                                                        long int num,
-                                                        unsigned long int den) {
-  elina_coeff_t *ecoeff = elina_linexpr0_coeffref(expr, dim);
-  if (ecoeff) {
-    elina_coeff_set_scalar_frac(ecoeff, num, den);
-    return false;
-  } else
-    return true;
-}
-
-static inline bool
-elina_linexpr0_set_coeff_scalar_double(elina_linexpr0_t *expr, elina_dim_t dim,
-                                       double num) {
-  elina_coeff_t *ecoeff = elina_linexpr0_coeffref(expr, dim);
-  if (ecoeff) {
-    elina_coeff_set_scalar_double(ecoeff, num);
-    return false;
-  } else
-    return true;
-}
-
-static inline bool elina_linexpr0_set_coeff_interval(elina_linexpr0_t *expr,
-                                                     elina_dim_t dim,
-                                                     elina_interval_t *itv) {
-  elina_coeff_t *ecoeff = elina_linexpr0_coeffref(expr, dim);
-  if (ecoeff) {
-    elina_coeff_set_interval(ecoeff, itv);
-    return false;
-  } else
-    return true;
-}
-
-static inline bool elina_linexpr0_set_coeff_interval_int(elina_linexpr0_t *expr,
-                                                         elina_dim_t dim,
-                                                         int inf, int sup) {
-  elina_coeff_t *ecoeff = elina_linexpr0_coeffref(expr, dim);
-  if (ecoeff) {
-    elina_coeff_set_interval_int(ecoeff, inf, sup);
-    return false;
-  } else
-    return true;
-}
-
-static inline bool
-elina_linexpr0_set_coeff_interval_scalar(elina_linexpr0_t *expr,
-                                         elina_dim_t dim, elina_scalar_t *inf,
-                                         elina_scalar_t *sup) {
-  elina_coeff_t *ecoeff = elina_linexpr0_coeffref(expr, dim);
-  if (ecoeff) {
-    elina_coeff_set_interval_scalar(ecoeff, inf, sup);
-    return false;
-  } else
-    return true;
-}
-
-static inline bool elina_linexpr0_set_coeff_interval_frac(
-    elina_linexpr0_t *expr, elina_dim_t dim, long int numinf,
-    unsigned long int deninf, long int numsup, unsigned long int densup) {
-  elina_coeff_t *ecoeff = elina_linexpr0_coeffref(expr, dim);
-  if (ecoeff) {
-    elina_coeff_set_interval_frac(ecoeff, numinf, deninf, numsup, densup);
-    return false;
-  } else
-    return true;
-}
-
-static inline bool elina_linexpr0_set_coeff_interval_double(
-    elina_linexpr0_t *expr, elina_dim_t dim, double inf, double sup) {
-  elina_coeff_t *ecoeff = elina_linexpr0_coeffref(expr, dim);
-  if (ecoeff) {
-    elina_coeff_set_interval_double(ecoeff, inf, sup);
-    return false;
-  } else
-    return true;
-}
 
 #ifdef __cplusplus
 }

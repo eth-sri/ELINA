@@ -36,13 +36,21 @@ void elina_lincons0_fprint(FILE* stream, elina_lincons0_t* cons, char** name_of_
   elina_linexpr0_fprint(stream,cons->linexpr0,name_of_dim);
   fprintf(stream,
           cons->constyp == ELINA_CONS_EQ || cons->constyp == ELINA_CONS_EQMOD
-              ? " = 0"
+              ?
+              //" = 0" :
+              " 0 "
               : (cons->constyp == ELINA_CONS_SUPEQ
-                     ? " >= 0"
+                     ?
+                     // " >= 0" :
+                     " 1 "
                      : (cons->constyp == ELINA_CONS_SUP
-                            ? " > 0"
+                            ?
+                            //" > 0" :
+                            " 2 "
                             : (cons->constyp == ELINA_CONS_DISEQ
-                                   ? " != 0"
+                                   ?
+                                   //" != 0" :
+                                   " 3 "
                                    : "\"ERROR in elina_lincons0_fprint\""))));
   if (cons->constyp == ELINA_CONS_EQMOD){
     assert(cons->scalar!=NULL);
@@ -221,18 +229,19 @@ void elina_lincons0_array_fprint(FILE* stream,
 			      char** name_of_dim)
 {
   size_t i;
-
-  if (array->size==0){
-    fprintf(stream,"empty array of constraints\n");
-  } else {
-    fprintf(stream,"array of constraints of size %lu\n",
+  fprintf(stream,"%lu\n",
 	    (unsigned long)array->size);
-    for (i=0; i<array->size; i++){
-      fprintf(stream,"%2lu: ",(unsigned long)i);
-      elina_lincons0_fprint(stream,&array->p[i],name_of_dim);
-      fprintf(stream,"\n");
+  // if (array->size==0){
+  // fprintf(stream,"empty array of constraints\n");
+  //} else {
+  // fprintf(stream,"array of constraints of size %lu\n",
+  //    (unsigned long)array->size);
+  for (i = 0; i < array->size; i++) {
+    // fprintf(stream,"%2lu: ",(unsigned long)i);
+    elina_lincons0_fprint(stream, &array->p[i], name_of_dim);
+    fprintf(stream, "\n");
     }
-  }
+    // }
 }
 
 elina_linexpr_type_t elina_lincons0_array_type(elina_lincons0_array_t* array)
@@ -320,4 +329,60 @@ elina_lincons0_array_t elina_lincons0_array_permute_dimensions(elina_lincons0_ar
     narray.p[i] =  elina_lincons0_permute_dimensions(&array->p[i],perm);
   }
   return narray;
+}
+
+
+/* ********************************************************************** */
+/* III. Auxilliary functions */
+/* ********************************************************************** */
+
+ elina_lincons0_t elina_lincons0_make(elina_constyp_t constyp, elina_linexpr0_t* linexpr, elina_scalar_t* scalar)
+{
+  elina_lincons0_t cons;
+  cons.constyp = constyp;
+  cons.linexpr0 = linexpr;
+  cons.scalar = scalar;
+  return cons;
+}
+ elina_lincons0_t elina_lincons0_copy(elina_lincons0_t* cons)
+{
+  return elina_lincons0_make(cons->constyp, 
+			  cons->linexpr0 ? elina_linexpr0_copy(cons->linexpr0) : NULL,
+			  cons->scalar ? elina_scalar_alloc_set(cons->scalar) : NULL);
+}
+ void elina_lincons0_clear(elina_lincons0_t* lincons)
+{
+  if (lincons->linexpr0){
+    elina_linexpr0_free(lincons->linexpr0);
+  }
+  lincons->linexpr0 = NULL;
+  if (lincons->scalar){
+        elina_scalar_free(lincons->scalar);
+  }
+  lincons->scalar = NULL;
+}
+
+
+void elina_lincons0_add_dimensions_with(elina_lincons0_t* cons,
+				     elina_dimchange_t* dimchange)
+{ elina_linexpr0_add_dimensions_with(cons->linexpr0,dimchange); }
+
+elina_lincons0_t elina_lincons0_add_dimensions(elina_lincons0_t* cons,
+					 elina_dimchange_t* dimchange)
+{
+  return elina_lincons0_make(cons->constyp,
+			  elina_linexpr0_add_dimensions(cons->linexpr0,dimchange),
+			  cons->scalar ? elina_scalar_alloc_set(cons->scalar) : NULL);
+}
+
+void elina_lincons0_permute_dimensions_with(elina_lincons0_t* cons,
+					 elina_dimperm_t* perm)
+{ elina_linexpr0_permute_dimensions_with(cons->linexpr0,perm); }
+
+elina_lincons0_t elina_lincons0_permute_dimensions(elina_lincons0_t* cons,
+					     elina_dimperm_t* perm)
+{
+  return elina_lincons0_make(cons->constyp,
+			  elina_linexpr0_permute_dimensions(cons->linexpr0,perm),
+			  cons->scalar ? elina_scalar_alloc_set(cons->scalar) : NULL);
 }

@@ -487,3 +487,7 @@ long elina_scalar_hash(elina_scalar_t* a)
   }
 }
 
+void elina_scalar_print(elina_scalar_t* a)
+{ elina_scalar_fprint(stdout,a); }
+
+void elina_scalar_swap(elina_scalar_t* a, elina_scalar_t* b){ elina_scalar_t t = *a; *a = *b; *b = t; }

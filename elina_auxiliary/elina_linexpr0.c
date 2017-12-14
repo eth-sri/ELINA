@@ -27,7 +27,107 @@
 #include <stdarg.h>
 
 /* ====================================================================== */
-/* I. Memory management and printing */
+/* I. Auxilliary functions */
+/* ====================================================================== */
+
+size_t elina_linexpr0_size(elina_linexpr0_t* expr)
+  { return expr->size; }
+
+
+
+elina_coeff_t* elina_linexpr0_cstref(elina_linexpr0_t* expr)
+  { return &expr->cst; }
+
+
+void elina_linexpr0_get_cst(elina_coeff_t* coeff, elina_linexpr0_t* expr)
+  { elina_coeff_set(coeff,&expr->cst); }
+
+
+void elina_linexpr0_set_cst(elina_linexpr0_t* expr, elina_coeff_t* cst)
+  { elina_coeff_set(&expr->cst,cst); }
+
+
+void elina_linexpr0_set_cst_scalar(elina_linexpr0_t* expr, elina_scalar_t* scalar)
+  { elina_coeff_set_scalar(&expr->cst, scalar); }
+
+
+void elina_linexpr0_set_cst_scalar_int(elina_linexpr0_t* expr, int num)
+  { elina_coeff_set_scalar_int(&expr->cst, num); }
+
+
+void elina_linexpr0_set_cst_scalar_frac(elina_linexpr0_t* expr, long int num, unsigned long int den)
+  { elina_coeff_set_scalar_frac(&expr->cst, num, den); }
+
+
+void elina_linexpr0_set_cst_scalar_double(elina_linexpr0_t* expr, double num)
+  { elina_coeff_set_scalar_double(&expr->cst, num); }
+
+
+void elina_linexpr0_set_cst_interval(elina_linexpr0_t* expr, elina_interval_t* itv)
+  { elina_coeff_set_interval(&expr->cst, itv); }
+
+
+void elina_linexpr0_set_cst_interval_int(elina_linexpr0_t* expr, int inf, int sup)
+  { elina_coeff_set_interval_int(&expr->cst, inf,sup); }
+
+
+void elina_linexpr0_set_cst_interval_scalar(elina_linexpr0_t* expr, elina_scalar_t* inf, elina_scalar_t* sup)
+  { elina_coeff_set_interval_scalar(&expr->cst, inf,sup); }
+
+
+void elina_linexpr0_set_cst_interval_frac(elina_linexpr0_t* expr,
+				  long int numinf, unsigned long int deninf,
+				  long int numsup, unsigned long int densup)
+  { elina_coeff_set_interval_frac(&expr->cst, numinf,deninf, numsup,densup); }
+
+
+void elina_linexpr0_set_cst_interval_double(elina_linexpr0_t* expr, double inf, double sup)
+  { elina_coeff_set_interval_double(&expr->cst, inf,sup); }
+
+
+bool elina_linexpr0_set_coeff(elina_linexpr0_t* expr, elina_dim_t dim, elina_coeff_t* coeff)
+  { elina_coeff_t* ecoeff = elina_linexpr0_coeffref(expr,dim); if (ecoeff){elina_coeff_set(ecoeff,coeff); return false;} else return true; }
+
+
+bool elina_linexpr0_set_coeff_scalar(elina_linexpr0_t* expr, elina_dim_t dim, elina_scalar_t* scalar)
+  { elina_coeff_t* ecoeff = elina_linexpr0_coeffref(expr,dim); if (ecoeff){ elina_coeff_set_scalar(ecoeff,scalar); return false; } else return true; }
+
+
+bool elina_linexpr0_set_coeff_scalar_int(elina_linexpr0_t* expr, elina_dim_t dim, int num)
+  { elina_coeff_t* ecoeff = elina_linexpr0_coeffref(expr,dim); if (ecoeff){ elina_coeff_set_scalar_int(ecoeff,num); return false; } else return true; }
+
+
+bool elina_linexpr0_set_coeff_scalar_frac(elina_linexpr0_t* expr, elina_dim_t dim, long int num, unsigned long int den)
+  { elina_coeff_t* ecoeff = elina_linexpr0_coeffref(expr,dim); if (ecoeff){ elina_coeff_set_scalar_frac(ecoeff,num, den); return false; } else return true; }
+
+
+bool elina_linexpr0_set_coeff_scalar_double(elina_linexpr0_t* expr, elina_dim_t dim, double num)
+  { elina_coeff_t* ecoeff = elina_linexpr0_coeffref(expr,dim); if (ecoeff){ elina_coeff_set_scalar_double(ecoeff,num); return false; } else return true; }
+
+
+bool elina_linexpr0_set_coeff_interval(elina_linexpr0_t* expr, elina_dim_t dim, elina_interval_t* itv)
+  { elina_coeff_t* ecoeff = elina_linexpr0_coeffref(expr,dim); if (ecoeff){ elina_coeff_set_interval(ecoeff,itv); return false; } else return true; }
+
+
+bool elina_linexpr0_set_coeff_interval_int(elina_linexpr0_t* expr, elina_dim_t dim, int inf, int sup)
+  { elina_coeff_t* ecoeff = elina_linexpr0_coeffref(expr,dim); if (ecoeff){ elina_coeff_set_interval_int(ecoeff,inf,sup); return false; } else return true; }
+
+
+bool elina_linexpr0_set_coeff_interval_scalar(elina_linexpr0_t* expr, elina_dim_t dim, elina_scalar_t* inf, elina_scalar_t* sup)
+  { elina_coeff_t* ecoeff = elina_linexpr0_coeffref(expr,dim); if (ecoeff){ elina_coeff_set_interval_scalar(ecoeff,inf,sup); return false; } else return true; }
+
+
+bool elina_linexpr0_set_coeff_interval_frac(elina_linexpr0_t* expr, elina_dim_t dim,
+				  long int numinf, unsigned long int deninf,
+				  long int numsup, unsigned long int densup)
+  { elina_coeff_t* ecoeff = elina_linexpr0_coeffref(expr,dim); if (ecoeff){ elina_coeff_set_interval_frac(ecoeff,numinf,deninf, numsup,densup); return false; } else return true; }
+
+
+bool elina_linexpr0_set_coeff_interval_double(elina_linexpr0_t* expr, elina_dim_t dim, double inf, double sup)
+  { elina_coeff_t* ecoeff = elina_linexpr0_coeffref(expr,dim); if (ecoeff){ elina_coeff_set_interval_double(ecoeff,inf,sup); return false; } else return true; }
+
+/* ====================================================================== */
+/* II. Memory management and printing */
 /* ====================================================================== */
 
 elina_linexpr0_t* elina_linexpr0_alloc(elina_linexpr_discr_t lin_discr, size_t size)
@@ -202,27 +302,34 @@ void elina_linexpr0_fprint(FILE* stream, elina_linexpr0_t* a, char** name_of_dim
   elina_dim_t dim;
   bool first;
   int sgn;
-
+  int size = 0;
   scalar = elina_scalar_alloc();
-
+  elina_linexpr0_ForeachLinterm(a, i, dim, coeff) {
+    if (!elina_coeff_zero(coeff)) {
+      size++;
+    }
+  }
+  fprintf(stream, " %d ", size);
   first = true;
   elina_linexpr0_ForeachLinterm(a,i,dim,coeff){
     if (! elina_coeff_zero(coeff)){
       switch(coeff->discr){
       case ELINA_COEFF_SCALAR:
 	pscalar = coeff->val.scalar;
-	sgn = elina_scalar_sgn(pscalar);
-	if (sgn > 0){
-	  elina_scalar_set(scalar,pscalar);
-	  if (!first)
-	    fprintf(stream," + ");
-	} else {
-	  elina_scalar_neg(scalar,pscalar);
-	  fprintf(stream, first ? "-" : " - ");
-	}
-	if (!elina_scalar_equal_int(scalar,1))
-	  elina_scalar_fprint(stream,scalar);
-	break;
+        // sgn = elina_scalar_sgn(pscalar);
+        // if (sgn > 0){
+        // elina_scalar_set(scalar,pscalar);
+        // if (!first)
+        // fprintf(stream," + ");
+        //} else {
+        // elina_scalar_neg(scalar,pscalar);
+        // fprintf(stream, first ? "-" : " - ");
+        //}
+        // if (!elina_scalar_equal_int(scalar,1))
+        // elina_scalar_fprint(stream,scalar);
+        elina_scalar_fprint(stream, pscalar);
+        fprintf(stream, " ");
+        break;
       case ELINA_COEFF_INTERVAL:
 	if (!first)
 	  fprintf(stream," + ");
@@ -232,38 +339,42 @@ void elina_linexpr0_fprint(FILE* stream, elina_linexpr0_t* a, char** name_of_dim
       if (name_of_dim)
 	fprintf(stream,"%s",name_of_dim[dim]);
       else
-	fprintf(stream,"x%lu",(unsigned long)dim);
+        // fprintf(stream,"x%lu",(unsigned long)dim);
+        fprintf(stream, " %lu ", (unsigned long)dim);
       first = false;
     }
   }
   /* Constant */
-  if (first || !elina_coeff_zero(&a->cst)){
-    switch (a->cst.discr){
-    case ELINA_COEFF_SCALAR:
-      pscalar = a->cst.val.scalar;
-      sgn = elina_scalar_sgn(pscalar);
-      if (sgn >= 0){
-	elina_scalar_set(scalar,pscalar);
-	if (!first)
-	  fprintf(stream," + ");
-      } else {
-	elina_scalar_neg(scalar,pscalar);
-	fprintf(stream, first ? "-" : " - ");
-      }
-      elina_scalar_fprint(stream,scalar);
-      break;
-    case ELINA_COEFF_INTERVAL:
-      if (!first)
-	fprintf(stream," + ");
-      elina_interval_fprint(stream, a->cst.val.interval);
-      break;
+  // if (first || !elina_coeff_zero(&a->cst)){
+  switch (a->cst.discr) {
+  case ELINA_COEFF_SCALAR:
+    pscalar = a->cst.val.scalar;
+    // sgn = elina_scalar_sgn(pscalar);
+    // if (sgn >= 0){
+    // elina_scalar_set(scalar,pscalar);
+    // if (!first)
+    // fprintf(stream," + ");
+    //} else {
+    // elina_scalar_neg(scalar,pscalar);
+    // fprintf(stream, first ? "-" : " - ");
+    //}
+    // elina_scalar_fprint(stream,scalar);
+
+    elina_scalar_fprint(stream, pscalar);
+    fprintf(stream, " ");
+    break;
+  case ELINA_COEFF_INTERVAL:
+    if (!first)
+      fprintf(stream, " + ");
+    elina_interval_fprint(stream, a->cst.val.interval);
+    break;
     }
-  }
-  elina_scalar_free(scalar);
+    //}
+    elina_scalar_free(scalar);
 }
 
 /* ====================================================================== */
-/* II. Tests */
+/* III. Tests */
 /* ====================================================================== */
 
 /* Does the linear expression involve only real variables ? */
@@ -388,7 +499,7 @@ bool elina_linexpr0_array_is_quasilinear(elina_linexpr0_t** texpr, size_t size)
 
 
 /* ====================================================================== */
-/* III. Access */
+/* IV. Access */
 /* ====================================================================== */
 
 static size_t index_of_or_after_dim(elina_dim_t dim, elina_linterm_t* linterm, size_t size)
@@ -628,7 +739,7 @@ bool elina_linexpr0_set_list(elina_linexpr0_t* expr, ...)
 }
 
 /* ====================================================================== */
-/* IV. Change of dimensions and permutations */
+/* V. Change of dimensions and permutations */
 /* ====================================================================== */
 
 /* Change current environment with a super-environment */
@@ -759,7 +870,7 @@ elina_linexpr0_permute_dimensions_with(elina_linexpr0_t* expr,
 }
 
 /* ====================================================================== */
-/* V. Hashing, comparison */
+/* VI. Hashing, comparison */
 /* ====================================================================== */
 
 long elina_linexpr0_hash(elina_linexpr0_t* expr)
@@ -898,7 +1009,7 @@ int elina_linexpr0_compare(elina_linexpr0_t* expr1,
 }
 
 /* ====================================================================== */
-/* Vb. Array of expressions */
+/* VII. Array of expressions */
 /* ====================================================================== */
 
 void elina_linexpr0_array_free(elina_linexpr0_t** texpr, size_t size)
