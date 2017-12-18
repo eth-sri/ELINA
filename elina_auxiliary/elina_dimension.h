@@ -119,9 +119,9 @@ void elina_dimchange_init(elina_dimchange_t* dimchange, size_t intdim, size_t re
 elina_dimchange_t* elina_dimchange_alloc(size_t intdim, size_t realdim);
   /* Allocate and initialize a dimchange structure */
 
-static inline void elina_dimchange_clear(elina_dimchange_t* dimchange);
+void elina_dimchange_clear(elina_dimchange_t* dimchange);
   /* Clear a dimchange structure (deallocate internal array) */
-static inline void elina_dimchange_free(elina_dimchange_t* dimchange);
+void elina_dimchange_free(elina_dimchange_t* dimchange);
   /* Deallocate and clear a dimchange structure */
 
 void elina_dimchange_fprint(FILE* stream, elina_dimchange_t* dimchange);
@@ -134,12 +134,12 @@ void elina_dimchange_add_invert(elina_dimchange_t* dimchange);
 /* elina_dimchange2_t */
 /* ---------------------------------------------------------------------- */
 
-static inline void elina_dimchange2_init(elina_dimchange2_t* dimchange2,
+void elina_dimchange2_init(elina_dimchange2_t* dimchange2,
 				      elina_dimchange_t* add, 
 				      elina_dimchange_t* remove);
   /* Initialize a dimchange2 structure by filling its fields with
      arguments */
-static inline elina_dimchange2_t* elina_dimchange2_alloc(elina_dimchange_t* add, 
+elina_dimchange2_t* elina_dimchange2_alloc(elina_dimchange_t* add, 
 						   elina_dimchange_t* remove);
   /* Allocate and initialize a dimchange2 structure */
 
@@ -160,9 +160,9 @@ void elina_dimperm_init(elina_dimperm_t* dimperm, size_t size);
 elina_dimperm_t* elina_dimperm_alloc(size_t size);
   /* Allocate and initialize a dimperm structure */
 
-static inline void elina_dimperm_clear(elina_dimperm_t* dimperm);
+void elina_dimperm_clear(elina_dimperm_t* dimperm);
   /* Clear a dimperm structure (deallocate internal arrau) */
-static inline void elina_dimperm_free(elina_dimperm_t* dimperm);
+void elina_dimperm_free(elina_dimperm_t* dimperm);
   /* Deallocate and clear a dimchange structure */
 
 void elina_dimperm_fprint(FILE* stream, elina_dimperm_t* perm);
@@ -188,51 +188,6 @@ void elina_dimperm_invert(elina_dimperm_t* nperm, elina_dimperm_t* perm);
      The sizes of permutations are supposed to be equal.
   */
 
-/* ====================================================================== */
-/* Inline Functions Definitions */
-/* ====================================================================== */
-static inline void elina_dimchange_clear(elina_dimchange_t* dimchange)
-{
-  if (dimchange->dim) free(dimchange->dim);
-  dimchange->intdim = dimchange->realdim = 0;
-  dimchange->dim = NULL;
-}
-static inline void elina_dimchange_free(elina_dimchange_t* dimchange)
-{
-  elina_dimchange_clear(dimchange);
-  free(dimchange);
-}
-
-static inline
-void elina_dimperm_clear(elina_dimperm_t* dimperm)
-{
-  if (dimperm->dim) free(dimperm->dim);
-  dimperm->size = 0;
-  dimperm->dim = NULL;
-}
-static inline
-void elina_dimperm_free(elina_dimperm_t* dimperm)
-{
-  elina_dimperm_clear(dimperm);
-  free(dimperm);
-}
-
-static inline 
-void elina_dimchange2_init(elina_dimchange2_t* dimchange2,
-			elina_dimchange_t* add, 
-			elina_dimchange_t* remove)
-{ 
-  dimchange2->add = add;
-  dimchange2->remove = remove;
-}
-static inline 
-elina_dimchange2_t* elina_dimchange2_alloc(elina_dimchange_t* add, 
-				     elina_dimchange_t* remove)
-{
-  elina_dimchange2_t* res = (elina_dimchange2_t*)malloc(sizeof(elina_dimchange2_t));
-  elina_dimchange2_init(res,add,remove);
-  return res;
-}
 
 #ifdef __cplusplus
 }

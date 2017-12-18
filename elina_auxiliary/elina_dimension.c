@@ -168,3 +168,52 @@ void elina_dimperm_invert(elina_dimperm_t* nperm, elina_dimperm_t* perm)
     nperm->dim[perm->dim[i]] = i;
   }
 }
+
+
+/* ====================================================================== */
+/* Auxilliary Functions Definitions */
+/* ====================================================================== */
+void elina_dimchange_clear(elina_dimchange_t* dimchange)
+{
+  if (dimchange->dim) free(dimchange->dim);
+  dimchange->intdim = dimchange->realdim = 0;
+  dimchange->dim = NULL;
+}
+
+void elina_dimchange_free(elina_dimchange_t* dimchange)
+{
+  elina_dimchange_clear(dimchange);
+  free(dimchange);
+}
+
+
+void elina_dimperm_clear(elina_dimperm_t* dimperm)
+{
+  if (dimperm->dim) free(dimperm->dim);
+  dimperm->size = 0;
+  dimperm->dim = NULL;
+}
+
+
+void elina_dimperm_free(elina_dimperm_t* dimperm)
+{
+  elina_dimperm_clear(dimperm);
+  free(dimperm);
+}
+
+
+void elina_dimchange2_init(elina_dimchange2_t* dimchange2,
+			elina_dimchange_t* add, 
+			elina_dimchange_t* remove)
+{ 
+  dimchange2->add = add;
+  dimchange2->remove = remove;
+}
+
+elina_dimchange2_t* elina_dimchange2_alloc(elina_dimchange_t* add, 
+				     elina_dimchange_t* remove)
+{
+  elina_dimchange2_t* res = (elina_dimchange2_t*)malloc(sizeof(elina_dimchange2_t));
+  elina_dimchange2_init(res,add,remove);
+  return res;
+}
