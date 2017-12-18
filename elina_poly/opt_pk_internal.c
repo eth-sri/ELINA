@@ -57,7 +57,7 @@
 	double bound_dimension_time = 0;
 	double opt_conversion_time = 0;
 	long int join_count = 0;
-
+	double poly_is_unconstrained_time = 0;
 #endif
 
 /* Initialize opk with size maxdims */
