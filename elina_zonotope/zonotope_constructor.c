@@ -42,14 +42,17 @@ zonotope_t* zonotope_top(elina_manager_t* man, size_t intdim, size_t realdim)
 /* Abstract an hypercube defined by the array of intervals of size intdim+realdim */
 zonotope_t* zonotope_of_box(elina_manager_t* man, size_t intdim, size_t realdim, elina_interval_t** tinterval)
 {
+	//printf("input intervals\n");
+
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_OF_BOX);
     zonotope_t* res = zonotope_alloc(man,intdim,realdim);
     size_t i = 0;
     for (i=0; i<intdim+realdim; i++) {
-      elina_interval_set(res->box[i], tinterval[i]);
-      res->paf[i] = zonotope_aff_alloc_init(pr);
-      if (elina_interval_is_bottom(tinterval[i])) {
-        res->paf[i] = pr->bot;
+	//elina_interval_fprint(stdout,tinterval[i]);
+        elina_interval_set(res->box[i], tinterval[i]);
+        res->paf[i] = zonotope_aff_alloc_init(pr);
+	if (elina_interval_is_bottom(tinterval[i])){
+		 res->paf[i] = pr->bot;
 	}
 	else if (elina_interval_is_top(tinterval[i])){ 
 		res->paf[i] = pr->top;
@@ -68,6 +71,7 @@ zonotope_t* zonotope_of_box(elina_manager_t* man, size_t intdim, size_t realdim,
     
     man->result.flag_best = true;
     man->result.flag_exact = true;
+    fflush(stdout);
     return res;
 }
 

@@ -5,45 +5,48 @@
 /**********************/
 zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, zonotope_t* z, elina_lincons0_array_t* array)
 {
-  zonotope_internal_t *pr =
-      zonotope_init_from_manager(man, ELINA_FUNID_MEET_LINCONS_ARRAY);
-  // arg_assert(a && array, abort(););
-  size_t i = 0;
-  zonotope_t *res = destructive ? z : zonotope_copy(man, z);
-  bool is_bottom = false;
-  elina_interval_t *box = elina_interval_alloc();
-  bool *tchange = (bool *)calloc(2 * z->dims, sizeof(bool));
 
-  size_t kmax = 2; /* specifies the maximum number of iterations */
-  /* intervalonly is set to false which means try to improve all dimensions, not
-   * only the ones with an interval coefficient */
-  if (elina_boxize_lincons0_array(res->box, tchange, array, res->box,
-                                  res->intdim, kmax, false,
-                                  ELINA_SCALAR_DOUBLE)) {
-    /* there is some inferred bounds */
-    for (i = 0; i < res->dims; i++) {
-      if (tchange[2 * i] || tchange[2 * i + 1]) {
-        if (elina_interval_is_bottom(res->box[i])) {
-          is_bottom = true;
-          break;
-        } else if (res->paf[i]->q == NULL) {
+     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_MEET_LINCONS_ARRAY);
+     // printf("meet start %d\n",destructive);
+     //  fflush(stdout);
 
-          zonotope_aff_check_free(pr, res->paf[i]);
-          res->paf[i] = zonotope_aff_alloc_init(pr);
-          if (!elina_scalar_infty(res->box[i]->sup) &&
-              !elina_scalar_infty(res->box[i]->inf)) {
-            zonotope_aff_add_itv(pr, res->paf[i], res->box[i], IN);
-          } else {
-            elina_interval_set(res->paf[i]->c, res->box[i]);
-          }
+     // arg_assert(a && array, abort(););
+     size_t i = 0;
+     zonotope_t *res = destructive ? z : zonotope_copy(man, z);
+     bool is_bottom = false;
+     elina_interval_t *box = elina_interval_alloc();
+     bool *tchange = (bool *)calloc(2 * z->dims, sizeof(bool));
 
-          res->paf[i]->pby++;
-        }
-      }
-    }
-  } else {
-    /* nothing change */
-  }
+     size_t kmax = 2; /* specifies the maximum number of iterations */
+     /* intervalonly is set to false which means try to improve all dimensions,
+      * not only the ones with an interval coefficient */
+     if (elina_boxize_lincons0_array(res->box, tchange, array, res->box,
+                                     res->intdim, kmax, false,
+                                     ELINA_SCALAR_DOUBLE)) {
+       /* there is some inferred bounds */
+       for (i = 0; i < res->dims; i++) {
+         if (tchange[2 * i] || tchange[2 * i + 1]) {
+           if (elina_interval_is_bottom(res->box[i])) {
+             is_bottom = true;
+             break;
+           } else if (res->paf[i]->q == NULL) {
+
+             zonotope_aff_check_free(pr, res->paf[i]);
+             res->paf[i] = zonotope_aff_alloc_init(pr);
+             if (!elina_scalar_infty(res->box[i]->sup) &&
+                 !elina_scalar_infty(res->box[i]->inf)) {
+               zonotope_aff_add_itv(pr, res->paf[i], res->box[i], IN);
+             } else {
+               elina_interval_set(res->paf[i]->c, res->box[i]);
+             }
+
+             res->paf[i]->pby++;
+           }
+         }
+       }
+     } else {
+       /* nothing change */
+     }
 
     //} 
     if (!is_bottom) {
@@ -54,31 +57,41 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 	elina_lincons0_t lincons0;
 	elina_interval_t cst;
         for (i = 0; i < z->dims; i++)
-          elina_interval_set(z->paf[i]->itv, z->box[i]);
+          elina_interval_set(res->paf[i]->itv, res->box[i]);
         for (i=0; i<array->size; i++) {
-          aff[i] = zonotope_aff_from_linexpr0(pr, array->p[i].linexpr0, z);
-          linexpr0 = elina_linexpr0_from_zonotope(pr, aff[i], z);
-
-          if (aff[i]->q != NULL) {
-            /* only the centers are involved in this constraint, already treated
-             * while updating res->box */
-
-            /* infer constraints on noise symbols */
-            // linexpr0 = zonotope_elina_linexpr0_set_aff(pr, aff[i], res);
-
-            lincons0.constyp = array->p[i].constyp;
-            lincons0.linexpr0 = linexpr0;
-            lincons0.scalar = array->p[i].scalar;
-            elina_lincons0_array_t eps_lincons_array;
-            eps_lincons_array.size = 1;
-            eps_lincons_array.p = &lincons0;
-            elina_abstract0_meet_lincons_array(pr->manNS, true, res->abs,
-                                               &eps_lincons_array);
-
-            if (elina_abstract0_is_bottom(pr->manNS, res->abs)) {
-              is_bottom = true;
-              break;
-            }
+	    aff[i] = zonotope_aff_from_linexpr0(pr, array->p[i].linexpr0, res);
+	    linexpr0 = elina_linexpr0_from_zonotope(pr,aff[i],res);
+        //elina_dimension_t dimension = elina_abstract0_dimension(pr->manNS,z->abs);
+        //printf("dimension: %d %d\n",dimension.intdim,dimension.realdim);
+        //fflush(stdout);
+        
+        //elina_dimension_t dimension2 = elina_abstract0_dimension(pr->manNS,res->abs);
+        //printf("dimension2: %d %d\n",dimension2.intdim,dimension2.realdim);
+        //fflush(stdout);
+        
+	    if (aff[i]->q != NULL) {
+		/* only the centers are involved in this constraint, already treated while updating res->box */
+		
+		
+		/* infer constraints on noise symbols */
+		//linexpr0 = zonotope_elina_linexpr0_set_aff(pr, aff[i], res);
+		
+		lincons0.constyp = array->p[i].constyp;
+		lincons0.linexpr0 = linexpr0;
+		lincons0.scalar = array->p[i].scalar;
+		elina_lincons0_array_t eps_lincons_array;
+		eps_lincons_array.size = 1;
+		eps_lincons_array.p = &lincons0;
+            //printf("library before %s %s %d\n",pr->manNS->library,res->abs->man->library,destructive);
+           //fflush(stdout);
+		elina_abstract0_meet_lincons_array(pr->manNS, true, res->abs, &eps_lincons_array);
+                // printf("library after %s %p
+                // %d\n",pr->manNS->library,res->abs->man,destructive);
+                // fflush(stdout);
+                if (elina_abstract0_is_bottom(pr->manNS, res->abs)) {
+		    is_bottom = true;
+		    break;
+		}
 	    }
 	    elina_linexpr0_free(linexpr0);
 	}

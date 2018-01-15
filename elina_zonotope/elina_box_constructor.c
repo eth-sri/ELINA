@@ -85,6 +85,7 @@ elina_dimension_t elina_box_dimension(elina_manager_t* man, elina_box_t* a)
   elina_dimension_t res;
   res.intdim = a->intdim;
   res.realdim = a->realdim;
+   // printf("intdim: %d realdim: %d\n",res.intdim,res.realdim);
   return res;
 }
 

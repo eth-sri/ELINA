@@ -74,7 +74,7 @@ elina_box_t* elina_box_remove_dimensions(elina_manager_t* man,
   size_t size;
   size_t dimsup;
   size_t i,k;
-
+ 
   man->result.flag_best = true;  
   man->result.flag_exact = true;  
   res = destructive ? a : elina_box_copy(man,a);
@@ -99,6 +99,5 @@ elina_box_t* elina_box_remove_dimensions(elina_manager_t* man,
  elina_box_remove_dimensions_exit:
   res->intdim = a->intdim-dimchange->intdim;
   res->realdim = a->realdim-dimchange->realdim;
-
   return res;
 }
