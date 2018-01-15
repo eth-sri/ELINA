@@ -79,6 +79,8 @@ elina_box_t* elina_box_meet_lincons_array(elina_manager_t* man,
 			      elina_box_t* a,
 			      elina_lincons0_array_t* array)
 {
+    //printf("start %p\n",man);
+    //fflush(stdout);
   elina_box_t* res;
   size_t kmax;
   elina_lincons0_array_t tlincons;
@@ -112,6 +114,8 @@ elina_box_t* elina_box_meet_lincons_array(elina_manager_t* man,
     elina_lincons0_array_clear(&tlincons);
     
   }
+    //printf("finish %p\n",man);
+    //fflush(stdout);
   return res;
 }
 

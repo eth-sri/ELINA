@@ -5,7 +5,11 @@
 /**********************/
 zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, zonotope_t* z, elina_lincons0_array_t* array)
 {
-    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_MEET_LINCONS_ARRAY);
+    
+     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_MEET_LINCONS_ARRAY);
+    //printf("meet start %d\n",destructive);
+      //  fflush(stdout);
+   
     //arg_assert(a && array, abort(););
     size_t i = 0;
     zonotope_t* res = destructive ? z : zonotope_copy(man, z);
@@ -48,11 +52,18 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 	elina_linexpr0_t* linexpr0 = NULL;
 	elina_lincons0_t lincons0;
 	elina_interval_t cst;
-	for (i=0; i<z->dims; i++) elina_interval_set(z->paf[i]->itv, z->box[i]);
+	for (i=0; i<z->dims; i++) elina_interval_set(res->paf[i]->itv, res->box[i]);
 	for (i=0; i<array->size; i++) {
-	    aff[i] = zonotope_aff_from_linexpr0(pr, array->p[i].linexpr0, z);
-	    linexpr0 = elina_linexpr0_from_zonotope(pr,aff[i],z);
-		
+	    aff[i] = zonotope_aff_from_linexpr0(pr, array->p[i].linexpr0, res);
+	    linexpr0 = elina_linexpr0_from_zonotope(pr,aff[i],res);
+        //elina_dimension_t dimension = elina_abstract0_dimension(pr->manNS,z->abs);
+        //printf("dimension: %d %d\n",dimension.intdim,dimension.realdim);
+        //fflush(stdout);
+        
+        //elina_dimension_t dimension2 = elina_abstract0_dimension(pr->manNS,res->abs);
+        //printf("dimension2: %d %d\n",dimension2.intdim,dimension2.realdim);
+        //fflush(stdout);
+        
 	    if (aff[i]->q != NULL) {
 		/* only the centers are involved in this constraint, already treated while updating res->box */
 		
@@ -66,8 +77,11 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 		elina_lincons0_array_t eps_lincons_array;
 		eps_lincons_array.size = 1;
 		eps_lincons_array.p = &lincons0;
+            //printf("library before %s %s %d\n",pr->manNS->library,res->abs->man->library,destructive);
+           //fflush(stdout);
 		elina_abstract0_meet_lincons_array(pr->manNS, true, res->abs, &eps_lincons_array);
-		
+           // printf("library after %s %p %d\n",pr->manNS->library,res->abs->man,destructive);
+           // fflush(stdout);
 		if (elina_abstract0_is_bottom(pr->manNS, res->abs)) {
 		    is_bottom = true;
 		    break;

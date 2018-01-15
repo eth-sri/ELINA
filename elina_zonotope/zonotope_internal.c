@@ -106,7 +106,7 @@ elina_manager_t* zonotope_manager_alloc(void)
 	/* 1.Meet */
 	//funptr[ELINA_FUNID_MEET] = &zonotope_meet; /* */
 	//funptr[ELINA_FUNID_MEET_ARRAY] = &zonotope_meet_array; /*  */
-	//funptr[ELINA_FUNID_MEET_LINCONS_ARRAY] = &zonotope_meet_lincons_array; /*  */
+	funptr[ELINA_FUNID_MEET_LINCONS_ARRAY] = &zonotope_meet_lincons_array; /*  */
 	//funptr[ELINA_FUNID_MEET_TCONS_ARRAY] = &zonotope_meet_tcons_array; /*  */
 	/* 2.Join */
 	funptr[ELINA_FUNID_JOIN] = &zonotope_join;
@@ -149,6 +149,8 @@ elina_manager_t* zonotope_manager_alloc(void)
 /* back pointer to our internal structure from the manager */
 zonotope_internal_t* zonotope_init_from_manager(elina_manager_t* man, elina_funid_t funid)
 {
+	//printf("funid: %d %d\n",funid,funid==ELINA_FUNID_UNKNOWN);
+	//fflush(stdout);
     zonotope_internal_t* pr = (zonotope_internal_t*)man->internal;
     pr->funid = funid;
     if (!(pr->man)) pr->man = man;

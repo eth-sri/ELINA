@@ -28,7 +28,9 @@ zonotope_t* zonotope_forget_array(elina_manager_t* man,
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_FORGET_ARRAY);
     zonotope_t* res;
     size_t i;
-
+	//printf("forget input %d\n",project);
+	//zonotope_fprint(stdout,man,z,NULL);
+	//fflush(stdout);
     man->result.flag_best = true;
     man->result.flag_exact = true;
 
@@ -47,6 +49,9 @@ zonotope_t* zonotope_forget_array(elina_manager_t* man,
 	    res->paf[tdim[i]]->pby++;
 	}
     }
+	//printf("forget output\n");
+	//zonotope_fprint(stdout,man,res,NULL);
+	//fflush(stdout);
     return res;
     //not_implemented();
 }

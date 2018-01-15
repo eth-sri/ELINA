@@ -187,6 +187,52 @@ static inline zonotope_noise_symbol_t* zonotope_noise_symbol_add(zonotope_intern
     return res;
 }
 
+    
+    static inline void zonotope_noise_symbol_fprint(FILE* stream, zonotope_noise_symbol_t *eps)
+    {
+        switch (eps->type) {
+            case IN: fprintf(stream,"(eps%u)",eps->index); break;
+            case UN: fprintf(stream,"(eta%u)",eps->index); break;
+            default: fprintf(stderr,"error: unknown type of noise symbol, aborting...\n"); abort(); break;
+        }
+    }
+    
+    
+    /* Pretty print an affine term */
+    static inline void zonotope_aaterm_fprint(zonotope_internal_t *pr, FILE* stream, zonotope_aaterm_t *ptr)
+    {
+        if (!elina_scalar_infty(ptr->coeff->inf) && elina_scalar_equal(ptr->coeff->inf,ptr->coeff->sup)){
+            elina_scalar_fprint(stream,ptr->coeff->sup);
+        }
+        else elina_interval_fprint(stream, ptr->coeff);
+        fprintf(stream,".");
+        zonotope_noise_symbol_fprint(stream,ptr->pnsym);
+    }
+    
+
+    /* pretty print an Affine expression: expr/top/bottom */
+    static inline void zonotope_aff_fprint(zonotope_internal_t* pr, FILE* stream, zonotope_aff_t *expr)
+    {
+        if(expr==NULL){
+            return;
+        }
+        
+        zonotope_aaterm_t* p;
+        if (!elina_scalar_infty(expr->c->inf) && elina_scalar_equal(expr->c->inf,expr->c->sup)){
+            elina_scalar_fprint(stream,expr->c->sup);
+        }
+        else elina_interval_fprint(stream, expr->c);
+        /* Print values */
+        for (p=expr->q; p; p=p->n) {
+            fprintf(stream," + ");
+            zonotope_aaterm_fprint(pr, stream, p);
+        }
+        fprintf(stream,"\t;");
+        elina_interval_fprint(stream, expr->itv);
+        fprintf(stream,"\t");
+        fflush(stream);
+    }
+
 
 /*******************************/
 /* Zonotope internal structure */
@@ -715,6 +761,7 @@ static inline zonotope_aff_t* zonotope_aff_add(zonotope_internal_t* pr, zonotope
 	    }
 	}
     }
+    
     elina_interval_add(res->itv, exprA->itv, exprB->itv, ELINA_SCALAR_DOUBLE);
     elina_scalar_max(res->itv->inf, res->itv->inf, box->inf);
     elina_scalar_min(res->itv->sup, res->itv->sup, box->sup);
@@ -789,9 +836,11 @@ static inline zonotope_aff_t * zonotope_aff_from_linexpr0(zonotope_internal_t* p
 	elina_coeff_t * cst = &(expr->cst);
 	if(cst->discr==ELINA_COEFF_SCALAR){
 		elina_interval_set_scalar(res->c, cst->val.scalar,cst->val.scalar);
+        elina_interval_set_scalar(res->itv, cst->val.scalar,cst->val.scalar);
 	}
 	else{
-		elina_interval_set(res->c, cst->val.interval);		
+		elina_interval_set(res->c, cst->val.interval);
+        elina_interval_set(res->itv, cst->val.interval);
 	}
 	elina_linexpr0_ForeachLinterm(expr,i,dim,coeff) {
 		zonotope_aff_t *aff = z->paf[dim];
@@ -805,8 +854,14 @@ static inline zonotope_aff_t * zonotope_aff_from_linexpr0(zonotope_internal_t* p
     		elina_interval_t *interval = coeff->val.interval;
 		zonotope_aff_t *tmp = zonotope_aff_mul_itv(pr,aff,interval);
 		zonotope_aff_t *tmp1 = res;
+        //printf("affine add inputs\n");
+        //zonotope_aff_fprint(pr,stdout,tmp1);
+        //zonotope_aff_fprint(pr,stdout,tmp);
+        //fflush(stdout);
 		res = zonotope_aff_add(pr,tmp1,tmp,z);		
-    		
+        //printf("affine add output\n");
+        //zonotope_aff_fprint(pr,stdout,res);
+        //fflush(stdout);
 		zonotope_aff_free(pr,tmp);
 		zonotope_aff_free(pr,tmp1);
   	}
@@ -830,49 +885,6 @@ static inline elina_linexpr0_t * elina_linexpr0_from_zonotope(zonotope_internal_
 	return res;
 }
 
-static inline void zonotope_noise_symbol_fprint(FILE* stream, zonotope_noise_symbol_t *eps)
-{
-    switch (eps->type) {
-	case IN: fprintf(stream,"(eps%u)",eps->index); break;
-	case UN: fprintf(stream,"(eta%u)",eps->index); break;
-	default: fprintf(stderr,"error: unknown type of noise symbol, aborting...\n"); abort(); break;
-    }
-}
-
-
-/* Pretty print an affine term */
-static inline void zonotope_aaterm_fprint(zonotope_internal_t *pr, FILE* stream, zonotope_aaterm_t *ptr)
-{
-    if (!elina_scalar_infty(ptr->coeff->inf) && elina_scalar_equal(ptr->coeff->inf,ptr->coeff->sup)){
-	 elina_scalar_fprint(stream,ptr->coeff->sup);
-    }
-    else elina_interval_fprint(stream, ptr->coeff);
-    fprintf(stream,".");
-    zonotope_noise_symbol_fprint(stream,ptr->pnsym);
-}
-
-/* pretty print an Affine expression: expr/top/bottom */
-static inline void zonotope_aff_fprint(zonotope_internal_t* pr, FILE* stream, zonotope_aff_t *expr)
-{
-    if(expr==NULL){
-	return;
-    }
-    
-    zonotope_aaterm_t* p;
-    if (!elina_scalar_infty(expr->c->inf) && elina_scalar_equal(expr->c->inf,expr->c->sup)){
-	 elina_scalar_fprint(stream,expr->c->sup);
-    }
-    else elina_interval_fprint(stream, expr->c);
-    /* Print values */
-    for (p=expr->q; p; p=p->n) {
-	fprintf(stream," + ");
-	zonotope_aaterm_fprint(pr, stream, p);
-    }
-    fprintf(stream,"\t;");
-    elina_interval_fprint(stream, expr->itv);
-    fprintf(stream,"\t");
-    fflush(stream);
-}
 
 
 /* reduce the center and coefficients of the central part (C) to smaller intervals and add a new noise symbol */
