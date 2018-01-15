@@ -82,6 +82,12 @@ elina_linexpr0_t* elina_intlinearize_texpr0_intlinear(elina_manager_t* man,
 						elina_texpr0_t* expr,
 						elina_scalar_discr_t discr);
 
+bool elina_boxize_lincons0_array(elina_interval_t** res,bool* tchange,
+				      elina_lincons0_array_t* array,
+				      elina_interval_t** env, size_t intdim,
+				      size_t kmax,
+				      bool intervalonly, elina_scalar_discr_t discr);
+
 /* ********************************************************************** */
 /* III. Interval linearization of tree expressions */
 /* ********************************************************************** */
