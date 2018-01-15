@@ -212,13 +212,11 @@ void elina_interval_to_double(elina_interval_t *a, elina_interval_t *b, elina_sc
 
 /* Assume that both intervals are positive */
 static void elina_interval_divpp(elina_interval_t *a, elina_interval_t *b, elina_interval_t *c, elina_scalar_discr_t discr){
-  
   elina_scalar_t * tmp = elina_scalar_alloc();
   elina_scalar_set(tmp,c->inf);
   elina_scalar_div(a->inf,b->inf,c->sup, discr);
   elina_scalar_div(a->sup,b->sup,tmp, discr);
   elina_scalar_free(tmp);
-	
 }
 
 /* Assume that both intervals are negative */

@@ -1645,6 +1645,7 @@ elina_lincons0_array_t elina_intlinearize_tcons0_array(elina_manager_t* man,
 						 elina_linexpr_type_t linearize, bool meet,
 						 bool boxize, size_t kmax, bool intervalonly)
 {
+	
   elina_dimension_t dim = {0,0};
   elina_interval_t** env = NULL;
   elina_lincons0_array_t res;
@@ -1654,8 +1655,9 @@ elina_lincons0_array_t elina_intlinearize_tcons0_array(elina_manager_t* man,
 
   if (pexact) *pexact = false;
   assert(!elina_abstract0_is_bottom(man,abs));
-  env = elina_abstract0_to_box(man,abs);
   
+  env = elina_abstract0_to_box(man,abs);
+
   dim = elina_abstract0_dimension(man,abs);
   size = dim.intdim+dim.realdim;
   for(i=0; i < size; i++){
@@ -1675,6 +1677,7 @@ elina_lincons0_array_t elina_intlinearize_tcons0_array(elina_manager_t* man,
   
   elina_intlinearize_elina_tcons0_array(&res,
 				   array,env, dim.intdim,discr);
+ 
   if (res.size==1 && 
       res.p[0].linexpr0->size==0)
     goto elina_intlinearize_tcons0_array_exit;
@@ -1759,9 +1762,10 @@ elina_lincons0_array_t elina_intlinearize_tcons0_array(elina_manager_t* man,
     }
     elina_lincons0_array_reinit(&res,size);
   }
-
+  
  elina_intlinearize_tcons0_array_exit:
   if (tchange) free(tchange);
   elina_interval_array_free(env,dim.intdim+dim.realdim);
+  
   return res; 
 }
