@@ -728,6 +728,7 @@ static inline void zonotope_noise_symbol_cons_get_gamma(zonotope_internal_t *pr,
   } else {
     elina_dim_t dim;
     if (zonotope_noise_symbol_cons_get_dimpos(pr, &dim, nsymIndex, z)) {
+
       elina_interval_set(res, z->gamma[dim]);
 
     } else
@@ -801,10 +802,12 @@ static inline zonotope_aff_t *zonotope_aff_add(zonotope_internal_t *pr,
   }
 
   elina_interval_add(res->itv, exprA->itv, exprB->itv, ELINA_SCALAR_DOUBLE);
+
   elina_scalar_max(res->itv->inf, res->itv->inf, box->inf);
   elina_scalar_min(res->itv->sup, res->itv->sup, box->sup);
   elina_interval_free(box);
   elina_interval_free(tmp);
+
   return res;
 }
 
@@ -895,14 +898,9 @@ zonotope_aff_from_linexpr0(zonotope_internal_t *pr, elina_linexpr0_t *expr,
     elina_interval_t *interval = coeff->val.interval;
     zonotope_aff_t *tmp = zonotope_aff_mul_itv(pr, aff, interval);
     zonotope_aff_t *tmp1 = res;
-    // printf("affine add inputs\n");
-    // zonotope_aff_fprint(pr,stdout,tmp1);
-    // zonotope_aff_fprint(pr,stdout,tmp);
-    // fflush(stdout);
+
     res = zonotope_aff_add(pr, tmp1, tmp, z);
-    // printf("affine add output\n");
-    // zonotope_aff_fprint(pr,stdout,res);
-    // fflush(stdout);
+
     zonotope_aff_free(pr, tmp);
     zonotope_aff_free(pr, tmp1);
   }
@@ -1471,8 +1469,8 @@ static inline zonotope_internal_t* zonotope_internal_alloc(elina_manager_t* manN
     pr->manNS = manNS;
     pr->box = elina_box_manager_alloc();
     pr->muu = elina_interval_alloc();
-    // elina_interval_set_int2(pr->muu, (long int)-1, (long int)1);
-
+    elina_scalar_set_int(pr->muu->inf, (long int)-1);
+    elina_scalar_set_int(pr->muu->sup, (long int)1);
     pr->ap_muu = elina_interval_alloc();
     //ap_interval_set_itv(pr->itv, pr->ap_muu, pr->muu);
     pr->moo = elina_lincons0_array_make(2);
