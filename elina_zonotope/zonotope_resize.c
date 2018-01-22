@@ -185,7 +185,7 @@ zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, 
     res->paf = (zonotope_aff_t**)malloc(res->dims*sizeof(zonotope_aff_t*));
     size_t i = 0;
     size_t j = 0;
-    for (i=0; i< num_rem; i++) {
+    for (i=0; i< permutation->size; i++) {
         j = permutation->dim[i];
         res->paf[i] = zonotope_aff_alloc_init(pr);
         //printf("coming here: %d %d %d %d %p %d\n",i,j,num_rem,num_remove,res->paf[i],res->dims);

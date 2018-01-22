@@ -19,7 +19,7 @@
  */
 
 #ifndef _ELINA_BOX_H_
-#define _ELINA_H_
+#define _ELINA_BOX_H_
 
 #include <stdio.h>
 #if defined (HAS_APRON)
