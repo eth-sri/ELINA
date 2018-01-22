@@ -42,14 +42,15 @@ extern "C" {
 //#include "itv_linearize.h"
 
 #else
+#include "elina_abstract0.h"
 #include "elina_coeff.h"
 #include "elina_dimension.h"
-#include "elina_linexpr0.h"
-#include "elina_texpr0.h"
+#include "elina_interval.h"
 #include "elina_lincons0.h"
-#include "elina_tcons0.h"
+#include "elina_linexpr0.h"
 #include "elina_manager.h"
-#include "elina_abstract0.h"
+#include "elina_tcons0.h"
+#include "elina_texpr0.h"
 #endif
 
 #include "elina_box.h"
