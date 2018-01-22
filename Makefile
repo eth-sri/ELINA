@@ -46,7 +46,9 @@ endif
 	(cd elina_linearize; make all)
 	(cd partitions_api; make all)
 	(cd elina_oct; make all)
-	(cd elina_poly; make all) 
+	(cd elina_poly; make all)
+	(cd elina_zones; make all)
+	(cd elina_zonotope; make all) 
 	
 
 install:
@@ -57,6 +59,8 @@ endif
 	(cd partitions_api; make install)
 	(cd elina_oct; make install)
 	(cd elina_poly; make install)
+	(cd elina_zones; make install)
+	(cd elina_zonotope; make install)
 	(cd apron_interface; make install)
 ifneq ($(HAS_OCAML),) 
 	(cd ocaml_interface; make all)
@@ -73,6 +77,8 @@ endif
 	(cd partitions_api; make clean)
 	(cd elina_oct; make clean)
 	(cd elina_poly; make clean)
+	(cd elina_zones; make clean)
+	(cd elina_zonotope; make clean)
 ifneq ($(HAS_OCAML),) 
 	(cd ocaml_interface; make clean)
 endif
