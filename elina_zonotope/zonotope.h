@@ -43,6 +43,7 @@ extern "C" {
 //#include "itv_linearize.h"
 
 #else
+#include "elina_interval.h"
 #include "elina_coeff.h"
 #include "elina_dimension.h"
 #include "elina_linexpr0.h"
