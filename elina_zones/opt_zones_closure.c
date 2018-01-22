@@ -354,7 +354,7 @@ void strengthening_inter_comp_zones(opt_zones_mat_t *oz, array_comp_list_t *acl,
 		free(ca_arr[k]);
 	}
 	free(ca_arr);
-        return false;
+	return;
 }
 
 
