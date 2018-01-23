@@ -785,7 +785,7 @@ static inline bool zonotope_insert_constrained_noise_symbol(zonotope_internal_t 
     uint_t size = zonotope_noise_symbol_cons_get_dimension(pr, z);
     uint_t dim = 0;
     bool addconsnsym = false;
-
+   
     /* resize nsymcons array if needed */
     if ((size + 1) % 128 == 0) {
 	z->size += 128;
@@ -805,6 +805,7 @@ static inline bool zonotope_insert_constrained_noise_symbol(zonotope_internal_t 
 	*res = size;
 	pr->dimchange->dim[0] = size;
 	elina_abstract0_add_dimensions(pr->manNS, true, z->abs, pr->dimchange, false);
+        
 	addconsnsym= true;
     } else {
 	if (!findKR((uint_t *)&dim, nsymIndex, (uint_t*)z->nsymcons, size)) {
@@ -823,11 +824,14 @@ static inline bool zonotope_insert_constrained_noise_symbol(zonotope_internal_t 
 	    addconsnsym = false;
 	}
     }
+    
     if (addconsnsym) {
 	zonotope_set_lincons_dim(pr, pr->dimchange->dim[0]);
+        //elina_abstract0_fprint(stdout,pr->manNS,z->abs,NULL);
 	elina_abstract0_meet_lincons_array(pr->manNS, true, z->abs, &pr->moo);
+         //elina_abstract0_fprint(stdout,pr->manNS,z->abs,NULL);
     }
-
+    //printf("addconsnsym: %d\n",addconsnsym);
     return addconsnsym;
 }
 
@@ -878,6 +882,7 @@ static inline elina_linexpr0_t * elina_linexpr0_from_zonotope(zonotope_internal_
 		/* update a->abs with new constrained noise symbols */
 		zonotope_insert_constrained_noise_symbol(pr, &dim, p->pnsym->index, z);
 		res->p.linterm[k].dim = dim;
+        //printf("k: %d dim: %d\n",k,dim);
 		k++;
 	}
 	return res;
@@ -896,8 +901,12 @@ static inline bool zonotope_aff_reduce(zonotope_internal_t* pr, zonotope_aff_t *
     elina_interval_t *sum = elina_interval_alloc();
     elina_interval_t *itv = elina_interval_alloc();
     bool ok = false;
-
-    if (elina_scalar_infty(expr->c->inf) || elina_scalar_infty(expr->c->sup)) ok = false;
+    //printf("aff\n");
+    //zonotope_aff_fprint(pr,stdout,expr);
+    if (elina_scalar_infty(expr->c->inf) || elina_scalar_infty(expr->c->sup)){
+        ok = false;
+        //printf("ok2\n");
+    }
     else {
         elina_scalar_set_double(eps,5*1.11022302462515654042e-16);  /* threshold : last bit in the mantissa in double precision */
 	elina_scalar_sub(err,expr->c->sup,expr->c->inf,ELINA_SCALAR_DOUBLE);
@@ -917,10 +926,13 @@ static inline bool zonotope_aff_reduce(zonotope_internal_t* pr, zonotope_aff_t *
 		    elina_interval_set_top(expr->c);
 		    elina_interval_set_top(expr->itv);
 		}
+            //printf("ok1\n");
 		ok = false;
 		elina_interval_set_int(sum,0, ELINA_SCALAR_DOUBLE);
 		break;
 	    } else {
+            //printf("ok3\n");
+            //elina_interval_fprint(stdout,p->coeff);
 		elina_scalar_sub(err,p->coeff->sup,p->coeff->inf,ELINA_SCALAR_DOUBLE);
 		if (elina_scalar_cmp(err, eps) > 0) {
 		    elina_interval_middev(mid, dev, p->coeff);
@@ -929,6 +941,8 @@ static inline bool zonotope_aff_reduce(zonotope_internal_t* pr, zonotope_aff_t *
 		}
 	    }
 	}
+        //printf("sum\n");
+        //elina_interval_fprint(stdout,sum);
 	if (!elina_scalar_sgn(sum->inf) && !elina_scalar_sgn(sum->sup)) ok = false;
 	else {
 	    elina_scalar_set(itv->sup, sum->sup);
@@ -1217,10 +1231,10 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 	array[3] = elina_scalar_alloc();
 
 	elina_scalar_set(array[0],c1->inf);
-	elina_scalar_neg(array[0],array[0]);
+	//elina_scalar_neg(array[0],array[0]);
 	elina_scalar_add(array[0],array[0],d1->sup, ELINA_SCALAR_DOUBLE);
 	elina_scalar_set(array[1],c2->inf);
-	elina_scalar_neg(array[1],array[1]);
+	//elina_scalar_neg(array[1],array[1]);
 	elina_scalar_add(array[1],array[1],d2->sup, ELINA_SCALAR_DOUBLE);
 	elina_scalar_set(array[2],c1->sup);
 	elina_scalar_add(array[2],array[2],d1->sup, ELINA_SCALAR_DOUBLE);
@@ -1233,8 +1247,10 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 	    if (elina_scalar_cmp(dmax,array[i]) < 0) elina_scalar_set(dmax, array[i]);
 
 	elina_scalar_set(array[0],c1->inf);
+    elina_scalar_neg(array[0],array[0]);
 	elina_scalar_add(array[0],array[0],d1->sup, ELINA_SCALAR_DOUBLE);
 	elina_scalar_set(array[1],c2->inf);
+    elina_scalar_neg(array[1],array[1]);
 	elina_scalar_add(array[1],array[1],d2->sup, ELINA_SCALAR_DOUBLE);
 	elina_scalar_set(array[2],c1->sup);
 	elina_scalar_neg(array[2],array[2]);
