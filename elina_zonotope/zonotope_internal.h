@@ -37,7 +37,7 @@
 extern "C" {
 #endif
 
-typedef unsigned int uint_t;
+typedef unsigned  int uint_t;
 
 /**************************************************************************************************/
 /* INTERNAL DATA TYPE */
@@ -76,13 +76,21 @@ struct _zonotope_aff_t {
     elina_interval_t *	c;	/* center */
     zonotope_aaterm_t*	q;	/* first center term (epsilons) aaterm */
     zonotope_aaterm_t*	end;	/* quick jump to the last center term : to add a new term for instance */
-    uint_t		l;	/* number of noise symbols */
-    uint_t		pby;	/* # pointers to this affine form */
+    unsigned long long int		l;	/* number of noise symbols */
+    unsigned long long int		pby;	/* # pointers to this affine form */
     elina_interval_t*	itv;	/* best known interval concretisation */
 };
 typedef struct _zonotope_aff_t zonotope_aff_t;
 
-
+    static inline zonotope_aff_t * zonotope_aff_copy(zonotope_aff_t *src){
+        zonotope_aff_t *res = (zonotope_aff_t *)malloc(sizeof(zonotope_aff_t));
+        res->c  = elina_interval_alloc_set(src->c);
+        res->q = src->q==NULL? NULL: (zonotope_aaterm_t *)malloc(sizeof(zonotope_aaterm_t *));
+        res->end = src->end==NULL? NULL:(zonotope_aaterm_t *)malloc(sizeof(zonotope_aaterm_t *));
+        res->l = src->l;
+        res->itv = elina_interval_alloc_set(src->itv);
+        return res;
+    }
 
 typedef struct _zonotope_internal_t {
     //zonotope_internal_t* itv;		/* interval internal representation */
@@ -116,7 +124,7 @@ typedef struct _zonotope_t {
     elina_abstract0_t* 	abs;        	/* nsym abstract object (=contraints over noise symbols)*/
     elina_dim_t*	nsymcons;       /* array of index of constrained noise symbols */
     elina_interval_t**	gamma;		/* pointer to an array which contains the concretisations of constrained noise symbols if any */
-    uint_t		size;		/* size of nsymcons and gamma */
+    unsigned long long int		size;		/* size of nsymcons and gamma */
     bool		hypercube;	/* true if no constrained nsym */
     elina_interval_t**	g;	/* array of the generators of the zonotope - a oublier */
     uint_t		gn;		/* size of generators - a oublier */
@@ -289,7 +297,7 @@ static inline void zonotope_aff_free(zonotope_internal_t *pr, zonotope_aff_t *a)
 static inline void zonotope_aff_check_free(zonotope_internal_t *pr, zonotope_aff_t *a)
 {
     if(a==NULL){return;}
-    if (a->pby) a->pby--;
+    if (a->pby>0) a->pby--;
     if (a->pby == 0) {
       if ((a != pr->top) && (a != pr->bot)) zonotope_aff_free(pr, a);
     }
@@ -1276,7 +1284,7 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 	} else {
 	    elina_scalar_set(min, c1->inf);
 	}
-	elina_scalar_neg(min,min);
+	//elina_scalar_neg(min,min);
 
 	if (elina_scalar_cmp(c1->sup,c2->sup) < 0) {
 	    elina_scalar_set(max, c2->sup);
