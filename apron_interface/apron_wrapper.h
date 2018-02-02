@@ -172,7 +172,20 @@ extern "C" {
 #define ELINA_FUNID_SIZE AP_FUNID_SIZE
 
 #define elina_abstract0_t ap_abstract0_t
+#define elina_abstract0_is_bottom ap_abstract0_is_bottom
+#define elina_abstract0_meet_lincons_array ap_abstract0_meet_lincons_array 
+#define elina_abstract0_assign_linexpr_array ap_abstract0_assign_linexpr_array
+#define elina_abstract0_top ap_abstract0_top
+#define elina_abstract0_bottom ap_abstract0_bottom
+#define elina_abstract0_is_top ap_abstract0_is_top
+#define elina_abstract0_is_bottom ap_abstract0_is_bottom
+#define elina_abstract0_is_eq ap_abstract0_is_eq
+#define elina_abstract0_is_leq ap_abstract0_is_leq
+#define elina_abstract0_meet ap_abstract0_meet
+#define elina_abstract0_join ap_abstract0_join
+#define elina_abstract0_widening ap_abstract0_widening
 #define elina_abstract0_to_box ap_abstract0_to_box
+#define elina_abstract0_of_box ap_abstract0_of_box
 #define elina_abstract0_dimension ap_abstract0_dimension
 
 #define elina_constyp_t ap_constyp_t
