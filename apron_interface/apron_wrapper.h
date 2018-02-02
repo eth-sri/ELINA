@@ -181,6 +181,8 @@ extern "C" {
 #define elina_abstract0_meet_lincons_array ap_abstract0_meet_lincons_array 
 #define elina_abstract0_assign_linexpr_array ap_abstract0_assign_linexpr_array
 #define elina_abstract0_top ap_abstract0_top
+#define elina_abstract0_copy ap_abstract0_copy
+#define elina_abstract0_fprint ap_abstract0_fprint
 #define elina_abstract0_free ap_abstract0_free
 #define elina_abstract0_bottom ap_abstract0_bottom
 #define elina_abstract0_is_top ap_abstract0_is_top
