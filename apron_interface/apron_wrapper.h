@@ -68,6 +68,7 @@ extern "C" {
 #define elina_interval_set_int ap_interval_set_int
 #define elina_interval_set_scalar ap_interval_set_scalar
 #define elina_interval_is_bottom ap_interval_is_bottom
+#define elina_interval_is_leq ap_interval_is_leq
 #define elina_interval_free ap_interval_free
 #define elina_interval_is_top ap_interval_is_top
 #define elina_interval_fprint ap_interval_fprint
