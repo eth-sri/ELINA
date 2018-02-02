@@ -195,8 +195,8 @@ extern "C" {
 #define elina_abstract0_of_box ap_abstract0_of_box
 #define elina_abstract0_dimension ap_abstract0_dimension
 #define elina_abstract0_bound_dimension ap_abstract0_bound_dimension
-#define elina_abstract0_add_dimension ap_abstract0_add_dimension
-#define elina_abstract0_remove_dimension ap_abstract0_remove_dimension
+#define elina_abstract0_add_dimensions ap_abstract0_add_dimensions
+#define elina_abstract0_remove_dimensions ap_abstract0_remove_dimensions
 #define elina_abstract0_permute_dimension ap_abstract0_permute_dimension
 #define elina_abstract0_bound_linexpr ap_abstract0_bound_linexpr
     
