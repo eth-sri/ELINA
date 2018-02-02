@@ -186,7 +186,7 @@ void opt_vector_set_elina_lincons0(opt_pk_internal_t* opk,
   assert(cons->constyp == ELINA_CONS_EQ ||
 	 cons->constyp == ELINA_CONS_SUPEQ ||
 	 cons->constyp == ELINA_CONS_SUP);
-  assert(elina_linexpr0_is_linear(cons->linexpr));
+  assert(elina_linexpr0_is_linear(cons->linexpr0));
 
   opt_vector_set_elina_linexpr0(opk, ov, cons->linexpr0, intdim+realdim,1);
   opt_vector_normalize(opk,ov,opk->dec+intdim+realdim);
