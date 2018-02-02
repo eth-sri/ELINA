@@ -62,6 +62,7 @@ extern "C" {
 #define elina_interval_set_bottom ap_interval_set_bottom
 #define elina_interval_set_top ap_interval_set_top
 #define elina_interval_alloc ap_interval_alloc
+#define elina_interval_alloc_set ap_interval_alloc_set
 #define elina_interval_array_alloc ap_interval_array_alloc
 #define elina_interval_reinit ap_interval_reinit
 #define elina_interval_set ap_interval_set
@@ -69,6 +70,7 @@ extern "C" {
 #define elina_interval_set_scalar ap_interval_set_scalar
 #define elina_interval_is_bottom ap_interval_is_bottom
 #define elina_interval_is_leq ap_interval_is_leq
+#define elina_interval_cmp ap_interval_cmp
 #define elina_interval_free ap_interval_free
 #define elina_interval_is_top ap_interval_is_top
 #define elina_interval_fprint ap_interval_fprint
@@ -125,10 +127,12 @@ extern "C" {
 #define ELINA_EXC_OVERFLOW AP_EXC_OVERFLOW
 #define ELINA_EXC_NONE AP_EXC_NONE
 #define ELINA_EXC_NOT_IMPLEMENTED AP_EXC_NOT_IMPLEMENTED
+#define ELINA_EXC_INVALID_ARGUMENT AP_EXC_INVALID_ARGUMENT
 #define ELINA_EXC_SIZE AP_EXC_SIZE
 
 
 #define ELINA_FUNID_COPY AP_FUNID_COPY
+#define ELINA_FUNID_UNKNOWN AP_FUNID_UNKNOWN
 #define ELINA_FUNID_FREE AP_FUNID_FREE
 #define ELINA_FUNID_CLOSURE AP_FUNID_CLOSURE
 #define ELINA_FUNID_ASIZE AP_FUNID_ASIZE
@@ -178,6 +182,7 @@ extern "C" {
 #define elina_abstract0_meet_lincons_array ap_abstract0_meet_lincons_array 
 #define elina_abstract0_assign_linexpr_array ap_abstract0_assign_linexpr_array
 #define elina_abstract0_top ap_abstract0_top
+#define elina_abstract0_free ap_abstract0_free
 #define elina_abstract0_bottom ap_abstract0_bottom
 #define elina_abstract0_is_top ap_abstract0_is_top
 #define elina_abstract0_is_bottom ap_abstract0_is_bottom
@@ -189,6 +194,12 @@ extern "C" {
 #define elina_abstract0_to_box ap_abstract0_to_box
 #define elina_abstract0_of_box ap_abstract0_of_box
 #define elina_abstract0_dimension ap_abstract0_dimension
+#define elina_abstract0_bound_dimension ap_abstract0_bound_dimension
+#define elina_abstract0_add_dimension ap_abstract0_add_dimension
+#define elina_abstract0_remove_dimension ap_abstract0_remove_dimension
+#define elina_abstract0_permute_dimension ap_abstract0_permute_dimension
+#define elina_abstract0_bound_linexpr ap_abstract0_bound_linexpr
+    
 
 #define elina_constyp_t ap_constyp_t
 #define elina_linexpr_discr_t ap_linexpr_discr_t
@@ -202,6 +213,8 @@ extern "C" {
 #define elina_linexpr0_is_quasilinear ap_linexpr0_is_quasilinear
 #define elina_linexpr0_is_real ap_linexpr0_is_real
 #define elina_linexpr0_set_cst_scalar_int ap_linexpr0_set_cst_scalar_int
+#define elina_linexpr0_set_cst_scalar_double ap_linexpr0_set_cst_scalar_double
+#define elina_linexpr0_set_cst_interval ap_linexpr0_set_cst_interval
 #define elina_linexpr0_set_cst_interval_int ap_linexpr0_set_cst_interval_int
 #define elina_linexpr0_set_coeff_scalar_double ap_linexpr0_set_coeff_scalar_double
 #define elina_linexpr0_array_is_linear ap_linexpr0_array_is_linear
