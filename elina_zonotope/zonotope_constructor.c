@@ -67,12 +67,16 @@ zonotope_t* zonotope_of_box(elina_manager_t* man, size_t intdim, size_t realdim,
 	else{
 	 elina_interval_set(res->paf[i]->c, tinterval[i]);
 	}
+        //elina_interval_set(res->paf[i]->itv,tinterval[i]);
 	res->paf[i]->pby++;
     }
     
     man->result.flag_best = true;
     man->result.flag_exact = true;
-	fflush(stdout);
+	//fflush(stdout);
+    //printf("of box output\n");
+    //zonotope_fprint(stdout,man,res,NULL);
+    //fflush(stdout);
     return res;
 }
 

@@ -846,7 +846,7 @@ static inline bool zonotope_insert_constrained_noise_symbol(zonotope_internal_t 
 static inline zonotope_aff_t * zonotope_aff_from_linexpr0(zonotope_internal_t* pr, elina_linexpr0_t * expr, zonotope_t *z){
 	size_t i;
 	elina_dim_t dim;
-	elina_coeff_t *coeff;
+    	elina_coeff_t *coeff;
 	zonotope_aff_t *res = zonotope_aff_alloc_init(pr);
 	elina_coeff_t * cst = &(expr->cst);
 	if(cst->discr==ELINA_COEFF_SCALAR){
@@ -867,7 +867,13 @@ static inline zonotope_aff_t * zonotope_aff_from_linexpr0(zonotope_internal_t* p
 			elina_scalar_free(scalar);
     		}
     		elina_interval_t *interval = coeff->val.interval;
+        //printf("mul itv\n");
+        //zonotope_aff_fprint(pr,stdout,aff);
+        //elina_interval_fprint(stdout,interval);
 		zonotope_aff_t *tmp = zonotope_aff_mul_itv(pr,aff,interval);
+        //printf("result\n");
+        //zonotope_aff_fprint(pr,stdout,tmp);
+        //fflush(stdout);
 		zonotope_aff_t *tmp1 = res;
       
 		res = zonotope_aff_add(pr,tmp1,tmp,z);		

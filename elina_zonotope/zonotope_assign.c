@@ -14,6 +14,9 @@ zonotope_t* zonotope_assign_linexpr_array(elina_manager_t* man,
 	//fflush(stdout);
     size_t i = 0;
     for (i=0; i<res->dims; i++) {
+        //printf("i: %d dims: %d %p %p %d %d\n",i,res->dims,res->paf[i]->itv,res->box[i],res->paf[i]->l,res->paf[i]->pby);
+        //elina_interval_fprint(stdout,res->box[i]);
+        //fflush(stdout);
 	elina_interval_set(res->paf[i]->itv, res->box[i]);
     }
     for (i=0; i<size; i++) {
@@ -21,7 +24,7 @@ zonotope_t* zonotope_assign_linexpr_array(elina_manager_t* man,
 	//printf("statement x%d:= \n",tdim[i]);
 	//elina_linexpr0_fprint(stdout,lexpr[i],NULL);
       //  printf("\n");
-	fflush(stdout);
+	//fflush(stdout);
 	res->paf[tdim[i]] = zonotope_aff_from_linexpr0(pr, lexpr[i], z);
        // printf("affine expression\n");
         //zonotope_aff_fprint(pr,stdout,res->paf[tdim[i]]);

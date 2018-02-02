@@ -5,10 +5,8 @@
 /* memory allocation of Zonotope structure */
 zonotope_t* zonotope_alloc(elina_manager_t* man, size_t intdim, size_t realdim)
 {
-   
     zonotope_internal_t * pr = zonotope_init_from_manager(man, ELINA_FUNID_UNKNOWN);
     zonotope_t* res = (zonotope_t *)malloc(sizeof(zonotope_t));
-    
     res->intdim = intdim;
     res->dims = intdim + realdim;
     res->size = 128;
@@ -35,6 +33,8 @@ zonotope_t* zonotope_copy(elina_manager_t* man, zonotope_t* z)
 	return NULL;
     }
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_COPY);
+    //printf("copy %u %u %zu\n",z->dims,z->intdim,z->size);
+    //fflush(stdout);
     res = zonotope_alloc(man, z->intdim, (z->dims - z->intdim));
     memcpy((void *)res->paf, (void *)z->paf, z->dims*sizeof(zonotope_aff_t*));
     for(i=0; i<z->dims; i++) {
@@ -44,15 +44,22 @@ zonotope_t* zonotope_copy(elina_manager_t* man, zonotope_t* z)
     elina_abstract0_free(pr->manNS, res->abs);
     res->abs = elina_abstract0_copy(pr->manNS, z->abs);
     res->size = z->size;
+    if(res->size>128){
+        res->nsymcons = (elina_dim_t *)realloc(res->nsymcons,res->size*sizeof(elina_dim_t));
+        res->gamma = (elina_interval_t**)realloc(res->gamma,res->size*sizeof(elina_interval_t *));
+    }
     memcpy((void *)res->nsymcons, (void *)z->nsymcons, (res->size)*sizeof(elina_dim_t));
     //memcpy((void *)res->gamma, (void *)a->gamma, (res->size)*sizeof(ap_interval_t*));
 
     size_t nsymcons_size = zonotope_noise_symbol_cons_get_dimension(pr, z);
+    //printf("nsymcons: %zu %d\n",nsymcons_size,nsymcons_size>res->size);
+    //fflush(stdout);
     for (i=0; i<nsymcons_size; i++) {
 	if (z->gamma[i]) {
 	    if (z->gamma[i] != pr->ap_muu) res->gamma[i] = elina_interval_alloc_set(z->gamma[i]);
 	    else res->gamma[i] = pr->ap_muu;
 	} else {
+        printf("i: %zu\n",i);
 	    printf("zonotope_copy, unconsistent gamma for Zonotope abstract object\n");
 	}
     }
@@ -67,11 +74,15 @@ zonotope_t* zonotope_copy(elina_manager_t* man, zonotope_t* z)
 /* free memory used by abstract value */
 void zonotope_free(elina_manager_t* man, zonotope_t* z)
 {
+    //printf("start\n");
+    //fflush(stdout);
     if(z==NULL){
 	return;
     }
     zonotope_internal_t * pr = zonotope_init_from_manager(man, ELINA_FUNID_FREE);
     size_t i = 0;
+    //printf("start1\n");
+    //fflush(stdout);
     for (i=0; i<z->dims; i++) {
 	if (z->paf[i]) {
 	    zonotope_aff_check_free(pr, z->paf[i]);
@@ -79,27 +90,43 @@ void zonotope_free(elina_manager_t* man, zonotope_t* z)
         }
 	elina_interval_free(z->box[i]);
     }
+    //printf("start2\n");
+    //fflush(stdout);
     free(z->paf);
     free(z->box);
     z->paf = NULL;
     z->box = NULL;
+    //printf("start3\n");
+    //fflush(stdout);
     size_t nsymcons_size = zonotope_noise_symbol_cons_get_dimension(pr, z);
     for (i=0; i<nsymcons_size; i++) {
 	if (z->gamma[i]) {
 	    if (z->gamma[i] != pr->ap_muu) elina_interval_free(z->gamma[i]);
 	}
     }
+    //printf("start\n");
+    //fflush(stdout);
     free(z->gamma);
     z->gamma = NULL;
+    //printf("start1\n");
+    //fflush(stdout);
     free(z->nsymcons);
+    //printf("start2\n");
+    //fflush(stdout);
     z->nsymcons = NULL;
     elina_abstract0_free(pr->manNS, z->abs);
+    //printf("start3\n");
+    //fflush(stdout);
     z->size = 0;
     z->dims = 0;
     z->intdim = 0;
     free(z);
+    //printf("start4\n");
+    //fflush(stdout);
     man->result.flag_best = true;
     man->result.flag_exact = true;
+    //printf("finish\n");
+    //fflush(stdout);
 }
 
 
@@ -128,6 +155,7 @@ void zonotope_fprint(FILE* stream,
 	    }
 	    fprintf(stream, " := ");
 	    zonotope_aff_fprint(pr, stream, z->paf[i]);
+            //printf(" box: ");
 	    elina_interval_fprint(stdout, z->box[i]);
 	    fprintf(stream,"\n");
 	} else {
