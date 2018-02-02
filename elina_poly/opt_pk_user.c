@@ -135,10 +135,10 @@ void opt_vector_set_elina_linexpr0(opt_pk_internal_t* opk,
   }
   
    elina_linexpr0_ForeachLinterm(expr,i,d,coeff){
-     assert(coeff.discr == ELINA_COEFF_SCALAR);
-     scalar = coeff->val.scalar;
-     elina_rat_set_elina_scalar(opk->poly_numrat, scalar);
-     ov[0] = elina_int_lcm(ov[0], opk->poly_numrat->d);
+    assert(coeff->discr==ELINA_COEFF_SCALAR);
+    scalar = coeff->val.scalar;
+    elina_rat_set_elina_scalar(opk->poly_numrat,scalar);
+    ov[0] = elina_int_lcm(ov[0],opk->poly_numrat->d);
   }
   
   /* Fill the vector */
@@ -186,7 +186,7 @@ void opt_vector_set_elina_lincons0(opt_pk_internal_t* opk,
   assert(cons->constyp == ELINA_CONS_EQ ||
 	 cons->constyp == ELINA_CONS_SUPEQ ||
 	 cons->constyp == ELINA_CONS_SUP);
-  assert(elina_linexpr0_is_linear(&cons->linexpr));
+  assert(elina_linexpr0_is_linear(cons->linexpr));
 
   opt_vector_set_elina_linexpr0(opk, ov, cons->linexpr0, intdim+realdim,1);
   opt_vector_normalize(opk,ov,opk->dec+intdim+realdim);
@@ -282,7 +282,7 @@ bool opt_matrix_append_elina_lincons0_array(opt_pk_internal_t* opk,
   res = true;
   j = nbrows;
   for (i=0; i<array->size; i++){
-    assert(elina_linexpr0_is_linear(&array->p[i].linexpr0));
+    assert(elina_linexpr0_is_linear(array->p[i].linexpr0));
     switch (array->p[i].constyp){
     case ELINA_CONS_EQ:
     case ELINA_CONS_SUPEQ:
