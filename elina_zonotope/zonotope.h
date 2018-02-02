@@ -32,24 +32,31 @@ extern "C" {
 
 #if defined (HAS_APRON)
 #include "apron_wrapper.h"
+//#include "num.h"
+//#include "numint.h"
+//#include "numrat.h"
+//#include "bound.h"
 
+//#include "itv.h"
+//#include "itv_linexpr.h"
+//#include "itv_linearize.h"
 
 #else
-#include "elina_abstract0.h"
 #include "elina_coeff.h"
 #include "elina_dimension.h"
-#include "elina_interval.h"
-#include "elina_lincons0.h"
 #include "elina_linexpr0.h"
-#include "elina_manager.h"
-#include "elina_tcons0.h"
 #include "elina_texpr0.h"
+#include "elina_lincons0.h"
+#include "elina_tcons0.h"
+#include "elina_manager.h"
+#include "elina_abstract0.h"
 #endif
 
 #include "elina_box.h"
 #include "elina_generic.h"
 #include "elina_linearize_texpr.h"
 
+//ap_manager_t* t1p_manager_alloc(ap_manager_t* manNS);
 elina_manager_t* zonotope_manager_alloc(void);
 typedef struct _zonotope_t zonotope_t;
 

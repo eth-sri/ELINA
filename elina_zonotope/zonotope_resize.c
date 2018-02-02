@@ -74,14 +74,14 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
 {
 
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_REMOVE_DIMENSIONS);
-    // printf("remove input %d\n",destructive);
-    // zonotope_fprint(stdout,man,z,NULL);
-    // for(int i=0; i < dimchange->intdim+dimchange->realdim;i++){
-    //  printf("%d ",dimchange->dim[i]);
+    //printf("remove input %d\n",destructive);
+    //zonotope_fprint(stdout,man,z,NULL);
+    //for(int i=0; i < dimchange->intdim+dimchange->realdim;i++){
+      //printf("%d ",dimchange->dim[i]);
     //}
-    // printf("\n");
-    // fflush(stdout);
-    // zonotope_t* res = destructive ? z : zonotope_copy(man, z);
+    //printf("\n");
+    //fflush(stdout);
+    //zonotope_t* res = destructive ? z : zonotope_copy(man, z);
     size_t i = 0;
     size_t j = 0;
     size_t num_remove = dimchange->intdim + dimchange->realdim;
@@ -120,13 +120,15 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
         res->paf[i] = zonotope_aff_alloc_init(pr);
         //printf("coming here: %d %d %d %d %p %d\n",i,j,num_rem,num_remove,res->paf[i],res->dims);
         //fflush(stdout);
-        memcpy((void *)res->paf[i], (void *)z->paf[j], sizeof(zonotope_aff_t));
+        //res->paf[i] = (zonotope_aff_t *)malloc(sizeof(zonotope_aff_t*));
+        res->paf[i] = z->paf[j];
+        //memcpy((void *)res->paf[i], (void *)z->paf[j], sizeof(zonotope_aff_t));
         //zonotope_aff_check_free(pr,res->paf[dimchange->dim[i]]);
         //res->paf[dimchange->dim[i]] = NULL;
         //for (j=dimchange->dim[i];j<-1+res->dims;j++) {
         //  res->paf[j] = res->paf[j+1];
         elina_interval_set(res->box[i], z->box[j]);
-
+        if(!destructive)
         res->paf[i]->pby++;
         //}
     }
@@ -138,7 +140,7 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
             if (z->gamma[i] != pr->ap_muu) res->gamma[i] = elina_interval_alloc_set(z->gamma[i]);
             else res->gamma[i] = pr->ap_muu;
         } else {
-          printf("zonotope_copy, unconsistent gamma for Zonotope abstract "
+          printf("zonotope_remove, unconsistent gamma for Zonotope abstract "
                  "object\n");
         }
     }
@@ -150,14 +152,36 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
     // printf("remove output %p\n",res);
     // zonotope_fprint(stdout,man,res,NULL);
     // fflush(stdout);
-    free(map);
-    free(var_rem);
+
     zonotope_t * tmp = z;
     if(destructive){
-      z = res;
-      // zonotope_free(man,tmp);
-      return z;
+        //z = res;
+        //zonotope_free(man,tmp);
+        //return z;
+        
+        //for(i=0; i < z->dims; z++){
+          //  if(map[i]){
+            //    zonotope_aff_check_free(pr,z->paf[i]);
+            //}
+        //}
+        // free(z->paf);
+        // z->paf=NULL;
+        // free(z->box);
+        // z->box=NULL;
+        // for (i=0; i<nsymcons_size; i++) {
+        //  if (z->gamma[i]) {
+        //    if (z->gamma[i] != pr->ap_muu) elina_interval_free(z->gamma[i]);
+        //}
+        //}
+        //free(z->gamma);
+        //z->gamma = NULL;
+        //free(z->nsymcons);
+        //z->nsymcons = NULL;
+        //elina_abstract0_free(pr->manNS, z->abs);
+        //free(z);
     }
+    free(map);
+    free(var_rem);
     return res;
 }
 
@@ -169,10 +193,10 @@ zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, 
     // printf("permutation input %d\n",destructive);
     // zonotope_fprint(stdout,man,z,NULL);
     // for(int i=0; i < permutation->size;i++){
-    //  printf("%d ",permutation->dim[i]);
+    // printf("%d ",permutation->dim[i]);
     //}
-    // printf("\n");
-    // fflush(stdout);
+    //printf("\n");
+    //fflush(stdout);
     zonotope_t* res = (zonotope_t *)malloc(sizeof(zonotope_t));
     res->intdim = z->intdim;
     res->dims = z->dims;
@@ -199,7 +223,7 @@ zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, 
         //for (j=dimchange->dim[i];j<-1+res->dims;j++) {
         //  res->paf[j] = res->paf[j+1];
         elina_interval_set(res->box[i], z->box[j]);
-
+        if(!destructive)
         res->paf[i]->pby++;
         //}
     }
@@ -211,7 +235,7 @@ zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, 
             if (z->gamma[i] != pr->ap_muu) res->gamma[i] = elina_interval_alloc_set(z->gamma[i]);
             else res->gamma[i] = pr->ap_muu;
         } else {
-          printf("zonotope_copy, unconsistent gamma for Zonotope abstract "
+          printf("zonotope_permute, unconsistent gamma for Zonotope abstract "
                  "object\n");
         }
     }
@@ -221,21 +245,21 @@ zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, 
       return z;
     }
 
-    // char *map = (char *)calloc(permutation->size,sizeof(char));
-    // for (i=0; i<permutation->size; i++) {
-    // if(!map[i] && !map[permutation->dim[i]]){
+    //char *map = (char *)calloc(permutation->size,sizeof(char));
+    //for (i=0; i<permutation->size; i++) {
+    //if(!map[i] && !map[permutation->dim[i]]){
     //      tmp = res->paf[i];
     //    res->paf[i] = res->paf[z->dim[i]];
-    // res->paf[permutation->dim[i]] = tmp;
+    //res->paf[permutation->dim[i]] = tmp;
 
     //  elina_interval_set(res->box[i],z->box[permutation->dim[i]]);
     // map[i] = 1;
     // map[permutation->dim[i]] = 1;
     //}
     //}
-    //printf("permutation output %p\n",res);
-    //zonotope_fprint(stdout,man,res,NULL);
-    //fflush(stdout);
-    //free(map);
+    // printf("permutation output %p\n",res);
+    // zonotope_fprint(stdout,man,res,NULL);
+    // fflush(stdout);
+    // free(map);
     return res;
 }

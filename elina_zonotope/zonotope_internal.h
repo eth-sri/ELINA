@@ -909,7 +909,13 @@ zonotope_aff_from_linexpr0(zonotope_internal_t *pr, elina_linexpr0_t *expr,
       elina_scalar_free(scalar);
     }
     elina_interval_t *interval = coeff->val.interval;
+    // printf("mul itv\n");
+    // zonotope_aff_fprint(pr,stdout,aff);
+    // elina_interval_fprint(stdout,interval);
     zonotope_aff_t *tmp = zonotope_aff_mul_itv(pr, aff, interval);
+    // printf("result\n");
+    // zonotope_aff_fprint(pr,stdout,tmp);
+    // fflush(stdout);
     zonotope_aff_t *tmp1 = res;
 
     res = zonotope_aff_add(pr, tmp1, tmp, z);

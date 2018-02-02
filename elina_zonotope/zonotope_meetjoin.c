@@ -8,6 +8,8 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 
      zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_MEET_LINCONS_ARRAY);
      // printf("meet start %d\n",destructive);
+     // zonotope_fprint(stdout,man,z,NULL);
+     // elina_lincons0_array_fprint(stdout,array,NULL);
      //  fflush(stdout);
 
      // arg_assert(a && array, abort(););
@@ -20,6 +22,7 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
      size_t kmax = 2; /* specifies the maximum number of iterations */
      /* intervalonly is set to false which means try to improve all dimensions,
       * not only the ones with an interval coefficient */
+
      if (elina_boxize_lincons0_array(res->box, tchange, array, res->box,
                                      res->intdim, kmax, false,
                                      ELINA_SCALAR_DOUBLE)) {
@@ -82,9 +85,15 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 		elina_lincons0_array_t eps_lincons_array;
 		eps_lincons_array.size = 1;
 		eps_lincons_array.p = &lincons0;
+            //printf("epsilon\n");
+             //zonotope_aff_fprint(pr, stdout, aff[i]);
+            //elina_abstract0_fprint(stdout,pr->manNS,res->abs,NULL);
+            //elina_lincons0_array_fprint(stdout,&eps_lincons_array,NULL);
+            //fflush(stdout);
             //printf("library before %s %s %d\n",pr->manNS->library,res->abs->man->library,destructive);
            //fflush(stdout);
 		elina_abstract0_meet_lincons_array(pr->manNS, true, res->abs, &eps_lincons_array);
+            //elina_abstract0_fprint(stdout,pr->manNS,res->abs,NULL);
                 // printf("library after %s %p
                 // %d\n",pr->manNS->library,res->abs->man,destructive);
                 // fflush(stdout);
@@ -148,7 +157,9 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
     
     free(tchange);
     elina_interval_free(box);
-
+    // printf("meet finish %p\n",res);
+    // zonotope_fprint(stdout,man,res,NULL);
+    // fflush(stdout);
     return res;
 }
 
@@ -166,6 +177,10 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
 	return NULL;
     }
 
+    // printf("join start\n");
+    // zonotope_fprint(stdout,man,z1,NULL);
+    // zonotope_fprint(stdout,man,z2,NULL);
+    // fflush(stdout);
     zonotope_t* res;
     size_t intdim = z1->intdim;
     size_t realdim = z1->dims - z1->intdim;
@@ -337,7 +352,9 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
     }
     man->result.flag_best = true;
     man->result.flag_exact = true;
-
+    // printf("Join output\n");
+    // zonotope_fprint(stdout,man,res,NULL);
+    // fflush(stdout);
     return res;
 }
 

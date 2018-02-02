@@ -125,11 +125,23 @@ void test_join(unsigned short int dim, size_t nbcons){
 	zonotope_free(man,z3);
 }
 
+void test_dana(){
+    elina_interval_t **interval = elina_interval_array_alloc(2);
+    elina_interval_set_top(interval[0]);
+    elina_interval_set_top(interval[1]);
+    elina_scalar_set_int(interval[0]->inf,0);
+    elina_scalar_set_int(interval[1]->inf,1);
+    elina_scalar_set_int(interval[1]->sup,3);
+    zonotope_t * z = zonotope_of_box(man,0,2,interval);
+    zonotope_fprint(stdout,man,z,NULL);
+}
+
 int main(int argc, char **argv){
 	srand(time(NULL));
 	unsigned short int dim = atoi(argv[1]);
 	size_t nbcons = atoi(argv[2]);
 	man = zonotope_manager_alloc();
-        test_join(dim, nbcons);
-        elina_manager_free(man);
+	//test_join(dim,nbcons);
+    test_of_box();
+	elina_manager_free(man);
 }
