@@ -54,8 +54,8 @@ elina_box_t* elina_box_add_dimensions(elina_manager_t* man,
     while (k>=1 && dimchange->dim[k-1]==(elina_dim_t)i){
       k--;
       if (project){
-	elina_scalar_set_int(res->p[i+k]->inf,0);
-	elina_scalar_set_int(res->p[i+k]->sup,0);
+	elina_scalar_set_double(res->p[i+k]->inf,0);
+	elina_scalar_set_double(res->p[i+k]->sup,0);
       }
       else {
 	elina_interval_set_top(res->p[i+k]);
