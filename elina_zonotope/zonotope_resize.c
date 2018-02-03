@@ -29,6 +29,7 @@ zonotope_t* zonotope_add_dimensions(elina_manager_t* man, bool destructive, zono
     //printf("add input %d\n",destructive);
     //zonotope_fprint(stdout,man,z,NULL);
     //fflush(stdout);
+    start_timing();
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_ADD_DIMENSIONS);
     
     zonotope_t* res = destructive ? z : zonotope_copy(man, z);
@@ -62,6 +63,7 @@ zonotope_t* zonotope_add_dimensions(elina_manager_t* man, bool destructive, zono
     //printf("add output\n");
     //zonotope_fprint(stdout,man,res,NULL);
     //fflush(stdout);
+    record_timing(zonotope_add_dimension_time);
     return res;
 }
 
@@ -72,7 +74,7 @@ zonotope_t* zonotope_add_dimensions(elina_manager_t* man, bool destructive, zono
 /*********************/
 zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, zonotope_t* z, elina_dimchange_t* dimchange)
 {
-
+    start_timing();
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_REMOVE_DIMENSIONS);
     //printf("remove input %d\n",destructive);
     //zonotope_fprint(stdout,man,z,NULL);
@@ -182,6 +184,7 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
     }
     free(map);
     free(var_rem);
+    record_timing(zonotope_remove_dimension_time);
     return res;
 }
 
@@ -197,6 +200,7 @@ zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, 
     //}
     //printf("\n");
     //fflush(stdout);
+    start_timing();
     zonotope_t* res = (zonotope_t *)malloc(sizeof(zonotope_t));
     res->intdim = z->intdim;
     res->dims = z->dims;
@@ -261,5 +265,6 @@ zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, 
     // zonotope_fprint(stdout,man,res,NULL);
     // fflush(stdout);
     // free(map);
+    record_timing(zonotope_permute_dimension_time);
     return res;
 }

@@ -37,6 +37,24 @@
 #include "zonotope_resize.h"
 #include "zonotope_otherops.h"
 
+double zonotope_copy_time=0;
+double zonotope_is_equal_time=0;
+double zonotope_is_lequal_time=0;
+double zonotope_permute_dimension_time=0;
+double zonotope_add_dimension_time=0;
+double zonotope_remove_dimension_time=0;
+double zonotope_top_time=0;
+double zonotope_bottom_time=0;
+double zonotope_join_time=0;
+double zonotope_free_time=0;
+double zonotope_forget_array_time=0;
+double zonotope_meet_lincons_time=0;
+double zonotope_to_box_time=0;
+double zonotope_of_box_time=0;
+double zonotope_is_top_time=0;
+double zonotope_is_bottom_time=0;
+double zonotope_assign_linexpr_time=0;
+
 elina_manager_t* zonotope_manager_alloc(void)
 {
 	//CALL();

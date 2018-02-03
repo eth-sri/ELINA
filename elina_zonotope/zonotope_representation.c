@@ -27,6 +27,7 @@ zonotope_t* zonotope_alloc(elina_manager_t* man, size_t intdim, size_t realdim)
  * which destructive update does not affect the initial value. */
 zonotope_t* zonotope_copy(elina_manager_t* man, zonotope_t* z)
 {
+    start_timing();
     zonotope_t* res;
     size_t i;
     if(z==NULL){
@@ -67,7 +68,7 @@ zonotope_t* zonotope_copy(elina_manager_t* man, zonotope_t* z)
     res->hypercube = z->hypercube;
     man->result.flag_best = false;
     man->result.flag_exact = false;
-
+    record_timing(zonotope_copy_time);
     return res;
 }
 
@@ -75,6 +76,7 @@ zonotope_t* zonotope_copy(elina_manager_t* man, zonotope_t* z)
 /* free memory used by abstract value */
 void zonotope_free(elina_manager_t* man, zonotope_t* z)
 {
+    start_timing();
     //printf("start\n");
     //fflush(stdout);
     if(z==NULL){
@@ -128,6 +130,28 @@ void zonotope_free(elina_manager_t* man, zonotope_t* z)
     man->result.flag_exact = true;
     //printf("finish\n");
     //fflush(stdout);
+    record_timing(zonotope_free_time);
+    /*fprintf(stdout,"Times are in CPU Cycles\n");
+    fprintf(stdout,"Top: %g\n",zonotope_top_time);
+    fprintf(stdout,"Bottom: %g\n",zonotope_bottom_time);
+    fprintf(stdout,"Free: %g\n",zonotope_free_time);
+    fprintf(stdout,"Copy: %g\n",zonotope_copy_time);
+    fprintf(stdout,"Is_Lequal: %g\n",zonotope_is_lequal_time);
+    fprintf(stdout,"Join: %g\n",zonotope_join_time);
+    fprintf(stdout,"Add_dimension: %g\n",zonotope_add_dimension_time);
+    fprintf(stdout,"remove: %g\n",zonotope_remove_dimension_time);
+    fprintf(stdout,"Permute_dimension: %g\n",zonotope_permute_dimension_time);
+    fprintf(stdout,"Meet_Lincons_Array: %g\n",zonotope_meet_lincons_time);
+    fprintf(stdout,"Forget_Array %g\n",zonotope_forget_array_time);
+    fprintf(stdout,"Zonotope_to_Box: %g\n",zonotope_to_box_time);
+    fprintf(stdout,"Zonotope_of_Box: %g\n",zonotope_of_box_time);
+    fprintf(stdout,"Is_Top: %g\n",zonotope_is_top_time);
+    fprintf(stdout,"Is_Bottom: %g\n",zonotope_is_bottom_time);
+    fprintf(stdout,"Assign Linexpr: %g\n",zonotope_assign_linexpr_time);
+    double total_time = zonotope_top_time + zonotope_free_time + zonotope_copy_time + zonotope_bottom_time + zonotope_remove_dimension_time + zonotope_is_lequal_time + zonotope_join_time + zonotope_add_dimension_time + zonotope_permute_dimension_time + zonotope_meet_lincons_time +
+    zonotope_forget_array_time + zonotope_to_box_time  + zonotope_of_box_time + zonotope_is_top_time + zonotope_is_bottom_time + zonotope_assign_linexpr_time;
+    fprintf(stdout,"Total Zonotope Analysis: %g\n",total_time);
+    fflush(stdout);*/
 }
 
 
