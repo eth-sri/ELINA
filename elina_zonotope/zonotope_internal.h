@@ -369,7 +369,7 @@ static inline void elina_interval_middev(elina_interval_t *mid, elina_interval_t
     
     if(!elina_scalar_infty(a->inf) && elina_scalar_equal(a->inf,a->sup)){
 	elina_interval_set(mid,a);
-	elina_interval_set_int(dev,0,0);
+	elina_interval_set_double(dev,0,0);
     } else if (elina_scalar_infty(a->sup) || elina_scalar_infty(a->inf) || elina_interval_is_bottom(a)) {
 	elina_interval_set_top(mid);
 	elina_interval_set_top(dev);
@@ -683,7 +683,7 @@ static inline void zonotope_aff_cons_eq_lambda(zonotope_internal_t* pr, elina_in
 			elina_interval_set(array[i]->coeff,tmp);
 		    }
 		}
-		elina_interval_set_int(array[i]->itv,0,0);
+		elina_interval_set_double(array[i]->itv,0,0);
 		i++;
 		p = p->n ;
 	    } else {
@@ -708,7 +708,7 @@ static inline void zonotope_aff_cons_eq_lambda(zonotope_internal_t* pr, elina_in
 		    elina_interval_set(array[i]->coeff,tmp);
 		}
 	    }
-	    elina_interval_set_int(array[i]->itv,0,0);
+	    elina_interval_set_double(array[i]->itv,0,0);
 	    i++;
 	    p = p->n ;
 	} else {
@@ -915,7 +915,7 @@ static inline bool zonotope_aff_reduce(zonotope_internal_t* pr, zonotope_aff_t *
 		}
             //printf("ok1\n");
 		ok = false;
-		elina_interval_set_int(sum,0, ELINA_SCALAR_DOUBLE);
+		elina_interval_set_double(sum,0, 0);
 		break;
 	    } else {
             //printf("ok3\n");
@@ -983,13 +983,13 @@ static inline int argmin(zonotope_internal_t* pr, elina_interval_t *res, elina_i
     elina_interval_t *zero = elina_interval_alloc();
     int dir = 0;
     if (elina_interval_cmp(zero,a) <= 0 || elina_interval_cmp(zero,b)<=0) {
-	elina_interval_set_int(res,0,0);
+	elina_interval_set_double(res,0,0);
 	dir = 0;
     } else if (elina_scalar_sgn(a->inf)>=0 && elina_scalar_sgn(b->sup)<=0) {
-	elina_interval_set_int(res,0,0);
+	elina_interval_set_double(res,0,0);
 	dir = 0;
     } else if (elina_scalar_sgn(a->sup)<=0 && elina_scalar_sgn(b->inf)>=0) {
-	elina_interval_set_int(res,0,0);
+	elina_interval_set_double(res,0,0);
 	dir = 0;
     } else {
 	/* a and b have the same sign */
@@ -1126,7 +1126,7 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 			elina_interval_add(betaA, betaA, tmp, ELINA_SCALAR_DOUBLE);
 		    } else if (p->pnsym->type == IN) {
 			elina_interval_set(pmptr,p->coeff);
-			elina_interval_set_int(qmptr,0,0);
+			elina_interval_set_double(qmptr,0,0);
 		    }
 		    zonotope_delete_constrained_noise_symbol(pr, p->pnsym->index, z3);
 		    p = p->n;
@@ -1138,7 +1138,7 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 			elina_interval_add(betaB, betaB, tmp, ELINA_SCALAR_DOUBLE);
 		    } else if (q->pnsym->type == IN) {
 			elina_interval_set(qmptr,q->coeff);
-			elina_interval_set_int(pmptr,0,0);
+			elina_interval_set_double(pmptr,0,0);
 		    }
 		    zonotope_delete_constrained_noise_symbol(pr, q->pnsym->index, z3);
 		    q = q->n;
@@ -1151,7 +1151,7 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 		    elina_interval_add(betaA, betaA, tmp, ELINA_SCALAR_DOUBLE);
 		} else if (p->pnsym->type == IN) {
 		    elina_interval_set(pmptr,p->coeff);
-		    elina_interval_set_int(qmptr,0,0);
+		    elina_interval_set_double(qmptr,0,0);
 		}
 		zonotope_delete_constrained_noise_symbol(pr, p->pnsym->index, z3);
 		p = p->n;
@@ -1163,7 +1163,7 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 		    elina_interval_add(betaB, betaB, tmp, ELINA_SCALAR_DOUBLE);
 		} else if (q->pnsym->type == IN) {
 		    elina_interval_set(qmptr,q->coeff);
-		    elina_interval_set_int(pmptr,0,0);
+		    elina_interval_set_double(pmptr,0,0);
 		}
 		zonotope_delete_constrained_noise_symbol(pr, q->pnsym->index, z3);
 		q = q->n;
@@ -1172,8 +1172,8 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 	    elina_interval_add(c1, c1, tmp1, ELINA_SCALAR_DOUBLE);
 	    elina_interval_mul(tmp2, nsymItv2, qmptr, ELINA_SCALAR_DOUBLE);
 	    elina_interval_add(c2, c2, tmp2, ELINA_SCALAR_DOUBLE);
-	    elina_interval_set_int(pmptr,0,0);
-	    elina_interval_set_int(qmptr,0,0);
+	    elina_interval_set_double(pmptr,0,0);
+	    elina_interval_set_double(qmptr,0,0);
 	    if (!elina_scalar_sgn(ptr->coeff->inf) && !elina_scalar_sgn(ptr->coeff->sup)) {
 		if (!(p||q)) {
 		    /* the last iteration */
