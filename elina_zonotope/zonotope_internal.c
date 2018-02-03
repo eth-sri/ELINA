@@ -219,8 +219,7 @@ zonotope_aff_t* zonotope_aff_add(zonotope_internal_t* pr, zonotope_aff_t* exprA,
         q = q->n;
       }
 
-      if (!elina_scalar_sgn(ptr->coeff->inf) &&
-          !elina_scalar_sgn(ptr->coeff->sup)) {
+      if (!ptr->coeff->inf->val.dbl && !ptr->coeff->sup->val.dbl) {
         if (!(p || q)) {
           /* the last iteration */
           zonotope_aaterm_free(pr, ptr);
@@ -244,19 +243,21 @@ zonotope_aff_t* zonotope_aff_add(zonotope_internal_t* pr, zonotope_aff_t* exprA,
         // if(elina_scalar_equal(ptr->coeff->inf,ptr->coeff->sup)) {
 
         //
-        if (elina_interval_equal(tmp, pr->muu)) {
-          if (elina_scalar_sgn(ptr->coeff->sup) >= 0) {
-            // tmp->inf->val.dbl =- ptr->coeff->sup->val.dbl;
-            // tmp->sup->val.dbl = ptr->coeff->sup->val.dbl;
-            elina_scalar_neg(tmp->inf, ptr->coeff->sup);
-            elina_scalar_set(tmp->sup, ptr->coeff->sup);
+        if ((tmp->inf->val.dbl == pr->muu->inf->val.dbl) &&
+            (tmp->sup->val.dbl == pr->muu->sup->val.dbl)) {
+          // if(elina_interval_equal(tmp,pr->muu)){
+          if (ptr->coeff->sup->val.dbl >= 0) {
+            tmp->inf->val.dbl = -ptr->coeff->sup->val.dbl;
+            tmp->sup->val.dbl = ptr->coeff->sup->val.dbl;
+            // elina_scalar_neg(tmp->inf,ptr->coeff->sup);
+            // elina_scalar_set(tmp->sup,ptr->coeff->sup);
           } else {
             // elina_scalar_t * add = elina_scalar_alloc_set(tmp->sup);
-            elina_scalar_neg(tmp->sup, ptr->coeff->sup);
-            elina_scalar_set(tmp->inf, ptr->coeff->sup);
+            // elina_scalar_neg(tmp->sup,ptr->coeff->sup);
+            // elina_scalar_set(tmp->inf,ptr->coeff->sup);
             // elina_scalar_free(add);
-            // tmp->sup->val.dbl = -ptr->coeff->sup->val.dbl;
-            // tmp->inf->val.dbl = ptr->coeff->sup->val.dbl;
+            tmp->sup->val.dbl = -ptr->coeff->sup->val.dbl;
+            tmp->inf->val.dbl = ptr->coeff->sup->val.dbl;
           }
         } else {
           if (elina_scalar_sgn(ptr->coeff->sup) >= 0) {
@@ -280,8 +281,10 @@ zonotope_aff_t* zonotope_aff_add(zonotope_internal_t* pr, zonotope_aff_t* exprA,
         // }
         // printf("SCALAR: %d %d
         // %d\n",box->inf->discr==ELINA_SCALAR_MPQ,tmp->inf->discr==ELINA_SCALAR_MPQ,
-        // tmp->sup->discr==ELINA_SCALAR_MPQ);
-        elina_interval_add(box, box, tmp, ELINA_SCALAR_DOUBLE);
+        // tmp->sup->discr==ELINA_SCALAR_MPQ); elina_interval_add(box, box, tmp,
+        // ELINA_SCALAR_DOUBLE);
+        box->inf->val.dbl = box->inf->val.dbl + tmp->inf->val.dbl;
+        box->sup->val.dbl = box->sup->val.dbl + tmp->sup->val.dbl;
         // start_timing();
         if (p || q) {
           /* continuing */
@@ -295,8 +298,11 @@ zonotope_aff_t* zonotope_aff_add(zonotope_internal_t* pr, zonotope_aff_t* exprA,
     }
     
     //elina_interval_add(box, box, tmp, ELINA_SCALAR_DOUBLE);
-    elina_interval_add(res->itv, exprA->itv, exprB->itv, ELINA_SCALAR_DOUBLE);
-
+    //elina_interval_add(res->itv, exprA->itv, exprB->itv, ELINA_SCALAR_DOUBLE);
+    res->itv->inf->val.dbl =
+        exprA->itv->inf->val.dbl + exprB->itv->inf->val.dbl;
+    res->itv->sup->val.dbl =
+        exprA->itv->sup->val.dbl + exprB->itv->sup->val.dbl;
     elina_scalar_max(res->itv->inf, res->itv->inf, box->inf);
     elina_scalar_min(res->itv->sup, res->itv->sup, box->sup);
     elina_interval_free(box);
