@@ -5,7 +5,7 @@
 /**********************/
 zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, zonotope_t* z, elina_lincons0_array_t* array)
 {
-    
+    start_timing();
      zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_MEET_LINCONS_ARRAY);
     //printf("meet start %d\n",destructive);
     //zonotope_fprint(stdout,man,z,NULL);
@@ -151,6 +151,7 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
     //printf("meet finish %p\n",res);
     //zonotope_fprint(stdout,man,res,NULL);
     //fflush(stdout);
+    record_timing(zonotope_meet_lincons_time);
     return res;
 }
 
@@ -162,6 +163,7 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1, zonotope_t* z2)
     /* TODO destructive not used  */
 {
+    start_timing();
     size_t i = 0;
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_JOIN);
     if((z1->dims!=z2->dims) || (z1->intdim!=z2->intdim)){
@@ -328,6 +330,7 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
     //printf("Join output\n");
     //zonotope_fprint(stdout,man,res,NULL);
     //fflush(stdout);
+    record_timing(zonotope_join_time);
     return res;
 }
 

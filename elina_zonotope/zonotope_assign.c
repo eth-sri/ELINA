@@ -7,6 +7,7 @@ zonotope_t* zonotope_assign_linexpr_array(elina_manager_t* man,
 		size_t size,
 		zonotope_t* dest)
 {
+    start_timing();
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
     zonotope_t* res = zonotope_copy(man, z);
 	//printf("assign input %d\n",z->dims);
@@ -25,10 +26,13 @@ zonotope_t* zonotope_assign_linexpr_array(elina_manager_t* man,
 	//elina_linexpr0_fprint(stdout,lexpr[i],NULL);
       //  printf("\n");
 	//fflush(stdout);
+        //
 	res->paf[tdim[i]] = zonotope_aff_from_linexpr0(pr, lexpr[i], z);
        // printf("affine expression\n");
         //zonotope_aff_fprint(pr,stdout,res->paf[tdim[i]]);
+        //
 	zonotope_aff_reduce(pr, res->paf[tdim[i]]);
+        
 	if (zonotope_aff_is_top(pr, res->paf[tdim[i]])) {
 	    zonotope_aff_check_free(pr, res->paf[tdim[i]]);
 	    res->paf[tdim[i]] = pr->top;
@@ -47,6 +51,7 @@ zonotope_t* zonotope_assign_linexpr_array(elina_manager_t* man,
 	//printf("assign output\n");
 	//zonotope_fprint(stdout,man,res,NULL);
 	//fflush(stdout);
+    record_timing(zonotope_assign_linexpr_time);
     return res;
 }
 

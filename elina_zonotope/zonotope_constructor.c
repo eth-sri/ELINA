@@ -8,6 +8,7 @@
 /* 1.Basic constructors */
 zonotope_t* zonotope_bottom(elina_manager_t* man, size_t intdim, size_t realdim)
 {
+    start_timing();
     size_t i;
     size_t dims = intdim + realdim;
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_BOTTOM);
@@ -19,12 +20,14 @@ zonotope_t* zonotope_bottom(elina_manager_t* man, size_t intdim, size_t realdim)
     }
     man->result.flag_best = true;
     man->result.flag_exact = true;
+    record_timing(zonotope_bottom_time);
     return res;
 }
 
 
 zonotope_t* zonotope_top(elina_manager_t* man, size_t intdim, size_t realdim)
 {
+    start_timing();
     size_t i;
     size_t dims = intdim + realdim;
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_TOP);
@@ -36,6 +39,7 @@ zonotope_t* zonotope_top(elina_manager_t* man, size_t intdim, size_t realdim)
     }
     man->result.flag_best = true;
     man->result.flag_exact = true;
+    record_timing(zonotope_top_time);
     return res;
 }
 
@@ -44,7 +48,7 @@ zonotope_t* zonotope_of_box(elina_manager_t* man, size_t intdim, size_t realdim,
 {
 	//printf("input intervals\n");
 	
-	
+    start_timing();
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_OF_BOX);
     zonotope_t* res = zonotope_alloc(man,intdim,realdim);
     size_t i = 0;
@@ -77,6 +81,7 @@ zonotope_t* zonotope_of_box(elina_manager_t* man, size_t intdim, size_t realdim,
     //printf("of box output\n");
     //zonotope_fprint(stdout,man,res,NULL);
     //fflush(stdout);
+    record_timing(zonotope_of_box_time);
     return res;
 }
 
@@ -92,6 +97,7 @@ elina_dimension_t zonotope_dimension(elina_manager_t* man, zonotope_t* z){
 /* 3.Tests */
 bool zonotope_is_bottom(elina_manager_t* man, zonotope_t* z)
 {
+    start_timing();
     size_t i;
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_IS_BOTTOM);
     bool res = elina_interval_is_bottom(z->box[0]);
@@ -106,11 +112,13 @@ bool zonotope_is_bottom(elina_manager_t* man, zonotope_t* z)
     }
     man->result.flag_best = true;
     man->result.flag_exact = true;
+    record_timing(zonotope_is_bottom_time);
     return false;
 }
 
 bool zonotope_is_top(elina_manager_t* man, zonotope_t* z)
 {
+    start_timing();
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_IS_TOP);
     size_t i;
     bool res = elina_interval_is_top(z->box[0]);
@@ -125,6 +133,7 @@ bool zonotope_is_top(elina_manager_t* man, zonotope_t* z)
     }
     man->result.flag_best = true;
     man->result.flag_exact = true;
+    record_timing(zonotope_is_top_time);
     return true;
 }
 
@@ -142,6 +151,7 @@ bool zonotope_is_eq(elina_manager_t* man, zonotope_t* z1, zonotope_t* z2)
     else if (!elina_abstract0_is_eq(pr->manNS, z1->abs, z2->abs)) return false;
     else if (z1 == z2) return true;
     else {
+        start_timing();
 	size_t i = 0;
 	bool res = true;
 	for (i=0; i<z1->dims; i++) {
@@ -153,11 +163,13 @@ bool zonotope_is_eq(elina_manager_t* man, zonotope_t* z1, zonotope_t* z2)
 		break;
 	    }
 	}
+        record_timing(zonotope_is_equal_time);
 	return res;
     }
 }
 
 elina_interval_t** zonotope_to_box(elina_manager_t* man, zonotope_t* z){
+    start_timing();
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_TO_BOX);
     elina_interval_t **res = elina_interval_array_alloc(z->dims);
     size_t i = 0;
@@ -166,6 +178,7 @@ elina_interval_t** zonotope_to_box(elina_manager_t* man, zonotope_t* z){
     }
     man->result.flag_best = true;
     man->result.flag_exact = true;
+    record_timing(zonotope_to_box_time);
     return res;
 
 }
