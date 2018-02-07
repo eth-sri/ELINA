@@ -30,6 +30,29 @@
 /* ============================================================ */
 /* Meet and Join */
 /* ============================================================ */
+elina_box_t* elina_box_meet(elina_manager_t* man, bool destructive, elina_box_t* a1, elina_box_t* a2)
+{
+    size_t i;
+    size_t nbdims;
+    elina_box_t* res;
+    man->result.flag_best = true;
+    man->result.flag_exact = false;
+    res = destructive ? a1 : elina_box_alloc(a1->intdim,a1->realdim);
+    if (a1->p == NULL || a2->p == NULL) {
+      elina_box_set_bottom(res);
+      return res;
+    }
+    if (!destructive){
+        elina_box_init(res);
+    }
+    
+    nbdims = a1->intdim + a2->realdim;
+    for (i=0; i<nbdims; i++){
+      elina_scalar_max(res->p[i]->inf, a1->p[i]->inf, a2->p[i]->inf);
+      elina_scalar_min(res->p[i]->sup, a1->p[i]->sup, a2->p[i]->sup);
+    }
+    return res;
+}
 
 
 
@@ -115,5 +138,38 @@ elina_box_t* elina_box_meet_lincons_array(elina_manager_t* man,
   return res;
 }
 
+
+/* ============================================================ */
+/* Widening */
+/* ============================================================ */
+elina_box_t* elina_box_widening(elina_manager_t* man,
+                    elina_box_t* a1, elina_box_t* a2)
+{
+    size_t i;
+    size_t nbdims;
+    elina_box_t* res;
+    
+    man->result.flag_best = true;
+    man->result.flag_exact = true;
+    nbdims = a1->intdim+a1->realdim;
+    if (a1->p == NULL) {
+      return elina_box_copy(man, a2);
+    }
+
+    res = elina_box_copy(man,a1);
+    for (i=0; i<nbdims; i++){
+      if (elina_scalar_cmp(a1->p[i]->sup, a2->p[i]->sup) < 0) {
+        elina_scalar_set_infty(res->p[i]->sup, 1);
+      } else {
+        elina_scalar_set(res->p[i]->sup, a1->p[i]->sup);
+      }
+      if (elina_scalar_cmp(a1->p[i]->inf, a2->p[i]->inf) > 0) {
+        elina_scalar_set_infty(res->p[i]->inf, -1);
+      } else {
+        elina_scalar_set(res->p[i]->inf, a1->p[i]->inf);
+      }
+    }
+    return res;
+}
 
 

@@ -21,6 +21,40 @@
 #include "elina_box_internal.h"
 #include "elina_box_resize.h"
 
+elina_box_t* elina_box_forget_array(elina_manager_t* man,
+                        bool destructive,
+                        elina_box_t* a,
+                        elina_dim_t* tdim,
+                        size_t size,
+                        bool project)
+{
+    elina_box_t* res;
+    size_t i;
+    
+    man->result.flag_best = true;
+    man->result.flag_exact = true;
+    
+    res = destructive ? a : elina_box_copy(man,a);
+    if (a->p == NULL) {
+      return res;
+    }
+    if (project){
+        for (i=0;i<size;i++){
+          elina_interval_t *itv = res->p[tdim[i]];
+          elina_scalar_set_double(itv, 0);
+          elina_scalar_set_double(itv, 0);
+        }
+    }
+    else {
+        for (i=0;i<size;i++){
+          elina_interval_t *itv = res->p[tdim[i]];
+          elina_interval_set_top(itv);
+        }
+    }
+    return res;
+}
+
+
 elina_box_t* elina_box_add_dimensions(elina_manager_t* man,
 			  bool destructive, elina_box_t* a,
 			  elina_dimchange_t* dimchange,

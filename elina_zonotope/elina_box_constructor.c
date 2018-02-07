@@ -216,4 +216,71 @@ elina_interval_t* elina_box_bound_linexpr(elina_manager_t* man,
   return interval;
 }
 
+/* convert to lincons array */
+elina_lincons0_array_t elina_box_to_lincons_array(elina_manager_t* man, elina_box_t* a)
+{
+    size_t i;
+    elina_lincons0_array_t array;
+    
+    size_t nbdims = a->intdim + a->realdim;
+    
+    man->result.flag_best = true;
+    man->result.flag_exact = true;
+    if (a->p == NULL) {
+      array = elina_lincons0_array_make(1);
+      array.p[0] = elina_lincons0_make_unsat();
+    } else if (nbdims == 0) {
+      array = elina_lincons0_array_make(0);
+    } else {
+      size_t size;
+      elina_linexpr0_t *expr;
+      elina_scalar_t *scalar;
+
+      size = 0;
+      for (i = 0; i < nbdims; i++) {
+        if (!elina_scalar_infty(a->p[i]->inf))
+          size++;
+        bool point = !elina_scalar_infty(a->p[i]->inf) &&
+                     elina_scalar_equal(a->p[i]->inf, a->p[i]->sup);
+        if (!point && !elina_scalar_infty(a->p[i]->sup))
+          size++;
+      }
+      array = elina_lincons0_array_make(size);
+      size = 0;
+      for (i = 0; i < nbdims; i++) {
+        bool point = false;
+        if (!elina_scalar_infty(a->p[i]->inf)) {
+          expr = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE, 1);
+          elina_coeff_set_scalar_int(&expr->p.linterm[0].coeff, 1);
+          expr->p.linterm[0].dim = i;
+
+          elina_coeff_reinit(&expr->cst, ELINA_COEFF_SCALAR,
+                             ELINA_SCALAR_DOUBLE);
+          scalar = expr->cst.val.scalar;
+          elina_scalar_set(scalar, a->p[i]->inf);
+
+          point = !elina_scalar_infty(a->p[i]->inf) &&
+                  elina_scalar_equal(a->p[i]->inf, a->p[i]->sup);
+          array.p[size].constyp = point ? ELINA_CONS_EQ : ELINA_CONS_SUPEQ;
+          array.p[size].linexpr0 = expr;
+          size++;
+        }
+        if (!point && !elina_scalar_infty(a->p[i]->sup)) {
+          expr = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE, 1);
+          elina_coeff_set_scalar_int(&expr->p.linterm[0].coeff, -1);
+          expr->p.linterm[0].dim = i;
+
+          elina_coeff_reinit(&expr->cst, ELINA_COEFF_SCALAR,
+                             ELINA_SCALAR_DOUBLE);
+          elina_scalar_set(expr->cst.val.scalar, a->p[i]->sup);
+
+          array.p[size].constyp = ELINA_CONS_SUPEQ;
+          array.p[size].linexpr0 = expr;
+          size++;
+        }
+      }
+    }
+    return array;
+}
+
 

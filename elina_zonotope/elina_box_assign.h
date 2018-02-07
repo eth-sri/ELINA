@@ -17,32 +17,25 @@
  *  CONTRACT, TORT OR OTHERWISE).
  *
  */
+#ifndef _ELINA_BOX_ASSIGN_H_
+#define _ELINA_BOX_ASSIGN_H_
 
-#ifndef _ELINA_BOX_RESIZE_H_
-#define _ELINA_BOX_RESIZE_H_
-
-#include "elina_box.h"
+#include "elina_box_internal.h"
+#include "elina_box_meetjoin.h"
+#include "elina_linearize.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-elina_box_t* elina_box_forget_array(elina_manager_t* man,
-                                    bool destructive,
-                                    elina_box_t* a,
-                                    elina_dim_t* tdim,
-                                    size_t size,
-                                    bool project);
+elina_box_t* elina_box_assign_linexpr_array(elina_manager_t* man,
+                                                bool destructive,
+                                                elina_box_t* a,
+                                                elina_dim_t* tdim,
+                                                elina_linexpr0_t** linexpr,
+                                                size_t size,
+                                                elina_box_t* dest);
     
-elina_box_t* elina_box_add_dimensions(elina_manager_t* man,
-			  bool destructive, elina_box_t* a,
-			  elina_dimchange_t* dimchange,
-			  bool project);
-
-elina_box_t* elina_box_remove_dimensions(elina_manager_t* man,
-			     bool destructive, elina_box_t* a,
-			     elina_dimchange_t* dimchange);
-
 #ifdef __cplusplus
 }
 #endif

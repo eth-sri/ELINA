@@ -19,7 +19,7 @@
  */
 
 #ifndef _ELINA_BOX_MEETJOIN_H_
-#define _ELINA_MEETJOIN_H_
+#define _ELINA_BOX_MEETJOIN_H_
 
 #include "elina_box_internal.h"
 #include "elina_linearize_texpr.h"
@@ -28,11 +28,15 @@
 extern "C" {
 #endif
 
+elina_box_t* elina_box_meet(elina_manager_t* man, bool destructive, elina_box_t* a1, elina_box_t* a2);
 elina_box_t* elina_box_join(elina_manager_t* man, bool destructive, elina_box_t* a1, elina_box_t* a2);
 elina_box_t* elina_box_meet_lincons_array(elina_manager_t* man,
 			      bool destructive,
 			      elina_box_t* a,
 			      elina_lincons0_array_t* array);
+    
+elina_box_t* elina_box_widening(elina_manager_t* man,
+                        elina_box_t* a1, elina_box_t* a2);
 #ifdef __cplusplus
 }
 #endif
