@@ -29,7 +29,7 @@ INCLDIR = $(ELINA_PREFIX)/include
 INSTALL = install
 INSTALLd = install -d
 
-OBJS = elina_box_internal.o elina_box_representation.o elina_box_constructor.o elina_box_meetjoin.o elina_box_resize.o zonotope_internal.o zonotope_representation.o zonotope_constructor.o zonotope_meetjoin.o zonotope_assign.o zonotope_resize.o zonotope_otherops.o
+OBJS = elina_box_internal.o elina_box_representation.o elina_box_constructor.o elina_box_assign.o elina_box_meetjoin.o elina_box_resize.o zonotope_internal.o zonotope_representation.o zonotope_constructor.o zonotope_meetjoin.o zonotope_assign.o zonotope_resize.o zonotope_otherops.o
 
 ifeq ($(IS_APRON),)
 LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm 
@@ -59,6 +59,9 @@ elina_box_representation.o : elina_box_representation.h elina_box_representation
 
 elina_box_constructor.o : elina_box_constructor.h elina_box_constructor.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_box_constructor.o elina_box_constructor.c $(LIBS)
+
+elina_box_assign.o : elina_box_assign.h elina_box_assign.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_box_assign.o elina_box_assign.c $(LIBS)
 
 elina_box_meetjoin.o : elina_box_meetjoin.h elina_box_meetjoin.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_box_meetjoin.o elina_box_meetjoin.c $(LIBS)
