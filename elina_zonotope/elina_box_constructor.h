@@ -44,6 +44,8 @@ elina_interval_t* elina_box_bound_dimension(elina_manager_t* man,
 elina_interval_t* elina_box_bound_linexpr(elina_manager_t* man,
 				 elina_box_t* a, elina_linexpr0_t* expr);
 
+elina_lincons0_array_t elina_box_to_lincons_array(elina_manager_t* man, elina_box_t* a);
+
 #ifdef __cplusplus
 }
 #endif

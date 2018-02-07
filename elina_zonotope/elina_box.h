@@ -122,13 +122,14 @@ elina_interval_t* elina_box_bound_linexpr(elina_manager_t* man,
 				 elina_box_t* a, elina_linexpr0_t* expr);
   /* Returns the interval taken by a linear expression
      over the box value */
-
+elina_lincons0_array_t elina_box_to_lincons_array(elina_manager_t* man, elina_box_t* a);
 
 /* ============================================================ */
 /* 7 Meet and Join */
 /* ============================================================ */
 
-
+elina_box_t* elina_box_meet(elina_manager_t* man, bool destructive, elina_box_t* a1, elina_box_t* a2);
+    
 elina_box_t* elina_box_join(elina_manager_t* man, bool destructive, elina_box_t* a1, elina_box_t* a2);
   /* Join of 2 box values */
 
@@ -153,7 +154,34 @@ elina_box_t* elina_box_remove_dimensions(elina_manager_t* man,
 			     bool destructive,
 			     elina_box_t* a,
 			     elina_dimchange_t* dimchange);
+    
+/* ============================================================ */
+/* 9 Assignment */
+/* ============================================================ */
 
+elina_box_t* elina_box_assign_linexpr_array(elina_manager_t* man,
+                                    bool destructive,
+                                    elina_box_t* a,
+                                    elina_dim_t* tdim,
+                                    elina_linexpr0_t** texpr,
+                                    size_t size,
+                                    elina_box_t* dest);
+
+/* ============================================================ */
+/* 10 Projection */
+/* ============================================================ */
+
+elina_box_t* elina_box_forget_array(elina_manager_t* man,
+                            bool destructive,
+                            elina_box_t* a, elina_dim_t* tdim, size_t size,
+                            bool project);
+
+/* ============================================================ */
+/* 11 Widening */
+/* ============================================================ */
+elina_box_t* elina_box_widening(elina_manager_t* man,
+                                elina_box_t* a1, elina_box_t* a2);
+    
 #ifdef __cplusplus
 }
 #endif

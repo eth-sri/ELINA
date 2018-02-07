@@ -10,33 +10,32 @@
  *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
  *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
  *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
- *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY
  *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
  *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
  *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
  *  CONTRACT, TORT OR OTHERWISE).
  *
  */
-
-#ifndef _ELINA_BOX_MEETJOIN_H_
-#define _ELINA_BOX_MEETJOIN_H_
+#ifndef _ELINA_BOX_ASSIGN_H_
+#define _ELINA_BOX_ASSIGN_H_
 
 #include "elina_box_internal.h"
-#include "elina_linearize_texpr.h"
+#include "elina_box_meetjoin.h"
+#include "elina_linearize.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-elina_box_t* elina_box_meet(elina_manager_t* man, bool destructive, elina_box_t* a1, elina_box_t* a2);
-elina_box_t* elina_box_join(elina_manager_t* man, bool destructive, elina_box_t* a1, elina_box_t* a2);
-elina_box_t* elina_box_meet_lincons_array(elina_manager_t* man,
-			      bool destructive,
-			      elina_box_t* a,
-			      elina_lincons0_array_t* array);
+elina_box_t* elina_box_assign_linexpr_array(elina_manager_t* man,
+                                                bool destructive,
+                                                elina_box_t* a,
+                                                elina_dim_t* tdim,
+                                                elina_linexpr0_t** linexpr,
+                                                size_t size,
+                                                elina_box_t* dest);
     
-elina_box_t* elina_box_widening(elina_manager_t* man,
-                        elina_box_t* a1, elina_box_t* a2);
 #ifdef __cplusplus
 }
 #endif

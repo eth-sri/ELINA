@@ -29,6 +29,13 @@
 extern "C" {
 #endif
 
+elina_box_t* elina_box_forget_array(elina_manager_t* man,
+                                    bool destructive,
+                                    elina_box_t* a,
+                                    elina_dim_t* tdim,
+                                    size_t size,
+                                    bool project);
+    
 elina_box_t* elina_box_add_dimensions(elina_manager_t* man,
 			  bool destructive, elina_box_t* a,
 			  elina_dimchange_t* dimchange,
