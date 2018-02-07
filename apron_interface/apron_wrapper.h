@@ -39,6 +39,7 @@ extern "C" {
 #define ELINA_SCALAR_MPFR AP_SCALAR_MPFR
 #define elina_scalar_free ap_scalar_free
 #define elina_scalar_alloc ap_scalar_alloc
+#define elina_scalar_alloc_set ap_scalar_alloc_set
 #define elina_scalar_init ap_scalar_init
 #define elina_scalar_reinit ap_scalar_reinit
 #define elina_scalar_infty ap_scalar_infty
@@ -60,6 +61,7 @@ extern "C" {
 #define elina_interval_neg ap_interval_neg
 #define elina_coeff_swap ap_coeff_swap
 #define elina_interval_set_bottom ap_interval_set_bottom
+#define elina_interval_set_double ap_interval_set_double
 #define elina_interval_set_top ap_interval_set_top
 #define elina_interval_alloc ap_interval_alloc
 #define elina_interval_alloc_set ap_interval_alloc_set
