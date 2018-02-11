@@ -41,8 +41,8 @@ elina_box_t* elina_box_forget_array(elina_manager_t* man,
     if (project){
         for (i=0;i<size;i++){
           elina_interval_t *itv = res->p[tdim[i]];
-          elina_scalar_set_double(itv, 0);
-          elina_scalar_set_double(itv, 0);
+          elina_scalar_set_double(itv->sup, 0);
+          elina_scalar_set_double(itv->inf, 0);
         }
     }
     else {
