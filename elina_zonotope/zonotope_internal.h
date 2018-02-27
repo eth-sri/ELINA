@@ -106,7 +106,9 @@ typedef struct zonotope_noise_symbol_t {
 typedef struct _zonotope_aaterm_t {
     struct _zonotope_aaterm_t*	n;	/* next element */
     zonotope_noise_symbol_t*	pnsym;	/* index of the noise symbol */
-    elina_interval_t*	coeff;	/* coeff, encoded as interval */
+    //elina_interval_t*	coeff;	/* coeff, encoded as interval */
+   double sup;
+   double inf;
 } zonotope_aaterm_t;
 
 /************************/
@@ -189,7 +191,8 @@ static inline zonotope_aaterm_t* zonotope_aaterm_alloc_init(void)
     zonotope_aaterm_t* res = (zonotope_aaterm_t*)malloc(sizeof(zonotope_aaterm_t));
     res->n = NULL;
     res->pnsym = NULL;
-    res->coeff = elina_interval_alloc();
+    res->inf = 0;
+    res->sup = 0;
     return res;
 }
 
@@ -249,10 +252,13 @@ static inline zonotope_noise_symbol_t* zonotope_noise_symbol_add(zonotope_intern
     /* Pretty print an affine term */
     static inline void zonotope_aaterm_fprint(zonotope_internal_t *pr, FILE* stream, zonotope_aaterm_t *ptr)
     {
-        if (!elina_scalar_infty(ptr->coeff->inf) && elina_scalar_equal(ptr->coeff->inf,ptr->coeff->sup)){
-            elina_scalar_fprint(stream,ptr->coeff->sup);
+        if ((ptr->inf!=-INFINITY) && (ptr->inf==ptr->sup)){
+            //elina_scalar_fprint(stream,ptr->sup);
+	    fprintf(stream,"%.*g",elina_scalar_print_prec,ptr->sup + 0.0);
         }
-        else elina_interval_fprint(stream, ptr->coeff);
+        else {
+	     printf("[%g, %g]\n",ptr->inf,ptr->sup);
+        }
         fprintf(stream,".");
         zonotope_noise_symbol_fprint(stream,ptr->pnsym);
     }
@@ -302,7 +308,6 @@ static inline void zonotope_aaterm_free(zonotope_internal_t* pr, zonotope_aaterm
    // arg_assert(term, abort(););
     term->n = NULL;
     term->pnsym = NULL;
-    elina_interval_free(term->coeff);
     free(term);
 }
 /* free memory used by a chained list starting from one term */
@@ -349,7 +354,8 @@ static inline void zonotope_aff_noise_symbol_create(zonotope_internal_t *pr, zon
     elina_interval_t *zero = elina_interval_alloc();
     if (elina_interval_cmp(coeff,zero)>=0) {
 	zonotope_aaterm_t* ptr = zonotope_aaterm_alloc_init();
-	elina_interval_set(ptr->coeff, coeff);
+	ptr->inf = coeff->inf->val.dbl;
+	ptr->sup = coeff->sup->val.dbl;
 	ptr->pnsym = zonotope_noise_symbol_add(pr, type);
 	if (expr->end) expr->end->n = ptr;
 	else expr->q = ptr;
@@ -469,6 +475,27 @@ static inline bool zonotope_noise_symbol_cons_get_dimpos(zonotope_internal_t* pr
     else return false;
 }
 
+static inline double min_double(double a, double b){
+	return a < b ? a : b;
+}
+
+static inline double max_double(double a, double b){
+	return a > b ? a : b;
+}
+
+static inline void elina_interval_mul_double(elina_interval_t *res, double inf1, double sup1, double inf2, double sup2){
+	double tmp1 = inf1 * inf2;
+	double tmp2 = inf1 * sup2;
+	double tmp3 = sup1 * inf2;
+	double tmp4 = sup1 * sup2;
+	double tmp5 = min_double(tmp1, tmp2);
+	double tmp6 = min_double(tmp3, tmp4);
+	res->inf->val.dbl = min_double(tmp5, tmp6);
+	double tmp7 = max_double(tmp1, tmp2);
+	double tmp8 = max_double(tmp3, tmp4);
+	res->sup->val.dbl = max_double(tmp7, tmp8);
+}
+
 static inline void zonotope_aff_bound(zonotope_internal_t* pr, elina_interval_t *res, zonotope_aff_t *expr, zonotope_t* z)
 {
     if (elina_interval_is_top(expr->c)) {
@@ -482,7 +509,7 @@ static inline void zonotope_aff_bound(zonotope_internal_t* pr, elina_interval_t 
 	elina_interval_set(res,expr->c);
 	if (z->hypercube) {
 	    for (p=expr->q; p; p=p->n) {
-		elina_interval_mul(tmp,p->coeff, pr->muu,ELINA_SCALAR_DOUBLE);
+		elina_interval_mul_double(tmp,p->inf, p->sup, pr->muu->inf->val.dbl,pr->muu->sup->val.dbl);
 		elina_interval_add(res, res, tmp,ELINA_SCALAR_DOUBLE);
 	    }
 	} else {
@@ -495,11 +522,11 @@ static inline void zonotope_aff_bound(zonotope_internal_t* pr, elina_interval_t 
 	    for (p=expr->q; p; p=p->n) {
 		if (zonotope_noise_symbol_cons_get_dimpos(pr, &dim, p->pnsym->index, z)) {
 		    elina_coeff_init(&linexpr0->p.linterm[k].coeff, ELINA_COEFF_INTERVAL);
-		    elina_coeff_set_interval(&linexpr0->p.linterm[k].coeff, p->coeff);
+		    elina_coeff_set_interval_double(&linexpr0->p.linterm[k].coeff, p->inf,p->sup);
 		    linexpr0->p.linterm[k].dim = dim;
 		    k++;
 		} else {
-		    elina_interval_mul(tmp, p->coeff, pr->muu,ELINA_SCALAR_DOUBLE);
+		    elina_interval_mul_double(tmp, p->inf, p->sup, pr->muu->inf->val.dbl, pr->muu->sup->val.dbl);
 		    elina_interval_add(res, res, tmp,ELINA_SCALAR_DOUBLE);
 		}
 	    }
@@ -572,16 +599,19 @@ static inline zonotope_aff_t* zonotope_aff_mul_scalar(zonotope_internal_t* pr, z
                 dst->q = q = zonotope_aaterm_alloc_init();
                 for (p=src->q; p; p=p->n) {
                     if(sgn>=0){
-                        elina_scalar_mul(q->coeff->inf,p->coeff->inf,lambda,ELINA_SCALAR_DOUBLE);
-                        elina_scalar_mul(q->coeff->sup,p->coeff->sup,lambda,ELINA_SCALAR_DOUBLE);
+			q->inf = p->inf * lambda->val.dbl;
+			q->sup = p->sup * lambda->val.dbl;
+                        //elina_scalar_mul(q->inf,p->inf,lambda,ELINA_SCALAR_DOUBLE);
+                        //elina_scalar_mul(q->sup,p->sup,lambda,ELINA_SCALAR_DOUBLE);
                     }
                     else{
+			q->sup = p->inf * lambda->val.dbl;
+			q->inf = p->sup * lambda->val.dbl;
                         //elina_scalar_t * add = elina_scalar_alloc_set(tmp->sup);
-                        elina_scalar_mul(q->coeff->sup,p->coeff->inf,lambda,ELINA_SCALAR_DOUBLE);
-                        elina_scalar_mul(q->coeff->inf,p->coeff->sup,lambda,ELINA_SCALAR_DOUBLE);
+                        //elina_scalar_mul(q->sup,p->inf,lambda,ELINA_SCALAR_DOUBLE);
+                        //elina_scalar_mul(q->inf,p->sup,lambda,ELINA_SCALAR_DOUBLE);
                         //elina_scalar_free(add);
                     }
-                    //elina_interval_mul(q->coeff, lambda, p->coeff,ELINA_SCALAR_DOUBLE);
                     
                     q->pnsym = p->pnsym;
                     if (p->n) {
@@ -614,7 +644,23 @@ static inline zonotope_aff_t* zonotope_aff_mul_scalar(zonotope_internal_t* pr, z
     }
 
     
-    
+static inline void elina_interval_abs_double(elina_interval_t *a, double inf, double sup)
+{
+  if (inf>=0){
+    /* positive interval */
+    elina_interval_set_double(a,inf, sup);
+  }
+  else if (sup<=0){
+    /* negative interval */
+    elina_interval_set_double(a,-sup, -inf);
+  }
+  else {
+    a->sup->val.dbl = max_double(inf, sup);
+    a->inf->val.dbl = 0;
+   // elina_scalar_max(a->sup,b->inf,b->sup);
+    //elina_scalar_set_to_int(a->inf,0,discr);
+  }
+}    
 
 static inline void zonotope_aff_cons_eq_lambda(zonotope_internal_t* pr, elina_interval_t** res, zonotope_aff_t* x, zonotope_aff_t* cons, zonotope_t *z)
 {
@@ -636,25 +682,31 @@ static inline void zonotope_aff_cons_eq_lambda(zonotope_internal_t* pr, elina_in
 	if (p && q) {
 	    if (p->pnsym->index == q->pnsym->index) {
 		
-		if(elina_scalar_sgn(p->coeff->inf) || elina_scalar_sgn(p->coeff->sup)) {
+		if((p->inf!=0) || (p->sup!=0)) {
 		    array[i] = (obj*)calloc(1,sizeof(obj));
 		    array[i]->coeff = elina_interval_alloc();
 		    array[i]->itv = elina_interval_alloc();
 		    if (z->hypercube) {
-			elina_interval_abs(tmp, p->coeff,ELINA_SCALAR_DOUBLE);
+			elina_interval_abs_double(tmp, p->inf, p->sup);
 			elina_interval_set(array[i]->coeff,tmp);
 		    } else {
 			if (zonotope_noise_symbol_cons_get_dimpos(pr, &dim, p->pnsym->index, z)) {
 			    elina_interval_set(dim_itv, z->gamma[dim]);
 			    elina_interval_middev(mid, dev, dim_itv);
-			    elina_interval_abs(tmp, p->coeff, ELINA_SCALAR_DOUBLE);
+			    elina_interval_abs_double(tmp, p->inf, p->sup);
 			    elina_interval_mul(array[i]->coeff, tmp, dev,ELINA_SCALAR_DOUBLE);
 			} else {
-			    elina_interval_abs(tmp, p->coeff, ELINA_SCALAR_DOUBLE);
+			    elina_interval_abs_double(tmp, p->inf, p->sup);
 			    elina_interval_set(array[i]->coeff,tmp);
 			}
 		    }
-		    elina_interval_div(tmp, q->coeff, p->coeff,ELINA_SCALAR_DOUBLE);
+		    elina_interval_t * qitv = elina_interval_alloc();
+		    elina_interval_t * pitv = elina_interval_alloc();
+		    elina_interval_set_double(qitv,q->inf,q->sup);
+		    elina_interval_set_double(pitv,p->inf,p->sup);
+		    elina_interval_div(tmp, qitv, pitv,ELINA_SCALAR_DOUBLE);
+		    elina_interval_free(qitv);
+		    elina_interval_free(pitv);
 		    if (!elina_scalar_infty(tmp->inf) && elina_scalar_equal(tmp->inf,tmp->sup)) elina_interval_neg(array[i]->itv, tmp);
 		   // else {
 			//bound_neg(tmp->inf, tmp->sup);
@@ -670,16 +722,16 @@ static inline void zonotope_aff_cons_eq_lambda(zonotope_internal_t* pr, elina_in
 		array[i]->coeff = elina_interval_alloc();
 		array[i]->itv = elina_interval_alloc();
 		if (z->hypercube) {
-		    elina_interval_abs(tmp, p->coeff, ELINA_SCALAR_DOUBLE);
+		    elina_interval_abs_double(tmp, p->inf, p->sup);
 		    elina_interval_set(array[i]->coeff,tmp);
 		} else {
 		    if (zonotope_noise_symbol_cons_get_dimpos(pr, &dim, p->pnsym->index, z)) {
 			elina_interval_set(dim_itv, z->gamma[dim]);
 			elina_interval_middev(mid, dev, dim_itv);
-			elina_interval_abs(tmp, p->coeff, ELINA_SCALAR_DOUBLE);
+			elina_interval_abs_double(tmp, p->inf, p->sup);
 			elina_interval_mul(array[i]->coeff, tmp, dev, ELINA_SCALAR_DOUBLE);
 		    } else {
-			elina_interval_abs(tmp, p->coeff, ELINA_SCALAR_DOUBLE);
+			elina_interval_abs_double(tmp, p->inf, p->sup);
 			elina_interval_set(array[i]->coeff,tmp);
 		    }
 		}
@@ -695,16 +747,16 @@ static inline void zonotope_aff_cons_eq_lambda(zonotope_internal_t* pr, elina_in
 	    array[i]->coeff = elina_interval_alloc();
 	    array[i]->itv = elina_interval_alloc();
 	    if (z->hypercube) {
-		elina_interval_abs(tmp, p->coeff, ELINA_SCALAR_DOUBLE);
+		elina_interval_abs_double(tmp, p->inf, p->sup);
 		elina_interval_set(array[i]->coeff,tmp);
 	    } else {
 		if (zonotope_noise_symbol_cons_get_dimpos(pr, &dim, p->pnsym->index, z)) {
 		    elina_interval_set(dim_itv, z->gamma[dim]);
 		    elina_interval_middev(mid, dev, dim_itv);
-		    elina_interval_abs(tmp, p->coeff, ELINA_SCALAR_DOUBLE);
+		    elina_interval_abs_double(tmp, p->inf, p->sup);
 		    elina_interval_mul(array[i]->coeff, tmp, dev, ELINA_SCALAR_DOUBLE);
 		} else {
-		    elina_interval_abs(tmp, p->coeff, ELINA_SCALAR_DOUBLE);
+		    elina_interval_abs_double(tmp, p->inf, p->sup);
 		    elina_interval_set(array[i]->coeff,tmp);
 		}
 	    }
@@ -865,7 +917,7 @@ static inline elina_linexpr0_t * elina_linexpr0_from_zonotope(zonotope_internal_
 	zonotope_aaterm_t *p;
 	for(p=aff->q; p; p=p->n){
 		elina_coeff_init(&res->p.linterm[k].coeff, ELINA_COEFF_INTERVAL);
-		elina_coeff_set_interval(&res->p.linterm[k].coeff, p->coeff);
+		elina_coeff_set_interval_double(&res->p.linterm[k].coeff, p->inf,p->sup);
 		/* update a->abs with new constrained noise symbols */
 		zonotope_insert_constrained_noise_symbol(pr, &dim, p->pnsym->index, z);
 		res->p.linterm[k].dim = dim;
@@ -903,8 +955,8 @@ static inline bool zonotope_aff_reduce(zonotope_internal_t* pr, zonotope_aff_t *
 	    elina_interval_add(sum, sum, dev, ELINA_SCALAR_DOUBLE);
 	}
 	for(p = expr->q; p; p=p->n) {
-	    if (elina_scalar_infty(p->coeff->inf) || elina_scalar_infty(p->coeff->sup)) {
-		if (elina_interval_is_top(p->coeff)) {
+	    if ((p->inf==-INFINITY) || (p->sup==INFINITY)) {
+		if ((p->inf==-INFINITY) && (p->sup==INFINITY)) {
 		    /* reduce to top */
 		    if (expr->q) zonotope_aaterm_list_free(pr, expr->q);
 		    expr->q = NULL;
@@ -913,17 +965,19 @@ static inline bool zonotope_aff_reduce(zonotope_internal_t* pr, zonotope_aff_t *
 		    elina_interval_set_top(expr->c);
 		    elina_interval_set_top(expr->itv);
 		}
-            //printf("ok1\n");
 		ok = false;
 		elina_interval_set_double(sum,0, 0);
 		break;
 	    } else {
-            //printf("ok3\n");
-            //elina_interval_fprint(stdout,p->coeff);
-		elina_scalar_sub(err,p->coeff->sup,p->coeff->inf,ELINA_SCALAR_DOUBLE);
+		double err1 =p->sup - p->inf;
+		elina_scalar_set_double(err,err1);
 		if (elina_scalar_cmp(err, eps) > 0) {
-		    elina_interval_middev(mid, dev, p->coeff);
-		    elina_interval_set(p->coeff, mid);
+		    elina_interval_t * pitv = elina_interval_alloc();
+		    elina_interval_set_double(pitv,p->inf,p->sup);
+		    elina_interval_middev(mid, dev, pitv);
+		    p->inf = mid->inf->val.dbl;
+		    p->sup = mid->sup->val.dbl;
+		    elina_interval_free(pitv);
 		    elina_interval_add(sum, sum, dev,ELINA_SCALAR_DOUBLE);
 		}
 	    }
@@ -958,7 +1012,7 @@ static inline bool zonotope_aff_is_eq(zonotope_internal_t* pr, zonotope_aff_t *z
 	zonotope_aaterm_t *p, *q;
 	for (p=z1->q, q=z2->q; p && q;) {
 	    if (p->pnsym != q->pnsym) return false;
-	    else if (!elina_interval_equal(p->coeff, q->coeff)) return false;
+	    else if ((p->inf!=q->inf) || (p->sup!=q->sup)) return false;
 	    else {
 		p = p->n;
 		q = q->n;
@@ -1055,6 +1109,12 @@ static inline void zonotope_delete_constrained_noise_symbol(zonotope_internal_t 
 }
 
 
+static inline void elina_interval_sub_double(elina_interval_t* a, double inf1, double sup1, double inf2, double sup2)
+{
+  a->inf->val.dbl = inf1 - sup2;
+  a->sup->val.dbl = sup1 - inf2;
+}
+
 static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_t* pr, zonotope_aff_t *exp1, zonotope_aff_t *exp2, zonotope_t* z1, zonotope_t* z2, zonotope_t* z3)
 {
     if(!exp1 || !exp2){
@@ -1098,22 +1158,32 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 		    zonotope_noise_symbol_cons_get_gamma(pr, nsymItv1, p->pnsym->index, z1);
 		    zonotope_noise_symbol_cons_get_gamma(pr, nsymItv2, p->pnsym->index, z2);
 		    if (p->pnsym->type == UN) {
-			elina_interval_mul(tmp, nsymItv1, p->coeff, ELINA_SCALAR_DOUBLE);
+			elina_interval_mul_double(tmp, nsymItv1->inf->val.dbl, nsymItv1->sup->val.dbl, p->inf, p->sup);
 			elina_interval_add(betaA, betaA, tmp, ELINA_SCALAR_DOUBLE);
-			elina_interval_mul(tmp, nsymItv2, q->coeff, ELINA_SCALAR_DOUBLE);
+			elina_interval_mul_double(tmp, nsymItv2->inf->val.dbl, nsymItv2->sup->val.dbl, q->inf, q->sup);
 			elina_interval_add(betaB, betaB, tmp, ELINA_SCALAR_DOUBLE);
 		    } else if (p->pnsym->type == IN) {
 			ptr->pnsym = p->pnsym;
-			s = argmin(pr, ptr->coeff, p->coeff, q->coeff);
+			elina_interval_t *pitv = elina_interval_alloc();
+			elina_interval_t *qitv = elina_interval_alloc();
+			elina_interval_t *ptritv = elina_interval_alloc();
+			elina_interval_set_double(pitv,p->inf,p->sup);
+			elina_interval_set_double(qitv,q->inf,q->sup);		
+			s = argmin(pr, ptritv, pitv, qitv);
+			ptr->inf = ptritv->inf->val.dbl;
+			ptr->sup = ptritv->sup->val.dbl;
+			elina_interval_free(pitv);
+			elina_interval_free(qitv);
+			elina_interval_free(ptritv);
 			if (s == -1) {
-			    elina_interval_sub(qmptr, q->coeff, ptr->coeff, ELINA_SCALAR_DOUBLE);
+			    elina_interval_sub_double(qmptr, q->inf, q->sup, ptr->inf, ptr->sup);
 			    //elina_interval_set_int(pmptr, 0,0);
 			} else if (s == 1) {
 			    //elina_interval_set_int(qmptr, 0,0);
-			    elina_interval_sub(pmptr, p->coeff, ptr->coeff, ELINA_SCALAR_DOUBLE);
+			    elina_interval_sub_double(pmptr, p->inf, p->sup, ptr->inf, ptr->sup);
 			} else {
-			    elina_interval_set(qmptr,q->coeff);
-			    elina_interval_set(pmptr,p->coeff);
+			    elina_interval_set_double(qmptr,q->inf, q->sup);
+			    elina_interval_set_double(pmptr,p->inf, p->sup);
 			}
 		    }
 		    p = p->n ;
@@ -1122,10 +1192,10 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 		    zonotope_noise_symbol_cons_get_gamma(pr, nsymItv1, p->pnsym->index, z1);
 		    zonotope_noise_symbol_cons_get_gamma(pr, nsymItv2, p->pnsym->index, z2);
 		    if (p->pnsym->type == UN) {
-			elina_interval_mul(tmp, nsymItv1, p->coeff,ELINA_SCALAR_DOUBLE);
+			elina_interval_mul_double(tmp, nsymItv1->inf->val.dbl, nsymItv1->sup->val.dbl, p->inf, p->sup);
 			elina_interval_add(betaA, betaA, tmp, ELINA_SCALAR_DOUBLE);
 		    } else if (p->pnsym->type == IN) {
-			elina_interval_set(pmptr,p->coeff);
+			elina_interval_set_double(pmptr,p->inf, p->sup);
 			elina_interval_set_double(qmptr,0,0);
 		    }
 		    zonotope_delete_constrained_noise_symbol(pr, p->pnsym->index, z3);
@@ -1134,10 +1204,10 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 		    zonotope_noise_symbol_cons_get_gamma(pr, nsymItv1, q->pnsym->index, z1);
 		    zonotope_noise_symbol_cons_get_gamma(pr, nsymItv2, q->pnsym->index, z2);
 		    if (q->pnsym->type == UN) {
-			elina_interval_mul(tmp, nsymItv2, q->coeff,ELINA_SCALAR_DOUBLE);
+			elina_interval_mul_double(tmp, nsymItv2->inf->val.dbl, nsymItv2->sup->val.dbl, q->inf, q->sup);
 			elina_interval_add(betaB, betaB, tmp, ELINA_SCALAR_DOUBLE);
 		    } else if (q->pnsym->type == IN) {
-			elina_interval_set(qmptr,q->coeff);
+			elina_interval_set_double(qmptr,q->inf, q->sup);
 			elina_interval_set_double(pmptr,0,0);
 		    }
 		    zonotope_delete_constrained_noise_symbol(pr, q->pnsym->index, z3);
@@ -1147,10 +1217,10 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 		zonotope_noise_symbol_cons_get_gamma(pr, nsymItv1, p->pnsym->index, z1);
 		zonotope_noise_symbol_cons_get_gamma(pr, nsymItv2, p->pnsym->index, z2);
 		if (p->pnsym->type == UN) {
-		    elina_interval_mul(tmp, nsymItv1, p->coeff,ELINA_SCALAR_DOUBLE);
+		    elina_interval_mul_double(tmp, nsymItv1->inf->val.dbl, nsymItv1->sup->val.dbl, p->inf, p->sup);
 		    elina_interval_add(betaA, betaA, tmp, ELINA_SCALAR_DOUBLE);
 		} else if (p->pnsym->type == IN) {
-		    elina_interval_set(pmptr,p->coeff);
+		    elina_interval_set_double(pmptr,p->inf, p->sup);
 		    elina_interval_set_double(qmptr,0,0);
 		}
 		zonotope_delete_constrained_noise_symbol(pr, p->pnsym->index, z3);
@@ -1159,22 +1229,22 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 		zonotope_noise_symbol_cons_get_gamma(pr, nsymItv1, q->pnsym->index, z1);
 		zonotope_noise_symbol_cons_get_gamma(pr, nsymItv2, q->pnsym->index, z2);
 		if (q->pnsym->type == UN) {
-		    elina_interval_mul(tmp, nsymItv2, q->coeff, ELINA_SCALAR_DOUBLE);
+		    elina_interval_mul_double(tmp, nsymItv2->inf->val.dbl, nsymItv2->sup->val.dbl, q->inf, q->sup);
 		    elina_interval_add(betaB, betaB, tmp, ELINA_SCALAR_DOUBLE);
 		} else if (q->pnsym->type == IN) {
-		    elina_interval_set(qmptr,q->coeff);
+		    elina_interval_set_double(qmptr,q->inf, q->sup);
 		    elina_interval_set_double(pmptr,0,0);
 		}
 		zonotope_delete_constrained_noise_symbol(pr, q->pnsym->index, z3);
 		q = q->n;
 	    }
-	    elina_interval_mul(tmp1, nsymItv1, pmptr, ELINA_SCALAR_DOUBLE);
+	    elina_interval_mul_double(tmp1, nsymItv1->inf->val.dbl, nsymItv1->sup->val.dbl, pmptr->inf->val.dbl, pmptr->sup->val.dbl);
 	    elina_interval_add(c1, c1, tmp1, ELINA_SCALAR_DOUBLE);
-	    elina_interval_mul(tmp2, nsymItv2, qmptr, ELINA_SCALAR_DOUBLE);
+	    elina_interval_mul_double(tmp2, nsymItv2->inf->val.dbl,  nsymItv2->sup->val.dbl, qmptr->inf->val.dbl, qmptr->sup->val.dbl);
 	    elina_interval_add(c2, c2, tmp2, ELINA_SCALAR_DOUBLE);
 	    elina_interval_set_double(pmptr,0,0);
 	    elina_interval_set_double(qmptr,0,0);
-	    if (!elina_scalar_sgn(ptr->coeff->inf) && !elina_scalar_sgn(ptr->coeff->sup)) {
+	    if ((ptr->inf==0) && (ptr->sup==0)) {
 		if (!(p||q)) {
 		    /* the last iteration */
 		    zonotope_aaterm_free(pr, ptr);

@@ -193,31 +193,36 @@ zonotope_aff_t* zonotope_aff_add(zonotope_internal_t* pr, zonotope_aff_t* exprA,
             if (p && q) {
                 
                 if (p->pnsym->index == q->pnsym->index) {
-                    elina_interval_add(ptr->coeff, p->coeff, q->coeff, ELINA_SCALAR_DOUBLE);
+		    ptr->inf = p->inf + q->inf;
+		    ptr->sup = p->sup + q->sup;
                     ptr->pnsym = p->pnsym;
                     p = p->n ;
                     q = q->n ;
                 } else if (p->pnsym->index < q->pnsym->index) {
-                    elina_interval_set(ptr->coeff, p->coeff);
+		    ptr->inf = p->inf;
+		    ptr->sup = p->sup;
                     ptr->pnsym = p->pnsym;
                     p = p->n ;
                 } else {
-                    elina_interval_set(ptr->coeff, q->coeff);
+		    ptr->inf = q->inf;
+		    ptr->sup = q->sup;
                     ptr->pnsym = q->pnsym;
                     q = q->n ;
                 }
                 
             } else if (p) {
-                elina_interval_set(ptr->coeff, p->coeff);
+		ptr->inf = p->inf;
+		ptr->sup = p->sup;
                 ptr->pnsym = p->pnsym;
                 p = p->n ;
             } else {
-                elina_interval_set(ptr->coeff, q->coeff);
+		ptr->inf = q->inf;
+		ptr->sup = q->sup;
                 ptr->pnsym = q->pnsym;
                 q = q->n ;
             }
             
-            if (!ptr->coeff->inf->val.dbl && !ptr->coeff->sup->val.dbl) {
+            if (!ptr->inf && !ptr->sup) {
                 if (!(p||q)) {
                     /* the last iteration */
                     zonotope_aaterm_free(pr, ptr);
@@ -234,45 +239,44 @@ zonotope_aff_t* zonotope_aff_add(zonotope_internal_t* pr, zonotope_aff_t* exprA,
                
                 //start_timing();
                 //elina_interval_fprint(stdout,tmp);
-                //elina_interval_fprint(stdout,ptr->coeff);
-                //printf("\n");
-                //if(elina_scalar_equal(ptr->coeff->inf,ptr->coeff->sup)) {
+                
                 
                //
                 if((tmp->inf->val.dbl==pr->muu->inf->val.dbl) && (tmp->sup->val.dbl==pr->muu->sup->val.dbl)){
                 //if(elina_interval_equal(tmp,pr->muu)){
-                    if(ptr->coeff->sup->val.dbl>=0){
-                        tmp->inf->val.dbl =- ptr->coeff->sup->val.dbl;
-                        tmp->sup->val.dbl = ptr->coeff->sup->val.dbl;
-                        //elina_scalar_neg(tmp->inf,ptr->coeff->sup);
-                        //elina_scalar_set(tmp->sup,ptr->coeff->sup);
+                    if(ptr->sup>=0){
+                        tmp->inf->val.dbl =- ptr->sup;
+                        tmp->sup->val.dbl = ptr->sup;
                     }
                     else{
                         //elina_scalar_t * add = elina_scalar_alloc_set(tmp->sup);
-                        //elina_scalar_neg(tmp->sup,ptr->coeff->sup);
-                        //elina_scalar_set(tmp->inf,ptr->coeff->sup);
                         //elina_scalar_free(add);
-                        tmp->sup->val.dbl = -ptr->coeff->sup->val.dbl;
-                        tmp->inf->val.dbl = ptr->coeff->sup->val.dbl;
+                        tmp->sup->val.dbl = -ptr->sup;
+                        tmp->inf->val.dbl = ptr->sup;
                     }
                 }
                 else{
-                    if(elina_scalar_sgn(ptr->coeff->sup)>=0){
-                        elina_scalar_mul(tmp->inf,tmp->inf,ptr->coeff->sup,ELINA_SCALAR_DOUBLE);
-                        elina_scalar_mul(tmp->sup,tmp->sup,ptr->coeff->sup,ELINA_SCALAR_DOUBLE);
+                    if((ptr->sup)>=0){
+			tmp->inf->val.dbl = tmp->inf->val.dbl*ptr->sup;
+			tmp->sup->val.dbl = tmp->sup->val.dbl*ptr->sup;
+                        //elina_scalar_mul(tmp->inf,tmp->inf,ptr->sup,ELINA_SCALAR_DOUBLE);
+                        //elina_scalar_mul(tmp->sup,tmp->sup,ptr->sup,ELINA_SCALAR_DOUBLE);
                     }
                     else{
-                        elina_scalar_t * add = elina_scalar_alloc_set(tmp->sup);
-                        elina_scalar_mul(tmp->sup,tmp->inf,ptr->coeff->sup,ELINA_SCALAR_DOUBLE);
-                        elina_scalar_mul(tmp->inf,add,ptr->coeff->sup,ELINA_SCALAR_DOUBLE);
-                        elina_scalar_free(add);
+			double add = tmp->sup->val.dbl;
+			tmp->sup->val.dbl = tmp->inf->val.dbl*ptr->sup;
+			tmp->inf->val.dbl = add*ptr->sup;
+                        //elina_scalar_t * add = elina_scalar_alloc_set(tmp->sup);
+                        //elina_scalar_mul(tmp->sup,tmp->inf,ptr->sup,ELINA_SCALAR_DOUBLE);
+                        //elina_scalar_mul(tmp->inf,add,ptr->sup,ELINA_SCALAR_DOUBLE);
+                        //elina_scalar_free(add);
                     }
                 }
                 
                 
                 //}
                 //else{
-                //  elina_interval_mul(tmp, tmp, ptr->coeff, ELINA_SCALAR_DOUBLE);
+                //  elina_interval_mul(tmp, tmp, ptr, ELINA_SCALAR_DOUBLE);
                 // }
                 //printf("SCALAR: %d %d %d\n",box->inf->discr==ELINA_SCALAR_MPQ,tmp->inf->discr==ELINA_SCALAR_MPQ, tmp->sup->discr==ELINA_SCALAR_MPQ);
                 //elina_interval_add(box, box, tmp, ELINA_SCALAR_DOUBLE);
@@ -373,16 +377,18 @@ zonotope_aff_t* zonotope_aff_mul_itv(zonotope_internal_t* pr, zonotope_aff_t* sr
         q = NULL;
         dst = zonotope_aff_alloc_init(pr);
          //
-        elina_interval_mul(dst->c, lambda, src->c,ELINA_SCALAR_DOUBLE);
+        elina_interval_mul_double(dst->c, lambda->inf->val.dbl, lambda->sup->val.dbl, src->c->inf->val.dbl,src->c->sup->val.dbl);
        
         if (src->q) {
             
             dst->q = q = zonotope_aaterm_alloc_init();
             for (p=src->q; p; p=p->n) {
                 
-                //printf("SCALAR: %d %d %d\n",q->coeff->inf->discr,lambda->inf->discr,p->coeff->inf->discr);
-                elina_interval_mul(q->coeff, lambda, p->coeff,ELINA_SCALAR_DOUBLE);
-                
+		elina_interval_t * tmp = elina_interval_alloc();
+                elina_interval_mul_double(tmp, lambda->inf->val.dbl, lambda->sup->val.dbl, p->inf, p->sup);
+		q->inf = tmp->inf->val.dbl;
+		q->sup = tmp->sup->val.dbl;
+                elina_interval_free(tmp);
                 q->pnsym = p->pnsym;
                 if (p->n) {
                     /* continue */
