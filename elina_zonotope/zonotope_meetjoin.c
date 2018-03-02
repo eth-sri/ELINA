@@ -7,10 +7,10 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 {
     start_timing();
      zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_MEET_LINCONS_ARRAY);
-     // printf("meet start %d\n",destructive);
+     // printf("meet start lincons\n");
      // zonotope_fprint(stdout,man,z,NULL);
      // elina_lincons0_array_fprint(stdout,array,NULL);
-     //  fflush(stdout);
+     //   fflush(stdout);
 
      // arg_assert(a && array, abort(););
      size_t i = 0;
@@ -88,11 +88,12 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
             //printf("epsilon\n");
              //zonotope_aff_fprint(pr, stdout, aff[i]);
             //elina_abstract0_fprint(stdout,pr->manNS,res->abs,NULL);
-            //elina_lincons0_array_fprint(stdout,&eps_lincons_array,NULL);
-            //fflush(stdout);
-            //printf("library before %s %s %d\n",pr->manNS->library,res->abs->man->library,destructive);
-           //fflush(stdout);
-		elina_abstract0_meet_lincons_array(pr->manNS, true, res->abs, &eps_lincons_array);
+                // elina_lincons0_array_fprint(stdout,&eps_lincons_array,NULL);
+                // fflush(stdout);
+                // printf("library before %s %s
+                // %d\n",pr->manNS->library,res->abs->man->library,destructive);
+                // fflush(stdout);
+                elina_abstract0_meet_lincons_array(pr->manNS, true, res->abs, &eps_lincons_array);
             //elina_abstract0_fprint(stdout,pr->manNS,res->abs,NULL);
                 // printf("library after %s %p
                 // %d\n",pr->manNS->library,res->abs->man,destructive);
@@ -106,8 +107,8 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 	}
 	/* update res->gamma */
 	zonotope_update_noise_symbol_cons_gamma(pr, res);
-
-        for (i=0; i<array->size; i++) {
+	
+	for (i=0; i<array->size; i++) {
 	    /* update the abstract object with the new affine forms */
 	    if (array->p[i].constyp == ELINA_CONS_EQ) {
 		elina_interval_t *dummy = elina_interval_alloc();
@@ -135,15 +136,16 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 	    } else {
 		/* do nothing, just update res->box */
 		size_t j = 0;
-
-                for (j=0; j<res->dims; j++) {
+		//zonotope_fprint(stdout,man,res,NULL);
+		for (j=0; j<res->dims; j++) {
                   zonotope_aff_bound(pr, box, res->paf[j], res);
                   elina_scalar_max(res->box[j]->inf, res->box[j]->inf,
                                    box->inf);
                   elina_scalar_min(res->box[j]->sup, res->box[j]->sup,
                                    box->sup);
                 }
-            }
+		//zonotope_fprint(stdout,man,res,NULL);
+	    }
 	    zonotope_aff_check_free(pr, aff[i]);
 	}
 	free(aff);
@@ -157,7 +159,7 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
     
     free(tchange);
     elina_interval_free(box);
-    // printf("meet finish %p\n",res);
+    // printf("meet licnons finish \n");
     // zonotope_fprint(stdout,man,res,NULL);
     // fflush(stdout);
     record_timing(zonotope_meet_lincons_time);
