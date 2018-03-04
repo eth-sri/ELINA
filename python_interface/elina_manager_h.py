@@ -201,7 +201,8 @@ class ElinaExcLog(Structure):
     
     """
 
-    _fields_ = [('exn', c_uint), ('funid', c_uint), ('msg', c_char_p), ('tail', ElinaExcLogPtr)]
+    _fields_ = [('exn', c_uint), ('funid', c_uint), ('msg', c_char_p), ('tail', POINTER(None))]
+    # _fields_ = [('exn', c_uint), ('funid', c_uint), ('msg', c_char_p), ('tail', ElinaExcLogPtr)]
 
 ElinaExcLogPtr = POINTER(ElinaExcLog)
 
