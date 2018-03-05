@@ -135,3 +135,27 @@ elina_box_t* elina_box_remove_dimensions(elina_manager_t* man,
   res->realdim = a->realdim-dimchange->realdim;
   return res;
 }
+
+elina_box_t* elina_box_permute_dimensions(elina_manager_t* man,
+                              bool destructive,
+                              elina_box_t* a,
+                              elina_dimperm_t* perm)
+{
+    elina_box_t* res;
+    size_t size;
+    size_t i;
+    
+    man->result.flag_best = true;
+    man->result.flag_exact = true;
+    if (a->p == NULL) {
+      return destructive ? a : elina_box_copy(man, a);
+    }
+    res = elina_box_copy(man,a);
+    size = res->intdim+res->realdim;
+    for (i=0;i<size;i++){
+      elina_interval_set(res->p[perm->dim[i]], a->p[i]);
+    }
+    if (destructive) elina_box_free(man,a);
+    return res;
+}
+

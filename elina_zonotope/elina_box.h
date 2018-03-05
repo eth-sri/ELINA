@@ -85,6 +85,7 @@ elina_box_t* elina_box_top(elina_manager_t* man, size_t intdim, size_t realdim);
 elina_box_t* elina_box_of_box(elina_manager_t* man,
 		  size_t intdim, size_t realdim,
 		  elina_interval_t** tinterval);
+    elina_interval_t** elina_box_to_box(elina_manager_t* man, elina_box_t* a);
   /* Abstract an hypercube defined by the array of intervals
      of size intdim+realdim */
 
@@ -155,6 +156,10 @@ elina_box_t* elina_box_remove_dimensions(elina_manager_t* man,
 			     elina_box_t* a,
 			     elina_dimchange_t* dimchange);
 
+elina_box_t* elina_box_permute_dimensions(elina_manager_t* man,
+                                              bool destructive,
+                                              elina_box_t* a,
+                                              elina_dimperm_t* permutation);
 /* ============================================================ */
 /* 9 Assignment */
 /* ============================================================ */

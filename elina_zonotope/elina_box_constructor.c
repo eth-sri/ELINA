@@ -283,4 +283,29 @@ elina_lincons0_array_t elina_box_to_lincons_array(elina_manager_t* man, elina_bo
     return array;
 }
 
+elina_interval_t** elina_box_to_box(elina_manager_t* man, elina_box_t* a)
+{
+    size_t i;
+    elina_interval_t** interval;
+    size_t nbdims;
+    elina_box_internal_t* intern = (elina_box_internal_t*)man->internal;
+    
+    man->result.flag_best = true;
+    man->result.flag_exact = true;
+    nbdims = a->intdim+a->realdim;
+    if (nbdims==0){
+        interval = NULL;
+    }
+    else {
+        interval = elina_interval_array_alloc(nbdims);
+        for (i=0; i<nbdims; i++){
+          if (a->p == NULL) {
+            elina_interval_set_bottom(interval[i]);
+          } else {
+            elina_interval_set(interval[i], a->p[i]);
+          }
+        }
+    }
+    return interval;
+}
 

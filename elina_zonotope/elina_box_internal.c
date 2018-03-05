@@ -99,8 +99,8 @@ elina_manager_t* elina_box_manager_alloc(void)
   //funptr[ELINA_FUNID_SAT_TCONS] = &elina_box_sat_tcons;
   funptr[ELINA_FUNID_BOUND_DIMENSION] = &elina_box_bound_dimension;
   funptr[ELINA_FUNID_BOUND_LINEXPR] = &elina_box_bound_linexpr;
-  // funptr[ELINA_FUNID_BOUND_TEXPR] = &elina_box_bound_texpr;
-  // funptr[ELINA_FUNID_TO_BOX] = &elina_box_to_box;
+  //funptr[ELINA_FUNID_BOUND_TEXPR] = &elina_box_bound_texpr;
+  funptr[ELINA_FUNID_TO_BOX] = &elina_box_to_box;
   funptr[ELINA_FUNID_TO_LINCONS_ARRAY] = &elina_box_to_lincons_array;
   //funptr[ELINA_FUNID_TO_TCONS_ARRAY] = &elina_box_to_tcons_array;
   //funptr[ELINA_FUNID_TO_GENERATOR_ARRAY] = &elina_box_to_generator_array;
@@ -117,7 +117,7 @@ elina_manager_t* elina_box_manager_alloc(void)
   //funptr[ELINA_FUNID_SUBSTITUTE_TEXPR_ARRAY] = &elina_box_substitute_texpr_array;
   funptr[ELINA_FUNID_ADD_DIMENSIONS] = &elina_box_add_dimensions;
   funptr[ELINA_FUNID_REMOVE_DIMENSIONS] = &elina_box_remove_dimensions;
-  // funptr[ELINA_FUNID_PERMUTE_DIMENSIONS] = &elina_box_permute_dimensions;
+  funptr[ELINA_FUNID_PERMUTE_DIMENSIONS] = &elina_box_permute_dimensions;
   funptr[ELINA_FUNID_FORGET_ARRAY] = &elina_box_forget_array;
   //funptr[ELINA_FUNID_EXPAND] = &elina_box_expand;
   //funptr[ELINA_FUNID_FOLD] = &elina_box_fold;
