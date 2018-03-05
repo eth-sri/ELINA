@@ -74,8 +74,11 @@ void test_assign_elina() {
   fflush(stdout);
   zonotope_t *z3 = zonotope_assign_linexpr_array(elina_man, false, z2, edim,
                                                  &elinexpr0, 1, NULL);
-  printf("Zonotope assign output\n");
+  zonotope_t *z4 =
+      zonotope_join(elina_man, false, z3, zonotope_copy(elina_man, z3));
+  printf("Zonotope assign output %d\n", zonotope_is_eq(elina_man, z3, z4));
   zonotope_fprint(stdout, elina_man, z3, NULL);
+  zonotope_fprint(stdout, elina_man, z4, NULL);
   fflush(stdout);
   zonotope_free(elina_man, z1);
   zonotope_free(elina_man, z2);
@@ -94,8 +97,10 @@ void test_assign_apron() {
   fflush(stdout);
   t1p_t *t3 =
       t1p_assign_linexpr_array(ap_man, false, t2, adim, &alinexpr0, 1, NULL);
-  printf("T1p assign output\n");
+  t1p_t *t4 = t1p_join(ap_man, false, t3, t1p_copy(ap_man, t3));
+  printf("T1p assign output %d\n", t1p_is_leq(ap_man, t3, t4));
   t1p_fprint(stdout, ap_man, t3, NULL);
+  t1p_fprint(stdout, ap_man, t4, NULL);
   fflush(stdout);
   t1p_free(ap_man, t1);
   t1p_free(ap_man, t2);
