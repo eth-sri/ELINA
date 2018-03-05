@@ -45,6 +45,11 @@ elina_box_t* elina_box_remove_dimensions(elina_manager_t* man,
 			     bool destructive, elina_box_t* a,
 			     elina_dimchange_t* dimchange);
 
+elina_box_t* elina_box_permute_dimensions(elina_manager_t* man,
+                                  bool destructive,
+                                  elina_box_t* a,
+                                  elina_dimperm_t* permutation);
+
 #ifdef __cplusplus
 }
 #endif
