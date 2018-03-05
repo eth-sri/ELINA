@@ -7,10 +7,10 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 {
     start_timing();
      zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_MEET_LINCONS_ARRAY);
-   // printf("meet start lincons\n");
+    //printf("meet start lincons\n");
     //zonotope_fprint(stdout,man,z,NULL);
-   // elina_lincons0_array_fprint(stdout,array,NULL);
-     //   fflush(stdout);
+    //elina_lincons0_array_fprint(stdout,array,NULL);
+      //  fflush(stdout);
    
     //arg_assert(a && array, abort(););
     size_t i = 0;
@@ -148,9 +148,9 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
     
     free(tchange);
     elina_interval_free(box);
-  // printf("meet licnons finish \n");
-   // zonotope_fprint(stdout,man,res,NULL);
-   // fflush(stdout);
+   //printf("meet licnons finish \n");
+    //zonotope_fprint(stdout,man,res,NULL);
+   //fflush(stdout);
     record_timing(zonotope_meet_lincons_time);
     return res;
 }
@@ -208,7 +208,7 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
 	     elina_scalar_max(res->box[i]->sup,z1->box[i]->sup,z2->box[i]->sup);
 	}
 	
-	if (z1->hypercube && z2->hypercube) {
+	if ((z1->hypercube && z2->hypercube)) {
 	    for (i=0; i<(intdim+realdim); i++) {
 		//printf("%d: ",i);
 		if (zonotope_aff_is_bottom(pr, z1->paf[i])){
