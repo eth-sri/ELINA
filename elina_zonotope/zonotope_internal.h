@@ -898,12 +898,10 @@ static inline bool zonotope_insert_constrained_noise_symbol(zonotope_internal_t 
     bool addconsnsym = false;
    
     /* resize nsymcons array if needed */
-    if ((size + 1) % 128 == 0) {
-      z->size += 128;
-      z->nsymcons =
-          (elina_dim_t *)realloc(z->nsymcons, (z->size) * sizeof(elina_dim_t));
-      z->gamma = (elina_interval_t **)realloc(
-          z->gamma, (z->size) * sizeof(elina_interval_t *));
+    if (size>=z->size) {
+	z->size += 128;
+	z->nsymcons = (elina_dim_t*)realloc(z->nsymcons, (z->size)*sizeof(elina_dim_t));
+	z->gamma = (elina_interval_t**)realloc(z->gamma, (z->size)*sizeof(elina_interval_t*));
     }
     if (size == 0) {
 	z->nsymcons[size] = nsymIndex;
@@ -1141,12 +1139,13 @@ static inline void zonotope_delete_constrained_noise_symbol(zonotope_internal_t 
 		dst = (void *)(&z->nsymcons[dim]);
 		memmove(dst,(void*)(&z->nsymcons[dim+1]),(size-dim-1)*sizeof(elina_dim_t));
 		//fprintf(stdout, "toto %d #################### \n",size-1-1);
-                if (size > 1) {
-                  z->nsymcons[size - 1 - 1] = 0;
-                } else {
-                  z->nsymcons[0] = 0;
-                }
-                if (z->gamma[dim]) {
+		if (size >= 1){
+			 z->nsymcons[size-1] = 0;
+		} 
+		else {
+			z->nsymcons[0] = 0;
+		}
+		if (z->gamma[dim]) {
 		    if (z->gamma[dim] != pr->ap_muu) {elina_interval_free(z->gamma[dim]);z->gamma[dim] = NULL;}
 		}
 		dst = (void *)(&z->gamma[dim]);
@@ -1497,6 +1496,8 @@ static inline void zonotope_update_noise_symbol_cons_gamma(zonotope_internal_t* 
     elina_interval_t* bound = NULL;
     zonotope_noise_symbol_cons_set_hypercube(pr, z);
     if (elina_abstract0_is_leq(pr->manNS, pr->nsymhypercube, z->abs)) {
+        //printf("hypercube %d\n",nsymcons_size);
+        //fflush(stdout);
 	z->hypercube = true;
 	elina_abstract0_free(pr->manNS, z->abs);
 	z->abs = elina_abstract0_top(pr->manNS, 0,0);
@@ -1506,6 +1507,8 @@ static inline void zonotope_update_noise_symbol_cons_gamma(zonotope_internal_t* 
 	}
 	memset((void*)z->nsymcons, 0, nsymcons_size*sizeof(elina_dim_t));
     } else {
+        //printf("not heypercube %d\n",nsymcons_size);
+        //fflush(stdout);
 	z->hypercube = false;
 	for (i=0; i<nsymcons_size; i++) {
 		
