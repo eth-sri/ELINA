@@ -13,6 +13,7 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
       //  fflush(stdout);
    
     //arg_assert(a && array, abort(););
+  
     size_t i = 0;
     zonotope_t* res = destructive ? z : zonotope_copy(man, z);
     bool is_bottom = false;
@@ -160,6 +161,7 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
    //printf("meet licnons finish \n");
     //zonotope_fprint(stdout,man,res,NULL);
    //fflush(stdout);
+    
     record_timing(zonotope_meet_lincons_time);
     return res;
 }
@@ -178,11 +180,10 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
     if((z1->dims!=z2->dims) || (z1->intdim!=z2->intdim)){
 	return NULL;
     }
-   
     //printf("join start\n");
     //zonotope_fprint(stdout,man,z1,NULL);
     //zonotope_fprint(stdout,man,z2,NULL);
-    //fflush(stdout);
+   // fflush(stdout);
     zonotope_t* res;
     size_t intdim = z1->intdim;
     size_t realdim = z1->dims - z1->intdim;
@@ -255,7 +256,7 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
 		
 		size_t dim2 = 0;
 		elina_dimchange_t* dimchange2 = elina_dimchange_alloc(0, dims1);
-		elina_dimchange_t* dimchange1 = elina_dimchange_alloc(0, dims2);
+		//elina_dimchange_t* dimchange1 = elina_dimchange_alloc(0, dims2);
 		if ((dims1+dims2) > res->size) {
 		    res->nsymcons = (elina_dim_t*)realloc(res->nsymcons, (dims1+dims2)*sizeof(elina_dim_t));
 		    res->gamma = (elina_interval_t**)realloc(res->gamma, (dims1+dims2)*sizeof(elina_interval_t*));
@@ -263,10 +264,10 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
 		    res->size = dims1+dims2;
 		}
 		res->nsymcons = memcpy((void *)res->nsymcons, (const void *)z1->nsymcons, dims1*sizeof(elina_dim_t));
-		for (k=0; k<dims2; k++) zonotope_insert_constrained_noise_symbol(pr, &j, z2->nsymcons[k], res);
 		elina_abstract0_free(pr->manNS, res->abs);
-
-		//res->abs = elina_abstract0_copy(pr->manNS, z1->abs);
+		
+		res->abs = elina_abstract0_copy(pr->manNS, z1->abs);
+		for (k=0; k<dims2; k++) zonotope_insert_constrained_noise_symbol(pr, &j, z2->nsymcons[k], res);
 		for (k=0; k<dims1; k++) {
 		    if (!zonotope_noise_symbol_cons_get_dimpos(pr, &j, z1->nsymcons[k], z2)) {
 			dimchange2->dim[dim2] = j;
@@ -274,44 +275,61 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
 		    }
 		}
 		dimchange2->realdim = dim2;
-		size_t dim1 = 0;
-		for (k=0; k<dims2; k++) {
-		    if (!zonotope_noise_symbol_cons_get_dimpos(pr, &j, z2->nsymcons[k], z1)) {
-			dimchange1->dim[dim1] = j;
-			dim1++;
-		    }
-		}
-		dimchange1->realdim = dim1;
+		//size_t dim1 = 0;
+		//for (k=0; k<dims2; k++) {
+		  //  if (!zonotope_noise_symbol_cons_get_dimpos(pr, &j, z2->nsymcons[k], z1)) {
+			//dimchange1->dim[dim1] = j;
+			//dim1++;
+		    //}
+		//}
+		//dimchange1->realdim = dim1;
 		
 		
 		/* destructive, without projection (new dimension set to top) */
 		elina_abstract0_t * tmp_z2 = elina_abstract0_add_dimensions(pr->manNS, false, z2->abs, dimchange2, false);
-		elina_abstract0_t * tmp_z1 = elina_abstract0_add_dimensions(pr->manNS, false, z1->abs, dimchange1, false);
+		//elina_abstract0_add_dimensions(pr->manNS, true, res->abs, dimchange1, false);
 		elina_dimchange_add_invert(dimchange2);
 		for (k=0; k<dim2; k++) {
 		    zonotope_set_lincons_dim(pr, dimchange2->dim[k]);
 		    elina_abstract0_meet_lincons_array(pr->manNS, true, tmp_z2, &pr->moo);
 		}
 
-		elina_dimchange_add_invert(dimchange1);
-		for (k=0; k<dim1; k++) {
-		    zonotope_set_lincons_dim(pr, dimchange1->dim[k]);
-		    elina_abstract0_meet_lincons_array(pr->manNS, true, tmp_z1, &pr->moo);
-		}
-		elina_dimension_t jdim1 = elina_abstract0_dimension(pr->manNS,tmp_z1);
-		elina_dimension_t jdim2 = elina_abstract0_dimension(pr->manNS,tmp_z2);
+		//elina_dimchange_add_invert(dimchange1); 
+		//for (k=0; k<dim1; k++) {
+		  //  zonotope_set_lincons_dim(pr, dimchange1->dim[k]);
+		    //elina_abstract0_meet_lincons_array(pr->manNS, true, res->abs, &pr->moo);
+		//}
+		//elina_dimension_t jdim1 = elina_abstract0_dimension(pr->manNS,res->abs);
+		//elina_dimension_t jdim2 = elina_abstract0_dimension(pr->manNS,tmp_z2);
+		//printf("INPUTS %d %d \n",dim2,jdim1.intdim+jdim1.realdim);
+		//elina_abstract0_fprint(stdout,pr->manNS,z1->abs,NULL);
+		//elina_abstract0_fprint(stdout,pr->manNS,z2->abs,NULL);
 		
-       	        res->abs = elina_abstract0_join(pr->manNS, false, tmp_z1, tmp_z2);
+		//for(k=0; k < jdim1.intdim+jdim1.realdim; k++){
+		//	printf("%u ",res->nsymcons[k]);
+		//}
+		//printf("\n");
+		//fflush(stdout);		
+       	        elina_abstract0_join(pr->manNS, true, res->abs, tmp_z2);
+		
 		
 		/* update res->gamma */
 		
 		zonotope_update_noise_symbol_cons_gamma(pr, res);
-		elina_abstract0_free(pr->manNS,tmp_z1);
+		//printf("OUTPUTS %d\n",);
+		//elina_abstract0_fprint(stdout,pr->manNS,res->abs,NULL);
+		//elina_dimension_t jdim1 = elina_abstract0_dimension(pr->manNS,res->abs);
+		//for(k=0; k < zonotope_noise_symbol_cons_get_dimension(pr, res); k++){
+		//	printf("%u ",res->nsymcons[k]);
+		//}
+		//printf("\n");
+		//fflush(stdout);	
+		//elina_abstract0_free(pr->manNS,tmp_z1);
 		elina_abstract0_free(pr->manNS,tmp_z2);
 		//elina_abstract0_remove_dimensions(pr->manNS, true, z2->abs, dimchange2);
 		//dimchange2->realdim = dims2; 
 		elina_dimchange_free(dimchange2);
-		elina_dimchange_free(dimchange1);
+		//elina_dimchange_free(dimchange1);
 		size_t nsymcons_size = zonotope_noise_symbol_cons_get_dimension(pr, res);
 		pr->dimtoremove = (elina_dim_t*)realloc(pr->dimtoremove, (nsymcons_size)*sizeof(elina_dim_t));
 		memset((void *)pr->dimtoremove, (int)0, nsymcons_size*sizeof(int));
@@ -360,6 +378,13 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
     //printf("Join output\n");
     //zonotope_fprint(stdout,man,res,NULL);
     //fflush(stdout);
+    size_t dims = zonotope_noise_symbol_cons_get_dimension(pr, res);
+	//printf("join output dims %d\n",dims);
+	//for(size_t k=0; k < dims; k++){
+	//	printf("%u ",res->nsymcons[k]);
+	//}
+	//printf("\n");
+	//fflush(stdout);
     record_timing(zonotope_join_time);
     return res;
 }
