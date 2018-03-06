@@ -401,7 +401,7 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
     // printf("Join output\n");
     // zonotope_fprint(stdout,man,res,NULL);
     // fflush(stdout);
-    size_t dims = zonotope_noise_symbol_cons_get_dimension(pr, res);
+    // size_t dims = zonotope_noise_symbol_cons_get_dimension(pr, res);
     // printf("join output dims %d\n",dims);
     // for(size_t k=0; k < dims; k++){
     //	printf("%u ",res->nsymcons[k]);
