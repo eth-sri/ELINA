@@ -898,12 +898,10 @@ static inline bool zonotope_insert_constrained_noise_symbol(zonotope_internal_t 
     bool addconsnsym = false;
    
     /* resize nsymcons array if needed */
-    if ((size + 1) % 128 == 0) {
-      z->size += 128;
-      z->nsymcons =
-          (elina_dim_t *)realloc(z->nsymcons, (z->size) * sizeof(elina_dim_t));
-      z->gamma = (elina_interval_t **)realloc(
-          z->gamma, (z->size) * sizeof(elina_interval_t *));
+    if (size>=z->size) {
+	z->size += 128;
+	z->nsymcons = (elina_dim_t*)realloc(z->nsymcons, (z->size)*sizeof(elina_dim_t));
+	z->gamma = (elina_interval_t**)realloc(z->gamma, (z->size)*sizeof(elina_interval_t*));
     }
     if (size == 0) {
 	z->nsymcons[size] = nsymIndex;
@@ -1497,6 +1495,8 @@ static inline void zonotope_update_noise_symbol_cons_gamma(zonotope_internal_t* 
     elina_interval_t* bound = NULL;
     zonotope_noise_symbol_cons_set_hypercube(pr, z);
     if (elina_abstract0_is_leq(pr->manNS, pr->nsymhypercube, z->abs)) {
+        //printf("hypercube %d\n",nsymcons_size);
+        //fflush(stdout);
 	z->hypercube = true;
 	elina_abstract0_free(pr->manNS, z->abs);
 	z->abs = elina_abstract0_top(pr->manNS, 0,0);
@@ -1506,6 +1506,8 @@ static inline void zonotope_update_noise_symbol_cons_gamma(zonotope_internal_t* 
 	}
 	memset((void*)z->nsymcons, 0, nsymcons_size*sizeof(elina_dim_t));
     } else {
+        //printf("not heypercube %d\n",nsymcons_size);
+        //fflush(stdout);
 	z->hypercube = false;
 	for (i=0; i<nsymcons_size; i++) {
 		
