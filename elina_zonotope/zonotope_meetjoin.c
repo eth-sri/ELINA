@@ -10,7 +10,7 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
      // printf("meet start lincons\n");
      // zonotope_fprint(stdout,man,z,NULL);
      // elina_lincons0_array_fprint(stdout,array,NULL);
-     //   fflush(stdout);
+     //  fflush(stdout);
 
      // arg_assert(a && array, abort(););
      size_t i = 0;
@@ -56,6 +56,9 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 	/* texpr -> aff forme */
 	
 	zonotope_aff_t** aff = (zonotope_aff_t **)malloc(array->size*sizeof(zonotope_aff_t*));
+	for (i=0; i<array->size; i++) {
+		aff[i]=NULL;
+	}
 	elina_linexpr0_t* linexpr0 = NULL;
 	elina_lincons0_t lincons0;
 	elina_interval_t cst;
@@ -63,6 +66,9 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
           elina_interval_set(res->paf[i]->itv, res->box[i]);
         for (i=0; i<array->size; i++) {
 	    aff[i] = zonotope_aff_from_linexpr0(pr, array->p[i].linexpr0, res);
+		//printf("after linexpr0: %d %d %p %d \n",i,array->size,aff[i],aff[i]->pby);
+		//zonotope_aff_fprint(pr,stdout,aff[i]);
+		//fflush(stdout);
 	    linexpr0 = elina_linexpr0_from_zonotope(pr,aff[i],res);
         //elina_dimension_t dimension = elina_abstract0_dimension(pr->manNS,z->abs);
         //printf("dimension: %d %d\n",dimension.intdim,dimension.realdim);
@@ -146,6 +152,9 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
                 }
 		//zonotope_fprint(stdout,man,res,NULL);
 	    }
+		//printf("aff: %d %d %p %d %d\n",i,array->size,aff[i],aff[i]->pby,is_bottom);
+		//zonotope_aff_fprint(pr,stdout,aff[i]);
+		//fflush(stdout);
 	    zonotope_aff_check_free(pr, aff[i]);
 	}
 	free(aff);
@@ -252,12 +261,13 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
 	    }
 
 	} else {
-
-            size_t k = 0;
+	    size_t k = 0;
 	    elina_dim_t j = 0;
 	    size_t dims1 = zonotope_noise_symbol_cons_get_dimension(pr, z1);
 	    size_t dims2 = zonotope_noise_symbol_cons_get_dimension(pr, z2);
+	 
 	    if (dims1 && dims2) {
+		
 		size_t dim2 = 0;
 		elina_dimchange_t* dimchange2 = elina_dimchange_alloc(0, dims1);
                 elina_dimchange_t *dimchange1 = elina_dimchange_alloc(0, dims2);
