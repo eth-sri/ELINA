@@ -192,11 +192,11 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
 zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, zonotope_t* z, elina_dimperm_t* permutation)
 {
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_PERMUTE_DIMENSIONS);
-    // zonotope_aff_t* tmp = NULL;
-    // printf("permutation input %d\n",destructive);
-    // zonotope_fprint(stdout,man,z,NULL);
-    // for(int i=0; i < permutation->size;i++){
-    // printf("%d ",permutation->dim[i]);
+    //zonotope_aff_t* tmp = NULL;
+   // printf("permutation input %d\n",destructive);
+    //zonotope_fprint(stdout,man,z,NULL);
+    //for(int i=0; i < permutation->size;i++){
+      //printf("%d ",permutation->dim[i]);
     //}
     //printf("\n");
     //fflush(stdout);
@@ -218,15 +218,15 @@ zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, 
     size_t j = 0;
     for (i=0; i< permutation->size; i++) {
         j = permutation->dim[i];
-        res->paf[i] = zonotope_aff_alloc_init(pr);
+        res->paf[j] = zonotope_aff_alloc_init(pr);
         //printf("coming here: %d %d %d %d %p %d\n",i,j,num_rem,num_remove,res->paf[i],res->dims);
         //fflush(stdout);
-        memcpy((void *)res->paf[i], (void *)z->paf[j], sizeof(zonotope_aff_t));
+        memcpy((void *)res->paf[j], (void *)z->paf[i], sizeof(zonotope_aff_t));
         //zonotope_aff_check_free(pr,res->paf[dimchange->dim[i]]);
         //res->paf[dimchange->dim[i]] = NULL;
         //for (j=dimchange->dim[i];j<-1+res->dims;j++) {
         //  res->paf[j] = res->paf[j+1];
-        elina_interval_set(res->box[i], z->box[j]);
+        elina_interval_set(res->box[j], z->box[i]);
         if(!destructive)
         res->paf[i]->pby++;
         //}
@@ -243,12 +243,12 @@ zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, 
                  "object\n");
         }
     }
-    if (destructive) {
-      z = res;
-      // zonotope_free(man,tmp);
-      return z;
-    }
-
+    //if(destructive){
+      //  z = res;
+        //zonotope_free(man,tmp);
+        //return z;
+    //}
+    
     //char *map = (char *)calloc(permutation->size,sizeof(char));
     //for (i=0; i<permutation->size; i++) {
     //if(!map[i] && !map[permutation->dim[i]]){
