@@ -411,18 +411,18 @@ int main(int argc, char **argv){
 		printf("The Input parameters should be positive\n");
 		return 0;
 	}
-	//printf("Testing Meet\n");
-	//test_meetjoin(dim,nbcons,true);
-	//printf("Testing Join\n");
-	//test_meetjoin(dim,nbcons,false);
-	//printf("Testing Assign\n");
-	//test_assign(dim,nbcons);
+	printf("Testing Meet\n");
+	test_meetjoin(dim,nbcons,true);
+	printf("Testing Join\n");
+	test_meetjoin(dim,nbcons,false);
+	printf("Testing Assign\n");
+	test_assign(dim,nbcons);
 	printf("Testing Substitute\n");
 	test_substitute(dim,nbcons);
-	//printf("Testing Fold\n");
- 	//test_fold(dim,nbcons);
-	//printf("Testing Expand\n");
-	//test_expand(dim,nbcons);
-	//printf("Testing Oct of Box\n");
-	//test_oct_of_box(dim);
+	printf("Testing Fold\n");
+ 	test_fold(dim,nbcons);
+	printf("Testing Expand\n");
+	test_expand(dim,nbcons);
+	printf("Testing Oct of Box\n");
+	test_oct_of_box(dim);
 }
