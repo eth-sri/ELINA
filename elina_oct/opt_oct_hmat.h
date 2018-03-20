@@ -97,6 +97,7 @@ bool is_equal_half(opt_oct_mat_t *m1, opt_oct_mat_t *m2, int dim);
 bool is_lequal_half(opt_oct_mat_t *m1, opt_oct_mat_t *m2, int dim);
 void meet_half(opt_oct_mat_t *m, opt_oct_mat_t *m1, opt_oct_mat_t *m2, int dim, bool destructive);
 void forget_array_half(opt_oct_mat_t *m, elina_dim_t *arr,int dim, int arr_dim, bool project);
+void opt_hmat_forget_var(opt_oct_mat_t* oo, size_t dim, size_t d);
 void join_half(opt_oct_mat_t *m, opt_oct_mat_t *m1, opt_oct_mat_t *m2, int dim, bool destructive);
 void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst, opt_oct_mat_t* src,elina_dim_t* pos, int nb_pos,int mult, int dim, bool add);
 void opt_hmat_permute(opt_oct_mat_t* dst, opt_oct_mat_t* src,int dst_dim, int src_dim,elina_dim_t* permutation);
