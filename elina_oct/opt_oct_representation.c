@@ -400,9 +400,8 @@ elina_manager_t* opt_oct_manager_alloc(void)
   man->funptr[ELINA_FUNID_JOIN_ARRAY] = &opt_oct_join_array;
   //man->funptr[ELINA_FUNID_ADD_RAY_ARRAY] = &opt_oct_add_ray_array;
   man->funptr[ELINA_FUNID_ASSIGN_LINEXPR_ARRAY] = &opt_oct_assign_linexpr_array;
-  // man->funptr[ELINA_FUNID_SUBSTITUTE_LINEXPR_ARRAY] =
-  // &opt_oct_substitute_linexpr_array;
-  man->funptr[ELINA_FUNID_ASSIGN_TEXPR_ARRAY] = &opt_oct_assign_texpr_array;
+  man->funptr[ELINA_FUNID_SUBSTITUTE_LINEXPR_ARRAY] = &opt_oct_substitute_linexpr_array;
+    man->funptr[ELINA_FUNID_ASSIGN_TEXPR_ARRAY] = &opt_oct_assign_texpr_array;
   //man->funptr[ELINA_FUNID_SUBSTITUTE_TEXPR_ARRAY] = &opt_oct_substitute_texpr_array;
     man->funptr[ELINA_FUNID_ADD_DIMENSIONS] = &opt_oct_add_dimensions;
     man->funptr[ELINA_FUNID_REMOVE_DIMENSIONS] = &opt_oct_remove_dimensions;

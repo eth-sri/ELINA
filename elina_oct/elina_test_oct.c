@@ -295,6 +295,87 @@ void test_assign(unsigned short int dim, size_t nbcons){
 	elina_lincons0_array_clear(&lincons0);
 }
 
+
+
+void test_substitute(unsigned short int dim, size_t nbcons){
+	elina_manager_t * man = opt_oct_manager_alloc();
+	opt_oct_t * oa1 = opt_oct_top(man, dim,0);
+	//generate random constraints
+	elina_lincons0_array_t lincons0 = generate_random_lincons0_array(dim,nbcons);
+	opt_oct_t * oa2 = opt_oct_meet_lincons_array(man,false,oa1,&lincons0);
+
+	
+	elina_dim_t * tdim = (elina_dim_t *)malloc(sizeof(elina_dim_t));
+	tdim[0] = rand()%dim;
+	elina_linexpr0_t ** expr_array = (elina_linexpr0_t**)malloc(sizeof(elina_linexpr0_t*));
+	int v1 = rand()%dim;
+	int v2;
+	while(1){
+		v2 = rand()%dim;
+		if(v1!=v2){
+			break;
+		}
+	}
+        elina_linexpr0_t * linexpr0;
+	int choice = rand()%3;
+	int coeff1 = rand()%2==0? -1 :1;
+	int coeff2 = rand()%2==0? -1 :1;
+        if(choice==0){
+		elina_coeff_t *cst, *coeff;
+		linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,0);
+		cst = &linexpr0->cst;
+		elina_scalar_set_to_int(cst->val.scalar,rand()%10,ELINA_SCALAR_DOUBLE);
+        }
+	else if(choice==1){
+		elina_coeff_t *cst, *coeff;
+		linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,1);
+		cst = &linexpr0->cst;
+		elina_scalar_set_to_int(cst->val.scalar,rand()%10,ELINA_SCALAR_DOUBLE);
+		elina_linterm_t * linterm = &linexpr0->p.linterm[0];
+		linterm->dim = v1;
+		coeff = &linterm->coeff;
+		elina_scalar_set_to_int(coeff->val.scalar,coeff1,ELINA_SCALAR_DOUBLE);
+	}
+        else{
+		
+		linexpr0 = generate_random_linexpr0(dim,v1,v2,coeff1,coeff2);
+        }
+	
+	expr_array[0] = linexpr0;
+	printf("ELINA Input Octagon\n");
+	elina_lincons0_array_t arr1 = opt_oct_to_lincons_array(man,oa2);
+  	elina_lincons0_array_fprint(stdout,&arr1,NULL);
+	printf("Substitute statement\n");
+	printf("x%d = ",tdim[0]);
+	elina_linexpr0_fprint(stdout,linexpr0,NULL);
+	printf("\n");
+  	fflush(stdout);
+	elina_lincons0_array_clear(&arr1);
+	//assign;
+	opt_oct_t * oa3 = opt_oct_substitute_linexpr_array(man,false,oa2,tdim, expr_array,1,NULL);
+	elina_linexpr0_free(linexpr0);
+	free(expr_array);
+	free(tdim);
+
+	//meet with -x1 + 43 >= 0; 	
+
+	// Print the result
+	printf("ELINA Output Octagon\n");
+	elina_lincons0_array_t arr = opt_oct_to_lincons_array(man,oa3);
+  	elina_lincons0_array_fprint(stdout,&arr,NULL);
+	printf("\n");
+  	fflush(stdout);
+ 	elina_lincons0_array_clear(&arr);
+
+
+	opt_oct_free(man,oa1);
+	opt_oct_free(man,oa2);
+	opt_oct_free(man,oa3);
+	elina_manager_free(man);
+	elina_lincons0_array_clear(&lincons0);
+}
+
+
 void test_oct_of_box(unsigned short int dim){
 	elina_manager_t * man = opt_oct_manager_alloc();
 	unsigned short int i;
@@ -330,16 +411,18 @@ int main(int argc, char **argv){
 		printf("The Input parameters should be positive\n");
 		return 0;
 	}
-	printf("Testing Meet\n");
-	test_meetjoin(dim,nbcons,true);
-	printf("Testing Join\n");
-	test_meetjoin(dim,nbcons,false);
-	printf("Testing Assign\n");
-	test_assign(dim,nbcons);
-	printf("Testing Fold\n");
- 	test_fold(dim,nbcons);
-	printf("Testing Expand\n");
-	test_expand(dim,nbcons);
-	printf("Testing Oct of Box\n");
-	test_oct_of_box(dim);
+        // printf("Testing Meet\n");
+        // test_meetjoin(dim,nbcons,true);
+        // printf("Testing Join\n");
+        // test_meetjoin(dim,nbcons,false);
+        // printf("Testing Assign\n");
+        // test_assign(dim,nbcons);
+        printf("Testing Substitute\n");
+	test_substitute(dim,nbcons);
+        // printf("Testing Fold\n");
+        // test_fold(dim,nbcons);
+        // printf("Testing Expand\n");
+        // test_expand(dim,nbcons);
+        // printf("Testing Oct of Box\n");
+        // test_oct_of_box(dim);
 }

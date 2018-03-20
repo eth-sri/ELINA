@@ -469,6 +469,7 @@ opt_oct_t* opt_oct_permute_dimensions(elina_manager_t* man, bool destructive, op
 opt_oct_t* opt_oct_meet_lincons_array(elina_manager_t* man, bool destructive, opt_oct_t* o, elina_lincons0_array_t* array);
 opt_oct_t* opt_oct_meet_tcons_array(elina_manager_t* man, bool destructive, opt_oct_t* o, elina_tcons0_array_t* array);
 opt_oct_t* opt_oct_assign_linexpr_array(elina_manager_t* man, bool destructive, opt_oct_t* o, elina_dim_t* tdim, elina_linexpr0_t** texpr, size_t size, opt_oct_t* dest);
+opt_oct_t* opt_oct_substitute_linexpr_array(elina_manager_t* man, bool destructive, opt_oct_t* o, elina_dim_t* tdim, elina_linexpr0_t** texpr, size_t size, opt_oct_t* dest);
 opt_oct_t* opt_oct_assign_texpr_array(elina_manager_t* man, bool destructive, opt_oct_t* o, elina_dim_t* tdim, elina_texpr0_t** texpr, int size, opt_oct_t* dest);
 
 #ifdef __cplusplus

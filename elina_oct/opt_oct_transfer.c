@@ -270,3 +270,326 @@ opt_oct_t* opt_oct_assign_texpr_array(elina_manager_t* man,
   return b;
   //return elina_generic_assign_texpr_array(man,destructive,o,tdim,texpr,size,dest);
 }
+
+
+
+/*************************
+	Substitute Linexpr array
+*************************/
+
+
+static bool opt_hmat_subst(opt_oct_internal_t* pr, opt_uexpr u, opt_oct_mat_t *oo, size_t dim,
+		       size_t d, opt_oct_mat_t * dst, bool* respect_closure){
+  size_t i,k;
+  double *m = oo->mat;
+  if (u.type==OPT_ZERO ) {
+    /* X -> [-a,b], non-invertible */
+
+    *respect_closure = false; /* TODO: does it respect closure? */
+
+    /* test satisfiability */
+    pr->tmp[2] = 2*pr->tmp[0];
+    pr->tmp[3] = 2*pr->tmp[1];
+    pr->tmp[2] = pr->tmp[2] + m[opt_matpos(2*d+1,2*d)];
+    pr->tmp[3] = pr->tmp[3] + m[opt_matpos(2*d,2*d+1)];
+    if ((pr->tmp[2]<0) || (pr->tmp[3]<0)) return true;
+
+    /* infer unary contraints cX from binary constraints on cX + c'Xd */
+    for (i=0;i<2*d;i++) {
+      pr->tmp[2] = pr->tmp[0] + m[opt_matpos(2*d+1,i^1)];
+      pr->tmp[3] = pr->tmp[1] + m[opt_matpos(2*d,i^1)];
+      pr->tmp[2] = 2*pr->tmp[2];
+      pr->tmp[3] = 2*pr->tmp[3];
+      m[opt_matpos(i,i^1)] = min(m[opt_matpos(i,i^1)],pr->tmp[2]);
+      m[opt_matpos(i,i^1)] = min(m[opt_matpos(i,i^1)],pr->tmp[3]);
+    }
+    for (i=2*d+2;i<2*dim;i++) {
+      pr->tmp[2] = pr->tmp[0] + m[opt_matpos(i,2*d)];
+      pr->tmp[3] = pr->tmp[1] + m[opt_matpos(i,2*d+1)];
+      pr->tmp[2] = 2*pr->tmp[2];
+      pr->tmp[3] = 2*pr->tmp[3];
+      m[opt_matpos(i,i^1)] = min(m[opt_matpos(i,i^1)],pr->tmp[2]);
+      m[opt_matpos(i,i^1)] = min(m[opt_matpos(i,i^1)],pr->tmp[3]);
+    }
+    opt_hmat_forget_var(oo,dim,d);
+    return false;
+  }
+
+  else if (u.type==OPT_UNARY && u.i!=d) {
+    k = u.i*2 + (u.coef_i==1 ? 0 : 1 );
+    /* X -> cX_i + [-a,b], X_i!=X, non-invertible */
+
+    *respect_closure = false; /* TODO: does it respect closure? */
+
+    /* test satisfiability */
+    pr->tmp[2] = pr->tmp[0] + m[opt_matpos2(k,2*d)];
+    pr->tmp[3] = pr->tmp[1] + m[opt_matpos2(2*d,k)];
+    if ((pr->tmp[2]<0) || (pr->tmp[3]<0)) return true;
+
+    /* infer binary constraints by substitution */
+    for (i=0;i<2*d;i++) {
+      pr->tmp[2] = pr->tmp[0] + m[opt_matpos(2*d+1,i)];
+      pr->tmp[3] = pr->tmp[1] + m[opt_matpos(2*d,i)];
+      m[opt_matpos2(k^1,i)] = min(m[opt_matpos2(k^1,i)],pr->tmp[2]);
+      m[opt_matpos2(k,i)] = min(m[opt_matpos2(k,i)],pr->tmp[3]);
+    }
+    for (i=2*d+2;i<2*dim;i++) {
+      pr->tmp[2] = pr->tmp[0] + m[opt_matpos(i^1,2*d)];
+      pr->tmp[3] = pr->tmp[1] + m[opt_matpos(i^1,2*d+1)];
+      m[opt_matpos2(k^1,i)] = min(m[opt_matpos2(k^1,i)],pr->tmp[2]);
+      m[opt_matpos2(k,i)] = min(m[opt_matpos2(k,i)],pr->tmp[3]);
+    }
+
+    /* infer unary constraints by substitution */
+    pr->tmp[2] = 2*pr->tmp[0];
+    pr->tmp[3] = 2*pr->tmp[1];
+    pr->tmp[2] = pr->tmp[2] + m[opt_matpos(2*d+1,d*2)];
+    pr->tmp[3] = pr->tmp[3] + m[opt_matpos(2*d,d*2+1)];
+    m[opt_matpos(k^1,k)] = min(m[opt_matpos(k^1,k)],pr->tmp[2]);
+    m[opt_matpos(k,k^1)] = min(m[opt_matpos(k,k^1)],pr->tmp[3]);
+
+    opt_hmat_forget_var(oo,dim,d);
+    return false;
+  }
+
+  else if (u.type==OPT_UNARY && u.coef_i==-1) {
+    /* X -> - X + [-a,b], invertible */
+    /* equivalent to X <- -X + [-a,b] */
+    opt_hmat_assign(pr,u,oo,dim,d,respect_closure);
+    return false;
+  }
+
+  else if (u.type==OPT_UNARY && u.coef_i==1) {
+    /* X -> X + [-a,b], invertible */
+    /* equivalent to X <- X + [-b,a] */
+    pr->tmp[dim*2+3] = pr->tmp[0];
+    pr->tmp[0] = pr->tmp[1];
+    pr->tmp[1] = pr->tmp[dim*2+3];
+    opt_hmat_assign(pr,u,oo,dim,d,respect_closure);
+    return false;
+  }
+
+  else {
+    /* general, approximated case */
+
+    /* TODO */
+
+    /* for now, respects closure... */
+
+    opt_hmat_forget_var(oo,dim,d);
+    return false;
+  }
+}
+
+opt_oct_t* opt_oct_substitute_linexpr(elina_manager_t* man,
+			      bool destructive, opt_oct_t* o,
+			      elina_dim_t d, elina_linexpr0_t* expr,
+			      opt_oct_t* dest)
+{
+  opt_oct_internal_t* pr =
+    opt_oct_init_from_manager(man,ELINA_FUNID_SUBSTITUTE_LINEXPR_ARRAY,2*(o->dim+1+5));
+  opt_uexpr u = opt_oct_uexpr_of_linexpr(pr,pr->tmp,expr,o->intdim,o->dim);
+  opt_oct_mat_t * oo, *oo2;
+  bool respect_closure;
+  if (d >= o->dim) {
+    return NULL;
+  }
+
+  oo2 = dest ? (dest->closed ? dest->closed : dest->m) : NULL;
+
+  if (dest && !oo2)
+    /* definitively empty due to dest*/
+    return opt_oct_set_mat(pr,o,NULL,NULL,destructive);
+
+  if (u.type==OPT_EMPTY)
+    /* definitively empty due to empty expression */
+    return opt_oct_set_mat(pr,o,NULL,NULL,destructive);
+
+  /* useful to close only for non-invertible substitution */
+  if ((u.type!=OPT_UNARY || u.i!=d) && pr->funopt->algorithm>=0)
+    opt_oct_cache_closure(pr,o);
+  oo = o->closed ? o->closed : o->m;
+  if (!oo) return opt_oct_set_mat(pr,o,NULL,NULL,destructive); /* empty */
+
+  /* can / should we try to respect the closure */
+  respect_closure = (oo==o->closed) && (pr->funopt->algorithm>=0) && (!dest);
+
+  if (!destructive) oo = opt_hmat_copy(oo,o->dim);
+  //use only dense type
+  if(!oo->is_dense){
+	oo->is_dense = true;
+	if(!oo->ti){
+		oo->ti = true;
+		convert_to_dense_mat(oo,o->dim,false);				
+	}		
+	free_array_comp_list(oo->acl);
+   }
+  /* go */
+  if (opt_hmat_subst(pr,u,oo,o->dim,d,oo2,&respect_closure)) {
+    /* empty */
+    if (!destructive) opt_hmat_free(oo);
+    return opt_oct_set_mat(pr,o,NULL,NULL,destructive);
+  }
+
+  if (u.type==OPT_BINARY || u.type==OPT_OTHER) flag_incomplete;
+  else if (num_incomplete || o->intdim) flag_incomplete;
+  else if (!o->closed) flag_algo;
+  else if (pr->conv) flag_conv;
+
+  /* intersect with dest */
+  if (oo2) {
+    size_t i;
+     //TODO: online decomposition
+    convert_to_dense_mat(oo2, o->dim, false);
+    double * m = oo->mat;
+    double * m2 = oo2->mat;
+    for (i=0;i<opt_matsize(o->dim);i++){
+	m[i] = min(m[i],m2[i]);
+    }
+  }
+
+  if (respect_closure) return opt_oct_set_mat(pr,o,NULL,oo,destructive);
+  else return opt_oct_set_mat(pr,o,oo,NULL,destructive);
+}
+
+opt_oct_t* opt_oct_substitute_linexpr_array(elina_manager_t* man,
+				    bool destructive, opt_oct_t* o,
+				    elina_dim_t* tdim,
+				    elina_linexpr0_t** texpr,
+				    size_t size,
+				    opt_oct_t* dest)
+{
+  if (size==1)
+    return opt_oct_substitute_linexpr(man,destructive,o,tdim[0],texpr[0],dest);
+
+  opt_oct_internal_t* pr =
+    opt_oct_init_from_manager(man,ELINA_FUNID_SUBSTITUTE_LINEXPR_ARRAY,
+			  2*(o->dim+size+5));
+  elina_dim_t* d = (elina_dim_t*) pr->tmp2;
+  opt_oct_mat_t *oo, *oo1, *oo2;
+  size_t i,j;
+  elina_dim_t p = o->dim;
+  int inexact = 0;
+  bool respect_closure = false; 
+
+  /* checks */
+  if(size<=0){
+	return NULL;
+  }
+  for (i = 0; i < o->dim; i++)
+    d[i] = 0;
+  for (i=0;i<size;i++) {
+    if (tdim[i] >= o->dim) {
+      return NULL;
+    }
+    if(d[tdim[i]]){ 	/* tdim has duplicate */
+	return NULL; 
+    }
+    d[tdim[i]] = 1;
+  }
+
+  oo2 = dest ? (dest->closed ? dest->closed : dest->m) : NULL;
+  if (dest && !oo2)
+    /* definitively empty due to dest*/
+    return opt_oct_set_mat(pr,o,NULL,NULL,destructive);
+  if (pr->funopt->algorithm>=0) opt_oct_cache_closure(pr,o);
+  oo = o->closed ? o->closed : o->m;
+  
+  if (!oo) return opt_oct_set_mat(pr,o,NULL,NULL,destructive); /* empty */
+  /* add temporary dimensions to hold destination variables */
+  oo1 = opt_hmat_alloc_top(o->dim+size);
+  // TODO: handle online decomposition
+  convert_to_dense_mat(oo,o->dim,false);
+  convert_to_dense_mat(oo1,o->dim+size,false);
+  double *src_mat = oo->mat;
+  double *dst_mat = oo1->mat;
+  opt_hmat_set_array(dst_mat,src_mat,opt_matsize(o->dim));
+
+  /* susbstitute org with temp variables */
+  for (i=0;i<size;i++) {
+    size_t dst = 2*(o->dim+i), src = 2*tdim[i];
+    for (j=0;j<src;j++) {
+      dst_mat[opt_matpos(dst+1,j)] = dst_mat[opt_matpos(src+1,j)];
+      dst_mat[opt_matpos(dst,j)] = dst_mat[opt_matpos(src,j)];
+    }
+    for (j=src+2;j<2*o->dim+2*size;j++) {
+      dst_mat[opt_matpos2(dst+1,j)] = dst_mat[opt_matpos(j^1,src)];
+      dst_mat[opt_matpos2(dst,j)] = dst_mat[opt_matpos(j^1,src+1)];
+    }
+    dst_mat[opt_matpos(dst+1,dst)] = dst_mat[opt_matpos(src+1,src)];
+    dst_mat[opt_matpos(dst,dst+1)] =  dst_mat[opt_matpos(src,src+1)];
+    opt_hmat_forget_var(oo1,o->dim+size,tdim[i]);
+  }
+
+  /* coefs in expr for temporary dimensions are set to 0 */
+  for (i=0;i<2*size;i++){
+    pr->tmp[2*o->dim+i+2] = 0;
+  }
+  /* perform substitutions */
+  for (i=0;i<size;i++) {
+    opt_uexpr u = opt_oct_uexpr_of_linexpr(pr,pr->tmp,texpr[i],o->intdim,o->dim);
+
+    if (u.type==OPT_EMPTY) {
+      opt_hmat_free(oo1);
+      return opt_oct_set_mat(pr,o,NULL,NULL,destructive);
+    }
+
+    if (u.type==OPT_BINARY || u.type==OPT_OTHER) inexact = 1;
+
+    if (opt_hmat_subst(pr,u,oo1,o->dim+size,o->dim+i,oo2,
+		   &respect_closure)) {
+      /* empty */
+      opt_hmat_free(oo1);
+      return opt_oct_set_mat(pr,o,NULL,NULL,destructive);
+    }
+  }
+
+  /* now close */
+  if (pr->funopt->algorithm>=0) {
+    if (opt_hmat_strong_closure(oo1,o->dim+size)) {
+      /* empty */
+      opt_hmat_free(oo1);
+      return opt_oct_set_mat(pr,o,NULL,NULL,destructive);
+    }
+  }
+  else flag_algo;
+
+  /* remove temp */
+  //explicitly set dense type
+  if (!destructive){
+	 
+  	 oo1->is_dense = true;
+	 oo = opt_hmat_copy(oo1,o->dim);
+  }
+  else {
+        if(!oo->is_dense){
+		oo->is_dense = true;
+		if(!oo->ti){
+			oo->ti = true;
+			convert_to_dense_mat(oo,o->dim,false);				
+		}		
+		free_array_comp_list(oo->acl);
+    	}
+	opt_hmat_set_array(oo->mat,oo1->mat,opt_matsize(o->dim));
+  }
+  opt_hmat_free(oo1);
+
+  /* intersect with dest */
+  if (oo2) {
+    size_t i;
+    //TODO: online decomposition
+    convert_to_dense_mat(oo2,o->dim,false);
+			
+    double * m = oo->mat;
+    double * m2 = oo2->mat;
+    for (i=0;i<opt_matsize(o->dim);i++){
+      m[i] = min(m[i],m2[i]);
+    }
+  }
+
+  if (inexact || o->intdim) flag_incomplete;
+  else if (!o->closed) flag_algo;
+  else if (pr->conv) flag_conv;
+
+  return opt_oct_set_mat(pr,o,oo,NULL,destructive);
+}
