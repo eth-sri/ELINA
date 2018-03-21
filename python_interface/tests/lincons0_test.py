@@ -1,4 +1,4 @@
-from tests.test_imports import *
+from test_imports import *
 from elina_lincons0 import *
 from elina_scalar import *
 from elina_dimension import *

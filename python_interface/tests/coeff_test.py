@@ -1,6 +1,9 @@
+import sys
+sys.path.insert(0, '../')
+
 from elina_auxiliary_imports import *
 from elina_coeff import *
-from tests.test_imports import *
+from test_imports import *
 
 
 def test_set_scalar_int(coeff):
