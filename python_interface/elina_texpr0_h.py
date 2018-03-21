@@ -94,7 +94,6 @@ class ElinaTexprRdir(CtypesEnum):
     ELINA_RDIR_RND = 4
     ELINA_RDIR_SIZE = 5
 
-
 class ElinaTexpr0Node(Structure):
     """
     ElinaTexpr0Node ctype compatible with elina_texpxr0_node_t from elina_texpr0.h.
@@ -114,9 +113,7 @@ class ElinaTexpr0Node(Structure):
         Pointer to the second operand (expression) in the operation.
 
     """
-
-    _fields_ = [('op', c_uint), ('type', c_uint), ('dir', c_uint),
-                ('exprA', ElinaTexpr0Ptr), ('exprB', ElinaTexpr0Ptr)]
+    pass
 
 ElinaTexpr0NodePtr = POINTER(ElinaTexpr0Node)
 
@@ -173,3 +170,6 @@ class ElinaTexpr0(Structure):
 
 ElinaTexpr0Ptr = POINTER(ElinaTexpr0)
 ElinaTexpr0Array = POINTER(ElinaTexpr0Ptr)
+
+ElinaTexpr0Node._fields_ = [('op', c_uint), ('type', c_uint), ('dir', c_uint),
+                ('exprA', ElinaTexpr0Ptr), ('exprB', ElinaTexpr0Ptr)]

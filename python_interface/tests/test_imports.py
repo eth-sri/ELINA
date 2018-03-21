@@ -8,7 +8,7 @@ libgmp = CDLL(util.find_library('gmp'))
 
 printf = libc.printf
 
-cstdout = c_void_p.in_dll(libc, '__stdoutp')
+cstdout = c_void_p.in_dll(libc, 'stdout')
 
 def to_str(str):
     return bytes(str, 'utf-8')
