@@ -62,7 +62,6 @@ extern "C" {
 #include <assert.h>
 #include "opt_zones.h"
 #include "comp_list.h"
-#include "num.h"
 #include "rdtsc.h"
 
 typedef struct opt_zones_internal_t{
