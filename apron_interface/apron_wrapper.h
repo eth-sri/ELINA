@@ -55,7 +55,7 @@ extern "C" {
 #define elina_scalar_fprint ap_scalar_fprint
 #define elina_double_set_scalar ap_double_set_scalar
 #define elina_scalar_set_double ap_scalar_set_double
-
+#define elina_scalar_print_prec ap_scalar_print_prec
 
 #define elina_interval_t ap_interval_t
 #define elina_interval_neg ap_interval_neg

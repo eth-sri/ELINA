@@ -251,3 +251,11 @@ elina_lincons0_array_t zonotope_to_lincons_array(elina_manager_t* man, zonotope_
 }
 
 
+elina_interval_t* zonotope_bound_dimension(elina_manager_t* man, zonotope_t* z, elina_dim_t dim)
+{
+    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_BOUND_DIMENSION);
+    elina_interval_t* res = elina_interval_alloc();
+    elina_interval_set(res, z->box[dim]);
+    return res;
+}
+
