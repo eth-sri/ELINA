@@ -112,7 +112,7 @@ elina_manager_t* zonotope_manager_alloc(void)
 	//funptr[ELINA_FUNID_SAT_LINCONS] = &zonotope_sat_lincons;
 	/* 4.Extraction of properties */
 	//funptr[ELINA_FUNID_BOUND_TEXPR] = &zonotope_bound_texpr; /*  */
-	//funptr[ELINA_FUNID_BOUND_DIMENSION] = &zonotope_bound_dimension;
+	funptr[ELINA_FUNID_BOUND_DIMENSION] = &zonotope_bound_dimension;
 	//funptr[ELINA_FUNID_BOUND_LINEXPR] = &zonotope_bound_linexpr;
 	funptr[ELINA_FUNID_TO_BOX] = &zonotope_to_box;
 	//funptr[ELINA_FUNID_TO_TCONS_ARRAY] = &zonotope_to_tcons_array; /*  */
