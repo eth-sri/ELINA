@@ -229,14 +229,14 @@ static inline zonotope_noise_symbol_t* zonotope_noise_symbol_add(zonotope_intern
 {
     uint_t dim = pr->dim;
     zonotope_noise_symbol_t* res;
+	
     /* resize epsilon array */
-    if ((dim + 1) % 1024 == 0)
-      pr->epsilon = (zonotope_noise_symbol_t **)realloc(
-          pr->epsilon, (dim + 1024) * sizeof(zonotope_noise_symbol_t *));
+    if (dim % 1024 == 0){ pr->epsilon = (zonotope_noise_symbol_t**)realloc(pr->epsilon, (dim+1024)*sizeof(zonotope_noise_symbol_t*));
+}
     res = pr->epsilon[dim] = (zonotope_noise_symbol_t*)malloc(sizeof(zonotope_noise_symbol_t));
     if (type == IN) {
-      pr->inputns[pr->epssize] = dim;
-      pr->epssize++;
+	if (pr->epssize % 1024 == 0) pr->inputns = (uint_t*)realloc(pr->inputns, (pr->epssize+1024)*sizeof(uint_t));
+	pr->inputns[pr->epssize] = dim; pr->epssize++;
     }
     res->index = dim;
     res->type = type;
@@ -434,6 +434,7 @@ static inline void zonotope_aff_add_itv(zonotope_internal_t *pr,
                                         zonotope_aff_t *expr,
                                         elina_interval_t *itv,
                                         noise_symbol_t type) {
+
   /* itv is a non point interval with finite bounds */
   elina_interval_t *mid, *dev;
   mid = elina_interval_alloc();
@@ -444,7 +445,9 @@ static inline void zonotope_aff_add_itv(zonotope_internal_t *pr,
     // elina_scalar_print(mid);
     // printf("\n");
     elina_interval_add(expr->c, expr->c, mid, ELINA_SCALAR_DOUBLE);
+
     zonotope_aff_noise_symbol_create(pr, expr, dev, type);
+
   } else
     elina_interval_add(expr->c, expr->c, itv, ELINA_SCALAR_DOUBLE);
   elina_interval_free(mid);
