@@ -228,10 +228,15 @@ static inline zonotope_noise_symbol_t* zonotope_noise_symbol_add(zonotope_intern
 {
     uint_t dim = pr->dim;
     zonotope_noise_symbol_t* res;
+	
     /* resize epsilon array */
-    if ((dim+1) % 1024 == 0) pr->epsilon = (zonotope_noise_symbol_t**)realloc(pr->epsilon, (dim+1024)*sizeof(zonotope_noise_symbol_t*));
+    if (dim % 1024 == 0){ pr->epsilon = (zonotope_noise_symbol_t**)realloc(pr->epsilon, (dim+1024)*sizeof(zonotope_noise_symbol_t*));
+}
     res = pr->epsilon[dim] = (zonotope_noise_symbol_t*)malloc(sizeof(zonotope_noise_symbol_t));
-    if (type == IN) {pr->inputns[pr->epssize] = dim; pr->epssize++;}
+    if (type == IN) {
+	if (pr->epssize % 1024 == 0) pr->inputns = (uint_t*)realloc(pr->inputns, (pr->epssize+1024)*sizeof(uint_t));
+	pr->inputns[pr->epssize] = dim; pr->epssize++;
+    }
     res->index = dim;
     res->type = type;
     pr->dim++;
@@ -421,6 +426,7 @@ static inline void elina_interval_middev(elina_interval_t *mid, elina_interval_t
 /* convert an itv to an affine form with a fresh noise symbol then add this form to the affine form expr */
 static inline void zonotope_aff_add_itv(zonotope_internal_t* pr, zonotope_aff_t *expr, elina_interval_t* itv, noise_symbol_t type)
 {
+	
     /* itv is a non point interval with finite bounds */
     elina_interval_t *mid, *dev;
     mid = elina_interval_alloc();
@@ -431,10 +437,13 @@ static inline void zonotope_aff_add_itv(zonotope_internal_t* pr, zonotope_aff_t 
 	//elina_scalar_print(mid);
 	//printf("\n");
 	elina_interval_add(expr->c, expr->c, mid,ELINA_SCALAR_DOUBLE);
+	
 	zonotope_aff_noise_symbol_create(pr, expr, dev, type);
+	
     } else elina_interval_add(expr->c, expr->c, itv, ELINA_SCALAR_DOUBLE);
     elina_interval_free(mid); 
     elina_interval_free(dev);
+	
 }
 
 static inline bool findKR(uint_t *res, uint_t x, uint_t* tab, uint_t size)
