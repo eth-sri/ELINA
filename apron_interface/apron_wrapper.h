@@ -96,6 +96,8 @@ extern "C" {
 #define elina_coeff_clear ap_coeff_clear
 #define elina_coeff_free ap_coeff_free
 #define elina_coeff_set_interval_int ap_coeff_set_interval_int
+#define elina_coeff_set_scalar_double ap_coeff_set_scalar_double
+#define elina_coeff_set_interval_double ap_coeff_set_interval_double
 #define elina_coeff_print ap_coeff_print
 #define ELINA_COEFF_SCALAR AP_COEFF_SCALAR
 #define ELINA_COEFF_INTERVAL AP_COEFF_INTERVAL
