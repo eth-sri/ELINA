@@ -63,6 +63,11 @@ elina_interval_t* elina_eval_texpr0(elina_manager_t* man,
 			      elina_scalar_discr_t discr,
 			      bool* pexact);
 
+void elina_interval_eval_elina_texpr0(elina_interval_t *res,
+				elina_texpr0_t* expr,elina_scalar_discr_t discr,
+				elina_interval_t** env);
+
+
 /* ********************************************************************** */
 /* II. Interval linearization of linear tree expressions */
 /* ********************************************************************** */

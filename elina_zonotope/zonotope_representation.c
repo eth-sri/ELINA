@@ -178,7 +178,7 @@ void zonotope_fprint(FILE* stream,
 		fprintf(stream, "(%zu)", i);
 	    }
 	    fprintf(stream, " := ");
-	    zonotope_aff_fprint(pr, stream, z->paf[i]);
+	    //zonotope_aff_fprint(pr, stream, z->paf[i]);
             //printf(" box: ");
 	    elina_interval_fprint(stdout, z->box[i]);
 	    fprintf(stream,"\n");

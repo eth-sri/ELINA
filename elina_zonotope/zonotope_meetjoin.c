@@ -7,10 +7,10 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 {
     start_timing();
      zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_MEET_LINCONS_ARRAY);
-    //printf("meet start lincons\n");
+   // printf("meet start lincons %p %p\n",man,man->internal);
     //zonotope_fprint(stdout,man,z,NULL);
     //elina_lincons0_array_fprint(stdout,array,NULL);
-      //  fflush(stdout);
+       // fflush(stdout);
    
     //arg_assert(a && array, abort(););
   
@@ -34,12 +34,15 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 			
 			zonotope_aff_check_free(pr, res->paf[i]);
 			res->paf[i] = zonotope_aff_alloc_init(pr);
+			
 			if(!elina_scalar_infty(res->box[i]->sup) && !elina_scalar_infty(res->box[i]->inf)){
+				
 			    zonotope_aff_add_itv(pr, res->paf[i], res->box[i], IN);
+				
 			} else {
 			    elina_interval_set(res->paf[i]->c, res->box[i]);
 			}
-
+			
 			res->paf[i]->pby++;
 		    } 
 		}
@@ -49,6 +52,7 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 	}
 	
     //} 
+	
     if (!is_bottom) {
 	/* texpr -> aff forme */
 	
@@ -158,7 +162,7 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
     
     free(tchange);
     elina_interval_free(box);
-   //printf("meet licnons finish \n");
+   //printf("meet licnons finish %p %p\n",man,man->internal);
     //zonotope_fprint(stdout,man,res,NULL);
    //fflush(stdout);
     

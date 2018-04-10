@@ -167,11 +167,15 @@ elina_manager_t* zonotope_manager_alloc(void)
 /* back pointer to our internal structure from the manager */
 zonotope_internal_t* zonotope_init_from_manager(elina_manager_t* man, elina_funid_t funid)
 {
-	//printf("funid: %d %d\n",funid,funid==ELINA_FUNID_UNKNOWN);
+	//printf("manager %p\n",man);
 	//fflush(stdout);
     zonotope_internal_t* pr = (zonotope_internal_t*)man->internal;
     pr->funid = funid;
+	//printf("funid: %p %p\n",man,man->internal);
+	//fflush(stdout);
     if (!(pr->man)) pr->man = man;
+	//printf("finish\n");
+	//fflush(stdout);
     return pr;
 }
 
