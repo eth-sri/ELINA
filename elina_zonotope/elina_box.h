@@ -172,6 +172,14 @@ elina_box_t* elina_box_assign_linexpr_array(elina_manager_t* man,
                                     size_t size,
                                     elina_box_t* dest);
 
+elina_box_t* elina_box_assign_texpr_array(elina_manager_t* man,
+			      bool destructive,
+			      elina_box_t* a,
+			      elina_dim_t* tdim, 
+			      elina_texpr0_t** texpr,
+			      size_t size,
+			      elina_box_t* dest);
+
 /* ============================================================ */
 /* 10 Projection */
 /* ============================================================ */
