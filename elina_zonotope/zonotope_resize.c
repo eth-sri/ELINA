@@ -191,6 +191,7 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
 
 zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, zonotope_t* z, elina_dimperm_t* permutation)
 {
+	
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_PERMUTE_DIMENSIONS);
     //zonotope_aff_t* tmp = NULL;
    // printf("permutation input %d\n",destructive);
