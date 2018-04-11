@@ -31,6 +31,7 @@
 #include "elina_manager.h"
 #include "elina_linexpr0.h"
 #include "elina_lincons0.h"
+#include "elina_texpr0.h"
 #endif
 
 #ifdef __cplusplus
