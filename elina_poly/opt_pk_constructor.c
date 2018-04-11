@@ -218,7 +218,7 @@ opt_pk_array_t* opt_pk_of_box(elina_manager_t* man,
 elina_dimension_t opt_pk_dimension(elina_manager_t* man, opt_pk_array_t* op){
   elina_dimension_t res;
   //if(op->maxcols==1){
-  printf("maxcols: %d\n",op->maxcols);
+  //printf("maxcols: %d\n",op->maxcols);
   
   res.intdim = op->maxcols - 2;
   res.realdim = 0;
