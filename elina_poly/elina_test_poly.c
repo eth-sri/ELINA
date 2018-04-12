@@ -492,6 +492,7 @@ void test_sat_lincons(unsigned short int dim, size_t nbcons){
 	}
 	elina_linexpr0_reinit(linexpr0,k);
 	cons.linexpr0 = linexpr0;
+        cons.scalar = NULL;
 	// Print the ELINA input
 	printf("ELINA Input Polyhedron\n");
 	elina_lincons0_array_t arr = opt_pk_to_lincons_array(man,oa2);
