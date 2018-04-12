@@ -57,8 +57,8 @@ let ex1 (man:'a Manager.t) : 'a Abstract1.t =
   printf "Using Library: %s, version %s@." (Manager.get_library man) (Manager.get_version man);
 
   let env = Environment.make
-    [|var_x; var_y; var_z; var_w|]
-    [|var_u; var_v; var_a; var_b|]
+    [|var_x; var_y; var_z; var_w; var_u; var_v; var_a; var_b|]
+    [||]
   in
   let env2 = Environment.make [|var_x; var_y; var_z; var_w|] [||]
   in
