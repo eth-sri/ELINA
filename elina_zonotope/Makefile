@@ -32,11 +32,11 @@ INSTALLd = install -d
 OBJS = elina_box_internal.o elina_box_representation.o elina_box_constructor.o elina_box_assign.o elina_box_meetjoin.o elina_box_resize.o zonotope_internal.o zonotope_representation.o zonotope_constructor.o zonotope_meetjoin.o zonotope_assign.o zonotope_resize.o zonotope_otherops.o
 
 ifeq ($(IS_APRON),)
-LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm 
-INCLUDES = -I../elina_auxiliary -I../elina_linearize -I../partitions_api -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include 
+LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm
+INCLUDES = -I../elina_auxiliary -I../elina_linearize -I../partitions_api $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
 else
-LIBS = -L../partitions_api -lpartitions -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm 
-INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize -I../partitions_api -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include 
+LIBS = -L../partitions_api -lpartitions -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm
+INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize -I../partitions_api $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
 endif
 
 INSTALL = install
@@ -105,4 +105,4 @@ install:
 clean:
 	-rm *.o
 	-rm *.so
-	
+

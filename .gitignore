@@ -2,3 +2,4 @@
 *.so
 *.o
 *.pyc
+Makefile.config

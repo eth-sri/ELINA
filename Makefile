@@ -49,7 +49,7 @@ endif
 	(cd elina_poly; make all)
 	(cd elina_zones; make all)
 	(cd elina_zonotope; make all) 
-	
+
 
 install:
 ifeq ($(IS_APRON),)
