@@ -43,11 +43,11 @@ endif
 OBJS = $(CLOSURE_OBJS) opt_oct_nary.o opt_oct_resize.o opt_oct_predicate.o opt_oct_representation.o opt_oct_transfer.o opt_oct_hmat.o
 
 ifeq ($(IS_APRON),)
-LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm
-INCLUDES = -I../elina_auxiliary -I../elina_linearize -I../partitions_api -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include 
+LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm
+INCLUDES = -I../elina_auxiliary -I../elina_linearize -I../partitions_api $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
 else
-LIBS = -L../partitions_api -lpartitions -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm 
-INCLUDES = -I$(APRON_PREFIX)/include -I../apron_interface -I../elina_linearize -I../partitions_api -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include 
+LIBS = -L../partitions_api -lpartitions -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm
+INCLUDES = -I$(APRON_PREFIX)/include -I../apron_interface -I../elina_linearize -I../partitions_api $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
 endif
 
 
@@ -101,7 +101,7 @@ opt_oct_representation.o : opt_oct_representation.c
 
 opt_oct_transfer.o : opt_oct_transfer.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_oct_transfer.o opt_oct_transfer.c $(LIBS) 
- 
+
 liboptoct.so : $(OBJS) $(OPTOCTH)
 	$(CC) -shared $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
@@ -113,7 +113,7 @@ install:
 	for i in $(SOINST); do \
 		$(INSTALL) $$i $(LIBDIR); \
 	done; 
-	
+
 	$(INSTALLd) $(INCLDIR); \
 	for i in $(OPTOCTH); do \
 		$(INSTALL) $$i $(INCLDIR); \

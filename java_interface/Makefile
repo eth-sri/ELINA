@@ -28,8 +28,8 @@ export CLASSPATH=.:/usr/local/apron.jar:/usr/local/gmp.jar:$CLASSPATH
 ############################
 
 IFLAGS = \
--I$(GMP_PREFIX)/include \
--I$(MPFR_PREFIX)/include \
+$(GMP_INCLUDE_FLAG) \
+$(MPFR_INCLUDE_FLAG) \
 -I$(APRON_SRCROOT)/apron \
 -I$(APRON_SRCROOT)/japron \
 -I$(APRON_SRCROOT)/japron/apron \
@@ -42,8 +42,8 @@ IFLAGS = \
 $(JNIINC) 
 
 LFLAGS = \
--L$(GMP_PREFIX)/lib \
--L$(MPFR_PREFIX)/lib \
+$(GMP_LIB_FLAG) \
+$(MPFR_LIB_FLAG) \
 -L$(APRON_SRCROOT)/apron \
 -L$(APRON_SRCROOT)/japron \
 -L$(APRON_SRCROOT)/japron/apron \
