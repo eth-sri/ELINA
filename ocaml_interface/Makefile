@@ -40,7 +40,9 @@ ICFLAGS += -I ../partitions_api -I ../elina_linearize -I ../elina_auxiliary -I .
 
 LDFLAGS += -L../partitions_api -L../elina_linearize  -L../elina_auxiliary -L../elina_poly -L../elina_oct -L.
 
-LDFLAGS +=  -R../partitions_api -R../elina_linearize  -R../elina_auxiliary -R../elina_poly  -cclib -R../elina_oct -R.
+ifeq ($(USE_OPAM),)
+	LDFLAGS +=  -R../partitions_api -R../elina_linearize  -R../elina_auxiliary -R../elina_poly  -cclib -R../elina_oct -R.
+endif
 
 
 APRON_CAML_INCLUDE = $(shell $(OCAMLFIND) query apron)
@@ -66,11 +68,13 @@ LIBS = -lapron -lmpfr -lgmp -lm
 # Rules
 #---------------------------------------
 
-all: ml mlexample.byte mlexample.opt
+all: ml
+
+example: mlexample.byte mlexample.opt
 
 ml: elina_poly.mli elina_poly.ml elina_poly.cmi mllib 
 
-mllib: elina_poly.cma libelina_poly_caml.a mlextra
+mllib: elina_poly.cmxa elina_poly.cma elina_poly.a libelina_poly_caml.a mlextra
 
 ifneq ($(HAS_OCAMLOPT),)
 mlextra: $(call OCAMLOPT_TARGETS, elina_polybc)
@@ -89,22 +93,22 @@ clean:
 	/bin/rm -fr *.annot *.cm[ioax] *.cmx[as]
 	/bin/rm -fr tmp
 	/bin/rm -fr elina_poly_caml.* elina_poly.ml elina_poly.mli
-	/bin/rm  mlexample.byte
-	/bin/rm  mlexample.opt
+	/bin/rm -f mlexample.byte
+	/bin/rm -f mlexample.opt
 
 distclean: clean
 
 install:
-	$(INSTALLd) $(APRON_INCLUDE) $(APRON_LIB)
+	$(INSTALLd) $(ELINA_INCLUDE) $(ELINA_LIB)
 	for i in $(CAML_TO_INSTALL); do \
-		if test -f $$i; then $(INSTALL) $$i $(APRON_LIB); fi; \
+		if test -f $$i; then $(INSTALL) $$i $(ELINA_LIB); fi; \
 	done
 
 uninstall:
-	/bin/rm -f $(APRON_LIB)/libelina_poly.a 
-	/bin/rm -f $(APRON_LIB)/dllelina_poly.so
+	/bin/rm -f $(ELINA_LIB)/libelina_poly.a
+	/bin/rm -f $(ELINA_LIB)/dllelina_poly.so
 ifeq ($(OCAMLFIND),)
-	/bin/rm -f $(APRON_LIB)/elina_poly.mli $(APRON_LIB)/elina_poly.ml $(APRON_LIB)/elina_poly.cm[ix] $(APRON_LIB)/elina_poly.idl $(APRON_LIB)/elina_poly*.cma $(APRON_LIB)/elina_poly*.cmx[as] $(APRON_LIB)/elina_poly*.a
+	/bin/rm -f $(ELINA_LIB)/elina_poly.mli $(ELINA_LIB)/elina_poly.ml $(ELINA_LIB)/elina_poly.cm[ix] $(ELINA_LIB)/elina_poly.idl $(ELINA_LIB)/elina_poly*.cma $(ELINA_LIB)/elina_poly*.cmx[as] $(ELINA_LIB)/elina_poly*.a
 endif
 
 
@@ -123,17 +127,17 @@ endif
 #---------------------------------------
 
 dllelina_poly_caml.so libelina_poly_caml.a: elina_poly_caml.o
-	$(OCAMLMKLIB) -o elina_poly_caml $< -L. -loptpoly $(LDFLAGS) $(LIBS)
+	$(OCAMLMKLIB) -dllpath $(ELINA_PREFIX)/lib -L$(ELINA_PREFIX)/lib -o elina_poly_caml $< -L. -loptpoly $(LDFLAGS) $(LIBS)
 
 #---------------------------------------
 # OCaml rules
 #---------------------------------------
 
 elina_poly.cma: elina_poly.cmo libelina_poly_caml.a 
-	$(OCAMLMKLIB) -o elina_poly$* -oc elina_poly$*_caml elina_poly.cmo -loptpoly $(LIBS)
+	$(OCAMLMKLIB) -dllpath $(ELINA_PREFIX)/lib -L$(ELINA_PREFIX)/lib -o elina_poly$* -oc elina_poly$*_caml elina_poly.cmo -loptpoly $(LIBS)
 
 elina_poly.cmxa elina_poly.a: elina_poly.cmx libelina_poly_caml.a 
-	$(OCAMLMKLIB) -o elina_poly$* -oc elina_poly$*_caml elina_poly.cmx -loptpoly $(LIBS)
+	$(OCAMLMKLIB) -dllpath $(ELINA_PREFIX)/lib -L$(ELINA_PREFIX)/lib -o elina_poly$* -oc elina_poly$*_caml elina_poly.cmx -loptpoly $(LIBS)
 
 
 #---------------------------------------

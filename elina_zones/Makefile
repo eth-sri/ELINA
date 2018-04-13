@@ -68,7 +68,7 @@ opt_zones_representation.o : opt_zones_representation.c opt_zones_internal.h
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_zones_representation.o opt_zones_representation.c $(LIBS)
 
 liboptzones.so : $(OBJS) $(OPTZONESH)
-	$(CC) -shared $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
+	$(CC) -shared -install_name $(LIBDIR)/$@ $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 install:
 	$(INSTALLd) $(LIBDIR); \
