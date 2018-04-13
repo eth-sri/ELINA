@@ -49,7 +49,7 @@ ZONOTOPEH = zonotope.h elina_box.h
 all : libzonotope.so
 
 libzonotope.so : $(OBJS) $(ZONOTOPEH)
-	$(CC) -shared $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
+	$(CC) -shared -install_name $(LIBDIR)/$@ $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 elina_box_internal.o : elina_box_internal.h elina_box_internal.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_box_internal.o elina_box_internal.c $(LIBS)
