@@ -9,7 +9,8 @@ build: [
   ["sh" "./configure" "--prefix" "%{share}%/elina"
                       "--apron-prefix" "%{share}%/apron"
                       "--no-java"
-                      "--use-opam" ]
+                      "--use-opam"
+                      "--absolute-dylibs" { os = "darwin" } ]
   [make "-j%{jobs}%"]
 ]
 install: [

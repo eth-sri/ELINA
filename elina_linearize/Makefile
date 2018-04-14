@@ -69,7 +69,7 @@ elina_linearize_texpr.o : elina_linearize_texpr.h elina_linearize_texpr.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_linearize_texpr.o elina_linearize_texpr.c $(LIBS)
 
 libelinalinearize.so : $(OBJS) $(ELINALINEARIZEH)
-	$(CC) -shared -install_name $(LIBDIR)/$@ $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
+	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 install:
 	$(INSTALLd) $(LIBDIR); \

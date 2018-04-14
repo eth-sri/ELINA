@@ -56,7 +56,7 @@ extract.o: comp_list.h extract.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(AFLAGS) -o extract.o extract.c $(LIBS)
 
 libpartitions.so: $(OBJS)
-	$(CC) -shared -install_name $(LIBDIR)/$@ $(CFLAGS) $(DFLAGS) -o $(SOINST) $(OBJS) $(LIBS)
+	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) -o $(SOINST) $(OBJS) $(LIBS)
 
 install: 
 	$(INSTALLd) $(LIBDIR); \
