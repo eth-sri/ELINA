@@ -103,7 +103,7 @@ opt_pk_cherni.o : opt_pk_cherni.h opt_pk_cherni.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_pk_cherni.o opt_pk_cherni.c $(LIBS)
 
 liboptpoly.so : $(OBJS) $(OPTPOLYH)
-	$(CC) -shared -install_name $(LIBDIR)/$@ $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
+	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 elina_test_poly : elina_test_poly.c liboptpoly.so
 	$(CC) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_test_poly elina_test_poly.c $(LIBS) -L. -loptpoly 

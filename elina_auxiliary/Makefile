@@ -75,7 +75,7 @@ elina_tcons0.o : elina_tcons0.h elina_tcons0.c
 
 
 libelinaux.so : $(OBJS) $(ELINAAUXH)
-	$(CC) -shared -install_name $(LIBDIR)/$@ $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
+	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 install:
 	$(INSTALLd) $(LIBDIR); \

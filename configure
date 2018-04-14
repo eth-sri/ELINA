@@ -82,6 +82,8 @@ while : ; do
             has_java=0;;
         -use-opam|--use-opam)
             use_opam=1;;
+	-absolute-dylibs|--absolute-dylibs)
+	    force_absolute_dylib_install_names=1;;
         -help|--help)
             help;;
         *)
@@ -389,6 +391,45 @@ fi
 
 
 ##############################################
+# Custom tests
+##############
+
+# Use abolute dynamic library names under OSX when explicitly asked,
+# or when the installation prefix does not belong to DYLD_LIBRARY_PATH
+# nor DYLD_FALLBACK_LIBRARY_PATH or
+# '$(HOME)/lib:/usr/local/lib:/lib:/usr/lib' (the default fallback).
+absolute_dylib_install_names=;
+if test "x$(uname -s)" = "xDarwin"
+then
+    if test $force_absolute_dylib_install_names -eq 1
+    then
+	echo "using absolute dynamic library install names as requested"
+	absolute_dylib_install_names=1
+    else
+	libdir="${elina_prefix}/lib"
+	if test "x$DYLD_FALLBACK_LIBRARY_PATH" != "x"
+	then
+	    fldpath="$DYLD_FALLBACK_LIBRARY_PATH"
+	else
+	    fldpath="$HOME/lib:/usr/local/lib:/lib:/usr/lib"
+	fi
+	checkdirinpath "${libdir}" "$DYLD_LIBRARY_PATH" "DYLD_LIBRARY_PATH" || \
+	    checkdirinpath "${libdir}" "${fldpath}" "DYLD_FALLBACK_LIBRARY_PATH"
+	if test $? -eq 1
+	then
+	    echo "forcing absolute dynamic library install names"
+	    absolute_dylib_install_names=1
+	fi
+    fi
+else
+    if test $force_absolute_dylib_install_names -eq 1
+    then
+	echo "ignoring option \`-absolute-dylibs', only meaningful under OSX";
+    fi
+fi
+
+
+##############################################
 # log
 #####
 
@@ -404,6 +445,10 @@ detected configuration:
 
 EOF
 
+test "x$absolute_dylib_install_names" = "x1" && cat <<EOF
+   dynamic libraries shall use absolute install names
+
+EOF
 
 ##############################################
 # generation
@@ -512,5 +557,13 @@ OCAMLOPTFLAGS = -inline 20
 APRON_SRCROOT = $apron_srcroot
 
 USE_OPAM = $use_opam
+
+# OSX only:
+ABSOLUTE_DYLIB_INSTALL_NAMES = $absolute_dylib_install_names
+
+ifneq (\$(ABSOLUTE_DYLIB_INSTALL_NAMES),)
+  CC_ELINA_DYLIB += -install_name \$(ELINA_PREFIX)/lib/\$@
+  CXX_ELINA_DYLIB += -install_name \$(ELINA_PREFIX)/lib/\$@
+endif
 
 EOF
