@@ -103,7 +103,7 @@ opt_oct_transfer.o : opt_oct_transfer.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_oct_transfer.o opt_oct_transfer.c $(LIBS) 
 
 liboptoct.so : $(OBJS) $(OPTOCTH)
-	$(CC) -shared -install_name $(LIBDIR)/$@ $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
+	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 elina_test_oct : elina_test_oct.c liboptoct.so
 	$(CC) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_test_oct elina_test_oct.c $(LIBS) -L. -loptoct
