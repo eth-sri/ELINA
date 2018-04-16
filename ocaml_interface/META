@@ -1,0 +1,5 @@
+description = "ETH LIbrary for Numerical Analysis"
+version = "1.0"
+requires = "apron"
+archive(byte) = "elina_poly.cma"
+archive(native) = "elina_poly.cmxa"

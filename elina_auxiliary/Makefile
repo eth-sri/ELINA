@@ -30,7 +30,7 @@ INSTALLd = install -d
 
 OBJS = elina_scalar.o elina_interval.o elina_coeff.o elina_dimension.o elina_linexpr0.o elina_lincons0.o elina_manager.o elina_abstract0.o elina_texpr0.o elina_tcons0.o
 
-INCLUDES = -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include -I../elina_linearize
+INCLUDES = $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG) -I../elina_linearize
 
 LIBS = -lmpfr -lgmp -lm -L../elina_linearize
 
@@ -75,7 +75,7 @@ elina_tcons0.o : elina_tcons0.h elina_tcons0.c
 
 
 libelinaux.so : $(OBJS) $(ELINAAUXH)
-	$(CC) -shared $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
+	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 install:
 	$(INSTALLd) $(LIBDIR); \

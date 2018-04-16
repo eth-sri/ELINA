@@ -2,3 +2,14 @@
 *.so
 *.o
 *.pyc
+
+elina_oct/elina_test_oct
+elina_poly/elina_test_poly
+ocaml_interface/elina_poly.cmi
+ocaml_interface/elina_poly.cmx
+ocaml_interface/elina_poly.ml
+ocaml_interface/elina_poly.mli
+ocaml_interface/elina_poly_caml.c
+ocaml_interface/tmp/
+
+Makefile.config
