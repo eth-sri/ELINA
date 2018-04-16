@@ -31,11 +31,11 @@ INSTALLd = install -d
 OBJS = elina_generic.o elina_scalar_arith.o elina_interval_arith.o  elina_coeff_arith.o elina_linexpr0_arith.o elina_linearize.o elina_linearize_texpr.o
 
 ifeq ($(IS_APRON),)
-INCLUDES = -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include -I../elina_auxiliary
-LIBS = -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm  -L../elina_auxiliary -lelinaux
+INCLUDES = $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG) -I../elina_auxiliary
+LIBS = $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm  -L../elina_auxiliary -lelinaux
 else
-INCLUDES = -I$(MPFR_PREFIX)/include -I$(GMP_PREFIX)/include -I$(APRON_PREFIX)/include -I../apron_interface
-LIBS = -L$(MPFR_PREFIX)/lib -lmpfr -L$(GMP_PREFIX)/lib -lgmp -lm -L$(APRON_PREFIX)/lib -lapron
+INCLUDES = $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG) -I$(APRON_PREFIX)/include -I../apron_interface
+LIBS = $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -L$(APRON_PREFIX)/lib -lapron
 endif
 
 INSTALL = install
@@ -69,7 +69,7 @@ elina_linearize_texpr.o : elina_linearize_texpr.h elina_linearize_texpr.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_linearize_texpr.o elina_linearize_texpr.c $(LIBS)
 
 libelinalinearize.so : $(OBJS) $(ELINALINEARIZEH)
-	$(CC) -shared $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
+	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 install:
 	$(INSTALLd) $(LIBDIR); \

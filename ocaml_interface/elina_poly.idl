@@ -248,7 +248,7 @@ ocamlc -I $MLGMPIDL_PREFIX/lib -I $APRON_PREFIX/lib -use-runtime myrun -o mlexam
   -cclib \"-L$MLGMPIDL_PREFIX/lib -L$APRON_PREFIX/lib \\
 	  -loptpoly_caml_debug -loptpoly \\
 	  -lapron_caml_debug -lapron_debug \\
-	  -lgmp_caml -L$MPFR_PREFIX/lib -lmpfr -L$GMP_PREFIX/lib -lgmp \\
+	  -lgmp_caml $MPFR_LIB_FLAG -lmpfr $GMP_LIB_FLAG -lgmp \\
 	  -L$CAMLIDL_PREFIX/lib/ocaml -lcamlidl \\
 	  -lbigarray\" ]}
 
