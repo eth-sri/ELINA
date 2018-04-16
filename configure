@@ -21,8 +21,8 @@ where options include:
   -gmp-prefix dir      where to find the GMP library
   -mpfr-prefix dir     where to find the MPFR library
   -java-prefix dir     where to find Java
-  -no-ocaml            disable OCaml support
-  -no-ocamlfind        disable OCamlfind support
+  -use-ocaml           enable OCaml support
+  -use-ocamlfind       enable OCamlfind support
   -no-java             disable Java support
   -use-opam            use opam to install ELINA
 
@@ -47,8 +47,8 @@ EOF
 
 elina_prefix=/usr/local
 apron_prefix=/usr/local
-has_ocaml=1
-has_ocamlfind=1
+has_ocaml=0
+has_ocamlfind=0
 has_java=1
 use_opam=0
 force_absolute_dylib_install_names=0;
@@ -74,13 +74,16 @@ while : ; do
         -java-prefix|--java-prefix)
             java_prefix="$2"
             shift;;
-        -no-ocaml|--no-ocaml)
-            has_ocaml=0;;
-        -no-ocamlfind|--no-ocamlfind)
-            has_ocamlfind=0;;
+        -use-ocaml|--use-ocaml)
+            has_ocaml=1;;
+        -use-ocamlfind|--use-ocamlfind)
+            has_ocaml=1
+            has_ocamlfind=1;;
         -no-java|--no-java)
             has_java=0;;
         -use-opam|--use-opam)
+            has_ocaml=1
+            has_ocamlfind=1
             use_opam=1;;
 	-absolute-dylibs|--absolute-dylibs)
 	    force_absolute_dylib_install_names=1;;
