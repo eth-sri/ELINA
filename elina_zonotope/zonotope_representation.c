@@ -60,8 +60,8 @@ zonotope_t* zonotope_copy(elina_manager_t* man, zonotope_t* z)
 	    if (z->gamma[i] != pr->ap_muu) res->gamma[i] = elina_interval_alloc_set(z->gamma[i]);
 	    else res->gamma[i] = pr->ap_muu;
 	} else {
-        printf("i: %zu\n",i);
-	    printf("zonotope_copy, unconsistent gamma for Zonotope abstract object\n");
+	    fprintf(stderr,"i: %zu\n",i);
+	    fprintf(stderr,"zonotope_copy, unconsistent gamma for Zonotope abstract object\n");
 	}
     }
     res->hypercube = z->hypercube;
