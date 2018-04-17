@@ -583,24 +583,24 @@ opt_pk_array_t* opt_pk_widening(elina_manager_t* man, opt_pk_array_t* oa, opt_pk
 	#if defined(TIMING)
  	    start_timing();
    	#endif 
-	printf("Widening INPUT\n");
-	elina_lincons0_array_t arr1 = opt_pk_to_lincons_array(man,oa);
-        elina_lincons0_array_fprint(stdout,&arr1,NULL);
-	elina_lincons0_array_t arr2 = opt_pk_to_lincons_array(man,ob);
-        elina_lincons0_array_fprint(stdout,&arr2,NULL);
-	elina_lincons0_array_clear(&arr1);
-	elina_lincons0_array_clear(&arr2);
-	fflush(stdout);
+	//printf("Widening INPUT\n");
+	//elina_lincons0_array_t arr1 = opt_pk_to_lincons_array(man,oa);
+	//elina_lincons0_array_fprint(stdout,&arr1,NULL);
+	//elina_lincons0_array_t arr2 = opt_pk_to_lincons_array(man,ob);
+	//elina_lincons0_array_fprint(stdout,&arr2,NULL);
+	//elina_lincons0_array_clear(&arr1);
+	//elina_lincons0_array_clear(&arr2);
+	//fflush(stdout);
 	opt_pk_array_t *op;
 	op = opt_pk_array_alloc(NULL,NULL,oa->maxcols);
 	opt_poly_widening_gen(man,op,oa,ob);
 	#if defined(TIMING)
  	    record_timing(widening_time);
    	#endif 
-	printf("Widening OUTPUT\n");
-	elina_lincons0_array_t arr3 = opt_pk_to_lincons_array(man,op);
-        elina_lincons0_array_fprint(stdout,&arr3,NULL);
-	elina_lincons0_array_clear(&arr3);
-	fflush(stdout);
+	//printf("Widening OUTPUT\n");
+	//elina_lincons0_array_t arr3 = opt_pk_to_lincons_array(man,op);
+	//elina_lincons0_array_fprint(stdout,&arr3,NULL);
+	//elina_lincons0_array_clear(&arr3);
+	//fflush(stdout);
 	return op;
 }
