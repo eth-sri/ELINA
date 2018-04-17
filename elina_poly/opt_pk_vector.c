@@ -566,8 +566,8 @@ void opt_vector_combine(opt_pk_internal_t* opk,
 
     ov3[k] = 0;
     if(flag){
-      printf("exception \n");
-      fflush(stdout);
+      fprintf(stderr, "exception \n");
+      fflush(stderr);
       opk->exn = ELINA_EXC_OVERFLOW;
       return;
     }
@@ -775,9 +775,9 @@ opt_numint_t opt_vector_product_strict(opt_pk_internal_t* opk,
   }
 
   if(flag){
-    printf("exception vector product strict\n");
-    fflush(stdout);
-    opk->exn = ELINA_EXC_OVERFLOW;          
+      fprintf(stderr,"exception vector product strict\n");
+      fflush(stderr);
+      opk->exn = ELINA_EXC_OVERFLOW;          
   }
   return prod;
 }
@@ -984,9 +984,9 @@ opt_numint_t opt_vector_product(opt_pk_internal_t* opk,
   }
 	
   if(flag){
-    printf("exception vector product\n");
-    fflush(stdout);
-    opk->exn = ELINA_EXC_OVERFLOW;
+             fprintf(stderr,"exception vector product\n");
+             fflush(stderr);
+             opk->exn = ELINA_EXC_OVERFLOW;
              
   }
   
@@ -1031,9 +1031,9 @@ opt_numint_t opt_vector_product_with_index(opt_pk_internal_t* opk,
     
   }
   if(flag){
-    printf("exception vector product\n");
-    fflush(stdout);
-    opk->exn = ELINA_EXC_OVERFLOW;
+      fprintf(stderr,"exception vector product\n");
+      fflush(stderr);
+      opk->exn = ELINA_EXC_OVERFLOW;
              
   }
   return prod;
