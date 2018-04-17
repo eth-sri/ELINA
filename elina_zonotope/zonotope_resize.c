@@ -142,8 +142,7 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
             if (z->gamma[i] != pr->ap_muu) res->gamma[i] = elina_interval_alloc_set(z->gamma[i]);
             else res->gamma[i] = pr->ap_muu;
         } else {
-          printf("zonotope_remove, unconsistent gamma for Zonotope abstract "
-                 "object\n");
+	    fprintf(stderr,"zonotope_remove, unconsistent gamma for Zonotope abstract object\n");
         }
     }
 
@@ -240,8 +239,7 @@ zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, 
             if (z->gamma[i] != pr->ap_muu) res->gamma[i] = elina_interval_alloc_set(z->gamma[i]);
             else res->gamma[i] = pr->ap_muu;
         } else {
-          printf("zonotope_permute, unconsistent gamma for Zonotope abstract "
-                 "object\n");
+	    fprintf(stderr,"zonotope_permute, unconsistent gamma for Zonotope abstract object\n");
         }
     }
     //if(destructive){

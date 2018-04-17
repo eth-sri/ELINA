@@ -88,9 +88,9 @@ opt_zones_t* opt_zones_meet_lincons_array(elina_manager_t* man,
 			      bool destructive, opt_zones_t* o,
 			      elina_lincons0_array_t* array)
 {
-  printf(".");
-
-  fflush(stdout);
+  //printf(".");
+ 
+  //fflush(stdout);
   opt_zones_internal_t* pr =
     opt_zones_init_from_manager(man,ELINA_FUNID_MEET_LINCONS_ARRAY,2*(o->dim+8));
   if (!o->closed && !o->m)
