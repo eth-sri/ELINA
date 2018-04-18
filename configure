@@ -384,7 +384,7 @@ then
 fi
 
 # Set apron source root
-if test "x$apron_srcroot" == "x"; then
+if test "x$apron_srcroot" = "x"; then
     if test $use_opam -eq 1; then
 	apron_srcroot=`ocamlfind query apron`
     else
