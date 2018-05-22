@@ -120,6 +120,36 @@ def test_assign(man,dim,nbcons):
 	elina_abstract0_free(man,o1)
 	elina_abstract0_free(man,o2)
 
+
+def test_forget(man,dim,nbcons):
+	arr = generate_random_lincons0_array(dim,nbcons)
+	o1 = elina_abstract0_top(man,dim,0)
+	o1 = elina_abstract0_meet_lincons_array(man,True,o1,arr)
+	print("Forget input octagon")
+	arr2 = elina_abstract0_to_lincons_array(man,o1)
+	elina_lincons0_array_print(arr2,None)
+	elina_lincons0_array_clear(arr)
+	elina_lincons0_array_clear(arr2)
+	var = random.randint(0,dim-1)
+	tdim= ElinaDim(var)
+	print("Variable x",int(var))
+	sys.stdout.flush()
+	o2 = elina_abstract0_forget_array(man,False,o1,tdim,1,False)
+	arr3 = elina_abstract0_to_lincons_array(man,o2)
+	print("Forget output Octagon without project")
+	elina_lincons0_array_print(arr3,None)
+	elina_lincons0_array_clear(arr3)
+
+	o3 = elina_abstract0_forget_array(man,False,o1,tdim,1,True)
+	arr4 = elina_abstract0_to_lincons_array(man,o3)
+	print("Forget output Octagon with project")
+	elina_lincons0_array_print(arr4,None)
+	elina_lincons0_array_clear(arr4)
+
+	elina_abstract0_free(man,o1)
+	elina_abstract0_free(man,o2)
+	elina_abstract0_free(man,o3)
+
 def test_substitute(man,dim,nbcons):
 	arr = generate_random_lincons0_array(dim,nbcons)
 	o1 = elina_abstract0_top(man,dim,0)
@@ -178,6 +208,7 @@ test_meet_lincons(man,dim,nbcons)
 test_assign(man,dim,nbcons)
 test_substitute(man,dim,nbcons)
 test_join(man,dim,nbcons)
+test_forget(man,dim,nbcons)
 elina_manager_free(man)
 gc.collect()
 
