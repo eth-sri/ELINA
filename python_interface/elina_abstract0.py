@@ -1451,7 +1451,7 @@ def elina_abstract0_substitute_texpr_array(man, destructive, org, tdim, texpr_ar
 # III.3 Projections
 # ============================================================ #
 
-def elina_abstract0_forget_array(man, destructive, a1, tdim, size):
+def elina_abstract0_forget_array(man, destructive, a1, tdim, size,project):
     # TODO finish documentation for this function
     """
     !?What does this function do!?
@@ -1465,7 +1465,8 @@ def elina_abstract0_forget_array(man, destructive, a1, tdim, size):
     a1 : ElinaAbstract0Ptr
     tdim : ElinaDimPtr
     size : c_size-t
-
+    project : c_bool
+        Projection boolean flag.
     Returns
     -------
     a0 : ElinaAbstract0Ptr
@@ -1477,8 +1478,8 @@ def elina_abstract0_forget_array(man, destructive, a1, tdim, size):
     try:
         elina_abstract0_forget_array_c = elina_auxiliary_api.elina_abstract0_forget_array
         elina_abstract0_forget_array_c.restype = ElinaAbstract0Ptr
-        elina_abstract0_forget_array_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, ElinaDimPtr, c_size_t]
-        a0 = elina_abstract0_forget_array_c(man, destructive, a1, tdim, size)
+        elina_abstract0_forget_array_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, ElinaDimPtr, c_size_t, c_bool]
+        a0 = elina_abstract0_forget_array_c(man, destructive, a1, tdim, size, project)
     except:
         print('Problem with loading/calling "elina_abstract0_forget_array" from "libelinaux.so"')
         print('Make sure you are passing ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, ElinaDimPtr, c_size_t '
