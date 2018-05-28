@@ -1309,4 +1309,226 @@ void opt_pk_array_fprint(FILE* stream, elina_manager_t * man, opt_pk_array_t * o
 	#endif
 }
 
+size_t opt_pk_serialize_common(void* dst, opt_pk_t* oak, bool dry_run) {
+  size_t idx = 0;
 
+  if(!dry_run){
+    *(unsigned short int*)(dst + idx) = oak->intdim;
+  }
+  idx += sizeof(unsigned short int);
+
+  if(!dry_run){
+    *(unsigned short int*)(dst + idx) = oak->realdim;
+  }
+  idx += sizeof(unsigned short int);
+
+  if(!dry_run){
+    *(size_t*)(dst + idx) = oak->nbeq;
+  }
+  idx += sizeof(size_t);
+
+  if(!dry_run){
+    *(size_t*)(dst + idx) = oak->nbline;
+  }
+  idx += sizeof(size_t);
+
+  if(!dry_run){
+    *(bool*)(dst + idx) = oak->is_minimized;
+  }
+  idx += sizeof(bool);
+
+  if(!dry_run){
+    *(opt_pk_status_t*)(dst + idx) = oak->status;
+  }
+  idx += sizeof(opt_pk_status_t);
+
+  if(oak->C != NULL){
+    if(!dry_run){
+      *(bool*)(dst + idx) = true;
+    }
+    idx += sizeof(bool);
+    idx += opt_matrix_serialize_common(dst + idx, oak->C, dry_run);
+  }else{
+    if(!dry_run){
+      *(bool*)(dst + idx) = false;
+    }
+    idx += sizeof(bool);
+  }
+
+  if(oak->F != NULL){
+    if(!dry_run){
+      *(bool*)(dst + idx) = true;
+    }
+    idx += sizeof(bool);
+    idx += opt_matrix_serialize_common(dst + idx, oak->F, dry_run);
+  }else{
+    if(!dry_run){
+      *(bool*)(dst + idx) = false;
+    }
+    idx += sizeof(bool);
+  }
+
+  if(oak->satC != NULL){
+    if(!dry_run){
+      *(bool*)(dst + idx) = true;
+    }
+    idx += sizeof(bool);
+    idx += opt_satmat_serialize_common(dst + idx, oak->satC, dry_run);
+  }else{
+    if(!dry_run){
+      *(bool*)(dst + idx) = false;
+    }
+    idx += sizeof(bool);
+  }
+
+  if(oak->satF != NULL){
+    if(!dry_run){
+      *(bool*)(dst + idx) = true;
+    }
+    idx += sizeof(bool);
+    idx += opt_satmat_serialize_common(dst + idx, oak->satF, dry_run);
+  }else{
+    if(!dry_run){
+      *(bool*)(dst + idx) = false;
+    }
+    idx += sizeof(bool);
+  }
+
+  return idx;
+}
+
+size_t opt_pk_ptr_serialize_common(void* dst, opt_pk_t** poly, unsigned short int length, bool dry_run){
+  size_t idx = 0;
+  for(unsigned short int i = 0; i < length; i++){
+    idx += opt_pk_serialize_common(dst + idx, poly[i], dry_run);
+  }
+  return idx;
+}
+
+size_t opt_pk_array_serialize_common(void* dst, opt_pk_array_t* oa, bool dry_run){
+  size_t idx = 0;
+
+  if(!dry_run){
+    *(bool*)(dst + idx) = oa->is_bottom;
+  }
+  idx += sizeof(bool);
+
+  if(!dry_run){
+    *(unsigned short int*)(dst + idx) = oa->maxcols;
+  }
+  idx += sizeof(unsigned short int);
+
+  idx += array_comp_list_serialize_common(dst + idx, oa->acl, dry_run);
+  idx += opt_pk_ptr_serialize_common(dst + idx, oa->poly, oa->acl->size, dry_run);
+  return idx;
+}
+
+elina_membuf_t opt_pk_array_serialize_raw(elina_manager_t* man, opt_pk_array_t* oa){
+  elina_membuf_t buf;
+  buf.size = opt_pk_array_serialize_common(NULL, oa, true);
+  buf.ptr = malloc(buf.size);
+  opt_pk_array_serialize_common(buf.ptr, oa, false);
+  return buf;
+}
+
+opt_pk_t* opt_pk_deserialize(void* p, size_t* size){
+  opt_pk_t* oak = (opt_pk_t*)malloc(sizeof(opt_pk_t));
+  size_t idx = 0;
+
+  oak->intdim = *(unsigned short int*)(p + idx);
+  idx += sizeof(unsigned short int);
+
+  oak->realdim = *(unsigned short int*)(p + idx);
+  idx += sizeof(unsigned short int);
+
+  oak->nbeq = *(size_t*)(p + idx);
+  idx += sizeof(size_t);
+
+  oak->nbline = *(size_t*)(p + idx);
+  idx += sizeof(size_t);
+
+  oak->is_minimized = *(bool*)(p + idx);
+  idx += sizeof(bool);
+
+  oak->status = *(opt_pk_status_t*)(p + idx);
+  idx += sizeof(opt_pk_status_t);
+
+  bool has_mat;
+
+  has_mat = *(bool*)(p + idx);
+  idx += sizeof(bool);
+  if(has_mat){
+    size_t size_C;
+    oak->C = opt_matrix_deserialize(p + idx, &size_C);
+    idx += size_C;
+  }else{
+    oak->C = NULL;
+  }
+
+  has_mat = *(bool*)(p + idx);
+  idx += sizeof(bool);
+  if(has_mat){
+    size_t size_F;
+    oak->F = opt_matrix_deserialize(p + idx, &size_F);
+    idx += size_F;
+  }else{
+    oak->F = NULL;
+  }
+
+  has_mat = *(bool*)(p + idx);
+  idx += sizeof(bool);
+  if(has_mat){
+    size_t size_satC;
+    oak->satC = opt_satmat_deserialize(p + idx, &size_satC);
+    idx += size_satC;
+  }else{
+    oak->satC = NULL;
+  }
+
+  has_mat = *(bool*)(p + idx);
+  idx += sizeof(bool);
+  if(has_mat){
+    size_t size_satF;
+    oak->satF = opt_satmat_deserialize(p + idx, &size_satF);
+    idx += size_satF;
+  }else{
+    oak->satF = NULL;
+  }
+
+  *size = idx;
+  return oak;
+}
+
+opt_pk_t** opt_pk_ptr_deserialize(void* p, unsigned short int length, size_t* size){
+  opt_pk_t** poly = (opt_pk_t**)malloc(sizeof(opt_pk_t*) * length);
+  size_t idx = 0;
+  for(unsigned short int i = 0; i < length; i++){
+    size_t pk_size;
+    poly[i] = opt_pk_deserialize(p + idx, &pk_size);
+    idx += pk_size;
+  }
+  *size = idx;
+  return poly;
+}
+
+opt_pk_array_t* opt_pk_array_deserialize_raw(elina_manager_t* man, void* p, size_t* size){
+  opt_pk_array_t* oa = (opt_pk_array_t*)malloc(sizeof(opt_pk_array_t));
+  size_t idx = 0;
+
+  oa->is_bottom = *(bool*)(p + idx);
+  idx += sizeof(bool);
+
+  oa->maxcols = *(unsigned short int*)(p + idx);
+  idx += sizeof(unsigned short int);
+
+  size_t acl_size;
+  oa->acl = array_comp_list_deserialize(p + idx, &acl_size);
+  idx += acl_size;
+
+  size_t poly_size;
+  oa->poly = opt_pk_ptr_deserialize(p + idx, oa->acl->size, &poly_size);
+  idx += poly_size;
+
+  *size = idx;
+  return oa;
+}
