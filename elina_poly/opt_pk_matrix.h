@@ -217,6 +217,12 @@ size_t split_matrix(opt_pk_internal_t * opk, opt_matrix_t * dst,
 
 void remove_positivity_constraint(opt_pk_internal_t * opk, opt_matrix_t *oc);
 
+/*********************************
+	Serialization
+*********************************/
+size_t opt_matrix_serialize_common(void* dst, opt_matrix_t* oc, bool dry_run);
+opt_matrix_t* opt_matrix_deserialize(void* p, size_t* size);
+
 #ifdef __cplusplus
 }
 #endif

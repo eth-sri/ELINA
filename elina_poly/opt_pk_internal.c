@@ -209,6 +209,9 @@ elina_manager_t* opt_pk_manager_alloc(bool strict)
   //funptr[ELINA_FUNID_HASH] = &opt_pk_hash;
   //funptr[ELINA_FUNID_APPROXIMATE] = &opt_pk_approximate;
   funptr[ELINA_FUNID_FPRINT] = &opt_pk_array_fprint;
+  funptr[ELINA_FUNID_SERIALIZE_RAW] = &opt_pk_array_serialize_raw;
+  funptr[ELINA_FUNID_DESERIALIZE_RAW] = &opt_pk_array_deserialize_raw;
+
   funptr[ELINA_FUNID_BOTTOM] = &opt_pk_bottom;
   funptr[ELINA_FUNID_TOP] = &opt_pk_top;
   funptr[ELINA_FUNID_OF_BOX] = &opt_pk_of_box;

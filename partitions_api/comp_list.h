@@ -112,6 +112,15 @@ Extracting Components
 array_comp_list_t * extract(double *m, unsigned short int n);
 array_comp_list_t * extract_comps(char *m, unsigned short int n);
 
+/*****
+Serialization
+*****/
+size_t comp_list_serialize_common(void* dst, comp_list_t* cl, unsigned short int length, int dry_run);
+size_t array_comp_list_serialize_common(void* dst, array_comp_list_t* acl, int dry_run);
+
+comp_list_t* comp_list_deserialize(void* p, unsigned short int length, size_t* size);
+array_comp_list_t* array_comp_list_deserialize(void* p, size_t* size);
+
 /*static int matpos(int i, int j){
 	return j + ((i+1)*(i+1))/2;
 }
