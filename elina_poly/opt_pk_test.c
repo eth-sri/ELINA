@@ -995,11 +995,50 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
 	}       
         cl = cl->next;
   }
-  opt_matrix_t *F = opt_matrix_alloc(nbgen + num_vertex, comp_size + 2, false);
+
+  cla = acla->head;
+  char * line_map = (char *)calloc(comp_size, sizeof(char));
+  for(k=0; k < num_compa; k++){
+        if(intersect_map[k]){
+		unsigned short int *ca_a = to_sorted_array(cla,maxcols);
+		unsigned short int k2=0, k3 = 0;
+		for(k2=0; k2< cla->size; k2++){
+			while(ca[k3]!=ca_a[k2]){
+				k3++;
+			}
+			line_map[k3] = 1;
+		}
+		free(ca_a);
+	}       
+        cla = cla->next;
+  }
+  size_t nbline = 0;
+  for(k=0; k < comp_size; k++){
+      if(!line_map[k]){
+	  nbline++;
+      }
+  }
+  opt_matrix_t *F =
+      opt_matrix_alloc(nbgen + num_vertex + nbline, comp_size + 2, false);
   fuse_generators_intersecting_blocks(F,poly_a,acla,ca,num_vertex_a,intersect_map,maxcols);
+  // add lines for unconstrained variables
+  size_t nbrows = F->nbrows;
+  for(k=0; k < comp_size; k++){
+      if(!line_map[k]){
+	  F->p[nbrows][k+opk->dec] = 1;
+	  nbrows++;
+      }
+  }
+  if(!num_vertex){
+	  F->p[nbrows][0] = 1;
+	  F->p[nbrows][1] = 1;
+	  nbrows++;
+  }
+  F->nbrows=nbrows;
   free(ca);
   free(map);
   free(intersect_map);
+  free(line_map);
   //dim = po->intdim + po->realdim;
   dim = comp_size;
   if (!elina_linexpr0_is_quasilinear(lincons0->linexpr0)){
@@ -1178,12 +1217,52 @@ bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* 
 	}       
         cl = cl->next;
   }
-  opt_matrix_t *F = opt_matrix_alloc(nbgen + num_vertex, comp_size + 2, false);
+
+  cla = acla->head;
+  char * line_map = (char *)calloc(comp_size, sizeof(char));
+  for(k=0; k < num_compa; k++){
+        if(intersect_map[k]){
+		unsigned short int *ca_a = to_sorted_array(cla,maxcols);
+		unsigned short int k2=0, k3 = 0;
+		for(k2=0; k2< cla->size; k2++){
+			while(ca[k3]!=ca_a[k2]){
+				k3++;
+			}
+			line_map[k3] = 1;
+		}
+		free(ca_a);
+	}       
+        cla = cla->next;
+  }
+  size_t nbline = 0;
+  for(k=0; k < comp_size; k++){
+      if(!line_map[k]){
+	  nbline++;
+      }
+  }
+
+  opt_matrix_t *F =
+      opt_matrix_alloc(nbgen + num_vertex + nbline, comp_size + 2, false);
 
   fuse_generators_intersecting_blocks(F,poly_a,acla,ca,num_vertex_a,intersect_map,maxcols);
+  //add lines for unconstrained variables
+  size_t nbrows = F->nbrows;
+  for(k=0; k < comp_size; k++){
+      if(!line_map[k]){
+	  F->p[nbrows][k+opk->dec] = 1;
+	  nbrows++;
+      }
+  }
+  if(!num_vertex){
+	  F->p[nbrows][0] = 1;
+	  F->p[nbrows][1] = 1;
+	  nbrows++;
+  }
+  F->nbrows=nbrows;
   free(map);
   free(ca);
   free(intersect_map);
+  free(line_map);
   bool sat = opt_vector_set_elina_lincons0_sat(opk,
 					opk->poly_numintp,
 					new_lincons0,

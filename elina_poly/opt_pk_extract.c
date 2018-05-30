@@ -225,13 +225,51 @@ elina_interval_t* opt_pk_bound_linexpr(elina_manager_t* man,
 	}       
         cl = cl->next;
   }
+  
+  cla = acla->head;
+  char * line_map = (char *)calloc(comp_size, sizeof(char));
+  for(k=0; k < num_compa; k++){
+        if(intersect_map[k]){
+		unsigned short int *ca_a = to_sorted_array(cla,maxcols);
+		unsigned short int k2=0, k3 = 0;
+		for(k2=0; k2< cla->size; k2++){
+			while(ca[k3]!=ca_a[k2]){
+				k3++;
+			}
+			line_map[k3] = 1;
+		}
+		free(ca_a);
+	}       
+        cla = cla->next;
+  }
+  size_t nbline = 0;
+  for(k=0; k < comp_size; k++){
+      if(!line_map[k]){
+	  nbline++;
+      }
+  }
 
-  opt_matrix_t *F = opt_matrix_alloc(nbgen + num_vertex, comp_size + 2, false);
+  opt_matrix_t *F =
+      opt_matrix_alloc(nbgen + num_vertex + nbline, comp_size + 2, false);
   fuse_generators_intersecting_blocks(F,poly_a,acla,ca,num_vertex_a,intersect_map,maxcols);
+  //add lines for unconstrained variables
+  size_t nbrows = F->nbrows;
+  for(k=0; k < comp_size; k++){
+      if(!line_map[k]){
+	  F->p[nbrows][k+opk->dec] = 1;
+	  nbrows++;
+      }
+  }
+  if(!num_vertex){
+	  F->p[nbrows][0] = 1;
+	  F->p[nbrows][1] = 1;
+	  nbrows++;
+  }
+  F->nbrows=nbrows;
   free(ca);
   free(map);
   free(intersect_map);
-
+  free(line_map);
   /* we fill the vector with the expression, taking lower bound of the interval
      constant */
   elina_rat_t *inf = (elina_rat_t*)malloc(sizeof(elina_rat_t));
