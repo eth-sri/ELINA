@@ -469,7 +469,7 @@ EOF
 
 if test "$has_ocaml" -eq 0; then has_ocaml=; fi
 if test "$has_java" -eq 0; then has_java=; fi
-if test "$has_apron" -eq 0; then has_apron=; fi
+if test "$has_apron" -eq 0; then has_apron=; else has_apron=-DHAS_APRON; fi
 if test "$use_opam" -eq 0; then use_opam=; fi
 
 cat > Makefile.config <<EOF
@@ -484,7 +484,7 @@ HAS_OCAMLOPT = $has_ocaml
 # If defined to non-empty value, compiles the Java interface
 HAS_JAVA = $has_java
 
-# If defined to non-empty value, uses the apron interface
+# If defined to HAS_APRON, uses the apron interface
 IS_APRON = $has_apron
 
 ELINA_PREFIX = $elina_prefix
@@ -563,7 +563,7 @@ CFLAGS = $cflags
 
 # Architecture specific flags
 AFLAGS = -D_GNU_SOURCE -pthread -fno-tree-vectorize -m64 -march=native 
-DFLAGS = -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0 -DTIMING \$(AFLAGS)
+DFLAGS = -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0 -DTIMING \$(AFLAGS) \$(IS_APRON)
 
 # ocamlc compilation flags
 OCAMLFLAGS = -g
