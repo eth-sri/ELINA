@@ -16,14 +16,15 @@ usage: configure [options]
 
 where options include:
   -prefix dir          installation directory
+  -use-apron           use APRON interface (required for Ocaml and Java)
   -apron-prefix dir    where to find the APRON library
   -apron-srcroot dir   where to find the APRON source directory
   -gmp-prefix dir      where to find the GMP library
   -mpfr-prefix dir     where to find the MPFR library
   -java-prefix dir     where to find Java
-  -use-ocaml           enable OCaml support
+  -use-ocaml           enable OCaml support (only available with APRON)
   -use-ocamlfind       enable OCamlfind support
-  -no-java             disable Java support
+  -use-java            enable Java support (only available with APRON)
   -use-opam            use opam to install ELINA
 
 Environment variables that affect configuration:
@@ -49,8 +50,9 @@ elina_prefix=/usr/local
 apron_prefix=/usr/local
 has_ocaml=0
 has_ocamlfind=0
-has_java=1
+has_java=0
 use_opam=0
+has_apron=0
 force_absolute_dylib_install_names=0;
 while : ; do
     case "$1" in
@@ -79,8 +81,10 @@ while : ; do
         -use-ocamlfind|--use-ocamlfind)
             has_ocaml=1
             has_ocamlfind=1;;
-        -no-java|--no-java)
-            has_java=0;;
+        -use-java|--use-java)
+            has_java=1;;
+        -use-apron|--use-apron)
+	    has_apron=1;;
         -use-opam|--use-opam)
             has_ocaml=1
             has_ocamlfind=1
@@ -384,11 +388,14 @@ then
 fi
 
 # Set apron source root
-if test "x$apron_srcroot" = "x"; then
-    if test $use_opam -eq 1; then
-	apron_srcroot=`ocamlfind query apron`
-    else
-	echo "Apron source not found, set APRON_SRCROOT"; exit 1
+if test $has_apron -eq 1 
+then
+    if test "x$apron_srcroot" = "x"; then
+       if test $use_opam -eq 1; then
+	   apron_srcroot=`ocamlfind query apron`
+       else
+	   echo "Apron source not found, set APRON_SRCROOT"; exit 1
+       fi
     fi
 fi
 
@@ -459,6 +466,7 @@ EOF
 
 if test "$has_ocaml" -eq 0; then has_ocaml=; fi
 if test "$has_java" -eq 0; then has_java=; fi
+if test "$has_apron" -eq 0; then has_apron=; fi
 if test "$use_opam" -eq 0; then use_opam=; fi
 
 cat > Makefile.config <<EOF
@@ -472,6 +480,9 @@ HAS_OCAMLOPT = $has_ocaml
 
 # If defined to non-empty value, compiles the Java interface
 HAS_JAVA = $has_java
+
+# If defined to non-empty value, uses the apron interface
+IS_APRON = $has_apron
 
 ELINA_PREFIX = $elina_prefix
 APRON_PREFIX = $apron_prefix
