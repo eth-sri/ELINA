@@ -390,11 +390,14 @@ fi
 # Set apron source root
 if test $has_apron -eq 1 
 then
-    if test "x$apron_srcroot" = "x"; then
-       if test $use_opam -eq 1; then
-	   apron_srcroot=`ocamlfind query apron`
-       else
-	   echo "Apron source not found, set APRON_SRCROOT"; exit 1
+    if test $has_ocaml -eq 1
+    then
+       if test "x$apron_srcroot" = "x"; then
+           if test $use_opam -eq 1; then
+	      apron_srcroot=`ocamlfind query apron`
+           else
+	      echo "Apron source not found, set APRON_SRCROOT"; exit 1
+           fi
        fi
     fi
 fi
