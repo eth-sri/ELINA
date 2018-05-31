@@ -54,7 +54,7 @@ APRON_CAML_INCLUDE = $(shell $(OCAMLFIND) query apron)
 
 CAML_TO_INSTALL = \
 elina_poly.idl elina_poly.mli elina_poly.ml elina_poly.cmi \
-elina_poly.cma \
+elina_poly.a elina_poly.cma elina_poly.cmx elina_poly.cmxa \
 libelina_poly_caml.a \
 
 ifneq ($(HAS_OCAMLOPT),)
