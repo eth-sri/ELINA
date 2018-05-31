@@ -587,6 +587,11 @@ ABSOLUTE_DYLIB_INSTALL_NAMES = $absolute_dylib_install_names
 ifneq (\$(ABSOLUTE_DYLIB_INSTALL_NAMES),)
   CC_ELINA_DYLIB += -install_name \$(ELINA_PREFIX)/lib/\$@
   CXX_ELINA_DYLIB += -install_name \$(ELINA_PREFIX)/lib/\$@
+else
+ifneq (\$(USE_OPAM),)
+  CC_ELINA_DYLIB += -Wl,-rpath=\$(ELINA_PREFIX)/lib
+  CXX_ELINA_DYLIB += -Wl,-rpath=\$(ELINA_PREFIX)/lib
+endif
 endif
 
 EOF

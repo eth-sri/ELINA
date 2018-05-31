@@ -9,8 +9,8 @@ license: "LGPL-3"
 build: [
   ["sh" "./configure" "--prefix" "%{share}%/elina"
                       "--apron-prefix" "%{share}%/apron"
-                      "--no-java"
                       "--use-opam"
+                      "--use-apron"
                       "--absolute-dylibs" { os = "darwin" } ]
   [make "-j%{jobs}%"]
 ]
@@ -23,7 +23,7 @@ remove: [
 ]
 tags: [ "flags:light-uninstall" ]
 depends: [
-  "ocamlfind"
+  "ocamlfind" {build}
   "camlidl"
   "mlgmpidl"
   "conf-perl"
