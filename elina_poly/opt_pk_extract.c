@@ -249,8 +249,7 @@ elina_interval_t* opt_pk_bound_linexpr(elina_manager_t* man,
       }
   }
 
-  opt_matrix_t *F =
-      opt_matrix_alloc(nbgen + num_vertex + nbline, comp_size + 2, false);
+  opt_matrix_t * F = opt_matrix_alloc(nbgen+num_vertex+nbline+1,comp_size+2,false);
   fuse_generators_intersecting_blocks(F,poly_a,acla,ca,num_vertex_a,intersect_map,maxcols);
   //add lines for unconstrained variables
   size_t nbrows = F->nbrows;
