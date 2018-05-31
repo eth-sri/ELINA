@@ -994,7 +994,7 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
 	}       
         cl = cl->next;
   }
- 
+   
   cla = acla->head;
   char * line_map = (char *)calloc(comp_size, sizeof(char));
   for(k=0; k < num_compa; k++){
@@ -1017,7 +1017,7 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
 	  nbline++;
       }
   }
-  opt_matrix_t * F = opt_matrix_alloc(nbgen+num_vertex+nbline,comp_size+2,false);
+  opt_matrix_t * F = opt_matrix_alloc(nbgen+num_vertex+nbline+1,comp_size+2,false);
   fuse_generators_intersecting_blocks(F,poly_a,acla,ca,num_vertex_a,intersect_map,maxcols);
   // add lines for unconstrained variables
   size_t nbrows = F->nbrows;
@@ -1044,7 +1044,7 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
     exact = quasilinearize_elina_lincons0(new_lincons0, env, false,ELINA_SCALAR_MPQ) && exact;
     elina_interval_array_free(env,dim);
   }
- 
+    
   sat = opt_vector_set_elina_lincons0_sat(opk,
 				   opk->poly_numintp,
 				   new_lincons0,
@@ -1073,6 +1073,7 @@ bool opt_pk_sat_lincons(elina_manager_t* man, opt_pk_array_t* oa, elina_lincons0
   free_array_comp_list(acl);
   free(num_vertex_a);
   opt_matrix_free(F);
+    
   return sat;
 }
 
@@ -1239,7 +1240,7 @@ bool opt_pk_sat_tcons(elina_manager_t* man, opt_pk_array_t* oa, elina_tcons0_t* 
       }
   }
 
-  opt_matrix_t * F = opt_matrix_alloc(nbgen+num_vertex+nbline,comp_size+2,false);
+  opt_matrix_t * F = opt_matrix_alloc(nbgen+num_vertex+nbline+1,comp_size+2,false);
   
   fuse_generators_intersecting_blocks(F,poly_a,acla,ca,num_vertex_a,intersect_map,maxcols);
   //add lines for unconstrained variables
