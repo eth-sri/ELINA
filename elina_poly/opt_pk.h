@@ -171,7 +171,7 @@ size_t opt_pk_size(elina_manager_t* man, opt_pk_array_t* o);
 /* I.2 Control of internal representation */
 /* ============================================================ */
 
-void opt_pk_minimize(elina_manager_t* man, opt_pk_t* o);
+void opt_pk_minimize(elina_manager_t* man, opt_pk_array_t* o);
   /* Minimize the size of the representation of a.
      This may result in a later recomputation of internal information.
   */
