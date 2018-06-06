@@ -29,9 +29,9 @@ zonotope_t* zonotope_forget_array(elina_manager_t* man,
     zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_FORGET_ARRAY);
     zonotope_t* res;
     size_t i;
-    // printf("forget input %d\n",project);
-    // zonotope_fprint(stdout,man,z,NULL);
-    // fflush(stdout);
+	//printf("forget input %d\n",tdim[0]);
+	//zonotope_fprint(stdout,man,z,NULL);
+	//fflush(stdout);
     man->result.flag_best = true;
     man->result.flag_exact = true;
 
@@ -41,18 +41,21 @@ zonotope_t* zonotope_forget_array(elina_manager_t* man,
 	    zonotope_aff_check_free(pr, res->paf[tdim[i]]);
 	    res->paf[tdim[i]] = zonotope_aff_alloc_init(pr);
 	    res->paf[tdim[i]]->pby++;
-	}
+            elina_scalar_set_double(res->box[tdim[i]]->inf, 0);
+            elina_scalar_set_double(res->box[tdim[i]]->sup, 0);
+        }
     }
     else {
 	for (i=0;i<size;i++){
 	    zonotope_aff_check_free(pr, res->paf[tdim[i]]);
 	    res->paf[tdim[i]] = pr->top;
 	    res->paf[tdim[i]]->pby++;
-	}
+            elina_interval_set_top(res->box[tdim[i]]);
+        }
     }
-    // printf("forget output\n");
-    // zonotope_fprint(stdout,man,res,NULL);
-    // fflush(stdout);
+	//printf("forget output %d\n", res->paf[tdim[0]] == pr->top);
+	//zonotope_fprint(stdout,man,res,NULL);
+	//fflush(stdout);
     record_timing(zonotope_forget_array_time);
     return res;
     //not_implemented();
