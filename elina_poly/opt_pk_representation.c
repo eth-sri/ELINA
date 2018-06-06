@@ -1175,21 +1175,10 @@ void opt_poly_minimize(elina_manager_t* man, opt_pk_t* op){
         //fflush(stdout);
 }
 
-/* Minimize the size of the representation of the polyhedron */
-void opt_pk_minimize(elina_manager_t *man, opt_pk_t *op) {
-  opt_pk_internal_t *opk = opt_pk_init_from_manager(man, ELINA_FUNID_MINIMIZE);
-
-  if (op->C) {
-    opt_poly_minimize(man, op);
-    if (opk->exn) {
-      opk->exn = ELINA_EXC_NONE;
-      man->result.flag_exact = man->result.flag_best = false;
-      return;
-    }
-  }
-  // assert(poly_check(pk,po));
-  man->result.flag_exact = man->result.flag_best =
-      op->intdim > 0 && (op->C) ? false : true;
+/* Not implemented */
+void opt_pk_minimize(elina_manager_t* man, opt_pk_array_t* op)
+{
+    
 }
 
 void opt_poly_obtain_sorted_C(opt_pk_internal_t* opk, opt_pk_t* op)
