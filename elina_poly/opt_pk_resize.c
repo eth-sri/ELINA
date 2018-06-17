@@ -105,8 +105,8 @@ opt_pk_array_t* opt_pk_add_dimensions_cons(elina_manager_t* man,
     unsigned short int var = dim[l] + opk->dec;
     while ((l < size) && (var == i)) {
       ncmap[l] = k;
-      l++;
       var = dim[l] + opk->dec;
+      l++;
       k++;
     }
         cmap[i] = k;
