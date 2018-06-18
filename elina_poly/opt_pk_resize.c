@@ -313,13 +313,14 @@ opt_pk_array_t* opt_pk_remove_dimensions(elina_manager_t* man,
  
   unsigned short int l = 0;
   for(k=opk->dec; k < maxcols; k++){
-    unsigned short int var = dima[l] + opk->dec;
-    if ((l < dimsup) && (k == var)) {
-      map[k] = maxcols + 1;
-      l++;
-    } else {
-      map[k] = k - l;
-    }
+	//unsigned short int var = dima[l] + opk->dec;
+	if((l < dimsup) && (k==(dima[l] + opk->dec))){
+		map[k] = maxcols+1;
+		l++;
+	}
+	else{
+		map[k] = k - l;
+	}
   }
 
   comp_list_t * cla = acla->head; 
