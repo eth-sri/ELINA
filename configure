@@ -563,7 +563,7 @@ CFLAGS = $cflags
 
 # Architecture specific flags
 AFLAGS = -D_GNU_SOURCE -pthread -fno-tree-vectorize -m64 -march=native 
-DFLAGS = -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0 -DTIMING \$(AFLAGS) \$(IS_APRON)
+DFLAGS = -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING \$(AFLAGS) \$(IS_APRON)
 
 # ocamlc compilation flags
 OCAMLFLAGS = -g
