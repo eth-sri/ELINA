@@ -559,9 +559,8 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
 	}
 	else{
 		unsigned short int comp_size = comp_size_map[k];
-                poly[k]->C = opt_matrix_alloc(nbmapa[k] + nbmapb[k] + 1,
-                                              comp_size + 2, false);
-                poly[k]->nbeq = nbeqmapa[k];		
+		poly[k]->C = opt_matrix_alloc(nbmapa[k]+1, comp_size+2,false);
+		poly[k]->nbeq = nbeqmapa[k];		
 		unsigned short int k1;
 		unsigned short int nblines = 0;
 		unsigned short int * ca = ca_arr[k];
