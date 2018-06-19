@@ -38,9 +38,9 @@ def generate_random_linexpr0(dim,nbcons,is_lincons):
         else:
                 size = random.randint(1,2)        
         linexpr0 = elina_linexpr0_alloc(ElinaLinexprDiscr.ELINA_LINEXPR_SPARSE, size)
-        d = random.randint(0, 10)
+        d = c_double(random.randint(0, 10))
         cst = pointer(linexpr0.contents.cst)
-        elina_scalar_set_int(cst.contents.val.scalar, d)
+        elina_scalar_set_double(cst.contents.val.scalar, d)
         if(size):
         	v1 = random.randint(0, dim-1)
         	v2 = v1
@@ -77,7 +77,7 @@ def generate_random_lincons0_array(dim, nbcons):
         else:
             lincons0_array.p[i].constyp = c_uint(ElinaConstyp.ELINA_CONS_EQ)
         lincons0_array.p[i].linexpr0 = generate_random_linexpr0(dim,nbcons,False)
-
+        lincons0_array.p[i].scalar = None
     return lincons0_array
 
 
@@ -123,7 +123,6 @@ def test_assign(man,dim,nbcons):
 
 def test_forget(man,dim,nbcons):
 	arr = generate_random_lincons0_array(dim,nbcons)
-	elina_lincons0_array_print(arr,None)
 	o1 = elina_abstract0_top(man,dim,0)
 	o1 = elina_abstract0_meet_lincons_array(man,True,o1,arr)
 	print("Forget input Polyhedra")
@@ -155,8 +154,8 @@ def test_substitute(man,dim,nbcons):
 	arr = generate_random_lincons0_array(dim,nbcons)
 	o1 = elina_abstract0_top(man,dim,0)
 	o1 = elina_abstract0_meet_lincons_array(man,True,o1,arr)
-	print("Substitute input Polyhedra")
 	arr2 = elina_abstract0_to_lincons_array(man,o1)
+	print("Substitute input Polyhedra")
 	elina_lincons0_array_print(arr2,None)
 	elina_lincons0_array_clear(arr)
 	elina_lincons0_array_clear(arr2)
@@ -204,7 +203,7 @@ def test_join(man,dim,nbcons):
 
 dim = int(sys.argv[1])
 nbcons = int(sys.argv[2])
-man = opt_pk_manager_alloc()
+man = opt_pk_manager_alloc(False)
 test_meet_lincons(man,dim,nbcons)
 test_assign(man,dim,nbcons)
 test_substitute(man,dim,nbcons)
