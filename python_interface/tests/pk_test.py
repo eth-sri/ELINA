@@ -21,4 +21,4 @@
 
 from opt_pk import *
 
-manager1 = opt_pk_manager_alloc()
+manager1 = opt_pk_manager_alloc(False)
