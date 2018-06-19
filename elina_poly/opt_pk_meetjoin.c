@@ -479,7 +479,8 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
 	elina_lincons0_t * dst = (arr+k1)->p + i1;
 	copy_lincons0_with_comp_list(opk,dst,src,ca, comp_size_map[k1]);
   }
-
+ 
+ 
   /*********************************
 	Factor A according to union
   **********************************/
@@ -558,8 +559,9 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
 	}
 	else{
 		unsigned short int comp_size = comp_size_map[k];
-		poly[k]->C = opt_matrix_alloc(nbmapa[k]+1, comp_size+2,false);
-		poly[k]->nbeq = nbeqmapa[k];		
+                poly[k]->C = opt_matrix_alloc(nbmapa[k] + nbmapb[k] + 1,
+                                              comp_size + 2, false);
+                poly[k]->nbeq = nbeqmapa[k];		
 		unsigned short int k1;
 		unsigned short int nblines = 0;
 		unsigned short int * ca = ca_arr[k];
@@ -677,10 +679,14 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
 		if(op_k){
 			opt_poly_clear(op_k);
 			free(op_k);
+			poly[k] = NULL;
 		}
+		
 	}
 	free(poly);
 	free_array_comp_list(acl);
+	op->acl = NULL;
+	op->poly = NULL;
 	op->is_bottom = true;
 	
   }

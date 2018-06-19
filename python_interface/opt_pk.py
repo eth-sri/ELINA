@@ -26,9 +26,14 @@ from elina_manager_h import *
 # Basics
 # ====================================================================== #
 
-def opt_pk_manager_alloc():
+def opt_pk_manager_alloc(strict):
     """
     Allocates an ElinaManager.
+    
+    Parameters
+    ----------
+    strict : c_bool
+        if strict inequalities are required.    
 
     Returns
     -------
@@ -41,8 +46,8 @@ def opt_pk_manager_alloc():
     try:
         opt_pk_manager_alloc_c = opt_pk_api.opt_pk_manager_alloc
         opt_pk_manager_alloc_c.restype = ElinaManagerPtr
-        opt_pk_manager_alloc_c.argtypes = None
-        man = opt_pk_manager_alloc_c()
+        opt_pk_manager_alloc_c.argtypes = [c_bool]
+        man = opt_pk_manager_alloc_c(strict)
     except:
         print('Problem with loading/calling "opt_pk_manager_alloc" from "liboptpoly.so"')
 
