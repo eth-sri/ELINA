@@ -173,6 +173,30 @@ def elina_dimchange2_clear(dimchange2):
         print('Make sure you are passing ElinaDimchange2Ptr to the function')
 
 
+def elina_dimchange_free(dimchange):
+    """
+    Free an ElinaDimchange.
+    
+    Parameters
+    ----------
+    dimchange : ElinaDimchangePtr
+        Pointer to the ElinaDimchange that needs to be freed.
+
+    Returns
+    -------
+    None
+
+    """
+
+    try:
+        elina_dimchange_free_c = elina_auxiliary_api.elina_dimchange_free
+        elina_dimchange_free_c.restype = None
+        elina_dimchange_free_c.argtypes = [ElinaDimchangePtr]
+        elina_dimchange_free_c(dimchange)
+    except:
+        print('Problem with loading/calling "elina_dimchange_free" from "libelinaux.so"')
+        print('Make sure you are passing ElinaDimchangePtr to the function')
+
 def elina_dimchange2_free(dimchange2):
     """
     Free an ElinaDimchange2.
@@ -196,6 +220,9 @@ def elina_dimchange2_free(dimchange2):
     except:
         print('Problem with loading/calling "elina_dimchange2_free" from "libelinaux.so"')
         print('Make sure you are passing ElinaDimchange2Ptr to the function')
+
+
+
 
 
 def elina_dimchange2_fprint(stream, dimchange2):
