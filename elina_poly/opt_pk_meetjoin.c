@@ -396,23 +396,46 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
 	if(constyp==ELINA_CONS_DISEQ){
 		is_trivial[i] = 1;
 	}
+	elina_coeff_t * cst = &expr->cst;
 	if(is_linexpr_zero(expr)){
 		is_trivial[i] = 1;
-		int sgn = elina_coeff_sgn(&expr->cst);
+		
+		//int sgn = elina_coeff_sgn(&expr->cst);
 		if(constyp==ELINA_CONS_EQ){
-			if(sgn){
+			int sgn_eq = 0;
+			if(cst->discr==ELINA_COEFF_SCALAR){
+				sgn_eq = elina_scalar_sgn(cst->val.scalar);
+			}
+			else{
+				sgn_eq = elina_scalar_sgn(cst->val.interval->inf) > 0 || elina_scalar_sgn(cst->val.interval->sup) < 0;
+			}
+			if(sgn_eq){
 				is_bottom = true;
 				break;
 			}
 		}
 		else if(constyp==ELINA_CONS_SUPEQ){
-			if(sgn< 0){
+			int sgn_supeq = 0;
+			if(cst->discr==ELINA_COEFF_SCALAR){
+				sgn_supeq = elina_scalar_sgn(cst->val.scalar) >= 0;
+			}
+			else{
+				sgn_supeq = elina_scalar_sgn(cst->val.interval->sup) >= 0;
+			}
+			if(!sgn_supeq){
 				is_bottom = true;
 				break;
 			}
 		}
 		else if(constyp==ELINA_CONS_SUP){
-			if(sgn != 1){
+			int sgn_sup = 0;
+			if(cst->discr==ELINA_COEFF_SCALAR){
+				sgn_sup = elina_scalar_sgn(cst->val.scalar) > 0;
+			}
+			else{
+				sgn_sup = elina_scalar_sgn(cst->val.interval->sup) > 0;
+			}
+			if(!sgn_sup){
 				is_bottom = true;
 				break;
 			}
