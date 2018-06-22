@@ -1002,6 +1002,11 @@ int elina_linexpr0_compare(elina_linexpr0_t* expr1,
 /* ====================================================================== */
 /* VII. Array of expressions */
 /* ====================================================================== */
+elina_linexpr0_t ** elina_linexpr0_array_alloc(size_t size){
+	elina_linexpr0_t ** res = (elina_linexpr0_t **)malloc(size*sizeof(elina_linexpr0_t*));
+	return res;
+}
+
 
 void elina_linexpr0_array_free(elina_linexpr0_t** texpr, size_t size)
 {
