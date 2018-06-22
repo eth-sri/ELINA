@@ -314,6 +314,8 @@ int elina_linexpr0_compare(elina_linexpr0_t* expr1,
 /* ====================================================================== */
 
 /* Free the array of expressions of size size */
+elina_linexpr0_t ** elina_linexpr0_array_alloc(size_t size);
+
 void elina_linexpr0_array_free(elina_linexpr0_t** texpr, size_t size);
 
 #ifdef __cplusplus

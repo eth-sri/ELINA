@@ -1447,6 +1447,33 @@ def elina_linexpr0_compare(linexpr1, linexpr2):
 # ====================================================================== #
 # Vb. Array of expressions
 # ====================================================================== #
+def elina_linexpr0_array_alloc(size):
+    """
+    Allocate an ElinaLinexpr0Array.
+    
+    Parameters
+    ----------
+    size : c_size_t
+        Size of the ElinaLinexpr0Array that needs to be allocated.
+
+    Returns
+    -------
+    texpr : ElinaLinexpr0Array
+        the allocated ElinaLinexpr0Array.
+    
+    """
+    
+    result = None
+    try:
+        elina_linexpr0_array_alloc_c = elina_auxiliary_api.elina_linexpr0_array_alloc
+        elina_linexpr0_array_alloc_c.restype = ElinaLinexpr0Array
+        elina_linexpr0_array_alloc_c.argtypes = [c_size_t]
+        result = elina_linexpr0_array_alloc_c(size)
+    except:
+        print('Problem with loading/calling "elina_linexpr0_array_alloc" from "libelinaux.so"')
+        print('Make sure you are passing c_size_t to the function')
+    
+    return result
 
 
 def elina_linexpr0_array_free(texpr, size):
