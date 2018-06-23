@@ -545,7 +545,7 @@ def elina_abstract0_dimension(man, a):
     dim = None
     try:
         elina_abstract0_dimension_c = elina_auxiliary_api.elina_abstract0_dimension
-        elina_abstract0_dimension_c.restype = ElinaDim
+        elina_abstract0_dimension_c.restype = ElinaDimension
         elina_abstract0_dimension_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr]
         dim = elina_abstract0_dimension_c(man, a)
     except:
@@ -1311,6 +1311,7 @@ def elina_abstract0_assign_linexpr_array(man, destructive, org, tdim, linexpr_ar
         print('Problem with loading/calling "elina_abstract0_assign_linexpr_array" from "libelinaux.so"')
         print('Make sure you are passing ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, ElinaDimPtr, ElinaLinexpr0Array, '
               'c_size_t, ElinaAbstract0Ptr to the function')
+	
 
     return a
 
