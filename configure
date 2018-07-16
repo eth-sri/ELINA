@@ -22,6 +22,7 @@ where options include:
   -gmp-prefix dir      where to find the GMP library
   -mpfr-prefix dir     where to find the MPFR library
   -java-prefix dir     where to find Java
+  -use-vector          use vector instructions for the Octagon library
   -use-ocaml           enable OCaml support (only available with APRON)
   -use-ocamlfind       enable OCamlfind support
   -use-java            enable Java support (only available with APRON)
@@ -53,6 +54,7 @@ has_ocamlfind=0
 has_java=0
 use_opam=0
 has_apron=0
+has_vector=0
 force_absolute_dylib_install_names=0;
 while : ; do
     case "$1" in
@@ -84,7 +86,9 @@ while : ; do
         -use-java|--use-java)
             has_java=1;;
         -use-apron|--use-apron)
-	    has_apron=1;;
+         has_apron=1;;
+        -use-vector|--use-vector)
+         has_vector=1;;
         -use-opam|--use-opam)
             has_ocaml=1
             has_ocamlfind=1
@@ -470,6 +474,7 @@ EOF
 if test "$has_ocaml" -eq 0; then has_ocaml=; fi
 if test "$has_java" -eq 0; then has_java=; fi
 if test "$has_apron" -eq 0; then has_apron=; else has_apron=-DHAS_APRON; fi
+if test "$has_vector" -eq 0; then IS_VECTOR=; else IS_VECTOR=-DVECTOR; fi
 if test "$use_opam" -eq 0; then use_opam=; fi
 
 cat > Makefile.config <<EOF
@@ -563,7 +568,7 @@ CFLAGS = $cflags
 
 # Architecture specific flags
 AFLAGS = -D_GNU_SOURCE -pthread -fno-tree-vectorize -m64 -march=native 
-DFLAGS = -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING \$(AFLAGS) \$(IS_APRON)
+DFLAGS = -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING \$(AFLAGS) \$(IS_APRON) \$(IS_VECTOR)
 
 # ocamlc compilation flags
 OCAMLFLAGS = -g
