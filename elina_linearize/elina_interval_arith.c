@@ -366,7 +366,10 @@ void elina_interval_magnitude(elina_scalar_t *a, elina_interval_t *b)
 {
   if (elina_scalar_sgn(b->inf)>=0) elina_scalar_set(a,b->sup);
   else if (elina_scalar_sgn(b->sup)<=0) elina_scalar_neg(a,b->inf);
-  else elina_scalar_max(a,b->inf,b->sup);
+  else {
+    elina_scalar_neg(a,b->inf);
+    elina_scalar_max(a,a,b->sup);
+  }
 }
 
 void elina_interval_range_rel(elina_scalar_t *a, elina_interval_t *b, elina_scalar_discr_t discr)
