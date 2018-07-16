@@ -130,7 +130,7 @@ char eval_elina_cstlincons0(elina_lincons0_t* cons)
   case ELINA_CONS_DISEQ:
     if(equality){
 	int sgn = elina_scalar_sgn(cst->val.scalar);
-        res = (sgn == 0 ? 2 : 1);
+	res = (sgn==0 ? 0 : 1);
     }
     else{
       sup = cst->val.interval->sup;
