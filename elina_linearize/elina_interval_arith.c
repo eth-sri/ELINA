@@ -112,7 +112,8 @@ void elina_interval_abs(elina_interval_t *a, elina_interval_t *b, elina_scalar_d
     elina_interval_neg(a,b);
   }
   else {
-    elina_scalar_max(a->sup,b->inf,b->sup);
+    elina_scalar_neg(a->inf, b->inf);
+    elina_scalar_max(a->sup,a->inf,b->sup);
     elina_scalar_set_to_int(a->inf,0,discr);
   }
 }
