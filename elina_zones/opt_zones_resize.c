@@ -378,7 +378,7 @@ opt_zones_t* opt_zones_expand(elina_manager_t* man,
   	//record_timing(expand_time);
      //#endif
    }
-    unsigned short int dst_dim = o->dim+n;
+   
     int dst_size = dn*dn;
     int src_size = sn*sn;
     /*  exact, generally not closed */

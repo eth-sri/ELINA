@@ -103,7 +103,7 @@ static inline void opt_poly_obtain_satF(opt_pk_t* poly)
 }
 
 //swap two components
-void poly_swap(opt_pk_t *poly1, opt_pk_t *poly2);
+//void poly_swap(opt_pk_t *poly1, opt_pk_t *poly2);
 
 /* Exchange C and F, sat C and satF, nbeq and nbline */
 static inline void opt_poly_dual(opt_pk_t* poly)

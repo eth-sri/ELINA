@@ -103,7 +103,7 @@ elina_lincons0_array_t generate_random_lincons0_array(unsigned short int dim, si
 }
 
 void test_meetjoin(unsigned short int dim, size_t nbcons, bool meet){
-	unsigned short int j,l=1;
+	unsigned short int j;
 	//generate random cosntraints	
 	elina_lincons0_array_t lincons1 = generate_random_lincons0_array(dim,nbcons);
 	elina_lincons0_array_t lincons2 = generate_random_lincons0_array(dim,nbcons);
@@ -160,7 +160,7 @@ void test_meetjoin(unsigned short int dim, size_t nbcons, bool meet){
 
 
 void test_expand(unsigned short int dim, size_t nbcons){
-	unsigned short int j,l=1;
+	unsigned short int j;
 	//generate random cosntraints	
 	elina_lincons0_array_t lincons0 = generate_random_lincons0_array(dim,nbcons);
 	//generate tdim

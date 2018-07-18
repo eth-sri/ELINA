@@ -204,7 +204,7 @@ void vector_copy_comp_list(opt_pk_internal_t *opk, opt_numint_t * dst, opt_numin
 		for(i = 0; i < comp_size; i++){
 			unsigned short int j = ind_map[i];
 			dst[j+s] = src[i+s];
-			j++;
+			//j++;
 		}
 }
 
@@ -241,28 +241,29 @@ comp_list_t * vector_to_comp_list(opt_pk_internal_t *opk, opt_numint_t *v, unsig
 		Standard Polyhedra widening with generators
 **************************/
 
-void opt_poly_widening_gen(elina_manager_t *man, opt_pk_array_t *op, opt_pk_array_t *oa, opt_pk_array_t *ob){
+void opt_poly_widening_gen(elina_manager_t *man, opt_pk_array_t **out, opt_pk_array_t *oa, opt_pk_array_t *ob){
+	opt_pk_array_t *op = *out;
 	opt_pk_internal_t * opk = opt_pk_init_from_manager(man,ELINA_FUNID_WIDENING);
 	unsigned short int maxcols = oa->maxcols;
 	array_comp_list_t * acla = oa->acl;
 	if(oa->is_bottom || !acla){
-		op = opt_pk_copy(man,ob);
+		*out = opt_pk_copy(man,ob);
 		return;
 	}
 	unsigned short int num_compa = acla->size;
 	if(num_compa==0){
-		opt_poly_set_top(opk,op);
+		opt_poly_set_top(opk,*out);
 		return;
 	}
 	
 	array_comp_list_t * aclb = ob->acl;
 	if(ob->is_bottom || !aclb){
-		op = opt_pk_copy(man,oa);
+		*out = opt_pk_copy(man,oa);
 		return;
 	}
 	unsigned short int num_compb = aclb->size;
 	if(num_compb==0){
-		opt_poly_set_top(opk,op);
+		opt_poly_set_top(opk,*out);
 		return;
 	}
 	unsigned short int k, ka, kb;
@@ -277,11 +278,11 @@ void opt_poly_widening_gen(elina_manager_t *man, opt_pk_array_t *op, opt_pk_arra
 		if(opk->exn){
 			opk->exn = ELINA_EXC_NONE;
 			man->result.flag_best = man->result.flag_exact = false;
-			opt_poly_set_top(opk,op);
+			opt_poly_set_top(opk,*out);
 			return;
 		}
 		if(!oak->C && !oak->F){
-			op = opt_pk_copy(man,ob);
+			*out = opt_pk_copy(man,ob);
 			return;
 		}
 	}
@@ -296,7 +297,7 @@ void opt_poly_widening_gen(elina_manager_t *man, opt_pk_array_t *op, opt_pk_arra
 		if(opk->exn){
 			opk->exn = ELINA_EXC_NONE;
 			man->result.flag_best = man->result.flag_exact = false;
-			opt_poly_set_top(opk,op);
+			opt_poly_set_top(opk,*out);
 			return;
 		}
 	}
@@ -514,7 +515,7 @@ void opt_poly_widening_gen(elina_manager_t *man, opt_pk_array_t *op, opt_pk_arra
 			
 			index = opt_esatmat_index_in_sorted_rows(satline,satrow,satF);
 			if(index>=0){
-				index = satrow[index].index;
+				//index = satrow[index].index;
 				//if(opk->funopt->algorithm > 0 || !opt_vector_is_positivity_constraint(opk, oak->C->p[index],oak->C->nbcolumns)){
 					size_t i1 = counter[indb];
 					opt_vector_copy(poly[indb]->C->p[i1],npci,comp_size_arr[indb]+2);
@@ -593,7 +594,7 @@ opt_pk_array_t* opt_pk_widening(elina_manager_t* man, opt_pk_array_t* oa, opt_pk
 	//fflush(stdout);
 	opt_pk_array_t *op;
 	op = opt_pk_array_alloc(NULL,NULL,oa->maxcols);
-	opt_poly_widening_gen(man,op,oa,ob);
+	opt_poly_widening_gen(man,&op,oa,ob);
 	#if defined(TIMING)
  	    record_timing(widening_time);
    	#endif 

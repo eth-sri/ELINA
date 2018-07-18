@@ -60,7 +60,6 @@ bool opt_zones_is_bottom(elina_manager_t* man, opt_zones_t* o)
 bool opt_zones_is_top(elina_manager_t* man, opt_zones_t* o)
 {
   
-  opt_zones_internal_t* pr = opt_zones_init_from_manager(man,ELINA_FUNID_IS_TOP,0);
   int i,j;
   opt_zones_mat_t* oz = o->m ? o->m : o->closed;
   
@@ -398,8 +397,6 @@ elina_interval_t* opt_zones_bound_dimension(elina_manager_t* man,
 bool opt_zones_is_dimension_unconstrained(elina_manager_t* man, opt_zones_t* o,
 				    elina_dim_t dim)
 {
-  opt_zones_internal_t* pr =
-    opt_zones_init_from_manager(man,ELINA_FUNID_IS_DIMENSION_UNCONSTRAINED,0);
   if(dim>=o->dim){
 	return false;
   }

@@ -674,7 +674,7 @@ static inline void elina_interval_abs_double(elina_interval_t *a, double inf, do
 static inline void zonotope_aff_cons_eq_lambda(zonotope_internal_t* pr, elina_interval_t** res, zonotope_aff_t* x, zonotope_aff_t* cons, zonotope_t *z)
 {
     zonotope_aaterm_t *p, *q;
-    p = q = NULL;
+    //p = q = NULL;
    
     obj** array = NULL;
     if (cons->l + x->l > pr->dim)  array = (obj**)calloc(pr->dim,sizeof(obj*)); 
@@ -864,7 +864,7 @@ static inline bool zonotope_insert_constrained_noise_symbol(zonotope_internal_t 
     void* dst = NULL;
     uint_t size = zonotope_noise_symbol_cons_get_dimension(pr, z);
     uint_t dim = 0;
-    bool addconsnsym = false;
+    bool addconsnsym;
    
     /* resize nsymcons array if needed */
     if (size>=z->size) {

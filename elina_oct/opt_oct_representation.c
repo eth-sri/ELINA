@@ -39,7 +39,6 @@ opt_oct_t * opt_oct_alloc_internal(opt_oct_internal_t *pr, int dim, int intdim){
 
 int opt_oct_size(elina_manager_t* man, opt_oct_t* o)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_ASIZE,0);
   if (!o->m) return 1;
   int size = 2*(o->dim)*(o->dim + 1);
   return size;
@@ -48,7 +47,6 @@ int opt_oct_size(elina_manager_t* man, opt_oct_t* o)
 //Allocate Top Element
 opt_oct_t * opt_oct_alloc_top(opt_oct_internal_t *pr, int dim, int intdim){
 	opt_oct_t *o = opt_oct_alloc_internal(pr, dim, intdim);
-	int size = 2*dim*(dim + 1);
 	o->closed = opt_hmat_alloc_top(dim);
 	return o;
 }
@@ -70,7 +68,6 @@ void opt_oct_free_internal(opt_oct_internal_t *pr, opt_oct_t *o){
 //Function for copying
 opt_oct_t * opt_oct_copy_internal(opt_oct_internal_t *pr, opt_oct_t *o){
 	opt_oct_t *r = 	opt_oct_alloc_internal(pr,o->dim, o->intdim);
-	int size = 2*(o->dim)*(o->dim + 1);
 	r->m = opt_hmat_copy(o->m,o->dim);
 	//r->m = o->m;
 	r->closed = opt_hmat_copy(o->closed,o->dim);
@@ -102,7 +99,6 @@ opt_oct_t* opt_oct_set_mat(opt_oct_internal_t* pr, opt_oct_t* o, opt_oct_mat_t* 
   else {
     /* copy aliased matrices */
     
-    int size = 2*(o->dim)*(o->dim + 1);
     r = opt_oct_alloc_internal(pr,o->dim,o->intdim);
     if (m && (o->m==m || o->closed==m))
     {    
@@ -146,7 +142,6 @@ opt_oct_t* opt_oct_top(elina_manager_t* man, int intdim, int realdim)
 {
   opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_TOP,0);
   opt_oct_t* r = opt_oct_alloc_internal(pr,intdim+realdim,intdim);
-  int size = 2*(r->dim)*(r->dim + 1);
   r->closed = opt_hmat_alloc_top(r->dim);
   return r;
 }
@@ -193,7 +188,6 @@ opt_oct_t* opt_oct_of_box(elina_manager_t* man, size_t intdim, size_t realdim,
 
 elina_dimension_t opt_oct_dimension(elina_manager_t* man, opt_oct_t* o)
 {
-  opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_DIMENSION,0);
   elina_dimension_t r;
   r.intdim = o->intdim;
   r.realdim = o->dim-o->intdim;
@@ -208,7 +202,6 @@ void opt_oct_cache_closure(opt_oct_internal_t *pr, opt_oct_t *o){
 		return;
 	}
 	
-	int size = 2*o->dim*(o->dim + 1);
 	o->closed = opt_hmat_copy(o->m,o->dim);
 	if(opt_hmat_strong_closure(o->closed,o->dim)){
 		opt_hmat_free(o->closed);
@@ -262,7 +255,7 @@ int opt_oct_hash(elina_manager_t* man, opt_oct_t* o)
     int r = 0;
     opt_oct_mat_t *oo = o->closed ? o->closed : o->m;
     double *m = oo->mat;
-    size_t i,j;
+    int i,j;
     for (i=0;i<2*o->dim;i++)
       for (j=0;j<=(i|1);j++,m++)
 	r = r*37 + *m;

@@ -26,7 +26,6 @@ bool incremental_closure_comp_sparse(opt_oct_mat_t *oo,int dim, int v, bool is_i
 	double *m = oo->mat;
 	array_comp_list_t *acl = oo->acl;
 	int n = 2*dim;
-	int ii = 2*v + 1;
 	int j;
 	double *temp1, *temp2;
   	temp1 = (double *)calloc(2*dim, sizeof(double));
@@ -35,7 +34,6 @@ bool incremental_closure_comp_sparse(opt_oct_mat_t *oo,int dim, int v, bool is_i
 	int count = oo->nni;
 	index1 = (unsigned short int *)calloc(2*(2*dim + 1),sizeof(unsigned short int));
 	index2 = (unsigned short int *)calloc(2*(2*dim + 1),sizeof(unsigned short int));
-	int size = 2*dim*(dim+1);
   	comp_list_t * cn = find(acl,v);
         /******
 		Find the component set containing v, if it is null
@@ -62,9 +60,7 @@ bool incremental_closure_comp_sparse(opt_oct_mat_t *oo,int dim, int v, bool is_i
 			int v1v2 = v2 + (((v1 + 1)*(v1 + 1))/2);
 			int v2v1 = v1 + (((v2 + 1)*(v2 + 1))/2);
 			int kk1 = (k1^1);
-			int br1 = k1 < v1 ? k1 : v1;
-			int br2 = kk1 < v1 ? kk1 : v1;
-			for(unsigned i = 2*v; i < 2*v + 2; i++){
+			for(int i = 2*v; i < 2*v + 2; i++){
 				//double ik = m[n*i + k];
 				int ind_ik, ind_ikk;
 				if(k1 <=i){

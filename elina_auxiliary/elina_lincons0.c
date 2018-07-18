@@ -244,7 +244,7 @@ elina_linexpr_type_t elina_lincons0_array_type(elina_lincons0_array_t* array)
   for (i=0; i<array->size; i++){
     elina_linexpr_type_t type = elina_linexpr0_type(array->p[i].linexpr0);
     if (type < res)
-      type = res;
+      res = type;
     if (res==ELINA_LINEXPR_INTLINEAR)
       break;
   }

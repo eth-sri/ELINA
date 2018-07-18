@@ -360,7 +360,7 @@ double recalculate_zones_sparsity(opt_zones_mat_t *oz, unsigned short int dim){
 void convert_to_dense_zones(opt_zones_mat_t * oz, unsigned short int dim, bool flag){
 	double *src = oz->mat;
 	src[0] = 0;
-	unsigned short int n = dim + 1;
+	
 	for(unsigned short int i = 0; i < dim; i++){
 		comp_list_t * li = find(oz->acl,i);
 		if(li==NULL){
@@ -2173,7 +2173,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
   //posix_memalign((void **)&temp2, 32, 2*dim*sizeof(double));
   bool (*incr_closure)(opt_zones_mat_t * ,...);
   double size = n*n;
-  double sparsity = 1- ((double)(oz->nni)/size);
+  //double sparsity = 1- ((double)(oz->nni)/size);
   
   /******
 	Measure sparsity to decide on whether to use dense or decomposed type incremental closure.
