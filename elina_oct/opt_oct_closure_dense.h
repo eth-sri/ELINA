@@ -26,6 +26,8 @@ extern "C" {
 #endif
 
 #include "opt_oct_hmat.h"
+#include <immintrin.h>
+#include "vector_intrin.h"
 
 void print_dense(double *m, int dim);
 

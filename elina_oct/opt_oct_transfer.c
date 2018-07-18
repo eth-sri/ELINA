@@ -30,8 +30,8 @@ opt_oct_t* opt_oct_assign_linexpr(elina_manager_t* man,
   opt_uexpr u = opt_oct_uexpr_of_linexpr(pr,pr->tmp,lexpr,o->intdim,o->dim);
   opt_oct_mat_t* src;
   bool respect_closure;
-  if (d >= o->dim) {
-    return NULL;
+  if((int)d>=o->dim){
+	return NULL;
   }
 
   if (dest && !dest->closed && !dest->m)
@@ -95,7 +95,7 @@ opt_oct_t* opt_oct_assign_linexpr_array(elina_manager_t* man,
   elina_dim_t* d = (elina_dim_t*) pr->tmp2;
   opt_oct_mat_t *src, *dst;
   size_t i;
-  elina_dim_t p = o->dim;
+  int j;
   int inexact = 0;
   bool respect_closure = false; /* TODO */
   int src_size = 2*(o->dim)*(o->dim+1);
@@ -104,12 +104,12 @@ opt_oct_t* opt_oct_assign_linexpr_array(elina_manager_t* man,
   if(size<=0){
     return NULL;
   }
-  for (i = 0; i < o->dim; i++) {
-    d[i] = 0;
+  for (j=0;j<o->dim;j++) {
+	d[j] = 0;
   }
   for (i=0;i<size;i++) {
-    if (tdim[i] >= o->dim) {
-      return NULL;
+    if((int)tdim[i] >= o->dim){
+	return NULL;
     }
     if(d[tdim[i]]){
 	return NULL;
@@ -137,7 +137,7 @@ opt_oct_t* opt_oct_assign_linexpr_array(elina_manager_t* man,
   }
   /* perform assignments */
   for (i=0;i<size;i++) {
-
+	
     opt_uexpr u = opt_oct_uexpr_of_linexpr(pr,pr->tmp,lexpr[i],o->intdim,o->dim);
 
     if (u.type==OPT_EMPTY) {
@@ -163,12 +163,12 @@ opt_oct_t* opt_oct_assign_linexpr_array(elina_manager_t* man,
   }
   else flag_algo;
   if (!destructive) src = opt_hmat_alloc(src_size);
-  for (i = 0; i < o->dim; i++) {
-    d[i] = i;
+  for (j=0;j<o->dim;j++) {
+	d[j] = (elina_dim_t)j;
   }
   for (i=0;i<size;i++) {
     d[o->dim+i] = tdim[i];
-    d[tdim[i]] = o->dim;
+    d[tdim[i]] = (elina_dim_t)o->dim;
   }
   opt_hmat_permute(src,dst,o->dim,o->dim+size,d);
   opt_hmat_free(dst);
@@ -210,7 +210,6 @@ opt_oct_t* opt_oct_meet_lincons_array(elina_manager_t* man,
     opt_oct_mat_t * oo = o->closed ? o->closed : o->m;
     /* can / should we try to respect closure */
     respect_closure = (oo==o->closed) && (pr->funopt->algorithm>=0);
-    int size = 2 * (o->dim) * (o->dim + 1);
     if (!destructive) oo = opt_hmat_copy(oo,o->dim);
 
     /* go */
@@ -391,8 +390,8 @@ opt_oct_t* opt_oct_substitute_linexpr(elina_manager_t* man,
   opt_uexpr u = opt_oct_uexpr_of_linexpr(pr,pr->tmp,expr,o->intdim,o->dim);
   opt_oct_mat_t * oo, *oo2;
   bool respect_closure;
-  if (d >= o->dim) {
-    return NULL;
+  if((int)d>=o->dim){
+	return NULL;
   }
 
   oo2 = dest ? (dest->closed ? dest->closed : dest->m) : NULL;
@@ -468,7 +467,8 @@ opt_oct_t* opt_oct_substitute_linexpr_array(elina_manager_t* man,
   elina_dim_t* d = (elina_dim_t*) pr->tmp2;
   opt_oct_mat_t *oo, *oo1, *oo2;
   size_t i,j;
-  elina_dim_t p = o->dim;
+  int k;
+  //elina_dim_t p = o->dim;
   int inexact = 0;
   bool respect_closure = false; 
 
@@ -476,11 +476,10 @@ opt_oct_t* opt_oct_substitute_linexpr_array(elina_manager_t* man,
   if(size<=0){
 	return NULL;
   }
-  for (i = 0; i < o->dim; i++)
-    d[i] = 0;
+  for (k=0;k<o->dim;k++) d[k] = 0;
   for (i=0;i<size;i++) {
-    if (tdim[i] >= o->dim) {
-      return NULL;
+    if((int)tdim[i]>=o->dim){
+	return NULL;
     }
     if(d[tdim[i]]){ 	/* tdim has duplicate */
 	return NULL; 

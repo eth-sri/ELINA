@@ -242,11 +242,11 @@ void opt_pk_convert(elina_manager_t *man, opt_pk_array_t * op, char *msg){
 	}
 }
 
-void poly_swap(opt_pk_t *poly1, opt_pk_t *poly2) {
-  opt_pk_t *tmp = poly1;
-  poly1 = poly2;
-  poly2 = tmp;
-}
+//void poly_swap(opt_pk_t *poly1, opt_pk_t *poly2){
+//	opt_pk_t *tmp = poly1;
+//	poly1 = poly2;
+//	poly2 = tmp;
+//}
 
 void replace_ineq_with_eq(opt_pk_internal_t *opk, opt_pk_t * op){
 	opt_matrix_t * oc = op->C;
@@ -810,8 +810,8 @@ void cartesian_product_vertices(opt_pk_array_t *oa, opt_pk_t ** poly,
 		unsigned short int comp_size = cla->size;
 		opt_matrix_t * src_mat = src->F;
 		opt_matrix_t * dst_mat = dst->F;
-                size_t nbconsa = src_mat->nbrows;
-                opt_numint_t ** src_p = src_mat->p;
+		//size_t nbconsa = src_mat->nbrows;
+		opt_numint_t ** src_p = src_mat->p;
 		opt_numint_t ** dst_p = dst_mat->p;
 		size_t i1 = counterF[ind];
 		
@@ -1206,9 +1206,7 @@ void opt_poly_obtain_sorted_C(opt_pk_internal_t* opk, opt_pk_t* op)
 void opt_pk_array_canonicalize(elina_manager_t *man, opt_pk_array_t * o){
 	//printf("canonicalize\n");
 	//fflush(stdout);
-        opt_pk_internal_t *opk =
-            opt_pk_init_from_manager(man, ELINA_FUNID_CANONICALIZE);
-        array_comp_list_t *acl = o->acl;
+	array_comp_list_t *acl = o->acl;
 	if(o->is_bottom || !acl){
 		return;
 	}
@@ -1217,8 +1215,7 @@ void opt_pk_array_canonicalize(elina_manager_t *man, opt_pk_array_t * o){
 	}
 	unsigned short int num_comp = acl->size;
 	opt_pk_t ** poly = o->poly;
-        unsigned short int maxcols = o->maxcols;
-        unsigned short int k;
+	unsigned short int k;
 	for(k=0; k < num_comp; k++){
 	    opt_pk_t * ok = poly[k];
 	    opt_poly_chernikova(man,ok,"canonicalize");

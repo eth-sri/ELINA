@@ -103,53 +103,56 @@ elina_lincons0_array_t generate_random_lincons0_array(unsigned short int dim, si
 }
 
 void test_meetjoin(unsigned short int dim, size_t nbcons, bool meet){
-  unsigned short int j, l = 1;
-  // generate random cosntraints
-  elina_lincons0_array_t lincons1 = generate_random_lincons0_array(dim, nbcons);
-  elina_lincons0_array_t lincons2 = generate_random_lincons0_array(dim, nbcons);
+	unsigned short int j;
+	//generate random cosntraints	
+	elina_lincons0_array_t lincons1 = generate_random_lincons0_array(dim,nbcons);
+	elina_lincons0_array_t lincons2 = generate_random_lincons0_array(dim,nbcons);
 
-  elina_manager_t *man = opt_pk_manager_alloc(false);
-  // generate first input
-  opt_pk_array_t *oa1 = opt_pk_top(man, dim, 0);
+	elina_manager_t * man = opt_pk_manager_alloc(false);
+	//generate first input
+	opt_pk_array_t * oa1 = opt_pk_top(man, dim,0);
+	
+	//meet with constraints
+	opt_pk_array_t * oa2 = opt_pk_meet_lincons_array(man,false,oa1,&lincons1);
 
-  // meet with constraints
-  opt_pk_array_t *oa2 = opt_pk_meet_lincons_array(man, false, oa1, &lincons1);
 
-  // generate second input
-  opt_pk_array_t *oa3 = opt_pk_top(man, dim, 0);
+	//generate second input
+	opt_pk_array_t * oa3 = opt_pk_top(man, dim,0);
+	
+	//meet with constraints
+	opt_pk_array_t * oa4 = opt_pk_meet_lincons_array(man,false,oa3,&lincons2);
 
-  // meet with constraints
-  opt_pk_array_t *oa4 = opt_pk_meet_lincons_array(man, false, oa3, &lincons2);
+	// Print the ELINA result
+	printf("ELINA Input Polyhedra\n");
+	elina_lincons0_array_t arr1 = opt_pk_to_lincons_array(man,oa2);
+  	elina_lincons0_array_fprint(stdout,&arr1,NULL);
+	elina_lincons0_array_t arr2 = opt_pk_to_lincons_array(man,oa4);
+  	elina_lincons0_array_fprint(stdout,&arr2,NULL);
+  	fflush(stdout);
+	elina_lincons0_array_clear(&arr1);
+	elina_lincons0_array_clear(&arr2);
+	// apply fold operation
+	opt_pk_array_t * oa5 = meet ? opt_pk_meet(man,false,oa2,oa4) : opt_pk_join(man,false,oa2,oa4);	
+	
 
-  // Print the ELINA result
-  printf("ELINA Input Polyhedra\n");
-  elina_lincons0_array_t arr1 = opt_pk_to_lincons_array(man, oa2);
-  elina_lincons0_array_fprint(stdout, &arr1, NULL);
-  elina_lincons0_array_t arr2 = opt_pk_to_lincons_array(man, oa4);
-  elina_lincons0_array_fprint(stdout, &arr2, NULL);
-  fflush(stdout);
-  elina_lincons0_array_clear(&arr1);
-  elina_lincons0_array_clear(&arr2);
-  // apply fold operation
-  opt_pk_array_t *oa5 = meet ? opt_pk_meet(man, false, oa2, oa4)
-                             : opt_pk_join(man, false, oa2, oa4);
+	
+	printf("ELINA Output Polyhedron\n");
+	elina_lincons0_array_t arr3 = opt_pk_to_lincons_array(man,oa5);
+  	elina_lincons0_array_fprint(stdout,&arr3,NULL);
+  	fflush(stdout);
+	elina_lincons0_array_clear(&arr3);
 
-  printf("ELINA Output Polyhedron\n");
-  elina_lincons0_array_t arr3 = opt_pk_to_lincons_array(man, oa5);
-  elina_lincons0_array_fprint(stdout, &arr3, NULL);
-  fflush(stdout);
-  elina_lincons0_array_clear(&arr3);
+ 	
+	opt_pk_free(man,oa1);
+	opt_pk_free(man,oa2);
+	opt_pk_free(man,oa3);
+	opt_pk_free(man,oa4);
+	opt_pk_free(man,oa5);
 
-  opt_pk_free(man, oa1);
-  opt_pk_free(man, oa2);
-  opt_pk_free(man, oa3);
-  opt_pk_free(man, oa4);
-  opt_pk_free(man, oa5);
-
-  elina_manager_free(man);
-
-  elina_lincons0_array_clear(&lincons1);
-  elina_lincons0_array_clear(&lincons2);
+	elina_manager_free(man);
+	
+	elina_lincons0_array_clear(&lincons1);
+	elina_lincons0_array_clear(&lincons2);
 }
 
 
@@ -157,43 +160,47 @@ void test_meetjoin(unsigned short int dim, size_t nbcons, bool meet){
 
 
 void test_expand(unsigned short int dim, size_t nbcons){
-  unsigned short int j, l = 1;
-  // generate random cosntraints
-  elina_lincons0_array_t lincons0 = generate_random_lincons0_array(dim, nbcons);
-  // generate tdim
-  unsigned short int tdim = rand() % dim;
-  unsigned short int dimsup = dim / 3;
+	unsigned short int j;
+	//generate random cosntraints	
+	elina_lincons0_array_t lincons0 = generate_random_lincons0_array(dim,nbcons);
+	//generate tdim
+	unsigned short int tdim = rand()%dim;
+	unsigned short int dimsup = dim/3;
+	
 
-  // run with ELINA
-  elina_manager_t *man = opt_pk_manager_alloc(false);
-  opt_pk_array_t *oa1 = opt_pk_top(man, dim, 0);
+	//run with ELINA
+	elina_manager_t * man = opt_pk_manager_alloc(false);
+	opt_pk_array_t * oa1 = opt_pk_top(man, dim,0);
+	
+	
+	
+	//meet with constraints
+	opt_pk_array_t * oa2 = opt_pk_meet_lincons_array(man,false,oa1,&lincons0);
+	
+	printf("ELINA Input Polyhedron\n");
+	elina_lincons0_array_t arr3 = opt_pk_to_lincons_array(man,oa2);
+  	elina_lincons0_array_fprint(stdout,&arr3,NULL);
+	printf("tdim: %d dimsup: %d\n",tdim,dimsup);
+  	fflush(stdout);
+	// apply expand operation
+	opt_pk_array_t * oa3 = opt_pk_expand(man,false,oa2,tdim,dimsup);	
+	
 
-  // meet with constraints
-  opt_pk_array_t *oa2 = opt_pk_meet_lincons_array(man, false, oa1, &lincons0);
+	// Print the ELINA result
+	printf("ELINA Output Polyhedron\n");
+	elina_lincons0_array_t arr4 = opt_pk_to_lincons_array(man,oa3);
+  	elina_lincons0_array_fprint(stdout,&arr4,NULL);
+	printf("\n");
+  	fflush(stdout);
 
-  printf("ELINA Input Polyhedron\n");
-  elina_lincons0_array_t arr3 = opt_pk_to_lincons_array(man, oa2);
-  elina_lincons0_array_fprint(stdout, &arr3, NULL);
-  printf("tdim: %d dimsup: %d\n", tdim, dimsup);
-  fflush(stdout);
-  // apply expand operation
-  opt_pk_array_t *oa3 = opt_pk_expand(man, false, oa2, tdim, dimsup);
-
-  // Print the ELINA result
-  printf("ELINA Output Polyhedron\n");
-  elina_lincons0_array_t arr4 = opt_pk_to_lincons_array(man, oa3);
-  elina_lincons0_array_fprint(stdout, &arr4, NULL);
-  printf("\n");
-  fflush(stdout);
-
-  elina_lincons0_array_clear(&arr3);
-  elina_lincons0_array_clear(&arr4);
-  opt_pk_free(man, oa1);
-  opt_pk_free(man, oa2);
-  opt_pk_free(man, oa3);
-  elina_manager_free(man);
-
-  elina_lincons0_array_clear(&lincons0);
+ 	elina_lincons0_array_clear(&arr3);
+	elina_lincons0_array_clear(&arr4);
+	opt_pk_free(man,oa1);
+	opt_pk_free(man,oa2);
+	opt_pk_free(man,oa3);
+	elina_manager_free(man);
+		
+	elina_lincons0_array_clear(&lincons0);
 }
 
 void test_assign(unsigned short int dim, size_t nbcons){

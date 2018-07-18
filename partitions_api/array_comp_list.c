@@ -206,9 +206,9 @@ int is_equal_array_comp_list(array_comp_list_t *acl1, array_comp_list_t *acl2, u
 	if(num_comp1 != num_comp2){
 		return 0;
 	}
-
-        char *map2 = (char *)calloc(n, sizeof(char));
-        comp_list_t * cl1 = acl1->head;
+	
+	//char *map2 = (char *)calloc(n,sizeof(char));
+	comp_list_t * cl1 = acl1->head;
 	while(cl1 != NULL){
 		char *map1 = create_map(cl1,n);
 		comp_list_t * cl2 = acl2->head;

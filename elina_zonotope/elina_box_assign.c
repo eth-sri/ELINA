@@ -66,7 +66,6 @@ elina_box_t *elina_box_assign_texpr_array(elina_manager_t *man,
                                           elina_box_t *dest) {
   size_t i;
   elina_box_t *res;
-  elina_box_internal_t *intern = man->internal;
 
   if (a->p == NULL || (dest && dest->p == NULL)) {
     man->result.flag_best = true;

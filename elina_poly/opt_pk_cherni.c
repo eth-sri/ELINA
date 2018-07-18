@@ -645,8 +645,8 @@ void opt_cherni_add_and_minimize(opt_pk_internal_t* opk,
   C = op->C;
   F = op->F;
   satC = op->satC;
-  nbrows = C->nbrows;
-  nbcols = C->nbcolumns;
+  //nbrows = C->nbrows;
+ // nbcols = C->nbcolumns;
 
   assert(C!=NULL && F!=NULL && satC!=NULL);
   //printf("add and minimize start %d %d %d %d %d \n",start,op->nbeq,op->nbline,nbrows,nbcols);

@@ -23,8 +23,8 @@ zonotope_t* zonotope_assign_linexpr_array(elina_manager_t* man,
     }
     for (i=0; i<size; i++) {
 	zonotope_aff_check_free(pr, res->paf[tdim[i]]);
-        // printf("statement x%d:= \n",tdim[i]);
-        // elina_linexpr0_fprint(stdout,lexpr[i],NULL);
+	//printf("statement x%d:= \n",tdim[i]);
+	//elina_linexpr0_fprint(stdout,lexpr[i],NULL);
         // printf("\n");
         // fflush(stdout);
         //

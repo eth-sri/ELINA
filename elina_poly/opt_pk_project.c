@@ -29,8 +29,7 @@
 int select_variable_gauss(opt_pk_internal_t *opk, opt_matrix_t *oc,  opt_numint_t *cons, size_t nbeq, elina_dim_t *tdim, size_t size, char *rmap){
 	int res = -1;
 	size_t nbcons = oc->nbrows;
-        size_t nbcolumns = oc->nbcolumns;
-        size_t i,j;
+	size_t i,j;
 	size_t * p = (size_t *)calloc(size,sizeof(size_t));
 	size_t * m = (size_t *)calloc(size,sizeof(size_t));
 	for(i=nbeq; i < nbcons; i++){
@@ -213,8 +212,7 @@ void select_variable(opt_pk_internal_t * opk, elina_dim_t *tdim, size_t size, op
 	size_t i, j, k;
 	size_t * p = (size_t *)calloc(size,sizeof(size_t));
 	size_t * m = (size_t *)calloc(size,sizeof(size_t));
-        size_t nbcolumns = oc->nbcolumns;
-        size_t nbcons = oc->nbrows;
+	size_t nbcons = oc->nbrows;
 	for(i = 0; i < nbcons; i++){
 		opt_numint_t *pi = oc->p[i];
 		for(j = 0; j < size; j++){
@@ -365,8 +363,8 @@ void opt_poly_projectforget_array(bool project,
 	for(i=0; i < psize; i++){
 		pdim[i] = tdim[i];
 	}
-        size_t nbcons = ocp->nbrows;
-        size_t nbcolumns = ocp->nbcolumns;
+	size_t nbcons;// = ocp->nbrows;
+	size_t nbcolumns = ocp->nbcolumns;
 	opt_matrix_rearrange(ocp,op->nbeq);
 	size_t proj=0;
 	bool res = gauss_project(opk,op,tdim,&size,&proj);
@@ -446,6 +444,7 @@ void opt_poly_projectforget_array(bool project,
 opt_pk_array_t* opt_pk_forget_array(elina_manager_t* man, bool destructive, opt_pk_array_t* oa,
 		      elina_dim_t* tdim, size_t size,
 		      bool project){
+	
 	opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_FORGET_ARRAY);
         opt_pk_internal_realloc_lazy(opk,oa->maxcols - 2);
 	array_comp_list_t * acla = oa->acl;
@@ -558,8 +557,8 @@ opt_pk_array_t* opt_pk_forget_array(elina_manager_t* man, bool destructive, opt_
 				/**************************
 					Project the blocks
 				**************************/
-                                bool res = false;
-                                if(project){
+				//bool res = false;
+				if(project){
 				   if(src->C){
 				      opt_matrix_free(src->C);
 				      src->C = NULL;
@@ -713,8 +712,8 @@ opt_pk_array_t* opt_pk_forget_array(elina_manager_t* man, bool destructive, opt_
 					**************************/
 					
 					opt_pk_t * tmp = opt_poly_alloc(comp_size,0);
-                                        bool res = false;
-                                        if(project){
+					//bool res = false;
+					if(project){
 					   tmp->F = opt_matrix_copy(src->F);
 					   opt_matrix_t * F = tmp->F;
 					   for(i=0; i < F->nbrows; i++){

@@ -745,7 +745,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_array_det(bool assign, elina_manager_t* 
   size_t i;
   elina_dim_t* tdim2;
   opt_numint_t** tvec;
-  size_t nbcols;
+  //size_t nbcols;
   opt_matrix_t* mat;
   opt_pk_array_t* op;
   opt_pk_internal_t* opk = (opt_pk_internal_t*)man->internal;
@@ -755,7 +755,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_array_det(bool assign, elina_manager_t* 
   array_comp_list_t * acla = oa->acl;
   unsigned short int num_compa = acla->size;
   unsigned short int maxcols = oa->maxcols;
-  unsigned short int intdim = maxcols - 2;
+  //unsigned short int intdim = maxcols - 2;
   /* Return empty if empty */
   if (oa->is_bottom || !acla){
     man->result.flag_best = man->result.flag_exact = true;
@@ -765,8 +765,8 @@ opt_pk_array_t* opt_poly_asssub_linexpr_array_det(bool assign, elina_manager_t* 
 
   
   /* Convert linear expressions */
-  nbcols = oa->maxcols;
-
+  //nbcols = oa->maxcols;
+  
   array_comp_list_t * aclb = create_array_comp_list();
   comp_list_t ** clb_arr = (comp_list_t **)malloc(size*sizeof(comp_list_t *));
   for (i=0; i<size; i++){

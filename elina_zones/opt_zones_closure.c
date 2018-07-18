@@ -30,13 +30,12 @@ void strengthening_comp_zones(opt_zones_mat_t *oz,comp_list_t *cd, unsigned shor
 	double *m = oz->mat;
 	array_comp_list_t *acl = oz->acl;
 	//char *cm = (char *)calloc(dim,sizeof(char));
-        comp_list_t *cl = acl->head;
-        unsigned short int num_comp = acl->size;
+	comp_list_t * cl = oz->acl->head;
+	unsigned short int num_comp = acl->size;
 	unsigned short int n = dim + 1;
 	char * jm = (char *)calloc(num_comp,sizeof(char));
 	int jc = 0;
-        cl = oz->acl->head;
-        int l = 0;
+	int l = 0;
 	double * temp = (double *)calloc(dim,sizeof(double));
 	/*****
 		Find the sets to be merged with cd. put all
@@ -386,9 +385,9 @@ bool strengthening_zones(opt_zones_mat_t *oz, unsigned short int dim){
 	array_comp_list_t *acl = oz->acl;
 	int s = 0;
 	unsigned short int n = dim+1;
-        int count = oz->nni;
-
-        comp_list_t * cl = acl->head;
+	//int count = oz->nni;
+	
+	comp_list_t * cl = acl->head;
 	unsigned short int num_comp = acl->size;
 	char * jm = (char *)calloc(num_comp,sizeof(char));
 	

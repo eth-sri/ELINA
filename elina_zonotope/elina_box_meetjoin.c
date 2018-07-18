@@ -105,7 +105,6 @@ elina_box_t* elina_box_meet_lincons_array(elina_manager_t* man,
   elina_box_t* res;
   size_t kmax;
   elina_lincons0_array_t tlincons;
-  elina_box_internal_t* intern = (elina_box_internal_t*)man->internal;
 
   res = destructive ? a : elina_box_copy(man,a);
   if (a->p == NULL) {

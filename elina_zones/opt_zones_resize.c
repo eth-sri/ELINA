@@ -377,11 +377,11 @@ opt_zones_t* opt_zones_expand(elina_manager_t* man,
   	//record_timing(expand_time);
      //#endif
    }
-   unsigned short int dst_dim = o->dim + n;
-   int dst_size = dn * dn;
-   int src_size = sn * sn;
-   /*  exact, generally not closed */
-   dst->nni = min(dst_size, src->nni + dst_size - src_size);
+   
+    int dst_size = dn*dn;
+    int src_size = sn*sn;
+    /*  exact, generally not closed */
+    dst->nni = min(dst_size,src->nni + dst_size-src_size);
   }
   r = opt_zones_set_mat(pr,o,dst,NULL,destructive);
   r->dim += n;

@@ -24,8 +24,7 @@ bool incremental_closure_comp_sparse(opt_oct_mat_t *oo,int dim, int v, bool is_i
 	double *m = oo->mat;
 	array_comp_list_t *acl = oo->acl;
 	int n = 2*dim;
-        int ii = 2 * v + 1;
-        int j;
+	int j;
 	double *temp1, *temp2;
   	temp1 = (double *)calloc(2*dim, sizeof(double));
 	temp2 = (double *)calloc(2*dim, sizeof(double));
@@ -33,8 +32,7 @@ bool incremental_closure_comp_sparse(opt_oct_mat_t *oo,int dim, int v, bool is_i
 	int count = oo->nni;
 	index1 = (unsigned short int *)calloc(2*(2*dim + 1),sizeof(unsigned short int));
 	index2 = (unsigned short int *)calloc(2*(2*dim + 1),sizeof(unsigned short int));
-        int size = 2 * dim * (dim + 1);
-        comp_list_t * cn = find(acl,v);
+  	comp_list_t * cn = find(acl,v);
         /******
 		Find the component set containing v, if it is null
 		then we do not need to perform incremental closure.
@@ -60,199 +58,189 @@ bool incremental_closure_comp_sparse(opt_oct_mat_t *oo,int dim, int v, bool is_i
 			int v1v2 = v2 + (((v1 + 1)*(v1 + 1))/2);
 			int v2v1 = v1 + (((v2 + 1)*(v2 + 1))/2);
 			int kk1 = (k1^1);
-                        int br1 = k1 < v1 ? k1 : v1;
-                        int br2 = kk1 < v1 ? kk1 : v1;
-                        for (unsigned i = 2 * v; i < 2 * v + 2; i++) {
-                          // double ik = m[n*i + k];
-                          int ind_ik, ind_ikk;
-                          if (k1 <= i) {
-                            ind_ik = k1 + (((i + 1) * (i + 1)) / 2);
-                          } else {
-                            ind_ik = (i ^ 1) +
-                                     ((((k1 ^ 1) + 1) * ((k1 ^ 1) + 1)) / 2);
-                          }
+			for(int i = 2*v; i < 2*v + 2; i++){
+				//double ik = m[n*i + k];
+				int ind_ik, ind_ikk;
+				if(k1 <=i){
+					ind_ik = k1 + (((i + 1)*(i + 1))/2);
+				}
+				else{
+					ind_ik = (i^1) + ((((k1^1) + 1)*((k1^1) + 1))/2);
+				}
+			
+				if(kk1 <=i){
+					ind_ikk = kk1 + (((i + 1)*(i + 1))/2);
+				}
+				else{
+					ind_ikk = (i^1) + ((((kk1^1) + 1)*((kk1^1) + 1))/2);
+				}
+				double ik = m[ind_ik];
+				double ikk = m[ind_ikk];
+				//double ki = m[n*k + i];
+				int ind_ki, ind_kki;
+				if ( k1 <= i){
+					ind_ki = (k1^1) + ((((i^1) + 1)*((i^1) + 1))/2);
+				}
+				else{
+					ind_ki = i + (((k1 + 1)*(k1 + 1))/2);
+				}
 
-                          if (kk1 <= i) {
-                            ind_ikk = kk1 + (((i + 1) * (i + 1)) / 2);
-                          } else {
-                            ind_ikk = (i ^ 1) +
-                                      ((((kk1 ^ 1) + 1) * ((kk1 ^ 1) + 1)) / 2);
-                          }
-                          double ik = m[ind_ik];
-                          double ikk = m[ind_ikk];
-                          // double ki = m[n*k + i];
-                          int ind_ki, ind_kki;
-                          if (k1 <= i) {
-                            ind_ki = (k1 ^ 1) +
-                                     ((((i ^ 1) + 1) * ((i ^ 1) + 1)) / 2);
-                          } else {
-                            ind_ki = i + (((k1 + 1) * (k1 + 1)) / 2);
-                          }
+				if ( kk1 <= i){
+					ind_kki = (kk1^1) + ((((i^1) + 1)*((i^1) + 1))/2);
+				}
+				else{
+					ind_kki = i + (((kk1 + 1)*(kk1 + 1))/2);
+				}
+			
+				//int ind_ki = i + (((k + 1)*(k + 1))/2);
+				double ki = m[ind_ki];	
+				double kki = m[ind_kki];
+				/* v in first end-point position */
+				if(ik != INFINITY){	
+					comp_t * cj = cn->head;	
+					for(j = 0; j <2*comp_size; j++){
+						//double kj = m[n*k + j];
+						int j1 = (j%2==0) ? 2*cj->num : 2*cj->num+1;
+						if(j1 < v1){
+							int ind_kj = opt_matpos2(k1,j1);
+							double kj = m[ind_kj];
+							//double jk = m[n*j + k];
+							//int ind_jk = k + (((j + 1)*(j + 1))/2);
+							//double jk = m[ind_jk];
+							//m[n*i + j] = min(m[n*i + j], ik + kj);
+							int ind_ij = j1 + (((i + 1)*(i + 1))/2);
+							//if(m[ind_ij]!=INFINITY){
+							m[ind_ij] = min(m[ind_ij], ik + kj);
+						}
+						//}
+						//else{
+						//m[ind_ij] = ik + kj;
+							//count++;
+						//}
+						//m[n*j + i] = min(m[n*j + i], jk + ki);
+						if(j%2==1){
+							cj = cj->next;
+						}
+					}
+				}
 
-                          if (kk1 <= i) {
-                            ind_kki = (kk1 ^ 1) +
-                                      ((((i ^ 1) + 1) * ((i ^ 1) + 1)) / 2);
-                          } else {
-                            ind_kki = i + (((kk1 + 1) * (kk1 + 1)) / 2);
-                          }
+				/*if(ik != INFINITY){
+					for(; j < v1; j++){
+						//double kj = m[n*k + j];
+						int ind_kj = (k1^1) + ((((j^1) + 1)*((j^1) + 1))/2);
+						double kj = m[ind_kj];
+						//double jk = m[n*j + k];
+						int ind_ij = j + (((i + 1)*(i + 1))/2);
+						//m[n*i + j] = min(m[n*i + j], ik + kj);
+						//if(m[ind_ij]!=INFINITY){
+						m[ind_ij] = min(m[ind_ij], ik + kj);
+						//}
+						//else{
+						//	m[ind_ij] = ik + kj;
+							//count++;
+						//}
+						//m[n*j + i] = min(m[n*j + i], jk + ki);
+					}
+				}*/
+				/* v in second end-point position */
+				if(ki != INFINITY){
+					comp_t * cj = cn->head;	
+					for(j= 0; j < 2*comp_size; j++ ){
+						int j1 = (j%2==0) ? 2*cj->num : 2*cj->num+1;
+						if(j1>=(2*v+2)){
+							int ind_jk = opt_matpos2(j1,k1);
+							double jk = m[ind_jk];
+							int ind_ji = i + (((j1 + 1)*(j1 + 1))/2);
+							//if(m[ind_ji]!=INFINITY){
+							m[ind_ji] = min(m[ind_ji], jk + ki);
+						}
+						//}
+						//else{
+						//	m[ind_ji] = jk + ki;
+							//count++;
+						//}
+						if(j%2==1){
+							cj = cj->next;
+						}
+					}
+				}
 
-                          // int ind_ki = i + (((k + 1)*(k + 1))/2);
-                          double ki = m[ind_ki];
-                          double kki = m[ind_kki];
-                          /* v in first end-point position */
-                          if (ik != INFINITY) {
-                            comp_t *cj = cn->head;
-                            for (j = 0; j < 2 * comp_size; j++) {
-                              // double kj = m[n*k + j];
-                              int j1 =
-                                  (j % 2 == 0) ? 2 * cj->num : 2 * cj->num + 1;
-                              if (j1 < v1) {
-                                int ind_kj = opt_matpos2(k1, j1);
-                                double kj = m[ind_kj];
-                                // double jk = m[n*j + k];
-                                // int ind_jk = k + (((j + 1)*(j + 1))/2);
-                                // double jk = m[ind_jk];
-                                // m[n*i + j] = min(m[n*i + j], ik + kj);
-                                int ind_ij = j1 + (((i + 1) * (i + 1)) / 2);
-                                // if(m[ind_ij]!=INFINITY){
-                                m[ind_ij] = min(m[ind_ij], ik + kj);
-                              }
-                              //}
-                              // else{
-                              // m[ind_ij] = ik + kj;
-                              // count++;
-                              //}
-                              // m[n*j + i] = min(m[n*j + i], jk + ki);
-                              if (j % 2 == 1) {
-                                cj = cj->next;
-                              }
-                            }
-                          }
+				/*if(ki != INFINITY){
+					for(; j < 2*dim; j++){
+						int ind_jk = k1 + (((j + 1)*(j + 1))/2);
+						double jk = m[ind_jk];
+						int ind_ji = i + (((j + 1)*(j + 1))/2);
+						//if(m[ind_ji] != INFINITY){
+						m[ind_ji] = min(m[ind_ji], jk + ki);
+						//}
+						//else{
+						//	m[ind_ji] = jk + ki;
+							//count++;
+						//}
+					}
+				}*/
+				/* v in first end-point position */
+				if(ikk != INFINITY){
+					comp_t * cj = cn->head;	
+					for(j = 0; j <2*comp_size; j++){
+						//double kj = m[n*k + j];
+						int j1 = (j%2==0) ? 2*cj->num : 2*cj->num+1;
+						if(j1 < v1){
+							int ind_kkj = opt_matpos2(kk1,j1);
+							double kkj = m[ind_kkj];
+							//double jk = m[n*j + k];
+							//int ind_jk = k + (((j + 1)*(j + 1))/2);
+							//double jk = m[ind_jk];
+							//m[n*i + j] = min(m[n*i + j], ik + kj);
+							int ind_ij = j1 + (((i + 1)*(i + 1))/2);
+							m[ind_ij] = min(m[ind_ij], ikk + kkj);
+							//m[n*j + i] = min(m[n*j + i], jk + ki);
+						}
+						if(j%2==1){
+							cj = cj->next;
+						}
+					}
+				}
+				/*if(ikk != INFINITY){
+					for(; j < v1; j++){
+						//double kj = m[n*k + j];
+						int ind_kkj = (kk1^1) + ((((j^1) + 1)*((j^1) + 1))/2);
+						double kkj = m[ind_kkj];
+						//double jk = m[n*j + k];
+						int ind_ij = j + (((i + 1)*(i + 1))/2);
+						//m[n*i + j] = min(m[n*i + j], ik + kj);
+						m[ind_ij] = min(m[ind_ij], ikk + kkj);
+						//m[n*j + i] = min(m[n*j + i], jk + ki);
+					}
+				}*/
+				/* v in second end-point position */
+				if(kki != INFINITY){
+					comp_t * cj = cn->head;	
+					for(j= 0; j < 2*comp_size; j++ ){
+						int j1 = (j%2==0) ? 2*cj->num : 2*cj->num+1;
+						if(j1 >=(2*v+2)){
+							int ind_jkk = opt_matpos2(j1,kk1);
+							double jkk = m[ind_jkk];
+							int ind_ji = i + (((j1 + 1)*(j1 + 1))/2);
+							m[ind_ji] = min(m[ind_ji], jkk + kki);
+						}
+						if(j%2==1){
+							cj = cj->next;
+						}
+					}
+				}
 
-                          /*if(ik != INFINITY){
-                                  for(; j < v1; j++){
-                                          //double kj = m[n*k + j];
-                                          int ind_kj = (k1^1) + ((((j^1) +
-                          1)*((j^1) + 1))/2); double kj = m[ind_kj];
-                                          //double jk = m[n*j + k];
-                                          int ind_ij = j + (((i + 1)*(i +
-                          1))/2);
-                                          //m[n*i + j] = min(m[n*i + j], ik +
-                          kj);
-                                          //if(m[ind_ij]!=INFINITY){
-                                          m[ind_ij] = min(m[ind_ij], ik + kj);
-                                          //}
-                                          //else{
-                                          //	m[ind_ij] = ik + kj;
-                                                  //count++;
-                                          //}
-                                          //m[n*j + i] = min(m[n*j + i], jk +
-                          ki);
-                                  }
-                          }*/
-                          /* v in second end-point position */
-                          if (ki != INFINITY) {
-                            comp_t *cj = cn->head;
-                            for (j = 0; j < 2 * comp_size; j++) {
-                              int j1 =
-                                  (j % 2 == 0) ? 2 * cj->num : 2 * cj->num + 1;
-                              if (j1 >= (2 * v + 2)) {
-                                int ind_jk = opt_matpos2(j1, k1);
-                                double jk = m[ind_jk];
-                                int ind_ji = i + (((j1 + 1) * (j1 + 1)) / 2);
-                                // if(m[ind_ji]!=INFINITY){
-                                m[ind_ji] = min(m[ind_ji], jk + ki);
-                              }
-                              //}
-                              // else{
-                              //	m[ind_ji] = jk + ki;
-                              // count++;
-                              //}
-                              if (j % 2 == 1) {
-                                cj = cj->next;
-                              }
-                            }
-                          }
-
-                          /*if(ki != INFINITY){
-                                  for(; j < 2*dim; j++){
-                                          int ind_jk = k1 + (((j + 1)*(j +
-                          1))/2); double jk = m[ind_jk]; int ind_ji = i + (((j +
-                          1)*(j + 1))/2);
-                                          //if(m[ind_ji] != INFINITY){
-                                          m[ind_ji] = min(m[ind_ji], jk + ki);
-                                          //}
-                                          //else{
-                                          //	m[ind_ji] = jk + ki;
-                                                  //count++;
-                                          //}
-                                  }
-                          }*/
-                          /* v in first end-point position */
-                          if (ikk != INFINITY) {
-                            comp_t *cj = cn->head;
-                            for (j = 0; j < 2 * comp_size; j++) {
-                              // double kj = m[n*k + j];
-                              int j1 =
-                                  (j % 2 == 0) ? 2 * cj->num : 2 * cj->num + 1;
-                              if (j1 < v1) {
-                                int ind_kkj = opt_matpos2(kk1, j1);
-                                double kkj = m[ind_kkj];
-                                // double jk = m[n*j + k];
-                                // int ind_jk = k + (((j + 1)*(j + 1))/2);
-                                // double jk = m[ind_jk];
-                                // m[n*i + j] = min(m[n*i + j], ik + kj);
-                                int ind_ij = j1 + (((i + 1) * (i + 1)) / 2);
-                                m[ind_ij] = min(m[ind_ij], ikk + kkj);
-                                // m[n*j + i] = min(m[n*j + i], jk + ki);
-                              }
-                              if (j % 2 == 1) {
-                                cj = cj->next;
-                              }
-                            }
-                          }
-                          /*if(ikk != INFINITY){
-                                  for(; j < v1; j++){
-                                          //double kj = m[n*k + j];
-                                          int ind_kkj = (kk1^1) + ((((j^1) +
-                          1)*((j^1) + 1))/2); double kkj = m[ind_kkj];
-                                          //double jk = m[n*j + k];
-                                          int ind_ij = j + (((i + 1)*(i +
-                          1))/2);
-                                          //m[n*i + j] = min(m[n*i + j], ik +
-                          kj); m[ind_ij] = min(m[ind_ij], ikk + kkj);
-                                          //m[n*j + i] = min(m[n*j + i], jk +
-                          ki);
-                                  }
-                          }*/
-                          /* v in second end-point position */
-                          if (kki != INFINITY) {
-                            comp_t *cj = cn->head;
-                            for (j = 0; j < 2 * comp_size; j++) {
-                              int j1 =
-                                  (j % 2 == 0) ? 2 * cj->num : 2 * cj->num + 1;
-                              if (j1 >= (2 * v + 2)) {
-                                int ind_jkk = opt_matpos2(j1, kk1);
-                                double jkk = m[ind_jkk];
-                                int ind_ji = i + (((j1 + 1) * (j1 + 1)) / 2);
-                                m[ind_ji] = min(m[ind_ji], jkk + kki);
-                              }
-                              if (j % 2 == 1) {
-                                cj = cj->next;
-                              }
-                            }
-                          }
-
-                          /*if(kki != INFINITY){
-                                  for(; j < 2*dim; j++){
-                                          int ind_jkk = kk1 + (((j + 1)*(j +
-                          1))/2); double jkk = m[ind_jkk]; int ind_ji = i + (((j
-                          + 1)*(j + 1))/2); m[ind_ji] = min(m[ind_ji], jkk +
-                          kki);
-                                  }
-                          }*/
-                        }
-                        //if(m[v1v2]!=INFINITY){
+				/*if(kki != INFINITY){
+					for(; j < 2*dim; j++){
+						int ind_jkk = kk1 + (((j + 1)*(j + 1))/2);
+						double jkk = m[ind_jkk];
+						int ind_ji = i + (((j + 1)*(j + 1))/2);
+						m[ind_ji] = min(m[ind_ji], jkk + kki);
+					}
+				}*/
+			
+			}
+			//if(m[v1v2]!=INFINITY){
 			m[v1v2] = min(m[v1v2],m[opt_matpos2(v1,k1)] + m[opt_matpos2(k1,v2)]);
 			//}
 			//else{

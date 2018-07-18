@@ -77,9 +77,8 @@ void opt_hmat_free(opt_oct_mat_t *oo){
 }
 
 void top_mat(double *m, int dim){
-
-  int n = 2 * dim;
-  int size = 2 * dim * (dim + 1);
+	
+	int size = 2*dim*(dim+1);
 	#if defined(VECTOR)
 		v_double_type infty = v_set1_double(INFINITY);
 		
@@ -171,13 +170,12 @@ opt_oct_mat_t *opt_hmat_copy(opt_oct_mat_t * src_mat, int dim){
 	#endif
 	double *src = src_mat->mat;
 	double *dest;
-        int n = 2 * dim;
-        int size = 2*dim*(dim+1);
+	int size = 2*dim*(dim+1);
 	//posix_memalign((void **)&dest,32,size*sizeof(double));
 	dest = (double *)malloc(size*sizeof(double));
-
-        double sparsity = 1 - ((double)(src_mat->nni / size));
-        opt_oct_mat_t * dst_mat = (opt_oct_mat_t *)malloc(sizeof(opt_oct_mat_t));
+	
+	//double sparsity = 1- ((double)(src_mat->nni/size));
+	opt_oct_mat_t * dst_mat = (opt_oct_mat_t *)malloc(sizeof(opt_oct_mat_t));
 	if(!src_mat->is_dense){
 		/*****
 			Handle Decomposed type, copy only the elements 
@@ -431,12 +429,11 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 					else{
 						int ind = j1 + ((i1 + 1)*(i1 + 1))/2;
 						if(m[ind]!=INFINITY){
-                                                  flag = false;
-#if defined(TIMING)
+							#if defined(TIMING)
 								record_timing(is_top_time);
 							#endif
-                                                                free(ca);
-                                                                return false;
+                            				free(ca);
+							return false;
 						}
 					}
 				}
@@ -863,8 +860,7 @@ void meet_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 	double *m1 = oo1->mat;
 	double *m2 = oo2->mat;
 	int size = 2*dim*(dim + 1);
-        int n = 2 * dim;
-        if(!oo1->is_dense && !oo2->is_dense){
+	if(!oo1->is_dense && !oo2->is_dense){
 		/*****
 			If both oo1 and oo2 are decomposed type, then apply the decomposed type operator,
 			1. Compute union of corresponding sets of independent components.
@@ -1024,16 +1020,17 @@ void forget_array_half(opt_oct_mat_t *oo, elina_dim_t *arr,int dim, int arr_dim,
 	double *m = oo->mat;
 	array_comp_list_t * acl = oo->acl;
 	for(int i = 0; i < arr_dim; i++){
-          elina_dim_t d = 2 * arr[i];
-          /*****
-                  If the matrix is decomposed type,remove
-                  the component part of arr if it exists
-          ******/
-          if (!oo->is_dense) {
-            comp_list_t *cl = find(acl, arr[i]);
-            if (cl != NULL) {
-              remove_comp(cl, arr[i]);
-            }
+		//elina_dim_t d = 2*arr[i];
+		int d = (int)2*arr[i];
+		/*****
+			If the matrix is decomposed type,remove
+			the component part of arr if it exists
+		******/
+		if(!oo->is_dense){
+			comp_list_t *cl = find(acl,arr[i]);
+			if(cl!=NULL){
+				remove_comp(cl,arr[i]);
+			}
 		}
 		int d1 = (((d + 1)*(d + 1))/2);
 		int d2 = (((d + 2)*(d + 2))/2);
@@ -1097,8 +1094,7 @@ void join_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 	//int count = 0;
 	
 	int size = 2*dim*(dim + 1);
-        int n = 2 * dim;
-        if((!oo1->is_dense) || (!oo2->is_dense)){
+	if((!oo1->is_dense) || (!oo2->is_dense)){
 		/******
 			If either oo1 or oo2 is decomposed type, apply the decomposed type operator
 			1. Compute the intersection of corresponding sets of independent components.
@@ -1234,17 +1230,16 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 		
 		for(int i = 0; i <=dim; i++){
 			//
-                        while ((l < nb_pos) && (i == pos[l])) {
-                          /***
-                                  For expand mult can be greater than 1 in which
-                          case nb_pos will be 1
-                          ****/
-                          add_pos[ac] = p;
-                          p = p + mult;
-                          ac++;
-                          l++;
-                        }
-                        map[k] = p;
+			while((l < nb_pos) &&(i==(int)pos[l])){
+				/***
+					For expand mult can be greater than 1 in which case nb_pos will be 1
+				****/
+				add_pos[ac] = p;
+				p = p + mult;
+				ac++;
+				l++;
+			}
+			map[k] = p;
 			k++;
 			p++;
 		}
@@ -1266,13 +1261,14 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 		******/
 		int l = 0;
 		for(int i = 0; i < dim; i++){
-                  if ((l < nb_pos) && (i == pos[l])) {
-                    map[i] = new_dim;
-                    l++;
-                  } else {
-                    map[i] = i - l;
-                  }
-                }
+			if((l < nb_pos) && (i==(int)pos[l])){
+				map[i] = new_dim;
+				l++;
+			}
+			else{
+				map[i] = i - l;
+			}
+		}
 	  }
 		
 		/*****
@@ -1368,36 +1364,30 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 		double* org_c = src + org_j*(org_j/2 + 1);
 	      //double* new_c = dst + opt_matsize(new_j/2);
 		double* new_c = dst + new_j*(new_j/2 + 1);
-                int last_org_j = ((j < nb_pos - 1) ? pos[j + 1] : dim) * 2;
-                for (; org_j < last_org_j; org_j++, new_j++) {
-                  int size_org_line = org_j + 2 - (org_j & 1);
-                  int size_new_line = new_j + 2 - (new_j & 1);
-                  int org_i = 0;
-                  int new_i = 0;
-                  for (i = 0; i < nb_pos; i++) {
-                    /* copy elems */
-                    int last_org_i = pos[i] * 2;
-                    if (last_org_i >= size_org_line)
-                      break; /* partial block */
-                    opt_hmat_set_array(new_c + new_i, org_c + org_i,
-                                       last_org_i - org_i);
-                    new_i += last_org_i - org_i;
-                    org_i = last_org_i;
-
-                    /* skip elems */
-                    if (add)
-                      new_i += 2 * mult;
-                    else
-                      org_i += 2 * mult;
-                  }
-
-                  /* copy remaining elems */
-                  opt_hmat_set_array(new_c + new_i, org_c + org_i,
-                                     size_org_line - org_i);
-
-                  /* next line */
-                  org_c += size_org_line;
-                  new_c += size_new_line;
+	      int last_org_j = ((j<nb_pos-1) ? (int)pos[j+1] : dim)*2;
+	      for (;org_j<last_org_j;org_j++,new_j++) {
+		int size_org_line = org_j+2-(org_j&1);
+		int size_new_line = new_j+2-(new_j&1);
+		int org_i = 0;
+		int new_i = 0;
+		for (i=0;i<nb_pos;i++) {
+		  /* copy elems */
+		  int last_org_i = pos[i]*2;
+		  if (last_org_i>=size_org_line) break; /* partial block */
+		  opt_hmat_set_array(new_c+new_i,org_c+org_i,last_org_i-org_i);
+		  new_i += last_org_i-org_i;
+		  org_i = last_org_i;
+		  
+		  /* skip elems */
+		  if (add) new_i += 2*mult; else org_i += 2*mult;
+		}
+	
+		/* copy remaining elems */
+		opt_hmat_set_array(new_c+new_i,org_c+org_i,size_org_line-org_i);
+	  	
+		/* next line */
+		org_c += size_org_line;
+		new_c += size_new_line;
 	      }
 	    }
 	  }
@@ -1911,34 +1901,32 @@ opt_uexpr opt_oct_uexpr_of_linexpr(opt_oct_internal_t* pr, double* dst,
   if (opt_bounds_of_coeff(pr,dst + i,dst + i + 1,c,false)) u.type = OPT_EMPTY;    \
   if (c.discr!=ELINA_COEFF_SCALAR || !is_integer(dst[i])) u.is_int = 0;
   opt_uexpr u = { OPT_ZERO, 0, 0, 0, 0, 1 };
-  int i;
+  size_t i;
   COEFF(e->cst,0);
   switch (e->discr) {
   case ELINA_LINEXPR_DENSE:
-    if (e->size > dim)
-      return u;
+    if(e->size > (elina_dim_t)dim)return u;
     for (i=0;i<e->size;i++) {
       
       COEFF(e->p.coeff[i],2*i+2);
-      CLASS_VAR(i);
+      CLASS_VAR((int)i);
     }
-    for (; i < dim; i++) {
+    for (;i<(elina_dim_t)dim;i++) {
       dst[2*i+2] = 0;
       dst[2*i+3] = 0;
     }
     break;
   case ELINA_LINEXPR_SPARSE:
-    for (i = 0; i < dim; i++) {
+    for (i=0;i<(elina_dim_t)dim;i++) {
       dst[2*i+2] = 0;
       dst[2*i+3] = 0;
     }
     for (i=0;i<e->size;i++) {
       elina_dim_t d = e->p.linterm[i].dim;
       if (d==ELINA_DIM_MAX) continue;
-      if (d >= dim)
-        return u;
+      if((int)d>=dim)return u;
       COEFF(e->p.linterm[i].coeff,2*d+2);
-      CLASS_VAR(d);
+      CLASS_VAR((int)d);
     }
     break;
   default: break;/********TODO: handle arg_assert arg_assert(0,return u;);*****/
@@ -2003,32 +1991,32 @@ bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim,
 		      bool* respect_closure)
 {
   double *m = oo->mat;
-  int i, j, k, ui, uj;
-  int var_pending = 0; /* delay incremental closure as long as possible */
+  int  j, k, ui, uj;
+  size_t i;
+  size_t var_pending = 0; /* delay incremental closure as long as possible */
   int closure_pending = 0;
   *exact = 1;
    int max_nni = 2*dim*(dim+1);
-   bool flag = is_int_flag ? 1 : 0;
-
-   int *ind1, *ind2;
-   // posix_memalign((void **)&temp1, 32, 2*dim*sizeof(double));
-   // posix_memalign((void **)&temp2, 32, 2*dim*sizeof(double));
-
-   bool (*incr_closure)(opt_oct_mat_t *, ...);
-   double size = 2 * dim * (dim + 1);
-   double sparsity = 1 - ((double)(oo->nni) / size);
-
-   /******
-         Measure sparsity to decide on whether to use dense or decomposed type
-   incremental closure. We do not recalculate sparsity here (if estimate of nni
-   is too imprecise) as it increases overhead.
-   ******/
-   if (sparsity >= sparse_threshold) {
-     if (oo->is_dense) {
-       oo->is_dense = false;
-       oo->acl = extract(oo->mat, dim);
-     }
-     incr_closure = &incremental_closure_comp_sparse;
+  //bool flag = is_int_flag ? 1 : 0;
+  
+  int *ind1, *ind2;
+  //posix_memalign((void **)&temp1, 32, 2*dim*sizeof(double));
+  //posix_memalign((void **)&temp2, 32, 2*dim*sizeof(double));
+  
+  bool (*incr_closure)(opt_oct_mat_t * ,...);
+  double size = 2*dim*(dim+1);
+  double sparsity = 1- ((double)(oo->nni)/size);
+  
+  /******
+	Measure sparsity to decide on whether to use dense or decomposed type incremental closure.
+	We do not recalculate sparsity here (if estimate of nni is too imprecise) as it increases overhead.
+  ******/
+  if(sparsity >=sparse_threshold){
+	if(oo->is_dense){
+		oo->is_dense = false;
+		oo->acl = extract(oo->mat,dim);
+	}
+	incr_closure = &incremental_closure_comp_sparse;
   }
   else{ 
 	if(!oo->is_dense){

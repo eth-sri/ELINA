@@ -44,8 +44,6 @@ bool opt_oct_is_bottom(elina_manager_t* man, opt_oct_t* o)
 
 bool opt_oct_is_top(elina_manager_t* man, opt_oct_t* o)
 {
-  opt_oct_internal_t *pr =
-      opt_oct_init_from_manager(man, ELINA_FUNID_IS_TOP, 0);
   int i,j;
   opt_oct_mat_t* m = o->m ? o->m : o->closed;
   if (!m) return false;
@@ -145,17 +143,17 @@ elina_interval_t** opt_oct_to_box(elina_manager_t* man, opt_oct_t* o)
   opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_TO_BOX,0);
   elina_interval_t** in = elina_interval_array_alloc(o->dim);
   size_t i;
+  int j;
   if (pr->funopt->algorithm>=0) {
-
-    opt_oct_cache_closure(pr, o);
+	opt_oct_cache_closure(pr,o);
   }
   #if defined(TIMING)
 	start_timing();
   #endif
   if (!o->closed && !o->m) {
     /* definitively empty */
-    for (i = 0; i < o->dim; i++)
-      elina_interval_set_bottom(in[i]);
+    for (j=0;j<o->dim;j++)
+      elina_interval_set_bottom(in[j]);
   }
   else {
     /* put variable bounds */
@@ -165,28 +163,27 @@ elina_interval_t** opt_oct_to_box(elina_manager_t* man, opt_oct_t* o)
     double *m = oo->mat;
     if(!oo->is_dense){
 	    array_comp_list_t * acl = oo->acl;
-            for (i = 0; i < o->dim; i++) {
-              elina_interval_set_top(in[i]);
-            }
-            comp_list_t * cl = acl->head;
+	     for (j=0;j<o->dim;j++){
+	     	elina_interval_set_top(in[j]);
+	     }
+	    comp_list_t * cl = acl->head;
 	    while(cl!=NULL){
-              int comp_size = cl->size;
-              comp_t *c = cl->head;
-              for (i = 0; i < comp_size; i++) {
-                int i1 = c->num;
-                opt_interval_of_bounds(pr, in[i1],
-                                       m[opt_matpos(2 * i1, 2 * i1 + 1)],
-                                       m[opt_matpos(2 * i1 + 1, 2 * i1)], true);
-                c = c->next;
+		    unsigned short int comp_size = cl->size;
+		    comp_t * c = cl->head;
+		    for (i=0;i<comp_size;i++){
+		      unsigned short int i1 = c->num;
+		      opt_interval_of_bounds(pr,in[i1],
+					 m[opt_matpos(2*i1,2*i1+1)],m[opt_matpos(2*i1+1,2*i1)],true);
+			 c = c->next;
 		    }
 		   cl = cl->next;
 	    }
     }
     else{
-      for (i = 0; i < o->dim; i++) {
-        opt_interval_of_bounds(pr, in[i], m[opt_matpos(2 * i, 2 * i + 1)],
-                               m[opt_matpos(2 * i + 1, 2 * i)], true);
-      }
+	 for (j=0;j<o->dim;j++){
+     		 opt_interval_of_bounds(pr,in[j],
+			 m[opt_matpos(2*j,2*j+1)],m[opt_matpos(2*j+1,2*j)],true);
+    	}
     }
     man->result.flag_exact = false;
     if (!o->closed) flag_algo;
@@ -212,9 +209,9 @@ elina_interval_t* opt_oct_bound_dimension(elina_manager_t* man,
 {
   opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_BOUND_DIMENSION,0);
   elina_interval_t* r = elina_interval_alloc();
-  if (dim >= o->dim) {
-    elina_interval_free(r);
-    return NULL;
+  if((int)dim>=o->dim){
+	elina_interval_free(r);
+	return NULL;
   }
   if (pr->funopt->algorithm>=0) opt_oct_cache_closure(pr,o);
   if (!o->closed && !o->m) {
@@ -342,8 +339,8 @@ bool opt_oct_sat_interval(elina_manager_t* man, opt_oct_t* o,
 		      elina_dim_t dim, elina_interval_t* i)
 {
   opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_SAT_INTERVAL,0);
-  if (dim >= o->dim) {
-    return false;
+  if((int)dim >= o->dim){
+	return false;
   }
   if (pr->funopt->algorithm>=0) opt_oct_cache_closure(pr,o);
   if (!o->closed && !o->m) {
@@ -392,10 +389,8 @@ bool opt_oct_sat_interval(elina_manager_t* man, opt_oct_t* o,
 bool opt_oct_is_dimension_unconstrained(elina_manager_t* man, opt_oct_t* o,
 				    elina_dim_t dim)
 {
-  opt_oct_internal_t *pr =
-      opt_oct_init_from_manager(man, ELINA_FUNID_IS_DIMENSION_UNCONSTRAINED, 0);
-  if (dim >= o->dim) {
-    return false;
+  if((int)dim>=o->dim){
+	return false;
   }
   if (!o->closed && !o->m)
     /* definitively empty */
@@ -407,6 +402,7 @@ bool opt_oct_is_dimension_unconstrained(elina_manager_t* man, opt_oct_t* o,
     opt_oct_mat_t * oo = o->closed ? o->closed : o->m;
     double * m = oo->mat;
     size_t i, d2=2*dim;
+    int j;
     if(!oo->is_dense){
 	array_comp_list_t *acl = oo->acl;
 	comp_list_t * cl = find(acl,dim);
@@ -456,20 +452,20 @@ bool opt_oct_is_dimension_unconstrained(elina_manager_t* man, opt_oct_t* o,
 	free(ca);
     }
     else{
-      for (i = 0; i < 2 * o->dim; i++) {
-        if ((m[opt_matpos2(i, d2)] != INFINITY) && (i != d2)) {
-#if defined(TIMING)
+	for (j=0;j<2*o->dim;j++) {
+      		if ((m[opt_matpos2(j,d2)]!=INFINITY) && (j!=(int)d2)){
+			#if defined(TIMING)
 				record_timing(oct_is_unconstrained_time);
    			 #endif
 			 return false;
-        }
-        if ((m[opt_matpos2(i, d2 + 1)] != INFINITY) && (i != d2 + 1)) {
-#if defined(TIMING)
+		}
+      		if ((m[opt_matpos2(j,d2+1)]!=INFINITY) && (j!=(int)(d2+1))){
+			 #if defined(TIMING)
 				record_timing(oct_is_unconstrained_time);
    			 #endif
 			 return false;
-        }
-      }
+		}
+    	}
     }
     #if defined(TIMING)
 	record_timing(oct_is_unconstrained_time);

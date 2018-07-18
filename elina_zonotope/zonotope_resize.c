@@ -154,33 +154,32 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
     // zonotope_fprint(stdout,man,res,NULL);
     // fflush(stdout);
 
-    zonotope_t * tmp = z;
-    if(destructive){
-        //z = res;
-        //zonotope_free(man,tmp);
-        //return z;
-        
-        //for(i=0; i < z->dims; z++){
-          //  if(map[i]){
-            //    zonotope_aff_check_free(pr,z->paf[i]);
-            //}
-        //}
-        // free(z->paf);
-        // z->paf=NULL;
-        // free(z->box);
-        // z->box=NULL;
-        // for (i=0; i<nsymcons_size; i++) {
-        //  if (z->gamma[i]) {
-        //    if (z->gamma[i] != pr->ap_muu) elina_interval_free(z->gamma[i]);
-        //}
-        //}
-        //free(z->gamma);
-        //z->gamma = NULL;
-        //free(z->nsymcons);
-        //z->nsymcons = NULL;
-        //elina_abstract0_free(pr->manNS, z->abs);
-        //free(z);
-    }
+    // if(destructive){
+    // z = res;
+    // zonotope_free(man,tmp);
+    // return z;
+
+    // for(i=0; i < z->dims; z++){
+    //  if(map[i]){
+    //    zonotope_aff_check_free(pr,z->paf[i]);
+    //}
+    //}
+    // free(z->paf);
+    // z->paf=NULL;
+    // free(z->box);
+    // z->box=NULL;
+    // for (i=0; i<nsymcons_size; i++) {
+    //  if (z->gamma[i]) {
+    //    if (z->gamma[i] != pr->ap_muu) elina_interval_free(z->gamma[i]);
+    //}
+    //}
+    // free(z->gamma);
+    // z->gamma = NULL;
+    // free(z->nsymcons);
+    // z->nsymcons = NULL;
+    // elina_abstract0_free(pr->manNS, z->abs);
+    // free(z);
+    //}
     free(map);
     free(var_rem);
     record_timing(zonotope_remove_dimension_time);

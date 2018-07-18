@@ -334,7 +334,7 @@ bool elina_intlinearize_elina_texpr0_intlinear(elina_linexpr0_t** dres, elina_te
   case ELINA_TEXPR_CST:
     elina_linexpr0_reinit(res,0);
     elina_coeff_set(&res->cst,&expr->val.cst);
-    cst = &res->cst;
+    //cst = &res->cst;
     break;
   case ELINA_TEXPR_DIM:
     elina_linexpr0_reinit(res,1);

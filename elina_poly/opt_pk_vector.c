@@ -336,14 +336,14 @@ bool opt_vector_normalize_constraint(opt_pk_internal_t* opk,
 				 unsigned short int intdim, unsigned short int realdim)
 {
   unsigned short int i;
-  bool change = false;
+  //bool change = false;
   unsigned short int size = opk->dec+intdim+realdim;
   
   assert(opk->dec+intdim+realdim <= opk->maxcols);
 
     return opt_vector_normalize(opk,ov,size);
   //}
-    return change;
+ // return change;
 }
 
 /* The function vector_normalize_constraint_int normalizes the vector 
@@ -469,8 +469,8 @@ int opt_vector_compare(opt_pk_internal_t* opk,
 		   unsigned short int size)
 {
   unsigned short int i;
-  int res = 1;
-
+  int res;
+ 
   assert(size<=opk->maxcols);
 
   /* bidirectional/unidirectional ? */

@@ -135,7 +135,7 @@ typedef enum{
 typedef struct opt_uexpr{
   uexpr_type type; 
   /* index and coefficient for OPT_UNARY / OPT_BINARY unit expressions */
-  int i, j;
+  size_t i,j;
   int coef_i,coef_j; /* -1 or 1 */
 
   /* expression has integer value */

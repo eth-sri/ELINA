@@ -39,7 +39,6 @@ bool elina_interval_eval_elina_linexpr0(elina_interval_t * itv, elina_linexpr0_t
   assert(env);
   elina_scalar_t * scalar;
   elina_interval_t * interval;
-  elina_coeff_t *cst = &expr->cst;
   elina_interval_set_elina_coeff(itv,&expr->cst);
   elina_interval_t * tmp = elina_interval_alloc();
   elina_linexpr0_ForeachLinterm(expr,i,dim,coeff){
@@ -931,13 +930,13 @@ char elina_lincons0_array_reduce_integer(elina_lincons0_array_t* array, size_t i
 /* II. Quasilinearization of interval linear expressions */
 /* ********************************************************************** */
 
-static bool elina_quasilinearize_alloc(elina_manager_t *man,
-                                       elina_abstract0_t *abs,
-                                       elina_interval_t **penv,
-                                       elina_dimension_t *pdim) {
+static
+bool elina_quasilinearize_alloc(elina_manager_t* man, elina_abstract0_t* abs,
+			  elina_interval_t*** penv, elina_dimension_t* pdim)
+{
   bool exact;
   assert(!elina_abstract0_is_bottom(man,abs));
-  penv = elina_abstract0_to_box(man, abs);
+  *penv = elina_abstract0_to_box(man,abs);
   exact = man->result.flag_exact;
   *pdim = elina_abstract0_dimension(man,abs);
   return exact;
@@ -964,13 +963,14 @@ elina_linexpr0_t* elina_quasilinearize_linexpr0(elina_manager_t* man,
 {
   elina_dimension_t dim;
   elina_linexpr0_t* rlinexpr0;
-  elina_interval_t *env;
+  elina_interval_t** env;
   bool exact,exact2;
 
   exact = elina_quasilinearize_alloc(man,abs,&env,&dim);
   rlinexpr0 = elina_linexpr0_copy(linexpr0);
-  exact = quasilinearize_elina_linexpr0(rlinexpr0, &env, false, discr) && exact;
-  elina_quasilinearize_free(&env, dim);
+  exact = quasilinearize_elina_linexpr0(rlinexpr0,env,false,discr)
+    && exact;
+  elina_quasilinearize_free(env,dim);
   *pexact = exact;
   return rlinexpr0;
 }
@@ -982,13 +982,14 @@ elina_lincons0_t elina_quasilinearize_lincons0(elina_manager_t* man,
 {
   elina_dimension_t dim;
   elina_lincons0_t rlincons0;
-  elina_interval_t *env;
+  elina_interval_t** env;
   bool exact;
 
   exact = elina_quasilinearize_alloc(man,abs,&env,&dim);
   rlincons0 = elina_lincons0_copy(lincons0);
-  exact = quasilinearize_elina_lincons0(&rlincons0, &env, meet, discr) && exact;
-  elina_quasilinearize_free(&env, dim);
+  exact = quasilinearize_elina_lincons0(&rlincons0,env,meet,discr)
+    && exact;
+  elina_quasilinearize_free(env,dim);
   *pexact = exact;
   return rlincons0;
 }
@@ -1000,7 +1001,7 @@ elina_linexpr0_t** elina_quasilinearize_linexpr0_array(elina_manager_t* man,
 {
   elina_dimension_t dim;
   elina_linexpr0_t** tab;
-  elina_interval_t *env;
+  elina_interval_t** env;
   bool exact,exact2;
   size_t i;
 
@@ -1008,9 +1009,10 @@ elina_linexpr0_t** elina_quasilinearize_linexpr0_array(elina_manager_t* man,
   tab = (elina_linexpr0_t**)malloc(size*sizeof(elina_linexpr0_t*));
   for (i=0; i<size; i++){
     tab[i] = elina_linexpr0_copy(texpr[i]);
-    exact = quasilinearize_elina_linexpr0(tab[i], &env, false, discr) && exact;
+    exact = quasilinearize_elina_linexpr0(tab[i],env,false,discr)
+      && exact;
   }
-  elina_quasilinearize_free(&env, dim);
+  elina_quasilinearize_free(env,dim);
   *pexact = exact;
   return tab;
 }
@@ -1020,7 +1022,7 @@ elina_lincons0_array_t elina_quasilinearize_lincons0_array(elina_manager_t* man,
 					 void * abs, elina_lincons0_array_t* array,
 					 bool* pexact, elina_scalar_discr_t discr, bool linearize, bool meet)
 {
-  elina_interval_t *env;
+  elina_interval_t** env;
   elina_dimension_t dim;
   bool exact;
   elina_lincons0_array_t res;
@@ -1030,11 +1032,11 @@ elina_lincons0_array_t elina_quasilinearize_lincons0_array(elina_manager_t* man,
   for(i=0; i < size; i++){
 	res.p[i] = elina_lincons0_copy(&array->p[i]);
   }
-  exact = elina_quasilinearize_alloc(man, abs, &env, &dim);
-  exact = quasilinearize_elina_lincons0_array(&res, &env, meet, discr);
+  elina_quasilinearize_alloc(man,abs,&env,&dim);
+  quasilinearize_elina_lincons0_array(&res,env,meet,discr);
   if (linearize) 
     linearize_elina_lincons0_array(&res,meet, discr);
-
-  elina_quasilinearize_free(&env, dim);
+  
+  elina_quasilinearize_free(env,dim);
   return res;
 }

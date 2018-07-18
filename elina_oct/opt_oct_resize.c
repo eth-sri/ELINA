@@ -36,7 +36,6 @@ opt_oct_t* opt_oct_forget_array(elina_manager_t* man,
     return opt_oct_set_mat(pr,o,NULL,NULL,destructive);
   else {
     opt_oct_mat_t* oo = o->closed ? o->closed : o->m;
-    int mat_size = 2 * o->dim * (o->dim + 1);
     if (!destructive) oo = opt_hmat_copy(oo,o->dim);
     #if defined(TIMING)
   	start_timing();
@@ -85,13 +84,11 @@ opt_oct_t* opt_oct_add_dimensions(elina_manager_t* man,
     /* check */
     
   for (i=0;i<nb;i++) {
-    if (dimchange->dim[i] > o->dim)
-      return NULL;
+    if((int)dimchange->dim[i] > o->dim) return NULL;
     if(i &&(dimchange->dim[i-1]> dimchange->dim[i])) return NULL;
    }
     /* insert variables */
     int dim = o->dim + nb;
-    int size = 2 * dim * (dim + 1);
     dst = opt_hmat_alloc_top(dim);
     opt_hmat_addrem_dimensions(dst,src,dimchange->dim,
 			   nb,1,o->dim,true);
@@ -148,10 +145,8 @@ opt_oct_t* opt_oct_remove_dimensions(elina_manager_t* man,
   else {
     /* check */
      for (i=0;i<nb;i++) {
-       if (dimchange->dim[i] >= o->dim)
-         return NULL;
-       if (i && (dimchange->dim[i - 1] >= dimchange->dim[i]))
-         return NULL;
+		if((int)dimchange->dim[i] >= o->dim) return NULL;
+		if(i && (dimchange->dim[i-1]>=dimchange->dim[i]))return NULL;
      }
     /* remove variables */
     int dim = o->dim - nb;
@@ -202,16 +197,14 @@ opt_oct_t* opt_oct_permute_dimensions(elina_manager_t* man,
   opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_ADD_DIMENSIONS,0);
   opt_oct_mat_t* src = o->closed ? o->closed : o->m;
   opt_oct_mat_t* dst;
-  if (permutation->size != o->dim)
-    return NULL;
+  if((int)permutation->size!=o->dim)return NULL;
   if (!src) dst = NULL;
   else {
     /* check (only bounds, not injectivity) */
     int i,j;    
     /* permuted copy */
      for (i=0;i<o->dim;i++){
-       if (permutation->dim[i] >= o->dim)
-         return NULL;
+          if((int)permutation->dim[i]>=o->dim)return NULL;
      }
 
     int size = 2*o->dim*(o->dim + 1);
@@ -251,7 +244,7 @@ opt_oct_t* opt_oct_expand(elina_manager_t* man,
 		return opt_oct_copy(man,o);
 	}
   }
-  elina_dim_t pos = (dim < o->intdim) ? o->intdim : o->dim;
+  elina_dim_t pos = (elina_dim_t)(((int)dim < o->intdim) ? o->intdim : o->dim);
   opt_oct_mat_t* dst;
   opt_oct_t* r;
   if (!src) dst = NULL;
@@ -399,9 +392,8 @@ opt_oct_t* opt_oct_expand(elina_manager_t* man,
   }
   r = opt_oct_set_mat(pr,o,dst,NULL,destructive);
   r->dim += n;
-  if (dim < o->intdim)
-    r->intdim += n;
-
+  if ((int)dim<o->intdim) r->intdim += n;
+  
   return r;
 }
 
@@ -432,9 +424,9 @@ opt_oct_t* opt_oct_fold(elina_manager_t* man,
 	  return NULL;
       }
     }
-
-    if (tdim[size - 1] >= o->dim) {
-      return NULL;
+	
+    if((int)tdim[size-1] >= o->dim){
+	return NULL;
     }
     double *m = src->mat;
     
@@ -481,8 +473,8 @@ opt_oct_t* opt_oct_fold(elina_manager_t* man,
 		}
 	      }
 	    }
-            for (j = tdim[0] + 1; j < o->dim; j++) {
-              comp_list_t *cj = find(oo->acl,j);
+	    for (j=tdim[0]+1;(int)j<o->dim;j++) {
+	      comp_list_t *cj = find(oo->acl,j);
 	      if(cj!=cto){
 		 continue;
 	      }
@@ -507,9 +499,9 @@ opt_oct_t* opt_oct_fold(elina_manager_t* man,
 			*mm4 = max(*mm4,m[opt_matpos2(tdim[i]*2+1,2*j+1)]);
 		}
 	      }
-            }
-
-            /* merge unary constraints */
+	    }
+	
+	    /* merge unary constraints */
 	    {
 	      double* mm1 = oo->mat + opt_matpos2(tdim[0]*2  ,tdim[0]*2+1);
 	      double* mm2 = oo->mat + opt_matpos2(tdim[0]*2+1,tdim[0]*2  );
@@ -560,30 +552,32 @@ opt_oct_t* opt_oct_fold(elina_manager_t* man,
 		 }
 	       }
 
-               for (j = 2 * (tdim[0] + 1); j < 2 * o->dim; j++) {
-                 double *mm1 = oo->mat + opt_matpos2(tdim[0] * 2, j);
-                 double *mm2 = oo->mat + opt_matpos2(tdim[0] * 2 + 1, j);
-                 if ((*mm1) != INFINITY) {
-                   for (i = 1; i < size; i++) {
-                     *mm1 = max(*mm1, m[opt_matpos2(tdim[i] * 2, j)]);
-                     if ((*mm1) == INFINITY) {
-                       oo->nni--;
-                       break;
-                     }
-                   }
-                 }
-                 if ((*mm2) != INFINITY) {
-                   for (i = 1; i < size; i++) {
-                     *mm2 = max(*mm2, m[opt_matpos2(tdim[i] * 2 + 1, j)]);
-                     if ((*mm2) == INFINITY) {
-                       oo->nni--;
-                       break;
-                     }
-                   }
-		 }
-               }
 
-            /* merge unary constraints */
+	     for (j=2*(tdim[0]+1);(int)j<2*o->dim;j++) {
+	       double* mm1 = oo->mat+opt_matpos2(tdim[0]*2,j);
+	       double* mm2 = oo->mat+opt_matpos2(tdim[0]*2+1,j);
+	       if((*mm1)!=INFINITY){
+	      	  for (i=1;i<size;i++) {
+			*mm1 = max(*mm1,m[opt_matpos2(tdim[i]*2,j)]);
+			if((*mm1)==INFINITY){
+				oo->nni--;
+				break;
+			}
+		  }
+	       	}
+		if((*mm2)!=INFINITY){
+		    for (i=1;i<size;i++) {
+			*mm2 = max(*mm2,m[opt_matpos2(tdim[i]*2+1,j)]);
+			if((*mm2)==INFINITY){
+				oo->nni--;
+				break;
+			}
+		    }
+		 }
+	      }
+	    
+
+	    /* merge unary constraints */
 	    {
 	      double* mm1 = oo->mat+opt_matpos2(tdim[0]*2,tdim[0]*2+1);
 	      double* mm2 = oo->mat+opt_matpos2(tdim[0]*2+1,tdim[0]*2);
@@ -637,9 +631,8 @@ opt_oct_t* opt_oct_fold(elina_manager_t* man,
     r = opt_oct_set_mat(pr,o,dst,NULL,destructive);
   }
   r->dim -= size-1;
-  if (tdim[0] < r->intdim)
-    r->intdim -= size - 1;
-
+  if ((int)tdim[0]<r->intdim) r->intdim -= size-1;
+ 
   if(oo){
   	opt_hmat_free(oo); 
   } 

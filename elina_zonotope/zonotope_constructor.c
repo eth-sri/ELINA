@@ -99,7 +99,6 @@ bool zonotope_is_bottom(elina_manager_t* man, zonotope_t* z)
 {
     start_timing();
     size_t i;
-    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_IS_BOTTOM);
     bool res = elina_interval_is_bottom(z->box[0]);
     if(res){
 	return true;
@@ -119,7 +118,6 @@ bool zonotope_is_bottom(elina_manager_t* man, zonotope_t* z)
 bool zonotope_is_top(elina_manager_t* man, zonotope_t* z)
 {
     start_timing();
-    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_IS_TOP);
     size_t i;
     bool res = elina_interval_is_top(z->box[0]);
     if(!res){
@@ -172,7 +170,6 @@ bool zonotope_is_eq(elina_manager_t* man, zonotope_t* z1, zonotope_t* z2)
 
 elina_interval_t** zonotope_to_box(elina_manager_t* man, zonotope_t* z){
     start_timing();
-    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_TO_BOX);
     elina_interval_t **res = elina_interval_array_alloc(z->dims);
     size_t i = 0;
     for (i=0; i<z->dims; i++) {
@@ -191,7 +188,6 @@ elina_lincons0_array_t zonotope_to_lincons_array(elina_manager_t* man, zonotope_
     /* TODO: use constraints in eps domain to deduce constraints on variable ? */
 {
     size_t i;
-    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_TO_LINCONS_ARRAY);
     elina_lincons0_array_t array;
 
     size_t nbdims = z->dims;
@@ -233,8 +229,10 @@ elina_lincons0_array_t zonotope_to_lincons_array(elina_manager_t* man, zonotope_
               elina_coeff_reinit(&expr->cst, ELINA_COEFF_SCALAR,
                                  ELINA_SCALAR_DOUBLE);
               scalar = expr->cst.val.scalar;
-              elina_scalar_set(scalar, z->box[i]->inf);
-
+              elina_scalar_t *tmp = elina_scalar_alloc();
+              elina_scalar_neg(tmp, z->box[i]->inf);
+              elina_scalar_set(scalar, tmp);
+              elina_scalar_free(tmp);
               point = !elina_scalar_infty(z->box[i]->inf) &&
                       elina_scalar_equal(z->box[i]->inf, z->box[i]->sup);
               array.p[size].constyp = point ? ELINA_CONS_EQ : ELINA_CONS_SUPEQ;
@@ -261,7 +259,6 @@ elina_lincons0_array_t zonotope_to_lincons_array(elina_manager_t* man, zonotope_
 
 elina_interval_t* zonotope_bound_dimension(elina_manager_t* man, zonotope_t* z, elina_dim_t dim)
 {
-    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_BOUND_DIMENSION);
     elina_interval_t* res = elina_interval_alloc();
     elina_interval_set(res, z->box[dim]);
     return res;

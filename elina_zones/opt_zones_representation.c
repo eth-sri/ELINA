@@ -137,9 +137,7 @@ opt_zones_t* opt_zones_top(elina_manager_t* man, unsigned short int intdim, unsi
 /********** Dimension Operator ************************/
 elina_dimension_t opt_zones_dimension(elina_manager_t* man, opt_zones_t* o)
 {
-
-  opt_zones_internal_t *pr =
-      opt_zones_init_from_manager(man, ELINA_FUNID_DIMENSION, 0);
+  
   elina_dimension_t r;
   r.intdim = o->intdim;
   r.realdim = o->dim-o->intdim;
@@ -151,8 +149,6 @@ elina_dimension_t opt_zones_dimension(elina_manager_t* man, opt_zones_t* o)
 /* Measuring the size of a zone abstract element */
 int opt_zones_size(elina_manager_t* man, opt_zones_t* o)
 {
-  opt_zones_internal_t *pr =
-      opt_zones_init_from_manager(man, ELINA_FUNID_ASIZE, 0);
   if (!o->m) return 1;
   int size = (o->dim+1)*(o->dim+1);
   return size;

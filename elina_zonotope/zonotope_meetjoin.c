@@ -10,7 +10,7 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
      // printf("meet start lincons %p %p\n",man,man->internal);
      // zonotope_fprint(stdout,man,z,NULL);
      // elina_lincons0_array_fprint(stdout,array,NULL);
-     // fflush(stdout);
+     //  fflush(stdout);
 
      // arg_assert(a && array, abort(););
 
@@ -28,6 +28,7 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
                                      res->intdim, kmax, false,
                                      ELINA_SCALAR_DOUBLE)) {
        /* there is some inferred bounds */
+
        for (i = 0; i < res->dims; i++) {
          if (tchange[2 * i] || tchange[2 * i + 1]) {
            if (elina_interval_is_bottom(res->box[i])) {
@@ -110,7 +111,8 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
                 // %d\n",pr->manNS->library,res->abs->man,destructive);
                 // fflush(stdout);
                 if (elina_abstract0_is_bottom(pr->manNS, res->abs)) {
-		    is_bottom = true;
+
+                    is_bottom = true;
 		    break;
 		}
 	    }
