@@ -64,8 +64,8 @@ static inline bool elina_rat_infty(elina_rat_t *r){
 
 /*  int -> elina_rat */
 static inline bool elina_rat_set_int(elina_rat_t *a, long long int num){
-	a->n = 1;
-	a->d = 0;
+	a->n = num;
+	a->d = 1;
 	return true;
 }
 
