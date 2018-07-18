@@ -177,7 +177,7 @@ elina_generic_meet_quasilinearize_lincons_array(elina_manager_t* man,
   man->result.flag_exact = man->result.flag_best = true;
 
   if (is_bottom(man,abs) || array->size==0){
-    res = destructive ? abs : copy(abs);
+    res = destructive ? abs : copy(man, abs);
   }
   else {
     array2 = elina_quasilinearize_lincons0_array(man,abs,array,&exact,
