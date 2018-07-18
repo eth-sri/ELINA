@@ -161,7 +161,6 @@ static inline int elina_rat_cmp(elina_rat_t *a, elina_rat_t *b)
 	}
   }
   else{
-	int sgn_a = elina_int_sgn(a->n);
 	if(b->d==0){
 		int sgn_b = elina_int_sgn(b->n);
 		if(sgn_b<0){

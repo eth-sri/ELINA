@@ -31,11 +31,10 @@ void strengthening_comp_list(opt_oct_mat_t *oo,comp_list_t *cd, unsigned short i
 	double *m = oo->mat;
 	array_comp_list_t *acl = oo->acl;
 	//char *cm = (char *)calloc(dim,sizeof(char));
-	comp_list_t * cl = acl->head;
+	comp_list_t * cl = oo->acl->head;
 	unsigned short int num_comp = acl->size;
 	char * jm = (char *)calloc(num_comp,sizeof(char));
 	int jc = 0;
-        cl = oo->acl->head;
 	int l = 0;
 	double * temp = (double *)calloc(2*dim,sizeof(double));
 	/*****
@@ -50,7 +49,7 @@ void strengthening_comp_list(opt_oct_mat_t *oo,comp_list_t *cd, unsigned short i
 			l++;
 			continue;
 		}
-		int comp_size = cl->size;
+		unsigned short int comp_size = cl->size;
 		comp_t *c = cl->head;
 		for(unsigned i = 0; i < 2*comp_size; i++){
 			int i1 = (i%2==0)? 2*c->num : 2*c->num+1;
@@ -144,7 +143,7 @@ bool strengthning_int_comp_sparse(opt_oct_mat_t * oo,  unsigned short int * ind1
 		cl = cl->next;
 	}
 	int jc = 0;
-	for(unsigned i = 0; i < n; i++){
+	for(int i = 0; i < n; i++){
 		int ind = i + ((((i^1) + 1)*((i^1) + 1))/2);
 		temp[i] = ceil(m[ind]/2);
 		if(temp[i] != INFINITY){
@@ -286,7 +285,7 @@ bool strengthning_comp_sparse(opt_oct_mat_t *oo, unsigned short int * ind1, doub
 	int jc = 0;
         cl = oo->acl->head;
         while(cl!=NULL){
-		int comp_size = cl->size;
+		unsigned short int comp_size = cl->size;
 		comp_t *c = cl->head;
 		for(unsigned i = 0; i < 2*comp_size; i++){
 			int i1 = (i%2==0)? 2*c->num : 2*c->num+1;
@@ -578,6 +577,7 @@ bool floyd_warshall_comp_dense(opt_oct_mat_t * oo, comp_list_t * cl, int dim){
 	free(ca);
 	free_array_comp_list(ot->acl);
 	opt_hmat_free(ot);
+        return false;
 }
 
 bool strong_closure_comp_sparse(opt_oct_mat_t *oo, double *temp1, double *temp2, unsigned short int *index1, unsigned short int *index2, int dim, bool is_int){
@@ -963,6 +963,7 @@ bool strong_closure_comp_sparse(opt_oct_mat_t *oo, double *temp1, double *temp2,
 			return 1;
 		}
     }
+    return 0;
     //return strengthning_dense_scalar(m,temp1,n);
 }
 

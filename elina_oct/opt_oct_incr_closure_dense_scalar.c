@@ -25,7 +25,6 @@ bool incremental_closure_opt_dense_scalar(opt_oct_mat_t *oo,int dim, int v, bool
 	
 	double *m = oo->mat;
 	int n = 2*dim;
-	int ii = 2*v + 1;
 	int j;
 	double *temp1, *temp2;
   	temp1 = (double *)calloc(2*dim, sizeof(double));
@@ -33,7 +32,7 @@ bool incremental_closure_opt_dense_scalar(opt_oct_mat_t *oo,int dim, int v, bool
         /******
 		incremental Floyd-Warshall : v in end-point position 
 	******/
-	for(unsigned k = 0; k < n; k=k + 2){
+	for(int k = 0; k < n; k=k + 2){
 		//fprintf(stdout, "%d\n",k);
   		//print(m, dim);
 		//fflush(stdout);
@@ -43,8 +42,7 @@ bool incremental_closure_opt_dense_scalar(opt_oct_mat_t *oo,int dim, int v, bool
 		int v2v1 = v1 + (((v2 + 1)*(v2 + 1))/2);
 		int kk = (k^1);
 		int br1 = k < v1 ? k : v1;
-		int br2 = kk < v1 ? kk : v1;
-		for(unsigned i = 2*v; i < 2*v + 2; i++){
+		for(int i = 2*v; i < 2*v + 2; i++){
 			//double ik = m[n*i + k];
 			int ind_ik, ind_ikk;
 			if(k <=i){
@@ -181,7 +179,7 @@ bool incremental_closure_opt_dense_scalar(opt_oct_mat_t *oo,int dim, int v, bool
 
 	//for(unsigned k = 2*v; k < 2*v + 2; k++){
 		/* incremental Floyd-Warshall : v in pivot position */
-		for(unsigned i = 0; i < v1; i++){
+		for(int i = 0; i < v1; i++){
 			int i2 = (i|1);
 			int br = i2;
 			int j;
@@ -209,7 +207,7 @@ bool incremental_closure_opt_dense_scalar(opt_oct_mat_t *oo,int dim, int v, bool
 		}
 
 
-		for(unsigned i = 2*v + 2; i < n; i++){
+		for(int i = 2*v + 2; i < n; i++){
 			int i2 = (i|1);
 			int br = v1;
 			int j;

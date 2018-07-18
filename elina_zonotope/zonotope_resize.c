@@ -152,8 +152,8 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
     //zonotope_fprint(stdout,man,res,NULL);
     //fflush(stdout);
     
-    zonotope_t * tmp = z;
-    if(destructive){
+   
+    //if(destructive){
         //z = res;
         //zonotope_free(man,tmp);
         //return z;
@@ -178,7 +178,7 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
         //z->nsymcons = NULL;
         //elina_abstract0_free(pr->manNS, z->abs);
         //free(z);
-    }
+    //}
     free(map);
     free(var_rem);
     record_timing(zonotope_remove_dimension_time);

@@ -275,7 +275,7 @@ void opt_pk_fold_new_comp(opt_pk_internal_t *opk, bool destructive,
 			  opt_pk_t ** poly, array_comp_list_t *acl, 
 			  elina_dim_t *tdim, size_t size){
 	size_t i;
-	elina_dim_t dim = tdim[0];
+	//elina_dim_t dim = tdim[0];
 	comp_list_t *cl = create_comp_list();
 	insert_comp(cl,tdim[0] + opk->dec);
 	insert_comp_list_tail(acl,cl);
@@ -289,7 +289,7 @@ void opt_pk_fold_new_comp(opt_pk_internal_t *opk, bool destructive,
 		fold_size = fold_size + oak->F->nbrows;
 	}
 	factor->F = opt_matrix_alloc(fold_size,3,false);
-	cl = acl->head;
+	//cl = acl->head;
 }
 
 static
@@ -589,7 +589,7 @@ opt_pk_array_t* opt_pk_fold(elina_manager_t* man,
   //opt_numint_t ** coeff_val = (opt_numint_t **)malloc(dimsup*sizeof(opt_numint_t *));
   k=0, k2 =0;
   comp_list_t * cl = acl->head;
-  bool flag1 = false, flag2 = false;
+  bool flag1 = false;
   opt_matrix_t * tmp;
   while(k < num_compa){
 	 unsigned short int * ca = to_sorted_array(cl,maxcols);
@@ -658,8 +658,7 @@ opt_pk_array_t* opt_pk_fold(elina_manager_t* man,
 				poly[k2] = opt_poly_alloc(oak->intdim - dim_size, oak->realdim);
 				poly[k2]->F = opt_matrix_fold_same_comp(opk,false, poly_a[k]->F, ndim, tdimk, dim_size);
 				// need to free poly[k2]->F afterwards	
-				flag2 = true;
-				tmp = poly[k2]->F;
+				//tmp = poly[k2]->F;
 			}
 			if(dim_size==dimsup){
 				// if all the folded dimensions are in the same block as tdim[0], 

@@ -483,7 +483,7 @@ opt_oct_t* opt_oct_add_epsilon(elina_manager_t* man, opt_oct_t* o, elina_scalar_
     else{
 	    r->m->is_dense = true;
 	    r->m->ti = true;
-	    for (i=0;i<size;i++) {
+	    for (i=0;(int)i<size;i++) {
 	      if (m[i]==INFINITY){
 		 continue;
 	      }
@@ -501,17 +501,17 @@ opt_oct_t* opt_oct_add_epsilon(elina_manager_t* man, opt_oct_t* o, elina_scalar_
 	    /* enlarge bounds */
 	    #if defined(VECTOR)
 	  	v_double_type val = v_set1_double(pr->tmp[0]);
-		for(i = 0; i < size/v_length; i++){
+		for(i = 0; (int)i < size/v_length; i++){
 			v_double_type op1 = v_load_double(m + i*v_length);
 			v_double_type op2 = v_add_double(val,op1);
 			v_store_double(mm + i*v_length,op2);
 		}  
 	    #else
-		for (i=0;i<(size/v_length)*v_length;i++){
+		for (i=0;(int)i<(size/v_length)*v_length;i++){
 	      		mm[i] = m[i] + pr->tmp[0];
 	    	}
 	    #endif
-		for(i = (size/v_length)*v_length;i < size; i++){
+		for(i = (size/v_length)*v_length;(int)i < size; i++){
 			mm[i] = m[i] + pr->tmp[0];
 		}
     }
@@ -636,7 +636,7 @@ opt_oct_t* opt_oct_add_epsilon_bin(elina_manager_t* man, opt_oct_t* o1, opt_oct_
     else{
 	    r->m->is_dense = true;
 	    r->m->ti = true;
-	    for (i=0;i<size;i++) {
+	    for (i=0;(int)i<size;i++) {
 	      if (m2[i]==INFINITY){
 		 continue;
 	      }
@@ -652,7 +652,7 @@ opt_oct_t* opt_oct_add_epsilon_bin(elina_manager_t* man, opt_oct_t* o1, opt_oct_
 	    opt_bound_of_scalar(pr,&pr->tmp[1],epsilon,false,false);
 	    pr->tmp[0] = pr->tmp[0] * pr->tmp[1];
 	    /* enlarge unstable coefficients in o1 */
-	    for (i=0;i<size;i++){
+	    for (i=0;(int)i<size;i++){
 	      if (m1[i] < m2[i]) {
 		mm[i] = m2[i] + pr->tmp[0];
 	      }

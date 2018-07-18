@@ -81,7 +81,6 @@ void opt_hmat_free(opt_oct_mat_t *oo){
 
 void top_mat(double *m, int dim){
 	
-	int n = 2*dim;
 	int size = 2*dim*(dim+1);
 	#if defined(VECTOR)
 		v_double_type infty = v_set1_double(INFINITY);
@@ -174,12 +173,11 @@ opt_oct_mat_t *opt_hmat_copy(opt_oct_mat_t * src_mat, int dim){
 	#endif
 	double *src = src_mat->mat;
 	double *dest;
-	int n = 2*dim;
 	int size = 2*dim*(dim+1);
 	//posix_memalign((void **)&dest,32,size*sizeof(double));
 	dest = (double *)malloc(size*sizeof(double));
 	
-	double sparsity = 1- ((double)(src_mat->nni/size));
+	//double sparsity = 1- ((double)(src_mat->nni/size));
 	opt_oct_mat_t * dst_mat = (opt_oct_mat_t *)malloc(sizeof(opt_oct_mat_t));
 	if(!src_mat->is_dense){
 		/*****
@@ -434,11 +432,10 @@ bool is_top_half(opt_oct_mat_t *oo, int dim){
 					else{
 						int ind = j1 + ((i1 + 1)*(i1 + 1))/2;
 						if(m[ind]!=INFINITY){
-							flag = false;
 							#if defined(TIMING)
 								record_timing(is_top_time);
 							#endif
-                            free(ca);
+                            				free(ca);
 							return false;
 						}
 					}
@@ -866,7 +863,6 @@ void meet_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 	double *m1 = oo1->mat;
 	double *m2 = oo2->mat;
 	int size = 2*dim*(dim + 1);
-	int n = 2*dim;
 	if(!oo1->is_dense && !oo2->is_dense){
 		/*****
 			If both oo1 and oo2 are decomposed type, then apply the decomposed type operator,
@@ -1027,7 +1023,8 @@ void forget_array_half(opt_oct_mat_t *oo, elina_dim_t *arr,int dim, int arr_dim,
 	double *m = oo->mat;
 	array_comp_list_t * acl = oo->acl;
 	for(int i = 0; i < arr_dim; i++){
-		elina_dim_t d = 2*arr[i];
+		//elina_dim_t d = 2*arr[i];
+		int d = (int)2*arr[i];
 		/*****
 			If the matrix is decomposed type,remove
 			the component part of arr if it exists
@@ -1100,7 +1097,6 @@ void join_half(opt_oct_mat_t *oo, opt_oct_mat_t *oo1, opt_oct_mat_t *oo2, int di
 	//int count = 0;
 	
 	int size = 2*dim*(dim + 1);
-	int n = 2*dim;
 	if((!oo1->is_dense) || (!oo2->is_dense)){
 		/******
 			If either oo1 or oo2 is decomposed type, apply the decomposed type operator
@@ -1237,7 +1233,7 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 		
 		for(int i = 0; i <=dim; i++){
 			//
-			while((l < nb_pos) &&(i==pos[l])){
+			while((l < nb_pos) &&(i==(int)pos[l])){
 				/***
 					For expand mult can be greater than 1 in which case nb_pos will be 1
 				****/
@@ -1268,7 +1264,7 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 		******/
 		int l = 0;
 		for(int i = 0; i < dim; i++){
-			if((l < nb_pos) && (i==pos[l])){
+			if((l < nb_pos) && (i==(int)pos[l])){
 				map[i] = new_dim;
 				l++;
 			}
@@ -1371,7 +1367,7 @@ void opt_hmat_addrem_dimensions(opt_oct_mat_t * dst_mat, opt_oct_mat_t* src_mat,
 		double* org_c = src + org_j*(org_j/2 + 1);
 	      //double* new_c = dst + opt_matsize(new_j/2);
 		double* new_c = dst + new_j*(new_j/2 + 1);
-	      int last_org_j = ((j<nb_pos-1) ? pos[j+1] : dim)*2;
+	      int last_org_j = ((j<nb_pos-1) ? (int)pos[j+1] : dim)*2;
 	      for (;org_j<last_org_j;org_j++,new_j++) {
 		int size_org_line = org_j+2-(org_j&1);
 		int size_new_line = new_j+2-(new_j&1);
@@ -1908,32 +1904,32 @@ opt_uexpr opt_oct_uexpr_of_linexpr(opt_oct_internal_t* pr, double* dst,
   if (opt_bounds_of_coeff(pr,dst + i,dst + i + 1,c,false)) u.type = OPT_EMPTY;    \
   if (c.discr!=ELINA_COEFF_SCALAR || !is_integer(dst[i])) u.is_int = 0;
   opt_uexpr u = { OPT_ZERO, 0, 0, 0, 0, 1 };
-  int i;
+  size_t i;
   COEFF(e->cst,0);
   switch (e->discr) {
   case ELINA_LINEXPR_DENSE:
-    if(e->size > dim)return u;
+    if(e->size > (elina_dim_t)dim)return u;
     for (i=0;i<e->size;i++) {
       
       COEFF(e->p.coeff[i],2*i+2);
-      CLASS_VAR(i);
+      CLASS_VAR((int)i);
     }
-    for (;i<dim;i++) {
+    for (;i<(elina_dim_t)dim;i++) {
       dst[2*i+2] = 0;
       dst[2*i+3] = 0;
     }
     break;
   case ELINA_LINEXPR_SPARSE:
-    for (i=0;i<dim;i++) {
+    for (i=0;i<(elina_dim_t)dim;i++) {
       dst[2*i+2] = 0;
       dst[2*i+3] = 0;
     }
     for (i=0;i<e->size;i++) {
       elina_dim_t d = e->p.linterm[i].dim;
       if (d==ELINA_DIM_MAX) continue;
-      if(d>=dim)return u;
+      if((int)d>=dim)return u;
       COEFF(e->p.linterm[i].coeff,2*d+2);
-      CLASS_VAR(d);
+      CLASS_VAR((int)d);
     }
     break;
   default: break;/********TODO: handle arg_assert arg_assert(0,return u;);*****/
@@ -1998,12 +1994,13 @@ bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim,
 		      bool* respect_closure)
 {
   double *m = oo->mat;
-  int i, j, k, ui, uj;
-  int var_pending = 0; /* delay incremental closure as long as possible */
+  int  j, k, ui, uj;
+  size_t i;
+  size_t var_pending = 0; /* delay incremental closure as long as possible */
   int closure_pending = 0;
   *exact = 1;
    int max_nni = 2*dim*(dim+1);
-  bool flag = is_int_flag ? 1 : 0;
+  //bool flag = is_int_flag ? 1 : 0;
   
   int *ind1, *ind2;
   //posix_memalign((void **)&temp1, 32, 2*dim*sizeof(double));

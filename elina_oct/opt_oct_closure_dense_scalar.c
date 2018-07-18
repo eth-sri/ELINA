@@ -98,7 +98,6 @@ bool strengthning_dense_scalar(opt_oct_mat_t * oo, double *temp, int n){
 
 bool floyd_warshall_dense_scalar(opt_oct_mat_t *oo, double *temp1, double *temp2, int dim, bool is_int){
     double *m = oo->mat;
-    int size = 4 * dim * dim;
     int n = 2*dim; 
     double count = 0;
     /******
@@ -254,6 +253,7 @@ bool floyd_warshall_dense_scalar(opt_oct_mat_t *oo, double *temp1, double *temp2
 	}
 	
     }
+    return false;
 }
 
 bool strong_closure_dense_scalar(opt_oct_mat_t *oo, double *temp1, double *temp2, int dim, bool is_int){

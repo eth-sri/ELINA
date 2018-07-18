@@ -56,7 +56,6 @@ bool opt_poly_meet_matrix(bool meet,
   opt_pk_internal_t* opk = (opt_pk_internal_t*)man->internal;
   man->result.flag_best = (oa->intdim==0);
   man->result.flag_exact = meet;
-    size_t start = oa->C->nbrows;
     //assert(pa->satC);
     if(lazy){
 	   
@@ -249,7 +248,7 @@ elina_linexpr0_t * copy_linexpr0_with_comp_list(opt_pk_internal_t *opk, elina_li
 			}
 			dst_linterm[j].dim = k;
 			elina_coeff_set(&dst_linterm[j].coeff, &src_coeff);	
-			k++;
+			//k++;
 		}
 	}
 	return dst;
@@ -1674,7 +1673,7 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
 			poly[0]->C = opt_matrix_alloc(C->nbrows+1,max_finest_cl->size+opk->dec,false);
 			poly[0]->F = opt_matrix_alloc(F->nbrows,max_finest_cl->size+opk->dec,false);
 			poly[0]->nbeq = split_matrix(opk,poly[0]->C,C,ind_map1,max_finest_cl->size, &is_pos);
-			size_t nbrows = poly[0]->C->nbrows;
+			//size_t nbrows = poly[0]->C->nbrows;
 			bool is_pos1 = false;
 			poly[0]->nbline = split_matrix(opk,poly[0]->F,F,ind_map1,max_finest_cl->size, &is_pos1); 
 			size_t lines_removed = remove_common_gen(opk,poly[0]->F,0); 
@@ -1692,7 +1691,7 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
 				poly[num_comp_res] = opt_poly_alloc(rem_size,0);
 				poly[num_comp_res]->C = opt_matrix_alloc(C->nbrows+1,rem_size+opk->dec,false);
 				poly[num_comp_res]->nbeq = split_matrix(opk,poly[num_comp_res]->C,C,ind_map2,rem_size, &is_pos);
-				nbrows = poly[num_comp_res]->C->nbrows;
+				//nbrows = poly[num_comp_res]->C->nbrows;
 			
 				poly[num_comp_res]->F = opt_matrix_alloc(F->nbrows,rem_size+opk->dec,false); 
 				bool is_pos1 = false;

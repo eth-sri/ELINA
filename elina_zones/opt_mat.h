@@ -190,7 +190,6 @@ static inline void print_mat(opt_zones_mat_t *oz, unsigned short int dim){
 		return;
 	}
 	unsigned short int n = dim+1;
-	int size = n*n;
 	unsigned short int i,j;
 	double *m = oz->mat;
 	if(!oz->is_dense){

@@ -96,9 +96,9 @@ bool opt_pk_is_bottom(elina_manager_t* man, opt_pk_array_t* op)
 
 
 void swelina_index(unsigned short int *idx1, unsigned short int *idx2){
-	unsigned  short int * tmp = idx1;
-	idx1 = idx2;
-	idx2 = tmp;
+	unsigned  short int tmp = *idx1;
+	*idx1 = *idx2;
+	*idx2 = tmp;
 }
 
 unsigned short int *sorted_index (opt_numint_t *arr, unsigned short int n)
@@ -304,7 +304,6 @@ bool opt_generators_sat_vector(opt_pk_internal_t* opk, opt_matrix_t* F,
 
 bool opt_poly_leq(opt_pk_internal_t * opk, opt_matrix_t * C, opt_matrix_t * F){
 	size_t nbrows = C->nbrows;
-	unsigned short int comp_size = C->nbcolumns - 2;
 	size_t i;
 	for(i=0; i < nbrows; i++){
 		if(!opt_generators_sat_vector(opk,F,C->p[i],  opk->strict && opt_numint_sgn(C->p[i][opt_polka_eps])<0)){
@@ -430,7 +429,7 @@ bool opt_pk_is_leq_gen(elina_manager_t * man, opt_pk_array_t *oa, opt_pk_array_t
 	unsigned short int *ca = ca_arr[indb];
 	ind_melina_b[kb] = map_index(ca_b,ca, clb->size);
 	free(ca_b);
-        opt_pk_t * obk = poly_b[kb];
+        //opt_pk_t * obk = poly_b[kb];
 	 //if (opk->funopt->algorithm>0){
     	//	opt_poly_chernikova(man,obk,"of the second argument");
 	 //}
@@ -468,7 +467,7 @@ bool opt_pk_is_leq_gen(elina_manager_t * man, opt_pk_array_t *oa, opt_pk_array_t
 		cl = cl->next;
 	}
 	
-	cla = acla->head;
+	
 	size_t *counter = (size_t *)calloc(num_comp,sizeof(size_t));
 	/******************
 		Cartesian product of vertices of A
@@ -580,7 +579,6 @@ bool opt_pk_is_leq(elina_manager_t *man, opt_pk_array_t *oa, opt_pk_array_t *ob)
 	#if defined(TIMING)
 		start_timing();
      	 #endif
-	opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_IS_LEQ);
 	array_comp_list_t * acla = oa->acl;
 	if(oa->is_bottom || !acla){
 		#if defined(TIMING)
@@ -610,7 +608,6 @@ bool opt_pk_is_leq(elina_manager_t *man, opt_pk_array_t *oa, opt_pk_array_t *ob)
 ******************************************************/
 bool opt_pk_is_eq(elina_manager_t* man, opt_pk_array_t* oa, opt_pk_array_t* ob)
 {
-  opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_IS_EQ);
   array_comp_list_t * acla = oa->acl;
   array_comp_list_t * aclb = ob->acl;
   if(oa->is_bottom || !acla){
@@ -762,7 +759,6 @@ void fuse_generators_intersecting_blocks(opt_matrix_t *F, opt_pk_t ** poly_a, ar
 		unsigned short int * ca_a = ca_a_arr[k];
 		unsigned short int comp_size = cla->size;
 		opt_matrix_t * src_mat = src->F;
-		size_t nbconsa = src_mat->nbrows;
 		opt_numint_t ** src_p = src_mat->p;
 		opt_numint_t ** dst_p = F->p;
 		if(!num_vertex){

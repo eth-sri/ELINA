@@ -721,7 +721,6 @@ opt_matrix_t* opt_matrix_permute_dimensions(opt_pk_internal_t* opk,
 void opt_matrix_rearrange(opt_matrix_t *oc, size_t nbeq){
 	size_t i=0,k=0;
 	size_t nbcons = oc->nbrows;
-	unsigned short int nbcolumns = oc->nbcolumns;
 	opt_numint_t **p = oc->p;
 	while((i<nbcons) && (k < nbeq)){
 		while((i < nbcons) && p[i][0]){
@@ -753,7 +752,7 @@ size_t opt_generator_rearrange(opt_matrix_t *F, opt_satmat_t * satF){
 		}
 	}
 	i=0;
-	opt_numint_t **p = F->p;
+	//opt_numint_t **p = F->p;
 	while((i<nbgens) && (k < num_vertex)){
 		
 		while((i < nbgens) && !vmap[i]){
@@ -781,7 +780,6 @@ size_t opt_generator_rearrange(opt_matrix_t *F, opt_satmat_t * satF){
 Assumes inequalities are between 0 and nbeq 
 **************************************************/
 size_t opt_matrix_gauss_elimination(opt_pk_internal_t *opk, opt_matrix_t *oc, size_t nbeq){
-	size_t nbcons = oc->nbrows;
 	unsigned short int nbcolumns = oc->nbcolumns;
 	size_t i, j;
 	unsigned short int k = 0;
@@ -1455,7 +1453,7 @@ size_t opt_matrix_remove_unconstrained(opt_pk_internal_t* opk, opt_matrix_t *noc
   size_t i, i1=0, nbrows = oc->nbrows;
   unsigned short int j,k,dimsup;
   unsigned short int nbcolumns = oc->nbcolumns;
-  dimsup = dimchange->intdim + dimchange->realdim;
+  //dimsup = dimchange->intdim + dimchange->realdim;
   size_t count = 0;
   for (i=0; i< nbrows; i++){
 	//printf("nbrows: %d %d %p\n",nbrows,i,oc->p[i]);
