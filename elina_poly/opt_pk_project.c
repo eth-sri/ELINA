@@ -379,7 +379,7 @@ void opt_poly_projectforget_array(bool project,
 	}
 	//quasi_removal(opk,op);
 	nbcons = ocp->nbrows;
-	int limit = nbcons;	
+	size_t limit = nbcons;	
 	int  nbadd;
 	int maxadd;
 	while(size > 0){

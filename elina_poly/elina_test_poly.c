@@ -356,7 +356,7 @@ void test_assign_array(unsigned short int dim, size_t nbcons){
 
 }
 
-bool test_substitute_array(unsigned short int dim, size_t nbcons){
+void test_substitute_array(unsigned short int dim, size_t nbcons){
 	elina_manager_t * man = opt_pk_manager_alloc(false);
 	opt_pk_array_t * oa1 = opt_pk_top(man, dim,0);
 	//generate random constraints
@@ -513,7 +513,7 @@ void test_sat_lincons(unsigned short int dim, size_t nbcons){
 
 
 
-bool test_bound_linexpr(unsigned short int dim, size_t nbcons){
+void test_bound_linexpr(unsigned short int dim, size_t nbcons){
 	elina_manager_t * man = opt_pk_manager_alloc(false);
 	opt_pk_array_t * oa1 = opt_pk_top(man, dim,0);
 	//generate random constraints
