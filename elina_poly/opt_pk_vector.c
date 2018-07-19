@@ -160,7 +160,7 @@ void opt_vector_clear(opt_numint_t * ov, unsigned short int size)
 void opt_vector_print(opt_numint_t* ov, unsigned short int size)
 {
   unsigned short int i;
-  printf("vector %lld: ", (long)size);
+  printf("vector %u: ", size);
   for (i=0; i<size; i++){
     printf("%lld ", ov[i]);
   }

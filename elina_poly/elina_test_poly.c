@@ -356,59 +356,60 @@ void test_assign_array(unsigned short int dim, size_t nbcons){
 
 }
 
-bool test_substitute_array(unsigned short int dim, size_t nbcons) {
-  elina_manager_t *man = opt_pk_manager_alloc(false);
-  opt_pk_array_t *oa1 = opt_pk_top(man, dim, 0);
-  // generate random constraints
-  elina_lincons0_array_t lincons0 = generate_random_lincons0_array(dim, nbcons);
-  opt_pk_array_t *oa2 = opt_pk_meet_lincons_array(man, false, oa1, &lincons0);
+void test_substitute_array(unsigned short int dim, size_t nbcons){
+	elina_manager_t * man = opt_pk_manager_alloc(false);
+	opt_pk_array_t * oa1 = opt_pk_top(man, dim,0);
+	//generate random constraints
+	elina_lincons0_array_t lincons0 = generate_random_lincons0_array(dim,nbcons);
+	opt_pk_array_t * oa2 = opt_pk_meet_lincons_array(man,false,oa1,&lincons0);
 
-  elina_dim_t *tdim = (elina_dim_t *)malloc(5 * sizeof(elina_dim_t));
+	
+	elina_dim_t * tdim = (elina_dim_t *)malloc(5*sizeof(elina_dim_t));
+	
+	elina_linexpr0_t ** expr_array = (elina_linexpr0_t**)malloc(5*sizeof(elina_linexpr0_t*));
+	size_t i;
+	for(i=0; i < 5; i++){
+		elina_linexpr0_t * linexpr0 = generate_random_linexpr0(dim);
+		expr_array[i] = linexpr0;
+		tdim[i] = rand()%dim;
+	}
+	printf("ELINA Input Polyhedron\n");
+	elina_lincons0_array_t arr1 = opt_pk_to_lincons_array(man,oa2);
+  	elina_lincons0_array_fprint(stdout,&arr1,NULL);
+	printf("Substitution statements\n");
+	for(i=0; i < 5; i++){
+		printf("x%d = ",tdim[i]);
+		elina_linexpr0_fprint(stdout,expr_array[i],NULL);
+		printf("\n");
+  		fflush(stdout);
+	}
+	
+	elina_lincons0_array_clear(&arr1);
+	//assign;
+	opt_pk_array_t * oa3 = opt_pk_substitute_linexpr_array(man,false,oa2,tdim, expr_array,5,NULL);
+	
 
-  elina_linexpr0_t **expr_array =
-      (elina_linexpr0_t **)malloc(5 * sizeof(elina_linexpr0_t *));
-  size_t i;
-  for (i = 0; i < 5; i++) {
-    elina_linexpr0_t *linexpr0 = generate_random_linexpr0(dim);
-    expr_array[i] = linexpr0;
-    tdim[i] = rand() % dim;
-  }
-  printf("ELINA Input Polyhedron\n");
-  elina_lincons0_array_t arr1 = opt_pk_to_lincons_array(man, oa2);
-  elina_lincons0_array_fprint(stdout, &arr1, NULL);
-  printf("Substitution statements\n");
-  for (i = 0; i < 5; i++) {
-    printf("x%d = ", tdim[i]);
-    elina_linexpr0_fprint(stdout, expr_array[i], NULL);
-    printf("\n");
-    fflush(stdout);
-  }
+	//meet with -x1 + 43 >= 0; 	
 
-  elina_lincons0_array_clear(&arr1);
-  // assign;
-  opt_pk_array_t *oa3 = opt_pk_substitute_linexpr_array(man, false, oa2, tdim,
-                                                        expr_array, 5, NULL);
+	// Print the result
+	printf("ELINA Output Polyhedron\n");
+	elina_lincons0_array_t arr = opt_pk_to_lincons_array(man,oa3);
+  	elina_lincons0_array_fprint(stdout,&arr,NULL);
+	printf("\n");
+  	fflush(stdout);
+ 	
+	opt_pk_free(man,oa1);
+	opt_pk_free(man,oa2);
+	opt_pk_free(man,oa3);
+	elina_manager_free(man);
+	for(i=0; i < 5; i++){
+		elina_linexpr0_free(expr_array[i]);
+	}
+	free(expr_array);
+	free(tdim);
+	elina_lincons0_array_clear(&lincons0);
+	elina_lincons0_array_clear(&arr);
 
-  // meet with -x1 + 43 >= 0;
-
-  // Print the result
-  printf("ELINA Output Polyhedron\n");
-  elina_lincons0_array_t arr = opt_pk_to_lincons_array(man, oa3);
-  elina_lincons0_array_fprint(stdout, &arr, NULL);
-  printf("\n");
-  fflush(stdout);
-
-  opt_pk_free(man, oa1);
-  opt_pk_free(man, oa2);
-  opt_pk_free(man, oa3);
-  elina_manager_free(man);
-  for (i = 0; i < 5; i++) {
-    elina_linexpr0_free(expr_array[i]);
-  }
-  free(expr_array);
-  free(tdim);
-  elina_lincons0_array_clear(&lincons0);
-  elina_lincons0_array_clear(&arr);
 }
 
 void test_fold(unsigned short int dim, size_t nbcons){
@@ -510,34 +511,38 @@ void test_sat_lincons(unsigned short int dim, size_t nbcons){
 	elina_manager_free(man);
 }
 
-bool test_bound_linexpr(unsigned short int dim, size_t nbcons) {
-  elina_manager_t *man = opt_pk_manager_alloc(false);
-  opt_pk_array_t *oa1 = opt_pk_top(man, dim, 0);
-  // generate random constraints
-  elina_lincons0_array_t lincons0 = generate_random_lincons0_array(dim, nbcons);
-  elina_lincons0_array_fprint(stdout, &lincons0, NULL);
-  // generate the polyhedra
-  opt_pk_array_t *oa2 = opt_pk_meet_lincons_array(man, false, oa1, &lincons0);
-  elina_linexpr0_t *linexpr = generate_random_linexpr0(dim);
-  // Print the ELINA input
-  printf("ELINA Input Polyhedron %d\n", opt_pk_is_bottom(man, oa2));
-  elina_lincons0_array_t arr = opt_pk_to_lincons_array(man, oa2);
-  elina_lincons0_array_fprint(stdout, &arr, NULL);
-  printf("\n");
-  printf("Linear Expression\n");
-  elina_linexpr0_fprint(stdout, linexpr, NULL);
-  printf("\n");
-  elina_lincons0_array_clear(&arr);
-  elina_interval_t *interval = opt_pk_bound_linexpr(man, oa2, linexpr);
-  printf("Interval \n");
-  elina_interval_print(interval);
-  opt_pk_free(man, oa1);
-  opt_pk_free(man, oa2);
-  elina_lincons0_array_clear(&lincons0);
-  elina_linexpr0_free(linexpr);
-  elina_manager_free(man);
-  elina_interval_free(interval);
+
+
+void test_bound_linexpr(unsigned short int dim, size_t nbcons){
+	elina_manager_t * man = opt_pk_manager_alloc(false);
+	opt_pk_array_t * oa1 = opt_pk_top(man, dim,0);
+	//generate random constraints
+	elina_lincons0_array_t lincons0 = generate_random_lincons0_array(dim,nbcons);
+	elina_lincons0_array_fprint(stdout,&lincons0,NULL);
+	//generate the polyhedra
+	opt_pk_array_t * oa2 = opt_pk_meet_lincons_array(man,false,oa1,&lincons0);
+	elina_linexpr0_t * linexpr = generate_random_linexpr0(dim);
+	// Print the ELINA input
+	printf("ELINA Input Polyhedron %d\n",opt_pk_is_bottom(man,oa2));
+	elina_lincons0_array_t arr = opt_pk_to_lincons_array(man,oa2);
+  	elina_lincons0_array_fprint(stdout,&arr,NULL);
+	printf("\n");
+	printf("Linear Expression\n");
+	elina_linexpr0_fprint(stdout,linexpr,NULL);
+	printf("\n");
+	elina_lincons0_array_clear(&arr);
+	elina_interval_t *interval = opt_pk_bound_linexpr(man,oa2,linexpr);
+	printf("Interval \n");
+	elina_interval_print(interval);
+	opt_pk_free(man,oa1);
+	opt_pk_free(man,oa2);
+	elina_lincons0_array_clear(&lincons0);
+	elina_linexpr0_free(linexpr);
+	elina_manager_free(man);
+	elina_interval_free(interval);
+
 }
+
 
 int main(int argc, char **argv){
 	if(argc < 3){

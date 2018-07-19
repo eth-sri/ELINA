@@ -1237,41 +1237,41 @@ size_t remove_common_gen(opt_pk_internal_t *opk, opt_matrix_t * F, size_t start)
 	char * map = (char *)calloc(nbrows,sizeof(char));
 	int i,j;
 	//opt_matrix_fprint(stdout,F);
-        for (i = start; i < nbrows; i++) {
-          opt_numint_t *pi = F->p[i];
-          unsigned short int ind = 0;
-          for (j = 0; j < start; j++) {
-            opt_numint_t *pj = F->p[j];
-            if (!map[j] && opt_vector_equal(opk, pi, pj, nbcolumns, &ind)) {
-              rmap[i - start] = 1;
-              map[j] = 1;
-              break;
-            }
-          }
-          for (j = i + 1; j < nbrows; j++) {
-            opt_numint_t *pj = F->p[j];
-            if (!map[j] && opt_vector_equal(opk, pi, pj, nbcolumns, &ind)) {
-              rmap[i - start] = 1;
-              map[j] = 1;
-              break;
-            }
-          }
-        }
+	for(i = start; i < (int)nbrows; i++){
+		opt_numint_t *pi = F->p[i];
+		unsigned short int ind = 0;
+		for(j = 0; j < (int)start; j++){
+			opt_numint_t* pj = F->p[j];
+			if(!map[j] && opt_vector_equal(opk,pi,pj,nbcolumns,&ind)){
+                   			 rmap[i-start] = 1;
+					 map[j] = 1;
+					 break;
+			}
+		}
+		for(j=i+1; j < (int)nbrows; j++){
+			opt_numint_t* pj = F->p[j];
+			if(!map[j] && opt_vector_equal(opk,pi,pj,nbcolumns,&ind)){
+                   			 rmap[i-start] = 1;
+					 map[j] = 1;
+					 break;
+			}
+		}
+	}
     j = nbrows - 1;
-    for (i = start; i < nb; i++) {
-      if (rmap[i - start]) {
-        nbrows--;
-        if (!F->p[i][0]) {
-          lines_removed++;
+    for(i=start; i < (int)nb; i++){
+        if(rmap[i-start]){
+            nbrows--;
+	    if(!F->p[i][0]){
+		lines_removed++;
+	    }
+            while((j>i) && rmap[j-start]){
+                j--;
+            }
+            if(j>i){
+                opt_matrix_exch_rows(F,i,j);
+	    }
+	    j--;
         }
-        while ((j > i) && rmap[j - start]) {
-          j--;
-        }
-        if (j > i) {
-          opt_matrix_exch_rows(F, i, j);
-        }
-        j--;
-      }
     }
     free(map);
     free(rmap);

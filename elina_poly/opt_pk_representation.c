@@ -304,50 +304,51 @@ void quasi_removal(opt_pk_internal_t *opk, opt_pk_t * o){
         size_t *rmap = (size_t *)calloc(nbcons,sizeof(size_t));
 	int i,j;
 	//opt_matrix_fprint(stdout,oc);
-        for (i = 0; i < nbcons; i++) {
-          opt_numint_t *pi = oc->p[i];
-          for (j = i + 1; j < nbcons; j++) {
-            opt_numint_t *pj = oc->p[j];
-            if ((pi[0] == pj[0]) &&
-                (!opt_vector_compare_coeff(opk, pi, pj, nbcolumns))) {
-              if (!pi[0]) {
-                nbeq--;
-              }
-              // nbcons--;
-              if (pi[1] > pj[1]) {
-                rmap[i] = 1;
-                // opt_matrix_exch_rows(oc,i,nbcons);
-              } else {
-                rmap[j] = 1;
-                // opt_matrix_exch_rows(oc,j,nbcons);
-              }
-              // opt_vector_print(pi,nbcolumns);
-              // opt_vector_print(pj,nbcolumns);
-            } else if (!pi[0]) {
-              opt_numint_t *npj = opt_vector_neg(opk, pj, nbcolumns);
-              if (!opt_vector_compare(opk, pi, npj, nbcolumns)) {
-                if (pi[1] == npj[1]) {
-                  rmap[j] = 1;
-                  nbeq--;
-                }
-              }
-              free(npj);
-            }
-          }
-        }
+	for(i = 0; i < (int)nbcons; i++){
+		opt_numint_t *pi = oc->p[i];
+		for(j = i+1; j < (int)nbcons; j++){
+			opt_numint_t* pj = oc->p[j];
+			if((pi[0]==pj[0]) && (!opt_vector_compare_coeff(opk,pi,pj,nbcolumns))){
+				if(!pi[0]){
+					nbeq--;
+				}
+				//nbcons--;
+				if(pi[1] > pj[1]){
+                    			rmap[i] = 1;
+					//opt_matrix_exch_rows(oc,i,nbcons);
+				}
+				else{
+                   			 rmap[j] = 1;
+					//opt_matrix_exch_rows(oc,j,nbcons);
+				}	
+				//opt_vector_print(pi,nbcolumns);
+				//opt_vector_print(pj,nbcolumns);
+			}
+			else if(!pi[0]){
+				opt_numint_t *npj = opt_vector_neg(opk,pj,nbcolumns);
+				if(!opt_vector_compare(opk,pi,npj,nbcolumns)){
+					if(pi[1]==npj[1]){
+						rmap[j] = 1;
+						nbeq--;
+					}
+				}
+				free(npj);
+			}
+		}
+	}
     j = nbcons - 1;
-    for (i = 0; i < nb; i++) {
-      // printf("i: %d rmap[i]: %d\n",i,rmap[i]);
-      if (rmap[i]) {
-        nbcons--;
-        while ((j > i) && rmap[j]) {
-          j--;
+    for(i=0; i < (int)nb; i++){
+	//printf("i: %d rmap[i]: %d\n",i,rmap[i]);
+        if(rmap[i]){
+            nbcons--;
+            while((j>i) && rmap[j]){
+                j--;
+            }
+            if(j>i){
+                opt_matrix_exch_rows(oc,i,j);
+	    }
+	    j--;
         }
-        if (j > i) {
-          opt_matrix_exch_rows(oc, i, j);
-        }
-        j--;
-      }
     }
     free(rmap);
    //opt_matrix_fprint(stdout,oc);

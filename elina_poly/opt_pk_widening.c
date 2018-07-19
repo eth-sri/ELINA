@@ -76,8 +76,9 @@ typedef struct opt_qsort_man_t {
 static int opt_qsort_rows_compar(void* qsort_man, const void* p1, const void* p2)
 {
   opt_qsort_man_t* qm = (opt_qsort_man_t*)qsort_man;
-  return (opt_bitstring_cmp(((opt_satmat_row_t *)p1)->p,
-                            ((opt_satmat_row_t *)p2)->p, qm->size));
+  return (opt_bitstring_cmp( ((const opt_satmat_row_t*)p1)->p,
+			 ((const opt_satmat_row_t*)p2)->p,
+			 qm->size));
 }
 
 static void opt_esatmat_sort_rows(opt_satmat_row_t* tab, opt_satmat_t* sat)
