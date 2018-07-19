@@ -287,7 +287,7 @@ done
 if test "$cc" = "none"; then echo "no C compiler found"; exit 1; fi
 
 acc=""
-for i in $c_cxx_flags -Werror-implicit-function-declaration -Wbad-function-cast -Wstrict-prototypes -std=c99 $CFLAGS $LDFLAGS
+for i in $c_cxx_flags -Werror-implicit-function-declaration -Wbad-function-cast -Wstrict-prototypes -Wno-strict-overflow -std=c99 $CFLAGS $LDFLAGS
 do
     checkcomp "$cc" "$i"
 done
