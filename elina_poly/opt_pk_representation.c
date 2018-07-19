@@ -304,9 +304,9 @@ void quasi_removal(opt_pk_internal_t *opk, opt_pk_t * o){
         size_t *rmap = (size_t *)calloc(nbcons,sizeof(size_t));
 	int i,j;
 	//opt_matrix_fprint(stdout,oc);
-	for(i = 0; i < nbcons; i++){
+	for(i = 0; i < (int)nbcons; i++){
 		opt_numint_t *pi = oc->p[i];
-		for(j = i+1; j < nbcons; j++){
+		for(j = i+1; j < (int)nbcons; j++){
 			opt_numint_t* pj = oc->p[j];
 			if((pi[0]==pj[0]) && (!opt_vector_compare_coeff(opk,pi,pj,nbcolumns))){
 				if(!pi[0]){
@@ -337,7 +337,7 @@ void quasi_removal(opt_pk_internal_t *opk, opt_pk_t * o){
 		}
 	}
     j = nbcons - 1;
-    for(i=0; i < nb; i++){
+    for(i=0; i < (int)nb; i++){
 	//printf("i: %d rmap[i]: %d\n",i,rmap[i]);
         if(rmap[i]){
             nbcons--;

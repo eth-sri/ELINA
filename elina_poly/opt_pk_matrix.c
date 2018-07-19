@@ -1238,10 +1238,10 @@ size_t remove_common_gen(opt_pk_internal_t *opk, opt_matrix_t * F, size_t start)
 	char * map = (char *)calloc(nbrows,sizeof(char));
 	int i,j;
 	//opt_matrix_fprint(stdout,F);
-	for(i = start; i < nbrows; i++){
+	for(i = start; i < (int)nbrows; i++){
 		opt_numint_t *pi = F->p[i];
 		unsigned short int ind = 0;
-		for(j = 0; j < start; j++){
+		for(j = 0; j < (int)start; j++){
 			opt_numint_t* pj = F->p[j];
 			if(!map[j] && opt_vector_equal(opk,pi,pj,nbcolumns,&ind)){
                    			 rmap[i-start] = 1;
@@ -1249,7 +1249,7 @@ size_t remove_common_gen(opt_pk_internal_t *opk, opt_matrix_t * F, size_t start)
 					 break;
 			}
 		}
-		for(j=i+1; j < nbrows; j++){
+		for(j=i+1; j < (int)nbrows; j++){
 			opt_numint_t* pj = F->p[j];
 			if(!map[j] && opt_vector_equal(opk,pi,pj,nbcolumns,&ind)){
                    			 rmap[i-start] = 1;
@@ -1259,7 +1259,7 @@ size_t remove_common_gen(opt_pk_internal_t *opk, opt_matrix_t * F, size_t start)
 		}
 	}
     j = nbrows - 1;
-    for(i=start; i < nb; i++){
+    for(i=start; i < (int)nb; i++){
         if(rmap[i-start]){
             nbrows--;
 	    if(!F->p[i][0]){

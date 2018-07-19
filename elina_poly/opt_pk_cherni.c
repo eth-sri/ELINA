@@ -567,7 +567,7 @@ void opt_cherni_minimize(opt_pk_internal_t* opk,
   	}
   }*/
   //else{
-  	for (i=0; i<C->nbcolumns-1; i++){
+  	for (i=0; (int)i<C->nbcolumns-1; i++){
     		F->p[i][i+1] = 1;
   	}
   	/* conversion */
