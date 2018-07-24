@@ -381,3 +381,30 @@ char * create_intersection_map(array_comp_list_t * acl1, array_comp_list_t * acl
 	free(map2);
 	return map;
 }
+
+size_t array_comp_list_serialize_common(void* dst, array_comp_list_t* acl, int dry_run){
+  size_t idx = 0;
+
+  if(!dry_run){
+    *(unsigned short int*)(dst + idx) = acl->size;
+  }
+  idx += sizeof(unsigned short int);
+
+  idx += comp_list_serialize_common(dst + idx, acl->head, acl->size, dry_run);
+  return idx;
+}
+
+array_comp_list_t* array_comp_list_deserialize(void* p, size_t* size){
+  array_comp_list_t* acl = (array_comp_list_t*)malloc(sizeof(array_comp_list_t));
+  size_t idx = 0;
+
+  acl->size = *(unsigned short int*)(p + idx);
+  idx += sizeof(unsigned short int);
+
+  size_t head_size;
+  acl->head = comp_list_deserialize(p + idx, acl->size, &head_size);
+  idx += head_size;
+
+  *size = idx;
+  return acl;
+}

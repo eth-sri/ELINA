@@ -1581,3 +1581,66 @@ size_t split_matrix(opt_pk_internal_t * opk, opt_matrix_t * dst, opt_matrix_t *s
 	return res;
 }
 
+size_t opt_matrix_serialize_common(void* dst, opt_matrix_t* oc, bool dry_run){
+  size_t idx = 0;
+
+  if(!dry_run){
+    *(size_t*)(dst + idx) = oc->nbrows;
+  }
+  idx += sizeof(size_t);
+
+  if(!dry_run){
+    *(unsigned short int*)(dst + idx) = oc->nbcolumns;
+  }
+  idx += sizeof(unsigned short int);
+
+  if(!dry_run){
+    *(size_t*)(dst + idx) = oc->_maxrows;
+  }
+  idx += sizeof(size_t);
+
+  if(!dry_run){
+    *(bool*)(dst + idx) = oc->_sorted;
+  }
+  idx += sizeof(bool);
+
+  for(size_t i = 0; i < oc->_maxrows; i++){
+    for(unsigned short int j = 0; j < oc->nbcolumns; j++){
+      if(!dry_run){
+	*(opt_numint_t*)(dst + idx) = oc->p[i][j];
+      }
+      idx += sizeof(opt_numint_t);
+    }
+  }
+
+  return idx;
+}
+
+opt_matrix_t* opt_matrix_deserialize(void* p, size_t* size){
+  opt_matrix_t* oc = (opt_matrix_t*)malloc(sizeof(opt_matrix_t));
+  size_t idx = 0;
+
+  oc->nbrows = *(size_t*)(p + idx);
+  idx += sizeof(size_t);
+
+  oc->nbcolumns = *(unsigned short int*)(p + idx);
+  idx += sizeof(unsigned short int);
+
+  oc->_maxrows = *(size_t*)(p + idx);
+  idx += sizeof(size_t);
+
+  oc->_sorted = *(bool*)(p + idx);
+  idx += sizeof(bool);
+
+  oc->p = (opt_numint_t**)malloc(sizeof(opt_numint_t*) * oc->_maxrows);
+  for(size_t i = 0; i < oc->_maxrows; i++){
+    oc->p[i] = (opt_numint_t*)malloc(sizeof(opt_numint_t) * oc->nbcolumns);
+    for(unsigned short int j = 0; j < oc->nbcolumns; j++){
+      oc->p[i][j] = *(opt_numint_t*)(p + idx);
+      idx += sizeof(opt_numint_t);
+    }
+  }
+
+  *size = idx;
+  return oc;
+}
