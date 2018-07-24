@@ -1418,8 +1418,10 @@ size_t opt_pk_array_serialize_common(void* dst, opt_pk_array_t* oa, bool dry_run
   }
   idx += sizeof(unsigned short int);
 
-  idx += array_comp_list_serialize_common(dst + idx, oa->acl, dry_run);
-  idx += opt_pk_ptr_serialize_common(dst + idx, oa->poly, oa->acl->size, dry_run);
+  if(!oa->is_bottom){
+    idx += array_comp_list_serialize_common(dst + idx, oa->acl, dry_run);
+    idx += opt_pk_ptr_serialize_common(dst + idx, oa->poly, oa->acl->size, dry_run);
+  }
   return idx;
 }
 
@@ -1521,13 +1523,18 @@ opt_pk_array_t* opt_pk_array_deserialize_raw(elina_manager_t* man, void* p, size
   oa->maxcols = *(unsigned short int*)(p + idx);
   idx += sizeof(unsigned short int);
 
-  size_t acl_size;
-  oa->acl = array_comp_list_deserialize(p + idx, &acl_size);
-  idx += acl_size;
+  if(oa->is_bottom){
+    oa->acl = NULL;
+    oa->poly = NULL;
+  }else{
+    size_t acl_size;
+    oa->acl = array_comp_list_deserialize(p + idx, &acl_size);
+    idx += acl_size;
 
-  size_t poly_size;
-  oa->poly = opt_pk_ptr_deserialize(p + idx, oa->acl->size, &poly_size);
-  idx += poly_size;
+    size_t poly_size;
+    oa->poly = opt_pk_ptr_deserialize(p + idx, oa->acl->size, &poly_size);
+    idx += poly_size;
+  }
 
   *size = idx;
   return oa;
