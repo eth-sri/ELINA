@@ -347,9 +347,9 @@ elina_manager_t* opt_oct_manager_alloc(void)
   init_array(pr->tmp,pr->tmp_size);
   pr->tmp2 = calloc(pr->tmp_size,sizeof(long));
   assert(pr->tmp2);
-
-  man = elina_manager_alloc("opt_oct", "1.0 with double", pr,
-                            (void (*)(void *))opt_oct_internal_free);
+  
+  man = elina_manager_alloc("opt_oct","1.1 with double", pr,
+			 (void (*)(void*))opt_oct_internal_free);
 
   pr->man = man;
 

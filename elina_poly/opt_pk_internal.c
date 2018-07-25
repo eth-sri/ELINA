@@ -196,9 +196,8 @@ elina_manager_t* opt_pk_manager_alloc(bool strict)
 
   opk = opt_pk_internal_alloc(strict);
   opt_pk_set_approximate_max_coeff_size(opk, 1);
-  man = elina_manager_alloc(
-      strict ? "optpoly, strict mode" : "optpoly, loose mode",
-      "1.0 with Long Long Int", opk, (void (*)(void *))opt_pk_internal_free);
+  man = elina_manager_alloc(strict ? "optpoly, strict mode" : "optpoly, loose mode","1.1 with Long Long Int",
+		      opk, (void (*)(void*))opt_pk_internal_free);
   funptr = man->funptr;
   
   funptr[ELINA_FUNID_COPY] = &opt_pk_copy;
