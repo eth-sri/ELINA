@@ -69,8 +69,8 @@ elina_manager_t* elina_box_manager_alloc(void)
   }
 
   itv = elina_box_internal_alloc();
-  man = elina_manager_alloc("elina box", "1.0 with DOUBLE ",
-			 itv, (void (*)(void*))elina_box_internal_free);
+  man = elina_manager_alloc("elina box", "1.1 with DOUBLE ", itv,
+                            (void (*)(void *))elina_box_internal_free);
   funptr = man->funptr;
 
   funptr[ELINA_FUNID_COPY] = &elina_box_copy;

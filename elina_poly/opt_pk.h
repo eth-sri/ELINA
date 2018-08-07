@@ -192,6 +192,10 @@ void opt_pk_array_fprint(FILE* stream,
   /* Print the abstract value in a pretty way, using function
      name_of_dim to name dimensions */
 
+elina_membuf_t opt_pk_array_serialize_raw(elina_manager_t* man, opt_pk_array_t* a);
+
+opt_pk_array_t* opt_pk_array_deserialize_raw(elina_manager_t* man, void* p, size_t* size);
+
 /* ********************************************************************** */
 /* II. Constructor, accessors, tests and property extraction */
 /* ********************************************************************** */

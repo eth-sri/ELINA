@@ -65,13 +65,15 @@ elina_manager_t* zonotope_manager_alloc(void)
 	elina_manager_t* manNS = elina_box_manager_alloc();
 	zonotope_internal_t *zt = zonotope_internal_alloc(manNS);
 
-	man = elina_manager_alloc("Zonotope",/* Library name */
-			"1.0", /* version */
-			zt, /* internal structure */
-			(void (*)(void*))zonotope_internal_free /* free function for internal */
-			);
+        man = elina_manager_alloc(
+            "Zonotope", /* Library name */
+            "1.1",      /* version */
+            zt,         /* internal structure */
+            (void (*)(
+                void *))zonotope_internal_free /* free function for internal */
+        );
 
-	funptr = man->funptr;
+        funptr = man->funptr;
 
 	/* Internal representation */
 	/***************************/

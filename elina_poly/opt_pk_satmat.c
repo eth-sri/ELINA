@@ -243,3 +243,59 @@ void opt_satmat_move_rows(opt_satmat_t* os, size_t destrow, size_t orgrow, size_
     }
   }
 }
+
+size_t opt_satmat_serialize_common(void* dst, opt_satmat_t* oc, int dry_run){
+  size_t idx = 0;
+
+  if(!dry_run){
+    *(size_t*)(dst + idx) = oc->nbrows;
+  }
+  idx += sizeof(size_t);
+
+  if(!dry_run){
+    *(unsigned short int*)(dst + idx) = oc->nbcolumns;
+  }
+  idx += sizeof(unsigned short int);
+
+  if(!dry_run){
+    *(size_t*)(dst + idx) = oc->_maxrows;
+  }
+  idx += sizeof(size_t);
+
+  for(size_t i = 0; i < oc->_maxrows; i++){
+    for(unsigned short int j = 0; j < oc->nbcolumns; j++){
+      if(!dry_run){
+	*(opt_bitstring_t*)(dst + idx) = oc->p[i][j];
+      }
+      idx += sizeof(opt_bitstring_t);
+    }
+  }
+
+  return idx;
+}
+
+opt_satmat_t* opt_satmat_deserialize(void* p, size_t* size){
+  opt_satmat_t* oc = (opt_satmat_t*)malloc(sizeof(opt_satmat_t));
+  size_t idx = 0;
+
+  oc->nbrows = *(size_t*)(p + idx);
+  idx += sizeof(size_t);
+
+  oc->nbcolumns = *(unsigned short int*)(p + idx);
+  idx += sizeof(unsigned short int);
+
+  oc->_maxrows = *(size_t*)(p + idx);
+  idx += sizeof(size_t);
+
+  oc->p = (opt_bitstring_t**)malloc(sizeof(opt_bitstring_t*) * oc->_maxrows);
+  for(size_t i = 0; i < oc->_maxrows; i++){
+    oc->p[i] = (opt_bitstring_t*)malloc(sizeof(opt_bitstring_t) * oc->nbcolumns);
+    for(unsigned short int j = 0; j < oc->nbcolumns; j++){
+      oc->p[i][j] = *(opt_bitstring_t*)(p + idx);
+      idx += sizeof(opt_bitstring_t);
+    }
+  }
+
+  *size = idx;
+  return oc;
+}

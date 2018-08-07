@@ -116,6 +116,7 @@ extern "C" {
 #define elina_dimchange_alloc ap_dimchange_alloc
 #define ELINA_DIM_MAX AP_DIM_MAX
 
+#define elina_membuf_t ap_membuf_t
 #define elina_funid_t ap_funid_t
 #define elina_funopt_t ap_funopt_t
 #define elina_exc_t ap_exc_t
@@ -180,6 +181,8 @@ extern "C" {
 #define ELINA_FUNID_FOLD AP_FUNID_FOLD
 #define ELINA_FUNID_WIDENING AP_FUNID_WIDENING
 #define ELINA_FUNID_SIZE AP_FUNID_SIZE
+#define ELINA_FUNID_SERIALIZE_RAW AP_FUNID_SERIALIZE_RAW
+#define ELINA_FUNID_DESERIALIZE_RAW AP_FUNID_DESERIALIZE_RAW
 
 #define elina_abstract0_t ap_abstract0_t
 #define elina_abstract0_is_bottom ap_abstract0_is_bottom
@@ -222,6 +225,7 @@ extern "C" {
 #define elina_linexpr0_set_cst_scalar_double ap_linexpr0_set_cst_scalar_double
 #define elina_linexpr0_set_cst_interval ap_linexpr0_set_cst_interval
 #define elina_linexpr0_set_cst_interval_int ap_linexpr0_set_cst_interval_int
+#define elina_linexpr0_set_coeff_scalar_int ap_linexpr0_set_coeff_scalar_int
 #define elina_linexpr0_set_coeff_scalar_double ap_linexpr0_set_coeff_scalar_double
 #define elina_linexpr0_array_is_linear ap_linexpr0_array_is_linear
 #define elina_linexpr0_array_free ap_linexpr0_array_free
