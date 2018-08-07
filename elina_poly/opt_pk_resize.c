@@ -416,13 +416,15 @@ opt_pk_array_t* opt_pk_remove_dimensions(elina_manager_t* man,
 			poly_a[k]->intdim = comp_size - size;
 			poly_a[k]->nbline = oak->nbline;
 			poly_a[k]->nbeq = 0;
-                        if (opk->funopt->algorithm > 0) {
-                          opt_poly_chernikova(man, poly_a[k], "of the result");
-                          if (opk->exn) {
-                            opk->exn = ELINA_EXC_NONE;
-                          }
-                        }
-                        man->result.flag_best = man->result.flag_exact =
+			
+			//if (opk->funopt->algorithm>0){
+			    opt_poly_chernikova(man,poly_a[k],"of the result");
+				
+			    if (opk->exn){
+				opk->exn = ELINA_EXC_NONE;
+			    }
+		        //}
+			man->result.flag_best = man->result.flag_exact =
 			     dimchange1.intdim==0;
 		}
 		free(ndim);
@@ -432,8 +434,9 @@ opt_pk_array_t* opt_pk_remove_dimensions(elina_manager_t* man,
 	
 	array_comp_list_t * tmp = acl;
         oa->acl = copy_array_comp_list(acl);
-
-        free_array_comp_list(tmp);
+	//printf("remove output %p\n",oa->poly[0]->F);
+	//fflush(stdout);
+	free_array_comp_list(tmp);
 	oa->maxcols = oa->maxcols - dimsup;
 	#if defined(TIMING)
  	 	record_timing(remove_dimension_time);
@@ -481,13 +484,13 @@ opt_pk_array_t* opt_pk_remove_dimensions(elina_manager_t* man,
 			poly[k1]->F = opt_matrix_remove_dimensions(opk,false,oak->F,&dimchange1);
 			poly[k1]->nbeq = 0;
 			poly[k1]->nbline = oak->nbline;
-                        if (opk->funopt->algorithm > 0) {
-                          opt_poly_chernikova(man, poly[k1], "of the result");
-                          if (opk->exn) {
-                            opk->exn = ELINA_EXC_NONE;
-                          }
-                        }
-                        man->result.flag_best = man->result.flag_exact =
+			//if (opk->funopt->algorithm>0){
+			    opt_poly_chernikova(man,poly[k1],"of the result");
+			    if (opk->exn){
+				opk->exn = ELINA_EXC_NONE;
+			    }
+			//}
+			man->result.flag_best = man->result.flag_exact =
 				    dimchange1.intdim==0;
 		}
 		else{
