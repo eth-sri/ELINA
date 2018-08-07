@@ -215,3 +215,85 @@ unsigned short int * map_index(unsigned short int * dst, unsigned short int * sr
 	return res;
 }
 
+size_t comp_serialize_common(void* dst, comp_t* head, unsigned short int length, int dry_run){
+  size_t idx = 0;
+  comp_t* c = head;
+  for(unsigned short int i = 0; i < length; i++) {
+    if(!dry_run){
+      *(unsigned short int*)(dst + idx) = c->num;
+    }
+    idx += sizeof(unsigned short int);
+    c = c->next;
+  }
+  return idx;
+}
+
+size_t comp_list_serialize_common(void* dst, comp_list_t* head, unsigned short int length, int dry_run){
+  size_t idx = 0;
+  comp_list_t* cl = head;
+  for(unsigned short int i = 0; i < length; i++){
+    if(!dry_run){
+      *(unsigned short int*)(dst + idx) = cl->size;
+    }
+    idx += sizeof(unsigned short int);
+    idx += comp_serialize_common(dst + idx, cl->head, cl->size, dry_run);
+    cl = cl->next;
+  }
+  return idx;
+}
+
+comp_t* comp_deserialize(void* p, unsigned short int length, size_t* size){
+  if(length == 0){
+    *size = 0;
+    return NULL;
+  }else{
+    comp_t** buf = (comp_t**)malloc(sizeof(comp_t*) * length);
+    size_t idx = 0;
+
+    for(unsigned short int i = 0; i < length; i++){
+      buf[i] = (comp_t*)malloc(sizeof(comp_t) * length);
+
+      buf[i]->num = *(unsigned short int*)(p + idx);
+      idx += sizeof(unsigned short int);
+    }
+    for(unsigned short int i = 0; i < length - 1; i++){
+      buf[i]->next = buf[i + 1];
+    }
+    buf[length - 1]->next = NULL;
+
+    *size = idx;
+    comp_t* head = buf[0];
+    free(buf);
+    return head;
+  }
+}
+
+comp_list_t* comp_list_deserialize(void* p, unsigned short int length, size_t* size){
+  if(length == 0){
+    *size = 0;
+    return NULL;
+  }else{
+    comp_list_t** buf = (comp_list_t**)malloc(sizeof(comp_list_t*) * length);
+    size_t idx = 0;
+
+    for(size_t i = 0; i < length; i++){
+      buf[i] = (comp_list_t*)malloc(sizeof(comp_list_t));
+
+      buf[i]->size = *(unsigned short int*)(p + idx);
+      idx += sizeof(unsigned short int);
+
+      size_t comp_size;
+      buf[i]->head = comp_deserialize(p + idx, buf[i]->size, &comp_size);
+      idx += comp_size;
+    }
+    for(size_t i = 0; i < length - 1; i++){
+      buf[i]->next = buf[i + 1];
+    }
+    buf[length - 1]->next = NULL;
+
+    *size = idx;
+    comp_list_t* head = buf[0];
+    free(buf);
+    return head;
+  }
+}

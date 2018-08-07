@@ -4,7 +4,7 @@ homepage: "http://elina.ethz.ch/"
 maintainer: "Gagandeep Singh <gsingh@inf.ethz.ch>"
 dev-repo: "https://github.com/eth-srl/ELINA.git"
 bug-reports: "https://github.com/eth-srl/ELINA/issues"
-version: "1.0"
+version: "1.1"
 license: "LGPL-3"
 build: [
   ["sh" "./configure" "--prefix" "%{share}%/elina"

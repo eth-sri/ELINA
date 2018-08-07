@@ -62,6 +62,9 @@ void opt_satmat_exch_rows(opt_satmat_t* os, size_t l1, size_t l2);
 void opt_satmat_exch_cols(opt_satmat_t* os, size_t l1, size_t l2);
 void opt_satmat_move_rows(opt_satmat_t* os, size_t destrow, size_t orgrow, size_t size);
 
+size_t opt_satmat_serialize_common(void* dst, opt_satmat_t* oc, int dry_run);
+opt_satmat_t* opt_satmat_deserialize(void* p, size_t* size);
+
 #ifdef __cplusplus
 }
 #endif
