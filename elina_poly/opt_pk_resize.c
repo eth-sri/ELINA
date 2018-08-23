@@ -177,7 +177,7 @@ opt_pk_array_t* opt_pk_add_dimensions_cons(elina_manager_t* man,
 		comp_list_t * cl = create_comp_list();
 		insert_comp(cl,ncmap[i]);
 		insert_comp_list_tail(acl,cl);
-
+		opt_poly_chernikova(man,poly[i1],"convert to gen");
 	}
   }
   free(cmap);
