@@ -111,9 +111,9 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
                 // %d\n",pr->manNS->library,res->abs->man,destructive);
                 // fflush(stdout);
                 if (elina_abstract0_is_bottom(pr->manNS, res->abs)) {
-
-                    is_bottom = true;
-		    break;
+                  elina_linexpr0_free(linexpr0);
+                  is_bottom = true;
+                  break;
 		}
 	    }
 	    elina_linexpr0_free(linexpr0);
