@@ -925,7 +925,7 @@ static inline elina_linexpr0_t * elina_linexpr0_from_zonotope(zonotope_internal_
 	elina_dim_t dim;
 	zonotope_aaterm_t *p;
 	for(p=aff->q; p; p=p->n){
-		elina_coeff_init(&res->p.linterm[k].coeff, ELINA_COEFF_SCALAR);
+		//elina_coeff_init(&res->p.linterm[k].coeff, ELINA_COEFF_SCALAR);
 		elina_coeff_set_scalar_double(&res->p.linterm[k].coeff, p->inf);
 		/* update a->abs with new constrained noise symbols */
 		zonotope_insert_constrained_noise_symbol(pr, &dim, p->pnsym->index, z);

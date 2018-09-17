@@ -1503,6 +1503,8 @@ static bool elina_boxize_lincons0(elina_interval_t** res,
       globalchange = true;
       exc = elina_interval_canonicalize(res[dim],dim<intdim,discr);
       if (exc){
+          elina_interval_free(interval);
+          elina_scalar_free(scalar2);
 	elina_interval_set_bottom(res[0]);
 	return true;
       }
