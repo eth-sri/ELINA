@@ -338,7 +338,8 @@ static inline void zonotope_aff_free(zonotope_internal_t *pr, zonotope_aff_t *a)
 	a->q = NULL;
 	a->end = NULL;
 	a->l = (uint_t)0;
-	//elina_interval_free(a->itv);
+	elina_interval_free(a->itv);
+    a->itv= NULL;
 	free(a);
 	a = NULL;
     }
