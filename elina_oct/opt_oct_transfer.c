@@ -130,7 +130,13 @@ opt_oct_t* opt_oct_assign_linexpr_array(elina_manager_t* man,
   	start_timing();
   #endif
   opt_hmat_set_array(dst->mat,src->mat,src_size);
-
+  dst->is_dense = src->is_dense;
+  dst->nni = src->nni;
+  if(!dst->is_dense){
+	free_array_comp_list(dst->acl);
+	dst->acl = copy_array_comp_list(src->acl);
+  }
+  
   /* coefs in expr for temporary dimensions are set to 0 */
   for (i=0;i<2*size;i++){
     pr->tmp[2*o->dim+i+2] = 0;
