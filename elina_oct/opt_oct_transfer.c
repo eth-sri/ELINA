@@ -129,6 +129,9 @@ opt_oct_t* opt_oct_assign_linexpr_array(elina_manager_t* man,
   #if defined(TIMING)
   	start_timing();
   #endif
+  if(src->is_dense){
+	convert_to_dense_mat(dst,o->dim+size,false);
+  }
   opt_hmat_set_array(dst->mat,src->mat,src_size);
   dst->is_dense = src->is_dense;
   dst->nni = src->nni;
@@ -163,6 +166,7 @@ opt_oct_t* opt_oct_assign_linexpr_array(elina_manager_t* man,
   if (pr->funopt->algorithm>=0) {
     if (opt_hmat_strong_closure(dst,o->dim+size)) {
       /* empty */
+	
       opt_hmat_free(dst);
       return opt_oct_set_mat(pr,o,NULL,NULL,destructive);
     }
