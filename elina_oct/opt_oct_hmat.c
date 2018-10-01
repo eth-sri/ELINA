@@ -1433,6 +1433,7 @@ void opt_hmat_permute(opt_oct_mat_t* dest_mat, opt_oct_mat_t* src_mat,
   double *src = src_mat->mat; 
   
   if(!src_mat->is_dense){
+	
 	  /******
 		If source matrix is decomposed type, then apply decomposed operator.
 	  ******/
@@ -1489,6 +1490,10 @@ void opt_hmat_permute(opt_oct_mat_t* dest_mat, opt_oct_mat_t* src_mat,
 		comp_t * c1 = cl1->head;
 		while(c1 != NULL){
 			unsigned short int num = c1->num;
+			if(permutation[num]>=dst_dim){
+				c1 = c1->next;
+				continue;
+			}
 			insert_comp(cl2,permutation[num]);
 			c1 = c1->next;
 		}
@@ -3344,6 +3349,7 @@ void opt_hmat_assign(opt_oct_internal_t* pr, opt_uexpr u, opt_oct_mat_t* oo, siz
 	/*****
 		handle dense type
  	******/
+	
 	m[opt_matpos(2*d+1,2*d)] = Cb; /* bound for x */
         for (i=0;i<dim;i++)  {
 	  if (i==d) continue;
