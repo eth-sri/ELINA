@@ -660,7 +660,10 @@ void closure_comp_sparse(opt_zones_mat_t *oz, unsigned short int dim){
 	int count = oz->nni;
 	for(l=0; l < num_comp; l++){
 		unsigned short int comp_size = cl->size;
-		
+        if(comp_size==0){
+            cl = cl->next;
+            continue;
+        }
 		/******
 			Calculate precise sparsity of each component set.
 			If it is less than threshold use dense Floyd Warshall,
