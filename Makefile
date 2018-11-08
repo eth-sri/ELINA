@@ -49,6 +49,9 @@ endif
 	(cd elina_poly; make all)
 	(cd elina_zones; make all)
 	(cd elina_zonotope; make all) 
+	(cd zonoml; make all)
+	(cd zonobest; make all)
+	(cd fppoly; make all)
 
 
 install:
@@ -61,6 +64,9 @@ endif
 	(cd elina_poly; make install)
 	(cd elina_zones; make install)
 	(cd elina_zonotope; make install)
+	(cd zonoml; make install)
+	(cd zonobest; make install)
+	(cd fppoly; make install)
 	(cd apron_interface; make install)
 ifneq ($(HAS_OCAML),) 
 	(cd ocaml_interface; make install)
@@ -83,6 +89,9 @@ endif
 	(cd elina_poly; make clean)
 	(cd elina_zones; make clean)
 	(cd elina_zonotope; make clean)
+	(cd zonoml; make clean)
+	(cd zonobest; make clean)
+	(cd fppoly; make clean)
 ifneq ($(HAS_OCAML),) 
 	(cd ocaml_interface; make clean)
 endif

@@ -37,6 +37,19 @@ elina_box_t* elina_box_meet_lincons_array(elina_manager_t* man,
     
 elina_box_t* elina_box_widening(elina_manager_t* man,
                         elina_box_t* a1, elina_box_t* a2);
+
+bool elina_double_interval_eval_elina_linexpr0(double * itv_inf, double * itv_sup, elina_linexpr0_t* expr, double* env_inf, double * env_sup, elina_scalar_discr_t discr);
+
+bool elina_double_boxize_lincons0_array(double * res_inf, double * res_sup, bool* tchange,
+				      elina_lincons0_array_t* array,
+				      double* env_inf, double * env_sup, size_t intdim,
+				      size_t kmax,
+				      bool intervalonly, elina_scalar_discr_t discr);
+
+void elina_double_interval_mul(double *a_inf, double *a_sup, double b_inf, double b_sup, double c_inf, double c_sup);
+
+void elina_double_interval_div(double *a_inf, double *a_sup, double b_inf, double b_sup, double c_inf, double c_sup);
+
 #ifdef __cplusplus
 }
 #endif

@@ -34,29 +34,31 @@ PARTITIONSH = comp_list.h
 INSTALL = install
 INSTALLd = install -d
 
+INCLUDES= -I../
+
 all: libpartitions.so
 
 comp_list.o: comp_list.h comp_list.c
-	$(CC) -c $(CFLAGS) $(DFLAGS) $(AFLAGS) -o comp_list.o comp_list.c $(LIBS)
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) $(AFLAGS) -o comp_list.o comp_list.c $(LIBS) 
 
 array_comp_list.o: comp_list.h array_comp_list.c
-	$(CC) -c $(CFLAGS) $(DFLAGS) $(AFLAGS) -o array_comp_list.o array_comp_list.c $(LIBS)
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) $(AFLAGS) -o array_comp_list.o array_comp_list.c $(LIBS) 
 
 intersection.o: comp_list.h intersection.c
-	$(CC) -c $(CFLAGS) $(DFLAGS) $(AFLAGS) -o intersection.o intersection.c $(LIBS)
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) $(AFLAGS) -o intersection.o intersection.c $(LIBS)
 
 union.o: comp_list.h union.c
-	$(CC) -c $(CFLAGS) $(DFLAGS) $(AFLAGS) -o union.o union.c $(LIBS)
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) $(AFLAGS) -o union.o union.c $(LIBS) 
 
 
 #closure_binary.o: closure_binary.h closure_binary.c
 #	$(CC) -c $(CFLAGS) $(DFLAGS) $(AFLAGS) -o closure_binary.o closure_binary.c $(LIBS)
 
 extract.o: comp_list.h extract.c
-	$(CC) -c $(CFLAGS) $(DFLAGS) $(AFLAGS) -o extract.o extract.c $(LIBS)
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) $(AFLAGS) -o extract.o extract.c $(LIBS) 
 
 libpartitions.so: $(OBJS)
-	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) -o $(SOINST) $(OBJS) $(LIBS)
+	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS) 
 
 install: 
 	$(INSTALLd) $(LIBDIR); \

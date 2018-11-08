@@ -35,26 +35,34 @@ zonotope_t* zonotope_add_dimensions(elina_manager_t* man, bool destructive, zono
     zonotope_t* res = destructive ? z : zonotope_copy(man, z);
     size_t intdim = z->intdim + dimchange->intdim;
     size_t dims = z->dims + (dimchange->intdim + dimchange->realdim);
-    res->box = realloc(res->box,dims*sizeof(elina_interval_t *));
+    res->box_inf = realloc(res->box_inf,dims*sizeof(double));
+    res->box_sup = realloc(res->box_sup,dims*sizeof(double));
     res->paf = realloc(res->paf,dims*sizeof(zonotope_aff_t*));
     size_t i = 0;
     int j = 0;
     for (i=0; i<dimchange->intdim + dimchange->realdim; i++) {
         if (res->dims == dimchange->dim[i]) {
             /* add in the last place */
-            res->box[res->dims] = elina_interval_alloc();
+            res->box_inf[res->dims] = INFINITY;
+	    res->box_sup[res->dims] = INFINITY;
         } else {
             /* increment */
             for (j=(int)-1+res->dims;j>=(int)dimchange->dim[i];j--) {
-                res->box[j+1] = elina_interval_alloc();
                 res->paf[j+1] = res->paf[j];
-                elina_interval_set(res->box[j+1],res->box[j]);
+		res->box_inf[j+1] = res->box_inf[j];
+		res->box_sup[j+1] = res->box_sup[j];
             }
         }
         res->paf[dimchange->dim[i]] = project ? zonotope_aff_alloc_init(pr) : pr->top;
         res->paf[dimchange->dim[i]]->pby++;
-        if (project) elina_interval_set_int(res->box[dimchange->dim[i]], 0,0);
-        else elina_interval_set_top(res->box[dimchange->dim[i]]);
+        if (project){
+	    res->box_inf[dimchange->dim[i]]= 0.0;
+	    res->box_sup[dimchange->dim[i]]= 0.0;
+        }
+        else {
+	    res->box_inf[dimchange->dim[i]] = INFINITY;
+	    res->box_sup[dimchange->dim[i]] = INFINITY;
+	}
         res->dims++;
     }
     res->intdim = intdim;
@@ -111,9 +119,11 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
     res->gamma = (elina_interval_t**)calloc(res->size, sizeof(elina_interval_t*));
     res->abs = elina_abstract0_copy(pr->manNS, z->abs);
     res->hypercube = z->hypercube;
-    res->box = elina_interval_array_alloc(res->dims);
+   
+    res->box_inf = (double*)malloc(res->dims*sizeof(double));
+    res->box_sup = (double*)malloc(res->dims*sizeof(double));
     res->gn = 0;
-    res->g = NULL;
+    //res->g = NULL;
     res->paf = (zonotope_aff_t**)malloc(res->dims*sizeof(zonotope_aff_t*));
     for (i=0; i< num_rem; i++) {
         j = var_rem[i];
@@ -127,7 +137,8 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
         //res->paf[dimchange->dim[i]] = NULL;
         //for (j=dimchange->dim[i];j<-1+res->dims;j++) {
         //  res->paf[j] = res->paf[j+1];
-        elina_interval_set(res->box[i],z->box[j]);
+	res->box_inf[i] = z->box_inf[j];
+	res->box_sup[i] = z->box_sup[j];
         if(!destructive)
         res->paf[i]->pby++;
         //}
@@ -146,14 +157,14 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
     
     //res->intdim = z->intdim - dimchange->intdim;
     //res->dims = z->dims - (dimchange->intdim + dimchange->realdim);
-    //res->box = realloc(res->box,res->dims*sizeof(elina_interval_t *));
+    
     //res->paf = realloc(res->paf,res->dims*sizeof(zonotope_aff_t*));
     //printf("remove output %p\n",res);
     //zonotope_fprint(stdout,man,res,NULL);
     //fflush(stdout);
     
-   
-    //if(destructive){
+    zonotope_t * tmp = z;
+    if(destructive){
         //z = res;
         //zonotope_free(man,tmp);
         //return z;
@@ -165,8 +176,7 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
         //}
         //free(z->paf);
         //z->paf=NULL;
-        //free(z->box);
-        //z->box=NULL;
+       
         //for (i=0; i<nsymcons_size; i++) {
           //  if (z->gamma[i]) {
             //    if (z->gamma[i] != pr->ap_muu) elina_interval_free(z->gamma[i]);
@@ -178,7 +188,7 @@ zonotope_t* zonotope_remove_dimensions(elina_manager_t* man, bool destructive, z
         //z->nsymcons = NULL;
         //elina_abstract0_free(pr->manNS, z->abs);
         //free(z);
-    //}
+    }
     free(map);
     free(var_rem);
     record_timing(zonotope_remove_dimension_time);
@@ -208,9 +218,10 @@ zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, 
     res->gamma = (elina_interval_t**)calloc(res->size, sizeof(elina_interval_t*));
     res->abs = elina_abstract0_copy(pr->manNS, z->abs);
     res->hypercube = z->hypercube;
-    res->box = elina_interval_array_alloc(res->dims);
+    res->box_inf = (double*)malloc(res->dims*sizeof(double));
+    res->box_sup = (double*)malloc(res->dims*sizeof(double));
     res->gn = 0;
-    res->g = NULL;
+    //res->g = NULL;
     res->paf = (zonotope_aff_t**)malloc(res->dims*sizeof(zonotope_aff_t*));
     size_t i = 0;
     size_t j = 0;
@@ -224,7 +235,8 @@ zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, 
         //res->paf[dimchange->dim[i]] = NULL;
         //for (j=dimchange->dim[i];j<-1+res->dims;j++) {
         //  res->paf[j] = res->paf[j+1];
-        elina_interval_set(res->box[j],z->box[i]);
+	res->box_inf[j] = z->box_inf[i];
+        res->box_sup[j] = z->box_sup[i];
         if(!destructive)
         res->paf[i]->pby++;
         //}
@@ -253,7 +265,7 @@ zonotope_t* zonotope_permute_dimensions(elina_manager_t* man, bool destructive, 
     //    res->paf[i] = res->paf[z->dim[i]];
     //res->paf[permutation->dim[i]] = tmp;
     
-    //  elina_interval_set(res->box[i],z->box[permutation->dim[i]]);
+    
     //map[i] = 1;
     //map[permutation->dim[i]] = 1;
     //}

@@ -38,20 +38,19 @@ elina_box_t* elina_box_forget_array(elina_manager_t* man,
     man->result.flag_exact = true;
     
     res = destructive ? a : elina_box_copy(man,a);
-    if (a->p==NULL){
+    if ((a->inf==NULL) && (a->sup==NULL)){
         return res;
     }
     if (project){
         for (i=0;i<size;i++){
-            elina_interval_t * itv = res->p[tdim[i]];
-            elina_scalar_set_double(itv->sup,0);
-            elina_scalar_set_double(itv->inf,0);
+            res->sup[tdim[i]]= 0;
+            res->inf[tdim[i]] = 0;
         }
     }
     else {
         for (i=0;i<size;i++){
-            elina_interval_t *itv = res->p[tdim[i]];
-            elina_interval_set_top(itv);
+            res->inf[tdim[i]] = INFINITY;
+            res->sup[tdim[i]] = INFINITY;
         }
     }
     return res;
@@ -71,28 +70,28 @@ elina_box_t* elina_box_add_dimensions(elina_manager_t* man,
   man->result.flag_best = true;  
   man->result.flag_exact = true;  
   res = destructive ? a : elina_box_copy(man,a);
-  if (a->p==NULL){
+  if ((a->inf==NULL) && (a->sup==NULL)){
     goto elina_box_add_dimensions_exit;
   }
   size = res->intdim+res->realdim;
   dimsup = dimchange->intdim+dimchange->realdim;
-  res->p = (elina_interval_t **)realloc(res->p,(size+dimsup+1)*sizeof(elina_interval_t *));
-  for (i=(int)size+1;i<(int)(size+dimsup+1);i++){
-    res->p[i] = elina_interval_alloc();
-  }
+  res->inf = (double *)realloc(res->inf,(size+dimsup+1)*sizeof(double));
+  res->sup = (double *)realloc(res->sup,(size+dimsup+1)*sizeof(double));
   k = dimsup;
   for (i=(int)size; i>=0; i--){
     if (i<(int)size){
-      elina_interval_set(res->p[i+k],a->p[i]);
+      res->inf[i+k] = a->inf[i];
+      res->sup[i+k] = a->sup[i];
     }
     while (k>=1 && dimchange->dim[k-1]==(elina_dim_t)i){
       k--;
       if (project){
-	elina_scalar_set_double(res->p[i+k]->inf,0);
-	elina_scalar_set_double(res->p[i+k]->sup,0);
+	res->inf[i+k] = 0.0;
+	res->sup[i+k] = 0.0;
       }
       else {
-	elina_interval_set_top(res->p[i+k]);
+	res->inf[i+k] = INFINITY;
+	res->sup[i+k] = INFINITY;
       }
     }
   }  
@@ -114,7 +113,7 @@ elina_box_t* elina_box_remove_dimensions(elina_manager_t* man,
   man->result.flag_best = true;  
   man->result.flag_exact = true;  
   res = destructive ? a : elina_box_copy(man,a);
-  if (a->p==NULL){
+  if ((a->inf==NULL) && (a->sup==NULL)){
     goto elina_box_remove_dimensions_exit;
   }
   size = res->intdim+res->realdim;
@@ -124,13 +123,13 @@ elina_box_t* elina_box_remove_dimensions(elina_manager_t* man,
     while (k<dimsup && dimchange->dim[k]==i+k){
       k++;
     }
-    elina_interval_set(res->p[i],a->p[i+k]);
+    res->inf[i] = a->inf[i+k];
+    res->sup[i] = a->sup[i+k];
   }
-  elina_interval_set_int(res->p[size-dimsup],0,0);
-  for (i=size-dimsup+1;i<size+1;i++){
-    elina_interval_free(res->p[i]);
-  }
-  res->p = (elina_interval_t **)realloc(res->p,(size-dimsup+1)*sizeof(elina_interval_t *));
+  res->inf[size-dimsup] = 0.0;
+  res->sup[size-dimsup] = 0.0;
+  res->inf = (double*)realloc(res->inf,(size-dimsup+1)*sizeof(double));
+  res->sup = (double*)realloc(res->sup,(size-dimsup+1)*sizeof(double));
  elina_box_remove_dimensions_exit:
   res->intdim = a->intdim-dimchange->intdim;
   res->realdim = a->realdim-dimchange->realdim;
@@ -148,13 +147,14 @@ elina_box_t* elina_box_permute_dimensions(elina_manager_t* man,
     
     man->result.flag_best = true;
     man->result.flag_exact = true;
-    if (a->p==NULL){
+    if ((a->inf==NULL) && (a->sup==NULL)){
         return destructive ? a : elina_box_copy(man,a);
     }
     res = elina_box_copy(man,a);
     size = res->intdim+res->realdim;
     for (i=0;i<size;i++){
-        elina_interval_set(res->p[perm->dim[i]],a->p[i]);
+	res->inf[perm->dim[i]] = a->inf[i];
+	res->sup[perm->dim[i]] = res->sup[i];
     }
     if (destructive) elina_box_free(man,a);
     return res;
