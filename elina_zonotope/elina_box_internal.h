@@ -32,7 +32,8 @@ extern "C" {
 #endif
 
 struct elina_box_t {
-  elina_interval_t **p;
+  double * inf;
+  double * sup;
   size_t intdim;
   size_t realdim;
 };

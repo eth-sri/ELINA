@@ -24,6 +24,7 @@
 #include "elina_box_internal.h"
 #include "elina_box_representation.h"
 #include "elina_linearize.h"
+#include "elina_box_meetjoin.h"
 
 #ifdef __cplusplus
 extern "C" {

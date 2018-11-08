@@ -18,34 +18,28 @@
  *
  */
 
-#ifndef _ZONOTOPE_MEETJOIN_H_
-#define _ZONOTOPE_MEETJOIN_H_
+#include <stdlib.h>
+#include <unistd.h>
 
-#include "zonotope.h"
-#include "zonotope_internal.h"
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+#include <sys/mman.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-/* Meet and Join */
-/*****************/
-/* 1.Meet */
-zonotope_t* zonotope_meet(elina_manager_t* man, bool destructive, zonotope_t* z1, zonotope_t* z2);
-zonotope_t* zonotope_meet_array(elina_manager_t* man, zonotope_t** tab, size_t size);
-zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man,
-		bool destructive,
-		zonotope_t* z,
-		elina_lincons0_array_t* array);
-zonotope_t* zonotope_meet_tcons_array(elina_manager_t* man,
-		bool destructive,
-		zonotope_t* z,
-		elina_tcons0_array_t* array);
+#include "zonoml_internal.h"
 
-/* 2.Join */
+#include "zonoml_fun.h"
 
-#ifdef __cplusplus
+double zonoml_relu_time=0;
+double zonoml_sigmoid_time=0;
+double zonoml_tanh_time=0;
+double zonoml_maxpool_time = 0;
+double zonoml_network_input_time=0;
+double zonoml_conv_matmult_time=0;
+double zonoml_ffn_matmult_time=0;
+
+
+elina_manager_t* zonoml_manager_alloc(void){
+	return zonotope_manager_alloc();
 }
-#endif
-
-#endif

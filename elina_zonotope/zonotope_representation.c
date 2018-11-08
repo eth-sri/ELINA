@@ -1,3 +1,23 @@
+/*
+ *
+ *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+ *  ELINA is Copyright © 2018 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License
+ * Version 3.0. For more information, see the ELINA project website at:
+ *  http://elina.ethz.ch
+ *
+ *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+ *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+ *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY
+ *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+ *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+ *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+ *  CONTRACT, TORT OR OTHERWISE).
+ *
+ */
+
 #include "zonotope.h"
 #include "zonotope_internal.h"
 #include "zonotope_representation.h"
@@ -14,9 +34,10 @@ zonotope_t* zonotope_alloc(elina_manager_t* man, size_t intdim, size_t realdim)
     res->gamma = (elina_interval_t**)calloc(res->size, sizeof(elina_interval_t*));
     res->abs = elina_abstract0_top(pr->manNS, 0, 0);
     res->hypercube = true;
-    res->box = elina_interval_array_alloc(intdim + realdim);
+    res->box_inf = (double*)malloc((intdim+realdim)*sizeof(double));
+    res->box_sup = (double*)malloc((intdim+realdim)*sizeof(double));
     res->gn = 0;
-    res->g = NULL;
+   // res->g = NULL;
     res->paf = (zonotope_aff_t**)malloc(res->dims*sizeof(zonotope_aff_t*));
     return res;
 }
@@ -39,8 +60,9 @@ zonotope_t* zonotope_copy(elina_manager_t* man, zonotope_t* z)
     res = zonotope_alloc(man, z->intdim, (z->dims - z->intdim));
     memcpy((void *)res->paf, (void *)z->paf, z->dims*sizeof(zonotope_aff_t*));
     for(i=0; i<z->dims; i++) {
-      elina_interval_set(res->box[i], z->box[i]);
-      res->paf[i]->pby++;
+        res->box_inf[i] = z->box_inf[i];
+	res->box_sup[i] = z->box_sup[i];
+	res->paf[i]->pby++;
     }
     elina_abstract0_free(pr->manNS, res->abs);
     res->abs = elina_abstract0_copy(pr->manNS, z->abs);
@@ -90,14 +112,16 @@ void zonotope_free(elina_manager_t* man, zonotope_t* z)
 	    zonotope_aff_check_free(pr, z->paf[i]);
 	    z->paf[i] = NULL;
         }
-        elina_interval_free(z->box[i]);
+	
     }
     //printf("start2\n");
     //fflush(stdout);
     free(z->paf);
-    free(z->box);
+    free(z->box_inf);
+    free(z->box_sup);
     z->paf = NULL;
-    z->box = NULL;
+    z->box_inf = NULL;
+    z->box_sup = NULL;
     //printf("start3\n");
     //fflush(stdout);
     size_t nsymcons_size = zonotope_noise_symbol_cons_get_dimension(pr, z);
@@ -180,8 +204,8 @@ void zonotope_fprint(FILE* stream,
 	    fprintf(stream, " := ");
 	    zonotope_aff_fprint(pr, stream, z->paf[i]);
             //printf(" box: ");
-            elina_interval_fprint(stdout, z->box[i]);
-            fprintf(stream,"\n");
+	    fprintf(stream,"[%.20f, %.20f]",-z->box_inf[i],z->box_sup[i]);
+	    fprintf(stream,"\n");
 	} else {
 	    fprintf(stream, "[[NULL]]\n");
 	}

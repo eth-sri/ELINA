@@ -41,17 +41,18 @@ zonotope_t* zonotope_forget_array(elina_manager_t* man,
 	    zonotope_aff_check_free(pr, res->paf[tdim[i]]);
 	    res->paf[tdim[i]] = zonotope_aff_alloc_init(pr);
 	    res->paf[tdim[i]]->pby++;
-            elina_scalar_set_double(res->box[tdim[i]]->inf, 0);
-            elina_scalar_set_double(res->box[tdim[i]]->sup, 0);
-        }
+	    res->box_inf[tdim[i]] = 0.0;
+	    res->box_sup[tdim[i]] = 0.0;
+	}
     }
     else {
 	for (i=0;i<size;i++){
 	    zonotope_aff_check_free(pr, res->paf[tdim[i]]);
 	    res->paf[tdim[i]] = pr->top;
 	    res->paf[tdim[i]]->pby++;
-            elina_interval_set_top(res->box[tdim[i]]);
-        }
+	    res->box_inf[tdim[i]]=INFINITY;
+	    res->box_sup[tdim[i]]=INFINITY;
+	}
     }
 	//printf("forget output %d\n", res->paf[tdim[0]] == pr->top);
 	//zonotope_fprint(stdout,man,res,NULL);

@@ -33,22 +33,19 @@ elina_box_t* elina_box_assign_linexpr_array(elina_manager_t* man,
     elina_box_t* res;
     
     exact = true;
-    if (a->p == NULL || (dest && dest->p == NULL)) {
-      man->result.flag_best = true;
-      man->result.flag_exact = true;
-      return destructive ? a : elina_box_copy(man, a);
+    if ((a->inf==NULL && a->sup==NULL) || (dest && dest->inf==NULL && dest->sup==NULL)){
+        man->result.flag_best = true;
+        man->result.flag_exact = true;
+        return destructive ? a : elina_box_copy(man,a);
     }
     if (size==1){
         res = destructive ? a : elina_box_copy(man,a);
-        exact = elina_interval_eval_elina_linexpr0(res->p[tdim[0]], linexpr[0],
-                                                   a->p, ELINA_SCALAR_DOUBLE);
+	exact = elina_double_interval_eval_elina_linexpr0(&res->inf[tdim[0]],&res->sup[tdim[0]],linexpr[0],a->inf, a->sup, ELINA_SCALAR_DOUBLE);
     }
     else {
         res = elina_box_copy(man,a);
         for (i=0;i<size;i++){
-          exact = elina_interval_eval_elina_linexpr0(
-                      res->p[tdim[i]], linexpr[i], a->p, ELINA_SCALAR_DOUBLE) &&
-                  exact;
+	     exact = elina_double_interval_eval_elina_linexpr0(&res->inf[tdim[i]],&res->sup[tdim[i]],linexpr[i],a->inf, a->sup, ELINA_SCALAR_DOUBLE) && exact;
         }
         if (destructive) elina_box_free(man,a);
     }
@@ -59,40 +56,7 @@ elina_box_t* elina_box_assign_linexpr_array(elina_manager_t* man,
     return res;
 }
 
-elina_box_t *elina_box_assign_texpr_array(elina_manager_t *man,
-                                          bool destructive, elina_box_t *a,
-                                          elina_dim_t *tdim,
-                                          elina_texpr0_t **texpr, size_t size,
-                                          elina_box_t *dest) {
-  size_t i;
-  elina_box_t *res;
 
-  if (a->p == NULL || (dest && dest->p == NULL)) {
-    man->result.flag_best = true;
-    man->result.flag_exact = true;
-    return destructive ? a : elina_box_copy(man, a);
-  }
-  if (size == 1) {
-    res = destructive ? a : elina_box_copy(man, a);
-    elina_interval_t *tmp = elina_interval_alloc();
-    elina_interval_eval_elina_texpr0(tmp, texpr[0], ELINA_SCALAR_DOUBLE, a->p);
-    elina_interval_set(res->p[tdim[0]], tmp);
-    elina_interval_free(tmp);
-  } else {
-    res = elina_box_copy(man, a);
-    for (i = 0; i < size; i++) {
-      elina_interval_t *tmp = elina_interval_alloc();
-      elina_interval_eval_elina_texpr0(tmp, texpr[i], ELINA_SCALAR_DOUBLE,
-                                       a->p);
-      elina_interval_set(res->p[tdim[i]], tmp);
-      elina_interval_free(tmp);
-    }
-    if (destructive)
-      elina_box_free(man, a);
-  }
-  if (dest)
-    res = elina_box_meet(man, true, res, dest);
-  man->result.flag_best = false;
-  man->result.flag_exact = false;
-  return res;
-}
+
+
+

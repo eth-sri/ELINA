@@ -53,11 +53,14 @@ extern "C" {
 #endif
 
 #include "elina_box.h"
+#include "elina_box_meetjoin.h"
 #include "elina_generic.h"
 #include "elina_linearize_texpr.h"
 
 //ap_manager_t* t1p_manager_alloc(ap_manager_t* manNS);
 elina_manager_t* zonotope_manager_alloc(void);
+void zonotope_relu(elina_manager_t *man, elina_abstract0_t * abs, elina_dim_t y, elina_dim_t x);
+
 typedef struct _zonotope_t zonotope_t;
 
 #include "zonotope_representation.h"

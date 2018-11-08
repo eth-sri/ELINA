@@ -29,7 +29,8 @@
 elina_box_t* elina_box_alloc(size_t intdim, size_t realdim)
 {
   elina_box_t* itv = (elina_box_t*)malloc(sizeof(elina_box_t));
-  itv->p = NULL;
+  itv->inf = NULL;
+  itv->sup = NULL;
   itv->intdim = intdim;
   itv->realdim = realdim;
   return itv;
@@ -39,17 +40,22 @@ void elina_box_init(elina_box_t* a)
 {
   size_t i;
   size_t nbdims = a->intdim + a->realdim;
-  assert(a->p == NULL);
-  a->p = elina_interval_array_alloc(nbdims + 1);
+  assert(a->inf==NULL && a->sup==NULL);
+  a->inf = (double*)malloc((nbdims+1)*sizeof(double));
+  a->sup = (double*)malloc((nbdims+1)*sizeof(double));
   /* Add an unused dimension to differentiate
      empty and top values in dimension 0+0 */
 }
 
 void elina_box_set_bottom(elina_box_t* a)
 {
-  if (a->p) {
-    elina_interval_array_free(a->p, a->intdim + a->realdim + 1);
-    a->p = NULL;
+  if (a->inf){
+    free(a->inf);
+    a->inf = NULL;
+  }
+  if(a->sup){
+     free(a->sup);
+     a->sup = NULL;
   }
 }
 
@@ -59,11 +65,12 @@ void elina_box_set_top(elina_box_t* a)
   size_t nbdims;
   
   nbdims = a->intdim + a->realdim;
-  if (a->p == NULL) {
+  if ((a->inf==NULL)&&(a->sup==NULL)){
     elina_box_init(a);
   };
   for (i=0; i<nbdims; i++){
-    elina_interval_set_top(a->p[i]);
+    a->inf[i] = INFINITY;
+    a->sup[i] = INFINITY;
   }
 }
 
@@ -71,16 +78,17 @@ void elina_box_set(elina_box_t* a, elina_box_t* b)
 {
   size_t i;
   size_t nbdims;
-
-  if (b->p == NULL)
+  
+  if ((b->inf==NULL)&&(b->sup==NULL))
     return;
 
   nbdims = b->intdim + b->realdim;
-  if (a->p == NULL) {
+  if ((a->inf==NULL) && (a->sup==NULL)){
     elina_box_init(a);
   };
   for (i=0; i<nbdims; i++){
-    elina_interval_set(a->p[i], b->p[i]);
+    a->inf[i] = b->inf[i];
+    a->sup[i] = b->sup[i];
   }
 }
 
@@ -96,17 +104,18 @@ elina_box_t* elina_box_copy(elina_manager_t* man, elina_box_t* a)
   size_t nbdims = a->intdim+a->realdim;
 
   elina_box_t* b = elina_box_alloc(a->intdim,a->realdim);
-  if (a->p) {
-    b->p =
-        (elina_interval_t **)malloc((nbdims + 1) * sizeof(elina_interval_t *));
+  if (a->inf && a->sup){
+    b->inf = (double *)malloc((nbdims+1)*sizeof(double));
+    b->sup = (double *)malloc((nbdims+1)*sizeof(double));
     for (i=0; i<nbdims; i++){
-      b->p[i] = elina_interval_alloc();
-      elina_interval_set(b->p[i], a->p[i]);
+      b->inf[i] = a->inf[i];
+      b->sup[i] = a->sup[i];
     }
-
-    b->p[nbdims] = elina_interval_alloc();
+    
+    b->inf[nbdims] = 0.0;
+    b->sup[nbdims] = 0.0;  
     /* Add an unused dimension to differentiate
-       empty and top values in dimension 0+0 */
+       empty and top values in dimension 0+0 */ 
   }
   man->result.flag_best = true;
   man->result.flag_exact = true;
@@ -116,9 +125,13 @@ elina_box_t* elina_box_copy(elina_manager_t* man, elina_box_t* a)
 /* Free all the memory used by the abstract value */
 void elina_box_free(elina_manager_t* man, elina_box_t* a)
 {
-  if (a->p) {
-    elina_interval_array_free(a->p, a->intdim + a->realdim + 1);
-    a->p = NULL;
+  if (a->inf){
+    free(a->inf);
+    a->inf = NULL;
+  }
+  if(a->sup){
+    free(a->sup);
+    a->sup = NULL;
   }
   free(a);
 }
@@ -140,7 +153,7 @@ void elina_box_fprint(FILE* stream,
 
   fprintf(stream,"interval of dim (%ld,%ld):",
 	  (long)a->intdim,(long)a->realdim);
-  if (a->p) {
+  if (a->inf && a->sup){
     fprintf(stream,"\n");
     for(i=0; i<nbdims; i++){
       if (name_of_dim){
@@ -148,10 +161,11 @@ void elina_box_fprint(FILE* stream,
       } else {
 	fprintf(stream,"x%ld in ", (long)i);
       }
-      elina_interval_fprint(stream, a->p[i]);
+      fprintf(stream,"[%g,%g]",-a->inf[i],a->sup[i]);
       fprintf(stream,"\n");
     }
-  } else {
+  }
+  else {
     fprintf(stream,nbdims>0 ? " bottom\n" : "top\n");
   }
 }
