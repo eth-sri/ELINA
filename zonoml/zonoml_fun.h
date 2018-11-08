@@ -19,32 +19,24 @@
  */
 
 
-#ifndef _ZONOTOPE_MEETJOIN_H_
-#define _ZONOTOPE_MEETJOIN_H_
+#ifndef _ZONOML_FUN_H_
+#define _ZONOML_FUN_H_
 
-#include "zonotope.h"
-#include "zonotope_internal.h"
+#include "zonoml.h"
+#include "zonoml_internal.h"
+#include "zonoml_reduced_product.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Meet and Join */
-/*****************/
-/* 1.Meet */
-zonotope_t* zonotope_meet(elina_manager_t* man, bool destructive, zonotope_t* z1, zonotope_t* z2);
-zonotope_t* zonotope_meet_array(elina_manager_t* man, zonotope_t** tab, size_t size);
-zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man,
-		bool destructive,
-		zonotope_t* z,
-		elina_lincons0_array_t* array);
-zonotope_t* zonotope_meet_tcons_array(elina_manager_t* man,
-		bool destructive,
-		zonotope_t* z,
-		elina_tcons0_array_t* array);
 
-/* 2.Join */
+zonotope_aff_t * zonotope_aff_from_dense_weights_bias(zonotope_internal_t* pr, double * weights, double bias, size_t offset, size_t size, zonotope_t *z);
 
+zonotope_aff_t* zonotope_aff_mul_weight(zonotope_internal_t* pr, zonotope_aff_t* src, double lambda);
+
+zonotope_aff_t * zonotope_aff_from_sparse_weights_bias(zonotope_internal_t* pr, double * weights, double bias, elina_dim_t *dim, size_t size, zonotope_t *z);
 
 #ifdef __cplusplus
 }

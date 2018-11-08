@@ -69,7 +69,7 @@ elina_manager_t* elina_box_manager_alloc(void)
   }
 
   itv = elina_box_internal_alloc();
-  man = elina_manager_alloc("elina box", "1.1 with DOUBLE ",
+  man = elina_manager_alloc("elina box", "1.0 with DOUBLE ",
 			 itv, (void (*)(void*))elina_box_internal_free);
   funptr = man->funptr;
 
@@ -113,7 +113,7 @@ elina_manager_t* elina_box_manager_alloc(void)
   //funptr[ELINA_FUNID_ADD_RAY_ARRAY] = &elina_box_add_ray_array;
   funptr[ELINA_FUNID_ASSIGN_LINEXPR_ARRAY] = &elina_box_assign_linexpr_array;
   //funptr[ELINA_FUNID_SUBSTITUTE_LINEXPR_ARRAY] = &elina_box_substitute_linexpr_array;
-  funptr[ELINA_FUNID_ASSIGN_TEXPR_ARRAY] = &elina_box_assign_texpr_array;
+  //funptr[ELINA_FUNID_ASSIGN_TEXPR_ARRAY] = &elina_box_assign_texpr_array;
   //funptr[ELINA_FUNID_SUBSTITUTE_TEXPR_ARRAY] = &elina_box_substitute_texpr_array;
   funptr[ELINA_FUNID_ADD_DIMENSIONS] = &elina_box_add_dimensions;
   funptr[ELINA_FUNID_REMOVE_DIMENSIONS] = &elina_box_remove_dimensions;
