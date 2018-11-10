@@ -33,7 +33,7 @@
 #include "rdtsc.h"
 
 #include <pthread.h>
-#include <sys/sysinfo.h>
+//#include <sys/sysinfo.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -174,7 +174,8 @@ static inline zonotope_noise_symbol_t* zonotope_noise_symbol_add_with_index(zono
 static inline void ffn_matmult_zono_parallel(zonotope_internal_t* pr, zonotope_t *z, elina_dim_t start_offset,
 			       			    double **weights, double * bias,  size_t num_out_neurons,
 						    size_t expr_offset, size_t expr_size, void *(*function)(void *), bool has_bias){
-	int num_threads = get_nprocs();
+	//int num_threads = get_nprocs();
+	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
 	if(num_threads <1){
 		num_threads = 1;
 	}
@@ -240,7 +241,8 @@ static inline void ffn_matmult_zono_parallel(zonotope_internal_t* pr, zonotope_t
 }
 
 static inline void relu_zono_parallel(elina_manager_t* man, zonotope_t *z, elina_dim_t start_offset, elina_dim_t num_out_neurons, void *(*function)(void *)){
-	int num_threads = get_nprocs();
+	//int num_threads = get_nprocs();
+	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
 	if(num_threads <1){
 		num_threads = 1;
 	}
@@ -343,7 +345,8 @@ static inline void relu_zono_parallel(elina_manager_t* man, zonotope_t *z, elina
 	
 
 static inline void s_curve_zono_parallel(elina_manager_t* man, zonotope_t *z, elina_dim_t start_offset, elina_dim_t num_out_neurons, void *(*function)(void *), bool is_sigmoid){
-	int num_threads = get_nprocs();
+	//int num_threads = get_nprocs();
+	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
 	if(num_threads <1){
 		num_threads = 1;
 	}
@@ -426,7 +429,8 @@ static inline void conv_matmult_zono_parallel(zonotope_internal_t* pr, zonotope_
 						    size_t expr_offset, size_t *input_size, size_t *filter_size, size_t num_filters,
 						    size_t *strides, size_t *output_size, long int pad_top,
 						    long int pad_left, void *(*function)(void *), bool has_bias){
-	int num_threads = get_nprocs();
+	//int num_threads = get_nprocs();
+	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
 	if(num_threads <1){
 		num_threads = 1;
 	}
@@ -507,7 +511,8 @@ static inline void conv_matmult_zono_parallel(zonotope_internal_t* pr, zonotope_
 static inline void maxpool_zono_parallel(zonotope_internal_t* pr, zonotope_t *z, size_t src_offset, size_t *pool_size,
 			       	           size_t num_out_neurons, size_t dst_offset, size_t *input_size, size_t *strides,
 					  size_t *output_size, long int pad_top, long int pad_left, void *(*function)(void *)){
-	int num_threads = get_nprocs();
+	//int num_threads = get_nprocs();
+	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
 	if(num_threads <1){
 		num_threads = 1;
 	}
