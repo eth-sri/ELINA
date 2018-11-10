@@ -33,11 +33,14 @@ extern "C" {
 #include "elina_manager.h"
 #endif
 
-#include "elina_box_meetjoin.h"
-#include "elina_generic.h"
 #include <fenv.h>
 #include <pthread.h>
-#include <sys/sysinfo.h>
+#include <unistd.h>
+//#include <sys/sysinfo.h>
+#include "elina_generic.h"
+#include "elina_box_meetjoin.h"
+
+
 
 typedef struct fppoly_internal_t{
   /* Name of function */
