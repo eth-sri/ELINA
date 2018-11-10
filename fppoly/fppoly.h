@@ -37,7 +37,8 @@ extern "C" {
 
 #include <fenv.h>
 #include <pthread.h>
-#include <sys/sysinfo.h>
+#include <unistd.h>
+//#include <sys/sysinfo.h>
 #include "elina_generic.h"
 #include "elina_box_meetjoin.h"
 
