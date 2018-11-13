@@ -111,10 +111,12 @@ opt_zones_t* opt_zones_meet_lincons_array(elina_manager_t* man,
     #if defined (TIMING)
 	start_timing();
     #endif
+	
     bool res = opt_zones_mat_add_lincons(pr,oz,o->intdim,o->dim,array,&exact,&respect_closure);
-    // printf("res: %d\n",res);
-    // print_mat(oz,o->dim);
-#if defined(TIMING)
+   //printf("res: %d\n",res);
+	//fflush(stdout);
+	//print_mat(oz,o->dim);
+     #if defined(TIMING)
 		record_timing(zones_meet_lincons_time);
      #endif
     if (res) {
