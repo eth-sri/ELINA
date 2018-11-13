@@ -219,8 +219,9 @@ static inline void opt_bound_of_scalar(opt_zones_internal_t* pr,
 				   double *r, elina_scalar_t* t,
 				   bool neg)
 {
+  
   if (neg) elina_scalar_neg(t,t);
-  if (!double_set_elina_scalar(r,t)) pr->conv = true;
+  if (!elina_double_set_scalar(r,t,GMP_RNDU)) pr->conv = true;
   if (neg) elina_scalar_neg(t,t);
 }
 

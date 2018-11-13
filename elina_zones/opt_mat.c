@@ -2084,7 +2084,9 @@ zone_expr zone_expr_of_linexpr(opt_zones_internal_t* pr, double* dst,
   if ((dst[2*idx+2] == -coef) &&				\
       (dst[2*idx+3] == coef)) {				\
     if (z.type==OPT_ZERO) { z.type = OPT_UNARY;  z.i = idx; z.coef_i = coef; }	\
-    else if(z.type==OPT_UNARY && (z.coef_i==-coef)) { z.type = OPT_BINARY; z.j = idx; z.coef_j = coef; }	\
+    else if(z.type==OPT_UNARY){\
+      if(z.coef_i==-coef) { z.type = OPT_BINARY; z.j = idx; z.coef_j = coef; }	\
+      else {z.type= OPT_OTHER;}}\
     continue;								\
   }
   
@@ -2118,10 +2120,12 @@ zone_expr zone_expr_of_linexpr(opt_zones_internal_t* pr, double* dst,
     }
     break;
   case ELINA_LINEXPR_SPARSE:
+	
     for (i=0;i<dim;i++) {
       dst[2*i+2] = 0;
       dst[2*i+3] = 0;
     }
+	
     for (i=0;i<e->size;i++) {
       elina_dim_t d = e->p.linterm[i].dim;
       if (d==ELINA_DIM_MAX) continue;
@@ -2129,6 +2133,7 @@ zone_expr zone_expr_of_linexpr(opt_zones_internal_t* pr, double* dst,
       COEFF(e->p.linterm[i].coeff,2*d+2);
       CLASS_VAR(d);
     }
+	
     break;
   default: break;/********TODO: handle arg_assert arg_assert(0,return u;);*****/
   }
@@ -2303,8 +2308,9 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 		
 	}
     }
+	
     z = zone_expr_of_linexpr(pr,pr->tmp,array->p[i].linexpr0,intdim,dim);
-     
+     	
     /* transform e+[-a,b] > 0 into >= e+[-(a+1),b-1] >= 0 on integer constraints */
     if (z.is_int && c==ELINA_CONS_SUP) {
       c = ELINA_CONS_SUPEQ;
@@ -2382,7 +2388,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
       break;
 
     case OPT_BINARY:
-       
+      
       /* can we delay incremental closure further? */
       if (*respect_closure && closure_pending &&
 	  var_pending!=z.i && var_pending!=z.j) {
@@ -2862,7 +2868,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
   }
     
   /* apply pending incremental closure now */
-  
+   
   if (*respect_closure && closure_pending)
       if (incr_closure(oz,dim,var_pending)) {
           return true;
