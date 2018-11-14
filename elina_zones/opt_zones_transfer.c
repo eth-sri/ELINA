@@ -61,22 +61,22 @@ opt_zones_t* opt_zones_assign_texpr_array(elina_manager_t* man,
 	
    opt_zones_mat_t * or = r->closed ? r->closed : r->m;
 	if(or && !or->is_dense){
-          if (need_refine) {
-
-            array_comp_list_t *acl = or->acl;
-            comp_list_t *clb_copy = create_comp_list();
-            comp_list_t *clv = find(acl, tdim[0]);
-            comp_t *cb = clb->head;
-            while (cb != NULL) {
-              if (contains_comp(clv, cb->num)) {
-                remove_comp(clv, cb->num);
-                insert_comp(clb_copy, cb->num);
-              }
-              cb = cb->next;
-            }
-            insert_comp_list_tail(acl, clb_copy);
-          }
-                free_comp_list(clb);
+		if(false){
+		
+			array_comp_list_t * acl = or->acl;
+			comp_list_t * clb_copy = create_comp_list();
+			comp_list_t * clv = find(acl,tdim[0]);
+			comp_t * cb = clb->head;
+			while(cb!=NULL){
+				if(contains_comp(clv,cb->num)){
+					remove_comp(clv,cb->num);
+					insert_comp(clb_copy,cb->num);
+				}
+				cb = cb->next;
+			}
+			insert_comp_list_tail(acl,clb_copy);
+		}
+		free_comp_list(clb);
 	}
    return r;
 }
