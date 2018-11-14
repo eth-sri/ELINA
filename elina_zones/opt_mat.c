@@ -2172,6 +2172,9 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
   unsigned short int n = dim + 1;
   int max_nni = n*n;
   int *ind1, *ind2;
+
+  
+	
   //posix_memalign((void **)&temp1, 32, 2*dim*sizeof(double));
   //posix_memalign((void **)&temp2, 32, 2*dim*sizeof(double));
   bool (*incr_closure)(opt_zones_mat_t * ,...);
@@ -2467,6 +2470,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 	  
 	  double b_inf = pr->tmp[2*j + 2];
 	  double b_sup = pr->tmp[2*j + 3];
+	  
 	  if((b_inf==0) && (b_sup==0)){
 		continue;
 	  }
@@ -2544,6 +2548,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 	if (Cb == INFINITY) ;
 	
 	else if (!Cinf) {
+		
 	  /* no infinite bound: derive quadratic number of bounds */
 	 /******
 		Handle Independent Components in case Quadratic Number of Bounds are Created.
@@ -2577,6 +2582,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 		  (m[k+1] != INFINITY) && (zj==1)) {
 		/* vj - vk <= max(expr) - max(-vj) - max (vk) */
 		tmpb = tmpa - m[k+1];
+		
 		if(m[n*(k+1)+j+1] ==INFINITY){
 			m[n*(k+1)+j+1] = tmpb;
 			count++;
@@ -2589,6 +2595,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 		       (m[n*(k+1)] !=  INFINITY) &&(zj==-1)) {
 		/* vk - vj <= max(expr) - max(vj) - max (-vk) */
 		tmpb = tmpa - m[n*(k+1)];
+		
 		if(m[n*(j+1) + k+1]==INFINITY){
 			m[n*(j+1)+k+1] = tmpb;
 			count++;
@@ -2604,6 +2611,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 	    }
 		
 	  }
+		
 	  oz->nni = min(max_nni,count);
 	}
 
@@ -2624,31 +2632,34 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 	 
 	  for (k=0;k<dim;k++) {
 	    if (k==Cj1) continue;
-
-            if ((pr->tmp[2 * k + 2] <= -1) && (m[k + 1] != INFINITY) &&
-                (zj == 1)) {
-              /* vj - vk <= max(expr) - max(-vj) - max(vk) */
+	    
+	    if ((pr->tmp[2*k+2] <=-1) &&
+		(m[k+1] != INFINITY)&&(zj==-1)) {
+	      /* vj - vk <= max(expr) - max(-vj) - max(vk) */
 	      tmpb = Cb - m[k+1];
-              if (m[n * (j + 1) + k + 1] == INFINITY) {
-                m[n * (j + 1) + k + 1] = tmpb;
+
+              if (m[n * (Cj1 + 1) + k + 1] == INFINITY) {
+                m[n * (Cj1 + 1) + k + 1] = tmpb;
                 count++;
               } else {
-                m[n * (j + 1) + k + 1] = min(m[n * (j + 1) + k + 1], tmpb);
+                m[n * (Cj1 + 1) + k + 1] = min(m[n * (Cj1 + 1) + k + 1], tmpb);
               }
 
-            } else if ((pr->tmp[2 * k + 3] <= -1) &&
-                       (m[n * (k + 1)] != INFINITY) && (zj == -1)) {
-              /* vk-vj <= max(expr) - max(-vk) - max (vj) */
+            }
+	    else if ((pr->tmp[2*k+3] <=-1) &&
+		     (m[n*(k+1)] != INFINITY)&&(zj==1)) {
+	      /* vk-vj <= max(expr) - max(-vk) - max (vj) */
 	      tmpb = Cb - m[n*(k+1)];
-              tmpb = tmpb / 2;
-              if (m[n * (k + 1) + j + 1] == INFINITY) {
-                m[n * (k + 1) + j + 1] = tmpb;
+	      //tmpb = tmpb/2;
+
+              if (m[n * (k + 1) + Cj1 + 1] == INFINITY) {
+                m[n * (k + 1) + Cj1 + 1] = tmpb;
                 count++;
               } else {
-                m[n * (k + 1) + j + 1] = min(m[n * (k + 1) + j + 1], tmpb);
+                m[n * (k + 1) + Cj1 + 1] = min(m[n * (k + 1) + Cj1 + 1], tmpb);
               }
             }
-            /*****
+	    /*****
 		Add components to new List
 	    *****/
 	    
@@ -2735,6 +2746,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 	      if ((pr->tmp[2*k+3] <=-1) &&
 		  (m[k+1] != INFINITY)&&(zj==1)) {
 		tmpb = tmpa - m[k+1];
+		
 		if(m[n*(k+1) + j+1]==INFINITY){
 			m[n*(k+1) + j+1] = tmpb;
 			count++;
@@ -2746,6 +2758,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 	      else if ((pr->tmp[2*k+2] <=-1) &&
 		       (m[n*(k+1)] != INFINITY)&&(zj==-1)) {
 		tmpb = tmpa - m[n*(j+1) + k+1];
+		
 		if(m[n*(j+1) + k+1]==INFINITY){
 			m[n*(j+1) + k+1] = tmpb;
 			count++;
@@ -2783,11 +2796,11 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 		//vk-vj
 	      tmpb = cb - m[k+1];
 
-              if (m[n * (j + 1) + k + 1] == INFINITY) {
-                m[n * (j + 1) + k + 1] = tmpb;
+              if (m[n * (cj1 + 1) + k + 1] == INFINITY) {
+                m[n * (cj1 + 1) + k + 1] = tmpb;
                 count++;
               } else {
-                m[n * (j + 1) + k + 1] = min(m[n * (j + 1) + k + 1], tmpb);
+                m[n * (cj1 + 1) + k + 1] = min(m[n * (cj1 + 1) + k + 1], tmpb);
               }
 
             }
@@ -2796,11 +2809,11 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 	      tmpb = cb - m[n*(k+1)];
 	      //Incremental initialization
 
-              if (m[n * (k + 1) + j + 1] == INFINITY) {
-                m[n * (k + 1) + j + 1] = tmpb;
+              if (m[n * (k + 1) + cj1 + 1] == INFINITY) {
+                m[n * (k + 1) + cj1 + 1] = tmpb;
                 count++;
               } else {
-                m[n * (k + 1) + j + 1] = min(m[n * (k + 1) + j + 1], tmpb);
+                m[n * (k + 1) + cj1 + 1] = min(m[n * (k + 1) + cj1 + 1], tmpb);
               }
             }
 	       
