@@ -169,6 +169,7 @@ bool incr_closure_comp_sparse(opt_zones_mat_t *oz, unsigned short int dim, unsig
 	double *m = oz->mat;
 	array_comp_list_t * acl = oz->acl;
 	comp_list_t *cl = find(acl,v);
+	
 	unsigned short int v1 = v+1;
 	unsigned short int n = dim + 1;
 	int count = oz->nni;
@@ -189,8 +190,9 @@ bool incr_closure_comp_sparse(opt_zones_mat_t *oz, unsigned short int dim, unsig
 			unsigned short int k1 = ca[k]+1;
 			//load the k-th row
 			double * pk = m + n*k1;
-
-                        //update the v-th row
+			
+			//update the v-th row
+			pv[0] = min(pv[0], pv[k1]+pk[0]);
 			for(j=0; j < comp_size; j++){
 				unsigned short int j1 = ca[j]+1;
 				//if(pv[j1]==INFINITY){
@@ -204,6 +206,7 @@ bool incr_closure_comp_sparse(opt_zones_mat_t *oz, unsigned short int dim, unsig
 			}
 
 			//update the v-th column
+			m[v1] = min(m[v1],m[k1]+pk[v1]);
 			for(i=0; i < comp_size; i++){
 				unsigned short int i1 = ca[i]+1;
 				//if(tmpv[i]==INFINITY){
@@ -214,6 +217,7 @@ bool incr_closure_comp_sparse(opt_zones_mat_t *oz, unsigned short int dim, unsig
 					tmpv[i] = min(tmpv[i], m[n*i1+k1] + pk[v1]);
 				//}
 			}
+			
 			
 		}
 		count = count + 2*n;
