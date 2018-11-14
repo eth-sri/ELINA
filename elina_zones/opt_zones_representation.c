@@ -256,42 +256,39 @@ Print Timing Information
 *****/
 
 void opt_zones_fprint(FILE* stream, elina_manager_t* man, opt_zones_t * o,char** name_of_dim){
-#if defined(TIMING)
-  fprintf(stdout, "Times are in CPU Cycles\n");
-  fprintf(stdout, "Top: %g\n", zones_top_time);
-  fprintf(stdout, "Free: %g\n", zones_free_time);
-  fprintf(stdout, "Copy: %g\n", zones_copy_time);
-  fprintf(stdout, "Closure: %g\n", zones_closure_time);
-  fprintf(stdout, "Is_Equal: %g\n", zones_is_equal_time);
-  fprintf(stdout, "Is_Lequal: %g\n", zones_is_lequal_time);
-  fprintf(stdout, "Meet_Abstract: %g\n", zones_meet_time);
-  fprintf(stdout, "Join: %g\n", zones_join_time);
-  fprintf(stdout, "Widening: %g\n", zones_widening_time);
-  fprintf(stdout, "Add_dimension: %g\n", zones_add_dimension_time);
-  fprintf(stdout, "Permute_dimension: %g\n", zones_permute_dimension_time);
-  fprintf(stdout, "Meet_Lincons_Array: %g\n", zones_meet_lincons_time);
-  fprintf(stdout, "Forget_Array %g\n", zones_forget_array_time);
-  fprintf(stdout, "Oct_to_Box: %g\n", zones_to_box_time);
-  fprintf(stdout, "Alloc: %g\n", zones_alloc_time);
-  fprintf(stdout, "Is_Top: %g\n", zones_is_top_time);
-  fprintf(stdout, "Expand: %g\n", zones_expand_time);
-  fprintf(stdout, "Fold: %g\n", zones_fold_time);
-  fprintf(stdout, "Sat_Lincons: %g\n", zones_sat_lincons_time);
-  fprintf(stdout, "Assign Linexpr: %g\n", zones_assign_linexpr_time);
-  fprintf(stdout, "Narrowing Time: %g\n", zones_narrowing_time);
-  fprintf(stdout, "Is Unconstrained time: %g\n", zones_is_unconstrained_time);
-  double total_time =
-      zones_top_time + zones_free_time + zones_copy_time + zones_closure_time +
-      zones_is_equal_time + zones_is_lequal_time + zones_meet_time +
-      zones_join_time + zones_widening_time + zones_add_dimension_time +
-      zones_permute_dimension_time + zones_meet_lincons_time +
-      zones_forget_array_time + zones_to_box_time + zones_alloc_time +
-      zones_is_top_time + zones_expand_time + zones_fold_time +
-      zones_sat_lincons_time + zones_assign_linexpr_time +
-      zones_narrowing_time + zones_is_unconstrained_time;
-  fprintf(stdout, "Total Zones Analysis: %g\n", total_time);
-  fflush(stdout);
-#endif
+	opt_zones_mat_t *oz = o->closed? o->closed : o->m;
+	print_mat(oz,o->dim);
+	/*#if defined(TIMING)
+		fprintf(stdout,"Times are in CPU Cycles\n");
+		fprintf(stdout,"Top: %g\n",zones_top_time);
+		fprintf(stdout,"Free: %g\n",zones_free_time);
+		fprintf(stdout,"Copy: %g\n",zones_copy_time);
+		fprintf(stdout,"Closure: %g\n",zones_closure_time);
+		fprintf(stdout,"Is_Equal: %g\n",zones_is_equal_time);
+		fprintf(stdout,"Is_Lequal: %g\n",zones_is_lequal_time);
+		fprintf(stdout,"Meet_Abstract: %g\n",zones_meet_time);
+		fprintf(stdout,"Join: %g\n",zones_join_time);
+		fprintf(stdout,"Widening: %g\n",zones_widening_time);
+		fprintf(stdout,"Add_dimension: %g\n",zones_add_dimension_time);
+		fprintf(stdout,"Permute_dimension: %g\n",zones_permute_dimension_time);
+		fprintf(stdout,"Meet_Lincons_Array: %g\n",zones_meet_lincons_time);
+		fprintf(stdout,"Forget_Array %g\n",zones_forget_array_time);
+		fprintf(stdout,"Oct_to_Box: %g\n",zones_to_box_time);
+		fprintf(stdout,"Alloc: %g\n",zones_alloc_time);
+		fprintf(stdout,"Is_Top: %g\n",zones_is_top_time);
+		fprintf(stdout,"Expand: %g\n",zones_expand_time);
+		fprintf(stdout,"Fold: %g\n",zones_fold_time);
+		fprintf(stdout,"Sat_Lincons: %g\n",zones_sat_lincons_time);
+		fprintf(stdout,"Assign Linexpr: %g\n",zones_assign_linexpr_time);
+        	fprintf(stdout,"Narrowing Time: %g\n",zones_narrowing_time);
+		fprintf(stdout,"Is Unconstrained time: %g\n",zones_is_unconstrained_time);
+		double total_time = zones_top_time + zones_free_time + zones_copy_time + zones_closure_time + zones_is_equal_time + 
+				    zones_is_lequal_time + zones_meet_time + zones_join_time + zones_widening_time + zones_add_dimension_time
+				    + zones_permute_dimension_time + zones_meet_lincons_time + zones_forget_array_time + zones_to_box_time + zones_alloc_time + 
+				    zones_is_top_time + zones_expand_time + zones_fold_time + zones_sat_lincons_time + zones_assign_linexpr_time + zones_narrowing_time + zones_is_unconstrained_time;
+		fprintf(stdout,"Total Zones Analysis: %g\n",total_time);
+		fflush(stdout);
+	#endif*/
 }
 
 
