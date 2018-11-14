@@ -1255,62 +1255,60 @@ void opt_pk_fprint(FILE* stream, elina_manager_t *man, opt_pk_t* op,
 
 
 void opt_pk_array_fprint(FILE* stream, elina_manager_t * man, opt_pk_array_t * oa, char ** name_of_dim){
-/*opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_FPRINT);
-array_comp_list_t * acl = oa->acl;
-unsigned short int maxcols = oa->maxcols;
-if(oa->is_bottom || !acl){
-        fprintf(stream,"empty polyhedron of dim (%lu)\n",maxcols);
-        return ;
-}
-unsigned short int num_comp = acl->size;
-
-comp_list_t * cl = acl->head;
-unsigned short int k;
-opt_pk_t ** poly = oa->poly;
-for(k=0; k < num_comp; k++){
-        fprint_comp_list(stream,cl,maxcols);
-        opt_pk_t *oak = poly[k];
-        opt_pk_fprint(stream,man,oak,name_of_dim);
-        cl = cl->next;
-}*/
-#if defined(TIMING)
-  fprintf(stdout, "Times are in CPU Cycles\n");
-  fprintf(stdout, "Top: %g\n", top_time);
-  fprintf(stdout, "Bottom: %g\n", bottom_time);
-  fprintf(stdout, "Free: %g\n", free_time);
-  fprintf(stdout, "Copy: %g\n", copy_time);
-  fprintf(stdout, "Is_Lequal: %g\n", is_lequal_time);
-  fprintf(stdout, "Meet_Abstract: %g\n", meet_time);
-  fprintf(stdout, "Join: %g\n", join_time);
-  fprintf(stdout, "Widening: %g\n", widening_time);
-  fprintf(stdout, "Add_dimension: %g\n", add_dimension_time);
-  fprintf(stdout, "remove: %g\n", remove_dimension_time);
-  fprintf(stdout, "Permute_dimension: %g\n", permute_dimension_time);
-  fprintf(stdout, "Meet_Lincons_Array: %g\n", meet_lincons_time);
-  fprintf(stdout, "Forget_Array %g\n", forget_array_time);
-  fprintf(stdout, "Poly_to_Box: %g\n", poly_to_box_time);
-  fprintf(stdout, "Is_Top: %g\n", is_top_time);
-  fprintf(stdout, "Is_Bottom: %g\n", is_bottom_time);
-  fprintf(stdout, "Expand: %g\n", expand_time);
-  fprintf(stdout, "Fold: %g\n", fold_time);
-  fprintf(stdout, "Sat_Lincons: %g\n", sat_lincons_time);
-  fprintf(stdout, "Assign Linexpr: %g\n", assign_linexpr_time);
-  fprintf(stdout, "Substitute Linexpr: %g\n", substitute_linexpr_time);
-  fprintf(stdout, "Bound Dimension: %g\n", bound_dimension_time);
-  // fprintf(stdout,"Conversion time: %g\n",opt_conversion_time);
-  fprintf(stdout, "Poly is unconstrained: %g\n", poly_is_unconstrained_time);
-  // fprintf(stdout,"Join Count: %lld\n",join_count);
-  double total_time =
-      top_time + free_time + copy_time + bottom_time + remove_dimension_time +
-      is_lequal_time + meet_time + join_time + widening_time +
-      add_dimension_time + permute_dimension_time + meet_lincons_time +
-      bound_dimension_time + forget_array_time + poly_to_box_time +
-      is_top_time + is_bottom_time + expand_time + fold_time +
-      sat_lincons_time + assign_linexpr_time + substitute_linexpr_time +
-      poly_is_unconstrained_time;
-  fprintf(stdout, "Total OptPoly Analysis: %g\n", total_time);
-  fflush(stdout);
-#endif
+	opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_FPRINT);
+	array_comp_list_t * acl = oa->acl;
+	unsigned short int maxcols = oa->maxcols;
+	if(oa->is_bottom || !acl){
+          fprintf(stream, "empty polyhedron of dim (%lu)\n", maxcols);
+          return;
+	}
+	unsigned short int num_comp = acl->size;
+	
+	comp_list_t * cl = acl->head;
+	unsigned short int k;
+	opt_pk_t ** poly = oa->poly;
+	for(k=0; k < num_comp; k++){
+		fprint_comp_list(stream,cl,maxcols);
+		opt_pk_t *oak = poly[k];
+		opt_matrix_fprint(stdout,oak->C);
+		opt_matrix_fprint(stdout,oak->F);
+		//opt_pk_fprint(stream,man,oak,name_of_dim); 
+		cl = cl->next;
+	}
+       /* #if defined(TIMING)
+		fprintf(stdout,"Times are in CPU Cycles\n");
+		fprintf(stdout,"Top: %g\n",top_time);
+		fprintf(stdout,"Bottom: %g\n",bottom_time);
+		fprintf(stdout,"Free: %g\n",free_time);
+		fprintf(stdout,"Copy: %g\n",copy_time);
+		fprintf(stdout,"Is_Lequal: %g\n",is_lequal_time);
+		fprintf(stdout,"Meet_Abstract: %g\n",meet_time);
+		fprintf(stdout,"Join: %g\n",join_time);
+		fprintf(stdout,"Widening: %g\n",widening_time);
+		fprintf(stdout,"Add_dimension: %g\n",add_dimension_time);
+		fprintf(stdout,"remove: %g\n",remove_dimension_time);
+		fprintf(stdout,"Permute_dimension: %g\n",permute_dimension_time);
+		fprintf(stdout,"Meet_Lincons_Array: %g\n",meet_lincons_time);
+		fprintf(stdout,"Forget_Array %g\n",forget_array_time);
+		fprintf(stdout,"Poly_to_Box: %g\n",poly_to_box_time);
+		fprintf(stdout,"Is_Top: %g\n",is_top_time);
+		fprintf(stdout,"Is_Bottom: %g\n",is_bottom_time);
+		fprintf(stdout,"Expand: %g\n",expand_time);
+		fprintf(stdout,"Fold: %g\n",fold_time);
+		fprintf(stdout,"Sat_Lincons: %g\n",sat_lincons_time);
+		fprintf(stdout,"Assign Linexpr: %g\n",assign_linexpr_time);
+		fprintf(stdout,"Substitute Linexpr: %g\n",substitute_linexpr_time);
+		fprintf(stdout,"Bound Dimension: %g\n",bound_dimension_time);
+		//fprintf(stdout,"Conversion time: %g\n",opt_conversion_time);
+		fprintf(stdout,"Poly is unconstrained: %g\n",poly_is_unconstrained_time);
+		//fprintf(stdout,"Join Count: %lld\n",join_count);
+		double total_time = top_time + free_time + copy_time + bottom_time + remove_dimension_time + is_lequal_time + meet_time + join_time + widening_time + add_dimension_time 
+					+ permute_dimension_time + meet_lincons_time + bound_dimension_time + 
+					forget_array_time + poly_to_box_time  + is_top_time + is_bottom_time + expand_time + fold_time + sat_lincons_time + assign_linexpr_time + substitute_linexpr_time+
+					poly_is_unconstrained_time;
+		fprintf(stdout,"Total OptPoly Analysis: %g\n",total_time);
+		fflush(stdout);
+	#endif*/
 }
 
 size_t opt_pk_serialize_common(void* dst, opt_pk_t* oak, bool dry_run) {
