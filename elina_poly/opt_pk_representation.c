@@ -1255,7 +1255,7 @@ void opt_pk_fprint(FILE* stream, elina_manager_t *man, opt_pk_t* op,
 
 
 void opt_pk_array_fprint(FILE* stream, elina_manager_t * man, opt_pk_array_t * oa, char ** name_of_dim){
-	/*opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_FPRINT);
+	opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_FPRINT);
 	array_comp_list_t * acl = oa->acl;
 	unsigned short int maxcols = oa->maxcols;
 	if(oa->is_bottom || !acl){
@@ -1270,10 +1270,12 @@ void opt_pk_array_fprint(FILE* stream, elina_manager_t * man, opt_pk_array_t * o
 	for(k=0; k < num_comp; k++){
 		fprint_comp_list(stream,cl,maxcols);
 		opt_pk_t *oak = poly[k];
-		opt_pk_fprint(stream,man,oak,name_of_dim); 
+		opt_matrix_fprint(stdout,oak->C);
+		opt_matrix_fprint(stdout,oak->F);
+		//opt_pk_fprint(stream,man,oak,name_of_dim); 
 		cl = cl->next;
-	}*/
-        #if defined(TIMING)
+	}
+       /* #if defined(TIMING)
 		fprintf(stdout,"Times are in CPU Cycles\n");
 		fprintf(stdout,"Top: %g\n",top_time);
 		fprintf(stdout,"Bottom: %g\n",bottom_time);
@@ -1306,7 +1308,7 @@ void opt_pk_array_fprint(FILE* stream, elina_manager_t * man, opt_pk_array_t * o
 					poly_is_unconstrained_time;
 		fprintf(stdout,"Total OptPoly Analysis: %g\n",total_time);
 		fflush(stdout);
-	#endif
+	#endif*/
 }
 
 size_t opt_pk_serialize_common(void* dst, opt_pk_t* oak, bool dry_run) {
