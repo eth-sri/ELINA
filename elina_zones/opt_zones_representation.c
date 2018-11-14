@@ -257,7 +257,9 @@ Print Timing Information
 *****/
 
 void opt_zones_fprint(FILE* stream, elina_manager_t* man, opt_zones_t * o,char** name_of_dim){
-	#if defined(TIMING)
+	opt_zones_mat_t *oz = o->closed? o->closed : o->m;
+	print_mat(oz,o->dim);
+	/*#if defined(TIMING)
 		fprintf(stdout,"Times are in CPU Cycles\n");
 		fprintf(stdout,"Top: %g\n",zones_top_time);
 		fprintf(stdout,"Free: %g\n",zones_free_time);
@@ -287,7 +289,7 @@ void opt_zones_fprint(FILE* stream, elina_manager_t* man, opt_zones_t * o,char**
 				    zones_is_top_time + zones_expand_time + zones_fold_time + zones_sat_lincons_time + zones_assign_linexpr_time + zones_narrowing_time + zones_is_unconstrained_time;
 		fprintf(stdout,"Total Zones Analysis: %g\n",total_time);
 		fflush(stdout);
-	#endif
+	#endif*/
 }
 
 
