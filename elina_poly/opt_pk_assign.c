@@ -387,7 +387,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 				poly[res]->nbeq++;			
 				poly[res]->is_minimized = false;
 				if(!opk->exn){
-					if( need_refine){
+					/*if( need_refine){
 					
 						comp_list_t * clv = find(acl,var);
 					
@@ -450,10 +450,10 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 						free(tmp);
 					
 					}
-					else {
+					else {*/
 						poly[res]->satC = opt_satmat_alloc(poly[res]->F->nbrows,opt_bitindex_size(poly[res]->C->nbrows));
 						combine_satmat(opk,poly[res],matC->nbcolumns - opk->dec,poly[res]->C->nbrows,true);
-					}
+					//}
 				}
 				else{
 					opk->exn = ELINA_EXC_NONE;
