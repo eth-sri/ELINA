@@ -62,7 +62,7 @@ opt_zones_t* opt_zones_assign_texpr_array(elina_manager_t* man,
 	
    opt_zones_mat_t * or = r->closed ? r->closed : r->m;
 	if(or && !or->is_dense){
-		if(need_refine){
+		if(false){
 		
 			array_comp_list_t * acl = or->acl;
 			comp_list_t * clb_copy = create_comp_list();
