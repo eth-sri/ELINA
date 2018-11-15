@@ -2640,12 +2640,12 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 	      /* vj - vk <= max(expr) - max(-vj) - max(vk) */
 	      tmpb = Cb - m[k+1];
 		
-	      if(m[n*(Cj1+1)+k+1] == INFINITY){
-		 m[n*(Cj1+1)+k+1] = tmpb;
+	      if(m[n*(k+1) + Cj1+1] == INFINITY){
+		 m[n*(k+1)+Cj1+1] = tmpb;
 		 count++;
 	      }
 	      else{
-	      	m[n*(Cj1+1)+k+1] = min(m[n*(Cj1+1)+k+1], tmpb);
+	      	m[n*(k+1)+Cj1+1] = min(m[n*(k+1)+Cj1+1], tmpb);
 	      }
 		
 	    }
@@ -2655,12 +2655,12 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 	      tmpb = Cb - m[n*(k+1)];
 	      //tmpb = tmpb/2;
 		
-	      if(m[n*(k+1)+Cj1+1]==INFINITY){
-		m[n*(k+1)+Cj1+1] = tmpb;
+	      if(m[n*(Cj1+1)+k+1]==INFINITY){
+		m[n*(Cj1+1)+k+1] = tmpb;
 		count++;
 	      }
 	      else{
-	      	m[n*(k+1)+Cj1+1] = min(m[n*(k+1)+Cj1+1], tmpb);
+	      	m[n*(Cj1+1)+k+1] = min(m[n*(Cj1+1)+k+1], tmpb);
 	      }
 	 	
 	    }
@@ -2694,7 +2694,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 	       
           int ind;
 	  if((zi==-1) && (zj==1)){
-		ind = n*(Cj1+1)+Cj2+1;
+		ind = n*(Cj2+1)+Cj1+1;
 		if(m[ind]==INFINITY){
 			m[ind] = tmpa;
 			count++;
@@ -2704,7 +2704,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 		}
 	  }
 	  else if((zi==1) && (zj==-1)){
-		ind = n*(Cj2+1)+Cj1+1;
+		ind = n*(Cj1+1)+Cj2+1;
 		if(m[ind]==INFINITY){
 			m[ind] = tmpa;
 			count++;
@@ -2801,12 +2801,12 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 		//vk-vj
 	      tmpb = cb - m[k+1];
 	      
-	      if(m[n*(cj1+1)+k+1]==INFINITY){
-		 m[n*(cj1+1)+k+1] = tmpb;
+	      if(m[n*(k+1)+cj1+1]==INFINITY){
+		 m[n*(k+1)+cj1+1] = tmpb;
 		 count++;
 	      }
               else{	
-	      	m[n*(cj1+1)+k+1] = min(m[n*(cj1+1)+k+1], tmpb);
+	      	m[n*(k+1)+cj1+1] = min(m[n*(k+1)+cj1+1], tmpb);
 	      }
 		
 	    }
@@ -2815,12 +2815,12 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 	      tmpb = cb - m[n*(k+1)];
 	      //Incremental initialization
 	     
-	      if(m[n*(k+1)+cj1+1]==INFINITY){
-		 m[n*(k+1)+cj1+1] = tmpb;
+	      if(m[n*(cj1+1)+k+1]==INFINITY){
+		 m[n*(cj1+1)+k+1] = tmpb;
 		 count++;
 	      }
 	      else{
-	      	m[n*(k+1)+cj1+1] = min(m[n*(k+1)+cj1+1], tmpb);
+	      	m[n*(cj1+1)+k+1] = min(m[n*(cj1+1)+k+1], tmpb);
 	      }
 		
 	    }
@@ -2845,7 +2845,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 	  
 	  int ind;
 	  if((zi==1) && (zj==-1)){
-		int ind = n*(cj1+1) + cj2+1;
+		int ind = n*(cj2+1) + cj1+1;
 		if(m[ind]==INFINITY){
 			m[ind] = tmpa;
 			count++;
@@ -2855,7 +2855,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 		}
 	  }
 	  else if((zi==-1)&&(zj==1)){
-		int ind = n*(cj2+1) + cj1+1;
+		int ind = n*(cj1+1) + cj2+1;
 		if(m[ind]==INFINITY){
 			m[ind] = tmpa;
 			count++;
