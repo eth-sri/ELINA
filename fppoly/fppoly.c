@@ -300,8 +300,15 @@ elina_abstract0_t *fppoly_from_network_input_poly(
   for (i = 0; i < num_pixels; i++) {
     res->input_lexpr[i] = create_sparse_expr(lexpr_weights[i], lexpr_cst[i],
                                              lexpr_dim[i], lexpr_size[i]);
+    //	printf("w: %g %g %g cst: %g dim: %zu %zu %zu size:
+    //%zu\n",lexpr_weights[i][0],lexpr_weights[i][1],
+    //lexpr_weights[i][2],lexpr_cst[i],lexpr_dim[i][0],lexpr_dim[i][1],
+    //lexpr_dim[i][2],lexpr_size[i]); 	expr_print(res->input_lexpr[i]);
+    //	fflush(stdout);
     res->input_uexpr[i] = create_sparse_expr(uexpr_weights[i], uexpr_cst[i],
                                              uexpr_dim[i], uexpr_size[i]);
+    //	expr_print(res->input_uexpr[i]);
+    //	fflush(stdout);
   }
   return abstract0_of_fppoly(man, res);
 }
@@ -696,6 +703,10 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
   double tmp1, tmp2;
 
   if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL)) {
+    //	printf("Start\n");
+    //	expr_print(expr);
+    //	printf("\n");
+    //	fflush(stdout);
     size_t dims = expr->size;
     expr_t *res;
     if (expr->type == DENSE) {
@@ -734,6 +745,7 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
       } else {
         k = expr->dim[i];
       }
+
       expr_t *mul_expr = NULL;
       expr_t *sum_expr = NULL;
       if (expr->sup_coeff[i] < 0) {
@@ -741,7 +753,14 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
       } else if (expr->inf_coeff[i] < 0) {
         mul_expr = fp->input_lexpr[k];
       }
-
+      // printf("i: %zu\n",i);
+      // expr_print(expr);
+      // expr_print(fp->input_lexpr[k]);
+      // fflush(stdout);
+      // printf("here %zu %d
+      // %d\n",k,mul_expr==fp->input_uexpr[k],mul_expr==fp->input_lexpr[k]);
+      // expr_print(mul_expr);
+      // fflush(stdout);
       if (mul_expr != NULL) {
         if (mul_expr->size == 0) {
           sum_expr = multiply_cst_expr(pr, mul_expr, expr->inf_coeff[i],
@@ -752,7 +771,7 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
                                    expr->sup_coeff[i]);
           add_expr(pr, res, sum_expr);
         }
-        free_expr(mul_expr);
+        // free_expr(mul_expr);
         if (sum_expr != NULL) {
           free_expr(sum_expr);
         }
@@ -767,11 +786,12 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
 
     res->inf_cst = res->inf_cst + expr->inf_cst;
     res->sup_cst = res->sup_cst + expr->sup_cst;
-    expr_t *tmp = res;
+    expr_t *tmp = expr;
     expr = res;
-    free_expr(tmp);
+    //	free_expr(tmp);
   }
-
+  // expr_print(expr);
+  // fflush(stdout);
   size_t dims = expr->size;
   double res_inf = expr->inf_cst;
   if (expr->inf_coeff == NULL || expr->sup_coeff == NULL) {
@@ -791,6 +811,8 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
     // printf("tmp1: %g\n",tmp1);
     res_inf = res_inf + tmp1;
   }
+  //	printf("inf: %g\n",-res_inf);
+  //	fflush(stdout);
   return res_inf;
 }
 
@@ -799,6 +821,9 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
   double tmp1, tmp2;
 
   if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL)) {
+    // printf("uexpr\n");
+    // expr_print(expr);
+    // fflush(stdout);
     size_t dims = expr->size;
     expr_t *res;
     if (expr->type == DENSE) {
@@ -828,7 +853,8 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
                                 fp->input_sup[k]);
       res = create_cst_expr(-tmp2, tmp2);
     }
-
+    // printf("finish\n");
+    // fflush(stdout);
     for (i = 1; i < dims; i++) {
       if (expr->type == DENSE) {
         k = i;
@@ -853,7 +879,7 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
                                    expr->sup_coeff[i]);
           add_expr(pr, res, sum_expr);
         }
-        free_expr(mul_expr);
+        // free_expr(mul_expr);
         if (sum_expr != NULL) {
           free_expr(sum_expr);
         }
@@ -865,12 +891,11 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
         res->sup_cst = res->sup_cst + tmp2;
       }
     }
-
     res->inf_cst = res->inf_cst + expr->inf_cst;
     res->sup_cst = res->sup_cst + expr->sup_cst;
-    expr_t *tmp = res;
+    expr_t *tmp = expr;
     expr = res;
-    free_expr(tmp);
+    // free_expr(tmp);
   }
 
   size_t dims = expr->size;
@@ -890,6 +915,8 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
                               fp->input_sup[k]);
     res_sup = res_sup + tmp2;
   }
+  // printf("sup: %g\n",res_sup);
+  // fflush(stdout);
   return res_sup;
 }
 
