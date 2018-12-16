@@ -792,6 +792,9 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp)
 	}
 //	printf("inf: %g\n",-res_inf);
 //	fflush(stdout);
+        if(fp->input_lexpr!=NULL && fp->input_uexpr!=NULL){
+		free_expr(expr);
+	}
 	return res_inf;
 }
 
@@ -896,6 +899,9 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp)
 	}
 	//printf("sup: %g\n",res_sup);
 	//fflush(stdout);
+	if(fp->input_lexpr!=NULL && fp->input_uexpr!=NULL){
+		free_expr(expr);
+	}
 	return res_sup;
 }
 
