@@ -1,7 +1,7 @@
 #
 #
 #  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
-#  ELINA is Copyright © 2018 Department of Computer Science, ETH Zurich
+#  ELINA is Copyright  2018 Department of Computer Science, ETH Zurich
 #  This software is distributed under GNU Lesser General Public License Version 3.0.
 #  For more information, see the ELINA project website at:
 #  http://elina.ethz.ch
@@ -135,7 +135,7 @@ def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array, l
     try:
         fppoly_from_network_input_poly_c = fppoly_api.fppoly_from_network_input_poly
         fppoly_from_network_input_poly_c.restype = ElinaAbstract0Ptr
-        fppoly_from_network_input_poly_c.argtypes = [ElinaManagerPtr, c_size_t, c_size_t,ndpointer(ctypes.c_double),ndpointer(ctypes.c_double),_doublepp,ndpointer(ctypes.c_double),_doublepp,POINTER(c_size_t),_doublepp,ndpointer(ctypes.c_double),_doublepp,POINTER(c_size_t)]
+        fppoly_from_network_input_poly_c.argtypes = [ElinaManagerPtr, c_size_t, c_size_t,ndpointer(ctypes.c_double),ndpointer(ctypes.c_double),_doublepp,ndpointer(ctypes.c_double),_doublepp,ndpointer(ctypes.c_size_t),_doublepp,ndpointer(ctypes.c_double),_doublepp,ndpointer(ctypes.c_size_t)]
         res = fppoly_from_network_input_poly_c(man,intdim, realdim, inf_array,sup_array, lexpr_weights, lexpr_cst, lexpr_dim, lexpr_size, uexpr_weights, uexpr_cst, uexpr_dim ,uexpr_size)
     except Exception as inst:
         print('Problem with loading/calling "fppoly_from_network_input_poly" from "libfppoly.so"')
