@@ -292,8 +292,8 @@ elina_abstract0_t * fppoly_from_network_input(elina_manager_t *man, size_t intdi
 }
 
 elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array, double *sup_array, 
-                                                  double ** lexpr_weights, double * lexpr_cst, size_t ** lexpr_dim, double ** uexpr_weights,
-						  double * uexpr_cst, size_t ** uexpr_dim, size_t expr_size){
+                                                  double * lexpr_weights, double * lexpr_cst, size_t * lexpr_dim, double * uexpr_weights,
+						  double * uexpr_cst, size_t * uexpr_dim, size_t expr_size){
 	fppoly_t * res = (fppoly_t *)malloc(sizeof(fppoly_t));
 	fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array);
 	size_t num_pixels = intdim + realdim;
@@ -301,15 +301,29 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t i
 	res->input_uexpr = (expr_t **)malloc(num_pixels*sizeof(expr_t *));
 	
 	size_t i;
+        double * tmp_weights = (double*)malloc(expr_size*sizeof(double));
+	size_t * tmp_dim = (size_t*)malloc(expr_size*sizeof(size_t));
 	for(i = 0; i < num_pixels; i++){
-		res->input_lexpr[i] = create_sparse_expr(lexpr_weights[i], lexpr_cst[i], lexpr_dim[i], expr_size);
-//	printf("w: %g %g %g cst: %g dim: %zu %zu %zu size: %zu\n",lexpr_weights[i][0],lexpr_weights[i][1], lexpr_weights[i][2],lexpr_cst[i],lexpr_dim[i][0],lexpr_dim[i][1], lexpr_dim[i][2],lexpr_size[i]);
-	//	expr_print(res->input_lexpr[i]);
-	//	fflush(stdout);
-		res->input_uexpr[i] = create_sparse_expr(uexpr_weights[i], uexpr_cst[i], uexpr_dim[i], expr_size);
+		
+		size_t j;
+		for(j=0; j < expr_size; j++){
+			tmp_weights[j] = lexpr_weights[i*expr_size+j];
+			tmp_dim[j] = lexpr_dim[i*expr_size+j];
+		}
+		res->input_lexpr[i] = create_sparse_expr(tmp_weights, lexpr_cst[i], tmp_dim, expr_size);
+	//printf("w: %p %g %g %g cst: %g dim: %p %zu %zu %zu\n",lexpr_weights[i],lexpr_weights[i][0],lexpr_weights[i][1], lexpr_weights[i][2],lexpr_cst[i],lexpr_dim[i],lexpr_dim[i][0],lexpr_dim[i][1], lexpr_dim[i][2]);
+		//expr_print(res->input_lexpr[i]);
+		//fflush(stdout);
+		for(j=0; j < expr_size; j++){
+			tmp_weights[j] = uexpr_weights[i*expr_size+j];
+			tmp_dim[j] = uexpr_dim[i*expr_size+j];
+		}
+		res->input_uexpr[i] = create_sparse_expr(tmp_weights, uexpr_cst[i], tmp_dim, expr_size);
 	//	expr_print(res->input_uexpr[i]);
 	//	fflush(stdout);
 	}
+	free(tmp_weights);
+	free(tmp_dim);
 	return abstract0_of_fppoly(man,res);	
 
 }
