@@ -90,7 +90,7 @@ def fppoly_from_network_input(man, intdim, realdim, inf_array, sup_array):
 
     return res
 
-def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array, lexpr_weights, lexpr_cst, lexpr_dim, lexpr_size, uexpr_weights, uexpr_cst, uexpr_dim, uexpr_size, num_param):
+def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array, lexpr_weights, lexpr_cst, lexpr_dim,  uexpr_weights, uexpr_cst, uexpr_dim, expr_size):
     """
     Create an abstract element from perturbed input
     
@@ -112,18 +112,14 @@ def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array, l
         constants of the lower polyhedra constraints
     lexpr_dim: POINTER(POINTER(c_size_t))
         the indexes of the variables in the lower polyhedra constraints
-    lexpr_size: POINTER(c_size_t)
-        sizes of the lower polyhedra constraints
     uexpr_weights: POINTER(POINTER(double))
         coefficients of the upper polyhedra constraints
     uexpr_cst: POINTER(double)
         constants of the upper polyhedra constraints
     uexpr_dim: POINTER(POINTER(c_size_t))
         the indexes of the variables in the upper polyhedra constraints
-    uexpr_size: POINTER(c_size_t)
-        sizes of the upper polyhedra constraints
-    num_param: c_size_t
-        number of parameters
+    expr_size: c_size_t
+        size of the polyhedra constraints
     Returns
     -------
     res: ElinaAbstract0Ptr
@@ -135,8 +131,8 @@ def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array, l
     try:
         fppoly_from_network_input_poly_c = fppoly_api.fppoly_from_network_input_poly
         fppoly_from_network_input_poly_c.restype = ElinaAbstract0Ptr
-        fppoly_from_network_input_poly_c.argtypes = [ElinaManagerPtr, c_size_t, c_size_t,ndpointer(ctypes.c_double),ndpointer(ctypes.c_double),_doublepp,ndpointer(ctypes.c_double),_doublepp,ndpointer(ctypes.c_size_t),_doublepp,ndpointer(ctypes.c_double),_doublepp,ndpointer(ctypes.c_size_t), c_size_t]
-        res = fppoly_from_network_input_poly_c(man,intdim, realdim, inf_array,sup_array, lexpr_weights, lexpr_cst, lexpr_dim, lexpr_size, uexpr_weights, uexpr_cst, uexpr_dim ,uexpr_size, num_param)
+        fppoly_from_network_input_poly_c.argtypes = [ElinaManagerPtr, c_size_t, c_size_t,ndpointer(ctypes.c_double),ndpointer(ctypes.c_double),_doublepp,ndpointer(ctypes.c_double),_doublepp,_doublepp,ndpointer(ctypes.c_double),_doublepp, c_size_t]
+        res = fppoly_from_network_input_poly_c(man,intdim, realdim, inf_array,sup_array, lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim ,expr_size)
     except Exception as inst:
         print('Problem with loading/calling "fppoly_from_network_input_poly" from "libfppoly.so"')
         print(inst)	
