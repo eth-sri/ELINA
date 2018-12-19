@@ -242,6 +242,89 @@ expr_t * copy_expr(expr_t *src){
 	return dst;
 }
 
+
+void merge_sparse_expr(expr_t *expr, size_t l, size_t m, size_t r) {
+    int i, j, k;
+    int n1 = m - l + 1;
+    int n2 = r - m;
+
+    /* create temp arrays */
+    size_t L[n1], R[n2];
+    double L2[n1], R2[n2];
+    double L3[n1], R3[n2];
+    /* Copy data to temp arrays L[] and R[] */
+    for (i = 0; i < n1; i++) {
+        L[i] = expr->dim[l + i];
+        L2[i] = expr->inf_coeff[l + i];
+	L3[i] = expr->sup_coeff[l + i];
+    }
+    for (j = 0; j < n2; j++) {
+        R[j] = expr->dim[m + 1 + j];
+        R2[j] = expr->inf_coeff[m + 1 + j];
+	R3[j] = expr->sup_coeff[m + 1 + j];
+    }
+
+    /* Merge the temp arrays back into arr[l..r]*/
+    i = 0; // Initial index of first subarray
+    j = 0; // Initial index of second subarray
+    k = l; // Initial index of merged subarray
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            expr->dim[k] = L[i];
+            expr->inf_coeff[k] = L2[i];
+	    expr->sup_coeff[k] = L3[i];
+            i++;
+        } else {
+            expr->dim[k] = R[j];
+            expr->inf_coeff[k] = R2[j];
+	    expr->sup_coeff[k] = R3[j];
+            j++;
+        }
+        k++;
+    }
+
+    /* Copy the remaining elements of L[], if there
+       are any */
+    while (i < n1) {
+        expr->dim[k] = L[i];
+        expr->inf_coeff[k] = L2[i];
+	expr->sup_coeff[k] = L3[i];
+        i++;
+        k++;
+    }
+
+    /* Copy the remaining elements of R[], if there
+       are any */
+    while (j < n2) {
+        expr->dim[k] = R[j];
+        expr->inf_coeff[k] = R2[j];
+	expr->sup_coeff[k] = R3[j];
+        j++;
+        k++;
+    }
+}
+
+
+/* l is for left index and r is right index of the
+   sub-array of arr to be sorted */
+void merge_sort_sparse_expr(expr_t *expr, size_t l, size_t r) {
+    if (l < r) {
+        // Same as (l+r)/2, but avoids overflow for
+        // large l and h
+        size_t m = l + (r - l) / 2;
+
+        // Sort first and second halves
+        merge_sort_sparse_expr(expr, l, m);
+        merge_sort_sparse_expr(expr, m + 1, r);
+
+        merge_sparse_expr(expr, l, m, r);
+    }
+}
+
+void sort_sparse_expr(expr_t *expr){
+	merge_sort_sparse_expr(expr,0,expr->size-1);
+}
+
 neuron_t *neuron_alloc(void){
 	neuron_t *res =  (neuron_t *)malloc(sizeof(neuron_t));
 	res->expr = NULL;
@@ -311,6 +394,7 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t i
 			tmp_dim[j] = lexpr_dim[i*expr_size+j];
 		}
 		res->input_lexpr[i] = create_sparse_expr(tmp_weights, lexpr_cst[i], tmp_dim, expr_size);
+		sort_sparse_expr(res->input_lexpr[i]);
 	//printf("w: %p %g %g %g cst: %g dim: %p %zu %zu %zu\n",lexpr_weights[i],lexpr_weights[i][0],lexpr_weights[i][1], lexpr_weights[i][2],lexpr_cst[i],lexpr_dim[i],lexpr_dim[i][0],lexpr_dim[i][1], lexpr_dim[i][2]);
 		//expr_print(res->input_lexpr[i]);
 		//fflush(stdout);
@@ -319,6 +403,7 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t i
 			tmp_dim[j] = uexpr_dim[i*expr_size+j];
 		}
 		res->input_uexpr[i] = create_sparse_expr(tmp_weights, uexpr_cst[i], tmp_dim, expr_size);
+		sort_sparse_expr(res->input_uexpr[i]);
 	//	expr_print(res->input_uexpr[i]);
 	//	fflush(stdout);
 	}
@@ -431,86 +516,7 @@ expr_t * multiply_cst_expr(fppoly_internal_t *pr, expr_t *expr, double mul_inf, 
 
 
 
-void merge_sparse_expr(expr_t *expr, size_t l, size_t m, size_t r) {
-    int i, j, k;
-    int n1 = m - l + 1;
-    int n2 = r - m;
 
-    /* create temp arrays */
-    size_t L[n1], R[n2];
-    double L2[n1], R2[n2];
-    double L3[n1], R3[n2];
-    /* Copy data to temp arrays L[] and R[] */
-    for (i = 0; i < n1; i++) {
-        L[i] = expr->dim[l + i];
-        L2[i] = expr->inf_coeff[l + i];
-	L3[i] = expr->sup_coeff[l + i];
-    }
-    for (j = 0; j < n2; j++) {
-        R[j] = expr->dim[m + 1 + j];
-        R2[j] = expr->inf_coeff[m + 1 + j];
-	R3[j] = expr->sup_coeff[m + 1 + j];
-    }
-
-    /* Merge the temp arrays back into arr[l..r]*/
-    i = 0; // Initial index of first subarray
-    j = 0; // Initial index of second subarray
-    k = l; // Initial index of merged subarray
-    while (i < n1 && j < n2) {
-        if (L[i] <= R[j]) {
-            expr->dim[k] = L[i];
-            expr->inf_coeff[k] = L2[i];
-	    expr->sup_coeff[k] = L3[i];
-            i++;
-        } else {
-            expr->dim[k] = R[j];
-            expr->inf_coeff[k] = R2[j];
-	    expr->sup_coeff[k] = R3[j];
-            j++;
-        }
-        k++;
-    }
-
-    /* Copy the remaining elements of L[], if there
-       are any */
-    while (i < n1) {
-        expr->dim[k] = L[i];
-        expr->inf_coeff[k] = L2[i];
-	expr->sup_coeff[k] = L3[i];
-        i++;
-        k++;
-    }
-
-    /* Copy the remaining elements of R[], if there
-       are any */
-    while (j < n2) {
-        expr->dim[k] = R[j];
-        expr->inf_coeff[k] = R2[j];
-	expr->sup_coeff[k] = R3[j];
-        j++;
-        k++;
-    }
-}
-
-/* l is for left index and r is right index of the
-   sub-array of arr to be sorted */
-void merge_sort_sparse_expr(expr_t *expr, size_t l, size_t r) {
-    if (l < r) {
-        // Same as (l+r)/2, but avoids overflow for
-        // large l and h
-        size_t m = l + (r - l) / 2;
-
-        // Sort first and second halves
-        merge_sort_sparse_expr(expr, l, m);
-        merge_sort_sparse_expr(expr, m + 1, r);
-
-        merge_sparse_expr(expr, l, m, r);
-    }
-}
-
-void sort_sparse_expr(expr_t *expr){
-	merge_sort_sparse_expr(expr,0,expr->size-1);
-}
 
 void add_cst_expr(fppoly_internal_t *pr, expr_t * exprA, expr_t *exprB){
 	double maxA = fmax(fabs(exprA->inf_cst),fabs(exprA->sup_cst));
