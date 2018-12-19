@@ -136,9 +136,9 @@ elina_abstract0_t* fppoly_from_network_input(elina_manager_t *man, size_t intdim
 
 elina_abstract0_t *fppoly_from_network_input_poly(
     elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array,
-    double *sup_array, double **lexpr_weights, double *lexpr_cst,
-    size_t **lexpr_dim, double **uexpr_weights, double *uexpr_cst,
-    size_t **uexpr_dim, size_t expr_size);
+    double *sup_array, double *lexpr_weights, double *lexpr_cst,
+    size_t *lexpr_dim, double *uexpr_weights, double *uexpr_cst,
+    size_t *uexpr_dim, size_t expr_size);
 
 void ffn_handle_first_relu_layer(elina_manager_t *man, elina_abstract0_t *abs,
                                  double **weights, double *bias, size_t size,
