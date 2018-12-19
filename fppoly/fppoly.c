@@ -259,11 +259,10 @@ layer_t *create_layer(size_t size, layertype_t type,
 
 void fppoly_from_network_input_box(fppoly_t *res, size_t intdim, size_t realdim,
                                    double *inf_array, double *sup_array,
-                                   bool has_poly_constraints) {
+                                   size_t num_param) {
   res->layers = NULL;
   res->numlayers = 0;
-  size_t num_pixels =
-      has_poly_constraints ? intdim + realdim + 1 : intdim + realdim;
+  size_t num_pixels = num_param;
   res->input_inf = (double *)malloc(num_pixels * sizeof(double));
   res->input_sup = (double *)malloc(num_pixels * sizeof(double));
   res->input_lexpr = NULL;
@@ -280,7 +279,7 @@ void fppoly_from_network_input_box(fppoly_t *res, size_t intdim, size_t realdim,
 elina_abstract0_t * fppoly_from_network_input(elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array, double *sup_array){
 	fppoly_t * res = (fppoly_t *)malloc(sizeof(fppoly_t));
         fppoly_from_network_input_box(res, intdim, realdim, inf_array,
-                                      sup_array, false);
+                                      sup_array, 0);
         return abstract0_of_fppoly(man,res);
 }
 
@@ -288,10 +287,11 @@ elina_abstract0_t *fppoly_from_network_input_poly(
     elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array,
     double *sup_array, double **lexpr_weights, double *lexpr_cst,
     size_t **lexpr_dim, size_t *lexpr_size, double **uexpr_weights,
-    double *uexpr_cst, size_t **uexpr_dim, size_t *uexpr_size) {
+    double *uexpr_cst, size_t **uexpr_dim, size_t *uexpr_size,
+    size_t num_param) {
   fppoly_t *res = (fppoly_t *)malloc(sizeof(fppoly_t));
   fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array,
-                                true);
+                                num_param);
   size_t num_pixels = intdim + realdim;
   res->input_lexpr = (expr_t **)malloc(num_pixels * sizeof(expr_t *));
   res->input_uexpr = (expr_t **)malloc(num_pixels * sizeof(expr_t *));
