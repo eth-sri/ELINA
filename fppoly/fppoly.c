@@ -233,6 +233,87 @@ expr_t *copy_expr(expr_t *src) {
   return dst;
 }
 
+void merge_sparse_expr(expr_t *expr, size_t l, size_t m, size_t r) {
+  int i, j, k;
+  int n1 = m - l + 1;
+  int n2 = r - m;
+
+  /* create temp arrays */
+  size_t L[n1], R[n2];
+  double L2[n1], R2[n2];
+  double L3[n1], R3[n2];
+  /* Copy data to temp arrays L[] and R[] */
+  for (i = 0; i < n1; i++) {
+    L[i] = expr->dim[l + i];
+    L2[i] = expr->inf_coeff[l + i];
+    L3[i] = expr->sup_coeff[l + i];
+  }
+  for (j = 0; j < n2; j++) {
+    R[j] = expr->dim[m + 1 + j];
+    R2[j] = expr->inf_coeff[m + 1 + j];
+    R3[j] = expr->sup_coeff[m + 1 + j];
+  }
+
+  /* Merge the temp arrays back into arr[l..r]*/
+  i = 0; // Initial index of first subarray
+  j = 0; // Initial index of second subarray
+  k = l; // Initial index of merged subarray
+  while (i < n1 && j < n2) {
+    if (L[i] <= R[j]) {
+      expr->dim[k] = L[i];
+      expr->inf_coeff[k] = L2[i];
+      expr->sup_coeff[k] = L3[i];
+      i++;
+    } else {
+      expr->dim[k] = R[j];
+      expr->inf_coeff[k] = R2[j];
+      expr->sup_coeff[k] = R3[j];
+      j++;
+    }
+    k++;
+  }
+
+  /* Copy the remaining elements of L[], if there
+     are any */
+  while (i < n1) {
+    expr->dim[k] = L[i];
+    expr->inf_coeff[k] = L2[i];
+    expr->sup_coeff[k] = L3[i];
+    i++;
+    k++;
+  }
+
+  /* Copy the remaining elements of R[], if there
+     are any */
+  while (j < n2) {
+    expr->dim[k] = R[j];
+    expr->inf_coeff[k] = R2[j];
+    expr->sup_coeff[k] = R3[j];
+    j++;
+    k++;
+  }
+}
+
+/* l is for left index and r is right index of the
+   sub-array of arr to be sorted */
+void merge_sort_sparse_expr(expr_t *expr, size_t l, size_t r) {
+  if (l < r) {
+    // Same as (l+r)/2, but avoids overflow for
+    // large l and h
+    size_t m = l + (r - l) / 2;
+
+    // Sort first and second halves
+    merge_sort_sparse_expr(expr, l, m);
+    merge_sort_sparse_expr(expr, m + 1, r);
+
+    merge_sparse_expr(expr, l, m, r);
+  }
+}
+
+void sort_sparse_expr(expr_t *expr) {
+  merge_sort_sparse_expr(expr, 0, expr->size - 1);
+}
+
 neuron_t *neuron_alloc(void){
 	neuron_t *res =  (neuron_t *)malloc(sizeof(neuron_t));
         res->expr = NULL;
@@ -304,6 +385,7 @@ elina_abstract0_t *fppoly_from_network_input_poly(
     }
     res->input_lexpr[i] =
         create_sparse_expr(tmp_weights, lexpr_cst[i], tmp_dim, expr_size);
+    sort_sparse_expr(res->input_lexpr[i]);
     // printf("w: %p %g %g %g cst: %g dim: %p %zu %zu
     // %zu\n",lexpr_weights[i],lexpr_weights[i][0],lexpr_weights[i][1],
     // lexpr_weights[i][2],lexpr_cst[i],lexpr_dim[i],lexpr_dim[i][0],lexpr_dim[i][1],
@@ -314,6 +396,7 @@ elina_abstract0_t *fppoly_from_network_input_poly(
     }
     res->input_uexpr[i] =
         create_sparse_expr(tmp_weights, uexpr_cst[i], tmp_dim, expr_size);
+    sort_sparse_expr(res->input_uexpr[i]);
     //	expr_print(res->input_uexpr[i]);
     //	fflush(stdout);
   }
@@ -435,87 +518,6 @@ expr_t *multiply_cst_expr(fppoly_internal_t *pr, expr_t *expr, double mul_inf,
                                       mul_sup, expr->inf_cst, expr->sup_cst);
   // res->cst = mul_coeff*expr->cst;
   return res;
-}
-
-void merge_sparse_expr(expr_t *expr, size_t l, size_t m, size_t r) {
-  int i, j, k;
-  int n1 = m - l + 1;
-  int n2 = r - m;
-
-  /* create temp arrays */
-  size_t L[n1], R[n2];
-  double L2[n1], R2[n2];
-  double L3[n1], R3[n2];
-  /* Copy data to temp arrays L[] and R[] */
-  for (i = 0; i < n1; i++) {
-    L[i] = expr->dim[l + i];
-    L2[i] = expr->inf_coeff[l + i];
-    L3[i] = expr->sup_coeff[l + i];
-  }
-  for (j = 0; j < n2; j++) {
-    R[j] = expr->dim[m + 1 + j];
-    R2[j] = expr->inf_coeff[m + 1 + j];
-    R3[j] = expr->sup_coeff[m + 1 + j];
-  }
-
-  /* Merge the temp arrays back into arr[l..r]*/
-  i = 0; // Initial index of first subarray
-  j = 0; // Initial index of second subarray
-  k = l; // Initial index of merged subarray
-  while (i < n1 && j < n2) {
-    if (L[i] <= R[j]) {
-      expr->dim[k] = L[i];
-      expr->inf_coeff[k] = L2[i];
-      expr->sup_coeff[k] = L3[i];
-      i++;
-    } else {
-      expr->dim[k] = R[j];
-      expr->inf_coeff[k] = R2[j];
-      expr->sup_coeff[k] = R3[j];
-      j++;
-    }
-    k++;
-  }
-
-  /* Copy the remaining elements of L[], if there
-     are any */
-  while (i < n1) {
-    expr->dim[k] = L[i];
-    expr->inf_coeff[k] = L2[i];
-    expr->sup_coeff[k] = L3[i];
-    i++;
-    k++;
-  }
-
-  /* Copy the remaining elements of R[], if there
-     are any */
-  while (j < n2) {
-    expr->dim[k] = R[j];
-    expr->inf_coeff[k] = R2[j];
-    expr->sup_coeff[k] = R3[j];
-    j++;
-    k++;
-  }
-}
-
-/* l is for left index and r is right index of the
-   sub-array of arr to be sorted */
-void merge_sort_sparse_expr(expr_t *expr, size_t l, size_t r) {
-  if (l < r) {
-    // Same as (l+r)/2, but avoids overflow for
-    // large l and h
-    size_t m = l + (r - l) / 2;
-
-    // Sort first and second halves
-    merge_sort_sparse_expr(expr, l, m);
-    merge_sort_sparse_expr(expr, m + 1, r);
-
-    merge_sparse_expr(expr, l, m, r);
-  }
-}
-
-void sort_sparse_expr(expr_t *expr) {
-  merge_sort_sparse_expr(expr, 0, expr->size - 1);
 }
 
 void add_cst_expr(fppoly_internal_t *pr, expr_t *exprA, expr_t *exprB) {
@@ -2642,183 +2644,193 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   return res;
 }
 
-bool is_greater(elina_manager_t *man, elina_abstract0_t *element, elina_dim_t y,
-                elina_dim_t x) {
-  fppoly_t *fp = fppoly_of_abstract0(element);
-  fppoly_internal_t *pr =
-      fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
-  if (1) {
+bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y, elina_dim_t x){
+	fppoly_t *fp = fppoly_of_abstract0(element);
+	fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
+        if (1) {
 
-    expr_t *sub = (expr_t *)malloc(sizeof(expr_t));
-    // sub->size = size;
-    sub->inf_cst = 0;
-    sub->sup_cst = 0;
-    sub->inf_coeff = (double *)malloc(2 * sizeof(double));
-    sub->sup_coeff = (double *)malloc(2 * sizeof(double));
-    sub->dim = (size_t *)malloc(2 * sizeof(size_t));
-    sub->size = 2;
-    sub->type = SPARSE;
-    sub->inf_coeff[0] = -1;
-    sub->sup_coeff[0] = 1;
-    sub->dim[0] = y;
-    sub->inf_coeff[1] = 1;
-    sub->sup_coeff[1] = -1;
-    sub->dim[1] = x;
-
-    double lb = get_lb_using_previous_layers(man, fp, sub);
-
-    // free_expr(sub);
-
-    if (lb < 0) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-  output_abstract_t *out = fp->out;
-  expr_t *exprA = out->lexpr[y];
-  expr_t *exprB = out->uexpr[x];
-  if (exprA == NULL) {
-    return false;
-  } else {
-    if (exprB == NULL) {
-      if (out->output_inf[y] < 0) {
-        return true;
-      } else {
-        return false;
-      }
-
-    } else {
-      // printf("before access %zu %zu\n", exprA->size,exprB->size);
-      // fflush(stdout);
-      size_t sizeA = exprA->size;
-      size_t sizeB = exprB->size;
-      // printf("after access\n");
-      // fflush(stdout);
-      size_t i, k;
-      expr_t *sub = (expr_t *)malloc(sizeof(expr_t));
-      //
-      // sub->size = size;
-      sub->inf_cst = exprA->inf_cst + exprB->sup_cst;
-      sub->sup_cst = exprA->sup_cst + exprB->inf_cst;
-      // printf("getting here\n");
-      // expr_print(exprA);
-      // expr_print(exprB);
-      // fflush(stdout);
-      if (exprA->type == DENSE) {
-        sub->inf_coeff = (double *)malloc(sizeA * sizeof(double));
-        sub->sup_coeff = (double *)malloc(sizeA * sizeof(double));
-        sub->dim == NULL;
-        sub->size = sizeA;
-        sub->type = DENSE;
-        if (exprB->type == DENSE) {
-          for (i = 0; i < sizeA; i++) {
-            sub->inf_coeff[i] = exprA->inf_coeff[i] + exprB->sup_coeff[i];
-            sub->sup_coeff[i] = exprA->sup_coeff[i] + exprB->inf_coeff[i];
-          }
-        } else {
-          k = 0;
-          for (i = 0; i < sizeA; i++) {
-            if (k < sizeB && exprB->dim[k] == i) {
-              sub->inf_coeff[i] = exprA->inf_coeff[i] + exprB->sup_coeff[k];
-              sub->sup_coeff[i] = exprA->sup_coeff[i] + exprB->inf_coeff[k];
-              k++;
-            } else {
-              sub->inf_coeff[i] = exprA->inf_coeff[i];
-              sub->sup_coeff[i] = exprA->sup_coeff[i];
-            }
-          }
-        }
-
-      } else {
-        if (exprB->type == DENSE) {
-          sub->inf_coeff = (double *)malloc(sizeB * sizeof(double));
-          sub->sup_coeff = (double *)malloc(sizeB * sizeof(double));
-          sub->dim == NULL;
-          sub->size = sizeB;
-          sub->type = DENSE;
-          i = 0;
-          for (k = 0; k < sizeB; k++) {
-            if (i < sizeA && exprA->dim[i] == k) {
-              sub->inf_coeff[k] = exprA->inf_coeff[i] + exprB->sup_coeff[k];
-              sub->sup_coeff[k] = exprA->sup_coeff[i] + exprB->inf_coeff[k];
-              i++;
-            } else {
-              sub->inf_coeff[i] = exprB->sup_coeff[k];
-              sub->sup_coeff[i] = exprB->inf_coeff[k];
-            }
-          }
-        } else {
-          sub->inf_coeff = (double *)malloc((sizeA + sizeB) * sizeof(double));
-          sub->sup_coeff = (double *)malloc((sizeA + sizeB) * sizeof(double));
-          sub->dim == NULL;
-
+          expr_t *sub = (expr_t *)malloc(sizeof(expr_t));
+          // sub->size = size;
+          sub->inf_cst = 0;
+          sub->sup_cst = 0;
+          sub->inf_coeff = (double *)malloc(2 * sizeof(double));
+          sub->sup_coeff = (double *)malloc(2 * sizeof(double));
+          sub->dim = (size_t *)malloc(2 * sizeof(size_t));
+          sub->size = 2;
           sub->type = SPARSE;
-          size_t l = 0;
-          i = 0;
-          k = 0;
-          sub->dim = (size_t *)malloc((sizeA + sizeB) * sizeof(size_t));
-          while (i < sizeA && k < sizeB) {
-            if (exprA->dim[i] < exprB->dim[k]) {
-              sub->inf_coeff[l] = exprA->inf_coeff[i];
-              sub->sup_coeff[l] = exprA->sup_coeff[i];
-              sub->dim[l] = exprA->dim[i];
-              i++;
+          sub->inf_coeff[0] = -1;
+          sub->sup_coeff[0] = 1;
+          sub->dim[0] = y;
+          sub->inf_coeff[1] = 1;
+          sub->sup_coeff[1] = -1;
+          sub->dim[1] = x;
 
-            } else if (exprB->dim[k] < exprA->dim[i]) {
-              sub->inf_coeff[l] = exprB->sup_coeff[k];
-              sub->sup_coeff[l] = exprB->inf_coeff[k];
-              sub->dim[l] = exprB->dim[k];
-              k++;
-            } else {
-              sub->inf_coeff[l] = exprA->inf_coeff[i] + exprB->sup_coeff[k];
-              sub->sup_coeff[l] = exprA->sup_coeff[i] + exprB->inf_coeff[k];
-              sub->dim[l] = exprA->dim[i];
-              i++;
-              k++;
-            }
-            l++;
+          double lb = get_lb_using_previous_layers(man, fp, sub);
+
+          // free_expr(sub);
+
+          if (lb < 0) {
+            return true;
+          } else {
+            return false;
           }
-          while (i < sizeA) {
-            sub->inf_coeff[l] = exprA->inf_coeff[i];
-            sub->sup_coeff[l] = exprA->sup_coeff[i];
-            sub->dim[l] = exprA->dim[i];
-            i++;
-            l++;
-          }
-          while (k < sizeB) {
-            sub->inf_coeff[l] = exprB->inf_coeff[k];
-            sub->sup_coeff[l] = exprB->sup_coeff[k];
-            sub->dim[l] = exprB->dim[k];
-            k++;
-            l++;
-          }
-          sub->size = l;
-          sub->inf_coeff =
-              (double *)realloc(sub->inf_coeff, l * sizeof(double));
-          sub->sup_coeff =
-              (double *)realloc(sub->sup_coeff, l * sizeof(double));
-          sub->dim = (size_t *)realloc(sub->dim, l * sizeof(size_t));
         }
-      }
+        output_abstract_t *out = fp->out;
+        expr_t *exprA = out->lexpr[y];
+        expr_t *exprB = out->uexpr[x];
+        if (exprA == NULL) {
+          return false;
+        } else {
+          if (exprB == NULL) {
+            if (out->output_inf[y] < 0) {
+              return true;
+            } else {
+              return false;
+            }
 
-      // expr_print(sub);
-      // fflush(stdout);
-      double lb = compute_lb_from_expr(pr, sub, fp);
-      // printf("y: %zu x: %zu lb: %g\n",y,x,lb);
-      // fflush(stdout);
-      free_expr(sub);
-      // double lb = -out->output_inf[y] - out->output_sup[x];
-      if (lb < 0) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-  }
+          } else {
+            // printf("before access %zu %zu\n", exprA->size,exprB->size);
+            // fflush(stdout);
+            size_t sizeA = exprA->size;
+            size_t sizeB = exprB->size;
+            // printf("after access\n");
+            // fflush(stdout);
+            size_t i, k;
+            expr_t *sub = (expr_t *)malloc(sizeof(expr_t));
+            //
+            // sub->size = size;
+            sub->inf_cst = exprA->inf_cst + exprB->sup_cst;
+            sub->sup_cst = exprA->sup_cst + exprB->inf_cst;
+            // printf("getting here\n");
+            // expr_print(exprA);
+            // expr_print(exprB);
+            // fflush(stdout);
+            if (exprA->type == DENSE) {
+              sub->inf_coeff = (double *)malloc(sizeA * sizeof(double));
+              sub->sup_coeff = (double *)malloc(sizeA * sizeof(double));
+              sub->dim == NULL;
+              sub->size = sizeA;
+              sub->type = DENSE;
+              if (exprB->type == DENSE) {
+                for (i = 0; i < sizeA; i++) {
+                  sub->inf_coeff[i] = exprA->inf_coeff[i] + exprB->sup_coeff[i];
+                  sub->sup_coeff[i] = exprA->sup_coeff[i] + exprB->inf_coeff[i];
+                }
+              } else {
+                k = 0;
+                for (i = 0; i < sizeA; i++) {
+                  if (k < sizeB && exprB->dim[k] == i) {
+                    sub->inf_coeff[i] =
+                        exprA->inf_coeff[i] + exprB->sup_coeff[k];
+                    sub->sup_coeff[i] =
+                        exprA->sup_coeff[i] + exprB->inf_coeff[k];
+                    k++;
+                  } else {
+                    sub->inf_coeff[i] = exprA->inf_coeff[i];
+                    sub->sup_coeff[i] = exprA->sup_coeff[i];
+                  }
+                }
+              }
+
+            } else {
+              if (exprB->type == DENSE) {
+                sub->inf_coeff = (double *)malloc(sizeB * sizeof(double));
+                sub->sup_coeff = (double *)malloc(sizeB * sizeof(double));
+                sub->dim == NULL;
+                sub->size = sizeB;
+                sub->type = DENSE;
+                i = 0;
+                for (k = 0; k < sizeB; k++) {
+                  if (i < sizeA && exprA->dim[i] == k) {
+                    sub->inf_coeff[k] =
+                        exprA->inf_coeff[i] + exprB->sup_coeff[k];
+                    sub->sup_coeff[k] =
+                        exprA->sup_coeff[i] + exprB->inf_coeff[k];
+                    i++;
+                  } else {
+                    sub->inf_coeff[i] = exprB->sup_coeff[k];
+                    sub->sup_coeff[i] = exprB->inf_coeff[k];
+                  }
+                }
+              } else {
+                sub->inf_coeff =
+                    (double *)malloc((sizeA + sizeB) * sizeof(double));
+                sub->sup_coeff =
+                    (double *)malloc((sizeA + sizeB) * sizeof(double));
+                sub->dim == NULL;
+
+                sub->type = SPARSE;
+                size_t l = 0;
+                i = 0;
+                k = 0;
+                sub->dim = (size_t *)malloc((sizeA + sizeB) * sizeof(size_t));
+                while (i < sizeA && k < sizeB) {
+                  if (exprA->dim[i] < exprB->dim[k]) {
+                    sub->inf_coeff[l] = exprA->inf_coeff[i];
+                    sub->sup_coeff[l] = exprA->sup_coeff[i];
+                    sub->dim[l] = exprA->dim[i];
+                    i++;
+
+                  } else if (exprB->dim[k] < exprA->dim[i]) {
+                    sub->inf_coeff[l] = exprB->sup_coeff[k];
+                    sub->sup_coeff[l] = exprB->inf_coeff[k];
+                    sub->dim[l] = exprB->dim[k];
+                    k++;
+                  } else {
+                    sub->inf_coeff[l] =
+                        exprA->inf_coeff[i] + exprB->sup_coeff[k];
+                    sub->sup_coeff[l] =
+                        exprA->sup_coeff[i] + exprB->inf_coeff[k];
+                    sub->dim[l] = exprA->dim[i];
+                    i++;
+                    k++;
+                  }
+                  l++;
+                }
+                while (i < sizeA) {
+                  sub->inf_coeff[l] = exprA->inf_coeff[i];
+                  sub->sup_coeff[l] = exprA->sup_coeff[i];
+                  sub->dim[l] = exprA->dim[i];
+                  i++;
+                  l++;
+                }
+                while (k < sizeB) {
+                  sub->inf_coeff[l] = exprB->inf_coeff[k];
+                  sub->sup_coeff[l] = exprB->sup_coeff[k];
+                  sub->dim[l] = exprB->dim[k];
+                  k++;
+                  l++;
+                }
+                sub->size = l;
+                sub->inf_coeff =
+                    (double *)realloc(sub->inf_coeff, l * sizeof(double));
+                sub->sup_coeff =
+                    (double *)realloc(sub->sup_coeff, l * sizeof(double));
+                sub->dim = (size_t *)realloc(sub->dim, l * sizeof(size_t));
+              }
+            }
+
+            // expr_print(sub);
+            // fflush(stdout);
+            double lb = compute_lb_from_expr(pr, sub, fp);
+            // printf("y: %zu x: %zu lb: %g\n",y,x,lb);
+            // fflush(stdout);
+            free_expr(sub);
+            // double lb = -out->output_inf[y] - out->output_sup[x];
+            if (lb < 0) {
+              return true;
+            } else {
+              return false;
+            }
+          }
+        }
 }
 
-long int max(long int a, long int b) { return a > b ? a : b; }
+
+long int max(long int a, long int b){
+	return a> b? a : b;
+
+}
 
 void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
                              double *filter_weights, double *filter_bias,
