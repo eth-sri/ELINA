@@ -266,10 +266,10 @@ layer_t * create_layer(size_t size, layertype_t type, activation_type_t activati
 }
 
 
-void fppoly_from_network_input_box(fppoly_t *res, size_t intdim, size_t realdim, double *inf_array, double *sup_array, size_t num_param){
+void fppoly_from_network_input_box(fppoly_t *res, size_t intdim, size_t realdim, double *inf_array, double *sup_array){
 	res->layers = NULL;
 	res->numlayers = 0;
-	size_t num_pixels = num_param;
+	size_t num_pixels = intdim + realdim;
 	res->input_inf = (double *)malloc(num_pixels*sizeof(double));
 	res->input_sup = (double *)malloc(num_pixels*sizeof(double));
 	res->input_lexpr = NULL;
@@ -287,26 +287,26 @@ void fppoly_from_network_input_box(fppoly_t *res, size_t intdim, size_t realdim,
 
 elina_abstract0_t * fppoly_from_network_input(elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array, double *sup_array){
 	fppoly_t * res = (fppoly_t *)malloc(sizeof(fppoly_t));
-	fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array, 0);
+	fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array);
 	return abstract0_of_fppoly(man,res);
 }
 
 elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array, double *sup_array, 
-                                                  double ** lexpr_weights, double * lexpr_cst, size_t ** lexpr_dim, size_t * lexpr_size,
-						  double ** uexpr_weights, double * uexpr_cst, size_t ** uexpr_dim, size_t * uexpr_size, size_t num_param){
+                                                  double ** lexpr_weights, double * lexpr_cst, size_t ** lexpr_dim, double ** uexpr_weights,
+						  double * uexpr_cst, size_t ** uexpr_dim, size_t expr_size){
 	fppoly_t * res = (fppoly_t *)malloc(sizeof(fppoly_t));
-	fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array, num_param);
+	fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array);
 	size_t num_pixels = intdim + realdim;
 	res->input_lexpr = (expr_t **)malloc(num_pixels*sizeof(expr_t *));
 	res->input_uexpr = (expr_t **)malloc(num_pixels*sizeof(expr_t *));
 	
 	size_t i;
 	for(i = 0; i < num_pixels; i++){
-		res->input_lexpr[i] = create_sparse_expr(lexpr_weights[i], lexpr_cst[i], lexpr_dim[i], lexpr_size[i]);
+		res->input_lexpr[i] = create_sparse_expr(lexpr_weights[i], lexpr_cst[i], lexpr_dim[i], expr_size);
 //	printf("w: %g %g %g cst: %g dim: %zu %zu %zu size: %zu\n",lexpr_weights[i][0],lexpr_weights[i][1], lexpr_weights[i][2],lexpr_cst[i],lexpr_dim[i][0],lexpr_dim[i][1], lexpr_dim[i][2],lexpr_size[i]);
 	//	expr_print(res->input_lexpr[i]);
 	//	fflush(stdout);
-		res->input_uexpr[i] = create_sparse_expr(uexpr_weights[i], uexpr_cst[i], uexpr_dim[i], uexpr_size[i]);
+		res->input_uexpr[i] = create_sparse_expr(uexpr_weights[i], uexpr_cst[i], uexpr_dim[i], expr_size);
 	//	expr_print(res->input_uexpr[i]);
 	//	fflush(stdout);
 	}
@@ -3111,8 +3111,15 @@ void fppoly_free(elina_manager_t *man, fppoly_t *fp){
 	fp->layers = NULL;
 	free(fp->input_inf);
 	fp->input_inf = NULL;
+	for(i=0; i < fp->num_pixels; i++){
+		free(fp->input_lexpr[i]);
+		free(fp->input_uexpr[i]);
+	}
 	
-	
+	free(fp->input_lexpr);
+	fp->input_lexpr = NULL;
+	free(fp->input_uexpr);
+	fp->input_uexpr = NULL;
 	free(fp->input_sup);
 	fp->input_sup = NULL;
 	free(fp->out->output_inf);
