@@ -23,6 +23,7 @@ from fppoly_imports import *
 from elina_manager_h import *
 from elina_abstract0_h import *
 from elina_interval_h import *
+from elina_linexpr0_h import *
 import numpy as np 
 from numpy.ctypeslib import ndpointer
 import ctypes
@@ -668,3 +669,70 @@ def box_for_layer(element,layerno):
         print('Make sure you are passing ElinaAbstract0Ptr, c_size_t to the function')
 
     return interval_array
+
+
+
+def get_lexpr_for_output_neuron(man,element,i):
+    """
+    returns lower polyhedra constraint for the i-th output neuron in terms of the input neurons
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    i: c_size_t
+        output neuron number
+
+    Returns
+    -------
+    expr :     ElinaLinexpr0Ptr
+        The lower polyhedra expression for the output neuron in terms of input parameters and pixels
+
+    """
+
+    linexpr0 = None
+    try:
+        get_lexpr_for_output_neuron_c = fppoly_api.get_lexpr_for_output_neuron
+        get_lexpr_for_output_neuron_c.restype = ElinaLinexpr0Ptr
+        get_lexpr_for_output_neuron_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t]
+        linexpr0 = get_lexpr_for_output_neuron_c(man,element,i)
+    except:
+        print('Problem with loading/calling "get_lexpr_for_output_neuron" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t to the function')
+
+    return linexpr0
+
+
+def get_uexpr_for_output_neuron(man,element,i):
+    """
+    returns lower polyhedra constraint for the i-th output neuron in terms of the input neurons
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    i: c_size_t
+        output neuron number
+
+    Returns
+    -------
+    expr :     ElinaLinexpr0Ptr
+        The upper polyhedra expression for the output neuron in terms of input parameters and pixels
+
+    """
+
+    linexpr0 = None
+    try:
+        get_uexpr_for_output_neuron_c = fppoly_api.get_uexpr_for_output_neuron
+        get_uexpr_for_output_neuron_c.restype = ElinaLinexpr0Ptr
+        get_uexpr_for_output_neuron_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t]
+        linexpr0 = get_uexpr_for_output_neuron_c(man,element,i)
+    except:
+        print('Problem with loading/calling "get_uexpr_for_output_neuron" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t to the function')
+
+    return linexpr0
