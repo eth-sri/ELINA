@@ -30,6 +30,7 @@ extern "C" {
 #else
 #include "elina_coeff.h"
 #include "elina_dimension.h"
+#include "elina_linexpr0.h"
 #include "elina_manager.h"
 #endif
 
@@ -208,6 +209,10 @@ size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *abs,
 
 void fppoly_alloc_first_layer(fppoly_t *fp, size_t size, size_t num_pixels,
                               layertype_t type, activation_type_t activation);
+
+elina_linexpr0_t * get_lexpr_for_output_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t i);
+
+elina_linexpr0_t * get_uexpr_for_output_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t i);
 
 #ifdef __cplusplus
  }
