@@ -591,6 +591,8 @@ elina_abstract0_t *relu_zono_layerwise(elina_manager_t *man, bool destructive,
                                        elina_dim_t num_dim) {
   // elina_dim_t i;
   // elina_dim_t end = start_offset + num_dim;
+  elina_dimension_t dimension = elina_abstract0_dimension(man, abs);
+
   elina_abstract0_t *res = destructive ? abs : elina_abstract0_copy(man, abs);
 
   // for(i=start_offset; i < end; i++){
