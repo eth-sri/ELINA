@@ -1157,35 +1157,35 @@ elina_abstract0_t * tanh_zono_layerwise(elina_manager_t* man, bool destructive, 
 }
 
 bool is_greater(elina_manager_t *man, elina_abstract0_t *elem, elina_dim_t y, elina_dim_t x){
-  if (zo->box_inf[y] > zo->box_sup[x]) {
-    return true;
-  }
-  zonotope_t *zo = zonotope_of_abstract0(elem);
-  elina_dimension_t dims = zonotope_dimension(man, zo);
-  elina_dim_t num_dim = dims.intdim + dims.realdim;
+    
+	zonotope_t * zo = zonotope_of_abstract0(elem);
+        if (zo->box_inf[y] > zo->box_sup[x]) {
+          return true;
+        }
+        elina_dimension_t dims = zonotope_dimension(man,zo);
+	elina_dim_t num_dim = dims.intdim + dims.realdim;
 
-  elina_dimchange_t *dimchange = elina_dimchange_alloc(0, 1);
-  dimchange->dim[0] = num_dim;
-  zo = zonotope_add_dimensions(man, true, zo, dimchange, false);
-  elina_linexpr0_t *assign_expr = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE, 2);
-  elina_coeff_set_interval_double(&assign_expr->cst, 0, 0);
-  elina_linterm_t *lterm = &assign_expr->p.linterm[0];
-  lterm->dim = y;
-  elina_coeff_set_interval_double(&lterm->coeff, 1, 1);
-  lterm = &assign_expr->p.linterm[1];
-  lterm->dim = x;
-  elina_coeff_set_interval_double(&lterm->coeff, -1, -1);
-  // elina_dim_t extra_var = num_dim +1;
-  zo = zonotope_assign_linexpr_array(man, true, zo, &num_dim, &assign_expr, 1,
-                                     NULL);
-  elina_interval_t *bound_x = zonotope_bound_dimension(man, zo, num_dim);
-
-  bool res = elina_scalar_sgn(bound_x->inf) > 0;
-  elina_interval_free(bound_x);
-  zo = zonotope_remove_dimensions(man, true, zo, dimchange);
-  elina_dimchange_free(dimchange);
-  elina_linexpr0_free(assign_expr);
-  return res;
+	elina_dimchange_t *dimchange = elina_dimchange_alloc(0,1);
+	dimchange->dim[0] = num_dim;
+	zo = zonotope_add_dimensions(man,true,zo,dimchange,false);
+	elina_linexpr0_t * assign_expr = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,2); 
+	elina_coeff_set_interval_double(&assign_expr->cst,0,0);
+	elina_linterm_t *lterm = &assign_expr->p.linterm[0];
+	lterm->dim = y;
+	elina_coeff_set_interval_double(&lterm->coeff,1,1); 
+	lterm = &assign_expr->p.linterm[1];
+	lterm->dim = x;
+	elina_coeff_set_interval_double(&lterm->coeff,-1, -1); 
+	//elina_dim_t extra_var = num_dim +1;		
+	zo = zonotope_assign_linexpr_array(man,true,zo,&num_dim,&assign_expr,1,NULL);
+	elina_interval_t * bound_x = zonotope_bound_dimension(man,zo,num_dim);
+        
+	bool res = elina_scalar_sgn(bound_x->inf)>0;
+	elina_interval_free(bound_x);
+	zo = zonotope_remove_dimensions(man,true,zo,dimchange);
+	elina_dimchange_free(dimchange);
+	elina_linexpr0_free(assign_expr);
+	return res;
 }
 
 void *handle_maxpool_zono_parallel(void *args) {
