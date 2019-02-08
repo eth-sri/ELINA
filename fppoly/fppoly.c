@@ -350,6 +350,7 @@ layer_t * create_layer(size_t size, layertype_t type, activation_type_t activati
 
 
 void fppoly_from_network_input_box(fppoly_t *res, size_t intdim, size_t realdim, double *inf_array, double *sup_array){
+	
 	res->layers = NULL;
 	res->numlayers = 0;
 	size_t num_pixels = intdim + realdim;
@@ -364,7 +365,7 @@ void fppoly_from_network_input_box(fppoly_t *res, size_t intdim, size_t realdim,
 	}
 	res->num_pixels = num_pixels;
 	res->out = NULL;
-		
+	
 }
 
 
@@ -378,6 +379,7 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t i
                                                   double * lexpr_weights, double * lexpr_cst, size_t * lexpr_dim, double * uexpr_weights,
 						  double * uexpr_cst, size_t * uexpr_dim, size_t expr_size){
 	fppoly_t * res = (fppoly_t *)malloc(sizeof(fppoly_t));
+	
 	fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array);
 	size_t num_pixels = intdim + realdim;
 	res->input_lexpr = (expr_t **)malloc(num_pixels*sizeof(expr_t *));
@@ -386,6 +388,7 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t i
 	size_t i;
         double * tmp_weights = (double*)malloc(expr_size*sizeof(double));
 	size_t * tmp_dim = (size_t*)malloc(expr_size*sizeof(size_t));
+	
 	for(i = 0; i < num_pixels; i++){
 		
 		size_t j;
@@ -2424,7 +2427,9 @@ void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, dou
 		out->output_sup[i] = out_neurons[i]->ub;
 	}
     }
-   // fppoly_fprint(stdout,man,fp,NULL);
+    //printf("finish\n");
+    //fppoly_fprint(stdout,man,fp,NULL);
+    //fflush(stdout);
 	return;
 
 }
@@ -2887,8 +2892,7 @@ void conv_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t
 	        }
 	     }
 	}
-	//printf("gets till here %zu\n",numlayers);
-	//fflush(stdout);
+	
 	update_state_using_previous_layers_parallel(man,fp,numlayers);
 	
 	//printf("return here2\n");
@@ -3112,7 +3116,6 @@ void layer_free(layer_t * layer){
 void fppoly_free(elina_manager_t *man, fppoly_t *fp){
 	size_t i;
 	size_t output_size = fp->layers[fp->numlayers-1]->dims;
-	
 	for(i=0; i < fp->numlayers; i++){
 		layer_free(fp->layers[i]);
 	}
