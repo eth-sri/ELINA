@@ -867,7 +867,8 @@ expr_t *replace_input_poly_cons_in_uexpr(fppoly_internal_t *pr, expr_t *expr,
 double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
   size_t i, k;
   double tmp1, tmp2;
-
+  // printf("start\n");
+  // fflush(stdout);
   if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL)) {
     expr = replace_input_poly_cons_in_lexpr(pr, expr, fp);
   }
@@ -897,6 +898,8 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
   if (fp->input_lexpr != NULL && fp->input_uexpr != NULL) {
     free_expr(expr);
   }
+  // printf("finish\n");
+  // fflush(stdout);
   return res_inf;
 }
 
@@ -3287,16 +3290,18 @@ void fppoly_free(elina_manager_t *man, fppoly_t *fp){
 	fp->layers = NULL;
 	free(fp->input_inf);
 	fp->input_inf = NULL;
-        for (i = 0; i < fp->num_pixels; i++) {
-          free(fp->input_lexpr[i]);
-          free(fp->input_uexpr[i]);
+        if(fp->input_lexpr!=NULL && fp->input_uexpr!=NULL){
+		for(i=0; i < fp->num_pixels; i++){
+			free(fp->input_lexpr[i]);
+			free(fp->input_uexpr[i]);
+		}
+	
+		free(fp->input_lexpr);
+		fp->input_lexpr = NULL;
+		free(fp->input_uexpr);
+		fp->input_uexpr = NULL;
         }
-
-        free(fp->input_lexpr);
-        fp->input_lexpr = NULL;
-        free(fp->input_uexpr);
-        fp->input_uexpr = NULL;
-        free(fp->input_sup);
+	free(fp->input_sup);
 	fp->input_sup = NULL;
         free(fp->out->output_inf);
         fp->out->output_inf = NULL;
