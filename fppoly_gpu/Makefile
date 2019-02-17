@@ -29,7 +29,7 @@ INCLDIR = $(ELINA_PREFIX)/include
 INSTALL = install
 INSTALLd = install -d
 
-OBJS = fppoly.o 
+OBJS = fppoly_gpu.o
 
 ifeq ($(IS_APRON),)
 LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize  -L../elina_zonotope -lzonotope $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -lpthread
@@ -42,18 +42,18 @@ endif
 INSTALL = install
 INSTALLd = install -d
 
-SOINST = libfppoly.so
+SOINST = libfppoly_gpu.so
 
 FPPOLYH = fppoly.h 
 
-all : libfppoly.so 
+all : libfppoly_gpu.so
 
-libfppoly.so : $(OBJS) $(FPPOLYH)
+libfppoly_gpu.so : $(OBJS) $(FPPOLYH)
 	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 
-fppoly.o : fppoly.h fppoly.c
-	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o fppoly.o fppoly.c $(LIBS)
+fppoly_gpu.o : fppoly.h fppoly.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o fppoly_gpu.o fppoly.c $(LIBS)
 
 
 

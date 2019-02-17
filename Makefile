@@ -51,6 +51,7 @@ endif
 	(cd elina_zonotope; make all) 
 	(cd zonoml; make all)
 	(cd fppoly; make all)
+	(cd fppoly_gpu; make all)
 
 
 install:
@@ -65,6 +66,7 @@ endif
 	(cd elina_zonotope; make install)
 	(cd zonoml; make install)
 	(cd fppoly; make install)
+	(cd fppoly_gpu; make install)
 	(cd apron_interface; make install)
 ifneq ($(HAS_OCAML),) 
 	(cd ocaml_interface; make install)
