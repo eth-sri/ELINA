@@ -20,6 +20,217 @@
 
 #include "fppoly.h"
 
+void elina_double_interval_mul(double *a_inf, double *a_sup, double b_inf,
+                               double b_sup, double c_inf, double c_sup) {
+  if (c_inf <= 0) {
+    /* interval c is positive */
+    if (b_inf <= 0) {
+      /*interval b is positive*/
+      if ((b_inf == 0) || (c_inf == 0)) {
+        *a_inf = 0.0;
+      } else {
+        *a_inf = b_inf * -c_inf;
+      }
+      if ((b_sup == 0) || (c_sup == 0)) {
+        *a_sup = 0.0;
+      } else {
+        *a_sup = b_sup * c_sup;
+      }
+    } else if (b_sup <= 0) {
+      /* interval b is negative */
+      if ((c_sup == 0) || (b_inf == 0)) {
+        *a_inf = 0.0;
+      } else {
+        *a_inf = c_sup * b_inf;
+      }
+      if ((c_inf == 0) || (b_sup == 0)) {
+        *a_sup = 0.0;
+      } else {
+        *a_sup = -c_inf * b_sup;
+      }
+    } else {
+      /* there is 0 in between for b */
+      if ((c_sup == 0) || (b_inf == 0)) {
+        *a_inf = 0.0;
+      } else {
+        *a_inf = b_inf * c_sup;
+      }
+      if ((c_sup == 0) || (b_sup == 0)) {
+        *a_sup = 0.0;
+      } else {
+        *a_sup = b_sup * c_sup;
+      }
+    }
+  } else if (c_sup <= 0) {
+    /* interval c is negative */
+    if (b_inf <= 0) {
+      /*interval b is positive*/
+      if ((b_sup == 0) || (c_inf == 0)) {
+        *a_inf = 0.0;
+      } else {
+        *a_inf = b_sup * c_inf;
+      }
+      if ((b_inf == 0) || (c_sup == 0)) {
+        *a_sup = 0.0;
+      } else {
+        *a_sup = -b_inf * c_sup;
+      }
+    } else if (b_sup <= 0) {
+      /* interval b is negative */
+      if ((b_sup == 0) || (c_sup == 0)) {
+        *a_inf = 0.0;
+      } else {
+        *a_inf = b_sup * -c_sup;
+      }
+      if ((b_inf == 0) || (c_inf == 0)) {
+        *a_sup = 0.0;
+      } else {
+        *a_sup = b_inf * c_inf;
+      }
+    } else {
+      /* there is 0 in between for b */
+      if ((c_inf == 0) || (b_sup == 0)) {
+        *a_inf = 0.0;
+      } else {
+        *a_inf = b_sup * c_inf;
+      }
+      if ((c_inf == 0) || (b_inf == 0)) {
+        *a_sup = 0.0;
+      } else {
+        *a_sup = b_inf * c_inf;
+      }
+    }
+  } else if (b_inf <= 0) {
+    /* interval b is positive */
+    if (c_inf <= 0) {
+      /*interval c is positive */
+      if ((b_inf == 0) || (c_inf == 0)) {
+        *a_inf = 0.0;
+      } else {
+        *a_inf = -b_inf * c_inf;
+      }
+      if ((b_sup == 0) || (c_sup == 0)) {
+        *a_sup = 0.0;
+      } else {
+        *a_sup = b_sup * c_sup;
+      }
+    } else if (c_sup <= 0) {
+      /* interval c is negative */
+      if ((b_sup == 0) || (c_inf == 0)) {
+        *a_inf = 0.0;
+      } else {
+        *a_inf = b_sup * c_inf;
+      }
+      if ((b_inf == 0) || (c_sup == 0)) {
+        *a_sup = 0.0;
+      } else {
+        *a_sup = -b_inf * c_sup;
+      }
+    } else {
+      /* there is 0 in between for c */
+      if ((b_sup == 0) || (c_inf == 0)) {
+        *a_inf = 0.0;
+      } else {
+        *a_inf = b_sup * c_inf;
+      }
+      if ((b_sup == 0) || (c_sup == 0)) {
+        *a_sup = 0.0;
+      } else {
+        *a_sup = b_sup * c_sup;
+      }
+    }
+  } else if (b_sup <= 0) {
+    /* interval b is negative */
+    if (c_inf <= 0) {
+      /* interval c is positive */
+      if ((b_inf == 0) || (c_sup == 0)) {
+        *a_inf = 0.0;
+      } else {
+        *a_inf = b_inf * c_sup;
+      }
+      if ((b_sup == 0) || (c_inf == 0)) {
+        *a_sup = 0.0;
+      } else {
+        *a_sup = b_sup * -c_inf;
+      }
+    } else if (c_sup <= 0) {
+      /* interval c is negative */
+      if ((b_sup == 0) || (c_sup == 0)) {
+        *a_inf = 0.0;
+      } else {
+        *a_inf = -b_sup * c_sup;
+      }
+      if ((b_inf == 0) || (c_inf == 0)) {
+        *a_sup = 0.0;
+      } else {
+        *a_sup = b_inf * c_inf;
+      }
+    } else {
+      /* there is 0 in between for c */
+      if ((b_inf == 0) || (c_sup == 0)) {
+        *a_inf = 0.0;
+      } else {
+        *a_inf = b_inf * c_sup;
+      }
+      if ((b_inf == 0) || (c_inf == 0)) {
+        *a_sup = 0.0;
+      } else {
+        *a_sup = b_inf * c_inf;
+      }
+    }
+  } else {
+    /* there is 0 in between for both b and c */
+    double tmp_inf1 = b_sup * c_inf;
+    double tmp_sup1 = b_inf * c_inf;
+    double tmp_inf2 = b_inf * c_sup;
+    double tmp_sup2 = b_sup * c_sup;
+    *a_inf = fmax(tmp_inf1, tmp_inf2);
+    *a_sup = fmax(tmp_sup1, tmp_sup2);
+  }
+}
+
+void elina_double_interval_div(double *a_inf, double *a_sup, double b_inf,
+                               double b_sup, double c_inf, double c_sup) {
+  if (c_inf < 0) {
+    /* c is positive */
+    if (b_inf <= 0) {
+      /* b is positive */
+      *a_inf = b_inf / c_sup;
+      *a_sup = b_sup / -c_inf;
+    } else if (b_sup <= 0) {
+      /* b is negative */
+      *a_inf = -b_inf / c_inf;
+      *a_sup = b_sup / c_sup;
+    } else {
+      /* 0 is in the middle of b: one divides b by c->inf */
+      *a_inf = b_inf / -c_inf;
+      *a_sup = b_sup / -c_inf;
+    }
+  } else if (c_sup < 0) {
+    /* c is negative */
+    if (b_inf <= 0) {
+      /* b is positive */
+      *a_sup = b_inf / c_inf;
+      *a_inf = -b_sup / c_sup;
+    } else if (b_sup <= 0) {
+      /* b is negative */
+      *a_inf = b_sup / c_inf;
+      *a_sup = -b_inf / c_sup;
+    } else {
+      /* 0 is in the middle of b: one cross-divide b by c->sup */
+      *a_inf = b_sup / c_sup;
+      *a_sup = b_inf / c_sup;
+    }
+  } else if ((b_inf == 0) && (b_sup == 0)) {
+    /* b is [0,0] */
+    *a_inf = b_inf;
+    *a_sup = b_sup;
+  } else {
+    *a_inf = INFINITY;
+    *a_sup = INFINITY;
+  }
+}
+
 fppoly_t *fppoly_of_abstract0(elina_abstract0_t *a) {
   return (fppoly_t *)a->value;
 }
@@ -65,6 +276,10 @@ fppoly_internal_t *fppoly_init_from_manager(elina_manager_t *man,
 }
 
 elina_manager_t *fppoly_manager_alloc(void) {
+
+  printf("This is the GPU version of fppoly!\n");
+  fflush(stdout);
+
   void **funptr;
   fesetround(FE_UPWARD);
   fppoly_internal_t *pr = fppoly_internal_alloc();

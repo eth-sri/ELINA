@@ -32,11 +32,11 @@ INSTALLd = install -d
 OBJS = fppoly_gpu.o
 
 ifeq ($(IS_APRON),)
-LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize  -L../elina_zonotope -lzonotope $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -lpthread
-INCLUDES = -I../elina_auxiliary -I../elina_linearize -I../elina_zonotope -I../partitions_api $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
+LIBS = -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize -lpthread
+INCLUDES = -I../elina_auxiliary -I../elina_linearize
 else
-LIBS = -L../partitions_api -lpartitions -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize  -L../elina_zonotope -lzonotope $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -lpthread
-INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize -I../elina_zonotope -I../partitions_api $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
+LIBS = -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize -lpthread
+INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize
 endif
 
 INSTALL = install
