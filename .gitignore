@@ -5,6 +5,7 @@
 
 elina_oct/elina_test_oct
 elina_poly/elina_test_poly
+zonoml/elina_test_zonoml
 ocaml_interface/elina_poly.cmi
 ocaml_interface/elina_poly.cmx
 ocaml_interface/elina_poly.ml
