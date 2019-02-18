@@ -18,6 +18,8 @@
  *
  */
 
+#include <iostream>
+
 #include "fppoly.h"
 
 void elina_double_interval_mul(double *a_inf, double *a_sup, double b_inf, double b_sup, double c_inf, double c_sup){
@@ -282,7 +284,7 @@ fppoly_t* fppoly_of_abstract0(elina_abstract0_t* a)
 
 elina_abstract0_t* abstract0_of_fppoly(elina_manager_t* man, fppoly_t* fp)
 {
-  elina_abstract0_t* r = malloc(sizeof(elina_abstract0_t));
+  elina_abstract0_t* r = (elina_abstract0_t*)malloc(sizeof(elina_abstract0_t));
   assert(r);
   r->value = fp;
   r->man = elina_manager_copy(man);
@@ -327,8 +329,7 @@ fppoly_internal_t* fppoly_init_from_manager(elina_manager_t* man, elina_funid_t 
 
 elina_manager_t * fppoly_manager_alloc(void){
 
-	printf("This is the GPU version of fppoly!\n");
-	fflush(stdout);
+	std::cout << "This is the GPU version of fppoly!" << std::endl;
 
 	void** funptr;
 	fesetround(FE_UPWARD);
@@ -339,9 +340,9 @@ elina_manager_t * fppoly_manager_alloc(void){
 			(void (*)(void*))fppoly_internal_free /* free function for internal */
 			);
 	funptr = man->funptr;
-	funptr[ELINA_FUNID_FREE] = &fppoly_free;
+	funptr[ELINA_FUNID_FREE] = (void*) &fppoly_free;
 	/* 3.Printing */
-	funptr[ELINA_FUNID_FPRINT] = &fppoly_fprint;
+	funptr[ELINA_FUNID_FPRINT] = (void*) &fppoly_fprint;
 	return man;
 }
 
@@ -725,8 +726,8 @@ void elina_double_interval_mul_cst_coeff(fppoly_internal_t *pr, double * res_inf
 expr_t * multiply_expr(fppoly_internal_t *pr, expr_t *expr, double mul_inf, double mul_sup){
 	expr_t * res = alloc_expr();
 	if(expr->size > 0){
-		res->inf_coeff = malloc(expr->size*sizeof(double));
-		res->sup_coeff = malloc(expr->size*sizeof(double));
+		res->inf_coeff = (double*) malloc(expr->size*sizeof(double));
+		res->sup_coeff = (double*) malloc(expr->size*sizeof(double));
 	}
 	else{
 		res->inf_coeff = NULL;		

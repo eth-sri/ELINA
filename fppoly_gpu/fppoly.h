@@ -23,10 +23,6 @@
 #ifndef __FPPOLY_H_INCLUDED__
 #define __FPPOLY_H_INCLUDED__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <fenv.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -40,6 +36,10 @@ extern "C" {
 #include "elina_dimension.h"
 #include "elina_linexpr0.h"
 #include "elina_manager.h"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 typedef struct fppoly_internal_t{
