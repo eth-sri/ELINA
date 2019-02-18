@@ -28,7 +28,7 @@ fppoly_t* fppoly_of_abstract0(elina_abstract0_t* a)
 
 elina_abstract0_t* abstract0_of_fppoly(elina_manager_t* man, fppoly_t* fp)
 {
-  elina_abstract0_t* r = malloc(sizeof(elina_abstract0_t));
+  elina_abstract0_t* r = (elina_abstract0_t*)malloc(sizeof(elina_abstract0_t));
   assert(r);
   r->value = fp;
   r->man = elina_manager_copy(man);
@@ -467,8 +467,8 @@ void elina_double_interval_mul_cst_coeff(fppoly_internal_t *pr, double * res_inf
 expr_t * multiply_expr(fppoly_internal_t *pr, expr_t *expr, double mul_inf, double mul_sup){
 	expr_t * res = alloc_expr();
 	if(expr->size > 0){
-		res->inf_coeff = malloc(expr->size*sizeof(double));
-		res->sup_coeff = malloc(expr->size*sizeof(double));
+		res->inf_coeff = (double*)malloc(expr->size*sizeof(double));
+		res->sup_coeff = (double*)malloc(expr->size*sizeof(double));
 	}
 	else{
 		res->inf_coeff = NULL;		
