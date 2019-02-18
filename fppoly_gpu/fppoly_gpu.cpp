@@ -20,7 +20,7 @@
 
 #include <iostream>
 
-#include "fppoly.h"
+#include "fppoly_gpu.h"
 
 void elina_double_interval_mul(double *a_inf, double *a_sup, double b_inf, double b_sup, double c_inf, double c_sup){
 	if(c_inf<=0){
