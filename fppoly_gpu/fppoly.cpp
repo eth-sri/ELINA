@@ -1156,7 +1156,7 @@ void ffn_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
   fppoly_alloc_first_layer(res, size, num_pixels, FFN, activation);
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
-  size_t i, j;
+  size_t i;
 
   // for(i=0; i < num_pixels; i++){
   //	elina_interval_print(itv[i]);
@@ -1421,7 +1421,6 @@ expr_t *lexpr_replace_s_curve_bounds(fppoly_internal_t *pr, expr_t *expr,
     } else {
       k = expr->dim[i];
     }
-    neuron_t *neuron_k = neurons[k];
     double lb = neurons[k]->lb;
     double ub = neurons[k]->ub;
     fesetround(FE_DOWNWARD);
@@ -1755,7 +1754,6 @@ expr_t *uexpr_replace_s_curve_bounds(fppoly_internal_t *pr, expr_t *expr,
     } else {
       k = expr->dim[i];
     }
-    neuron_t *neuron_k = neurons[k];
     double lb = neurons[k]->lb;
     double ub = neurons[k]->ub;
     fesetround(FE_DOWNWARD);
@@ -1770,7 +1768,6 @@ expr_t *uexpr_replace_s_curve_bounds(fppoly_internal_t *pr, expr_t *expr,
     double f_inf_l, f_inf_u;
     double den_sup_l, den_sup_u;
     double den_inf_l, den_inf_u;
-    double connecting_slope_l, connecting_slope_u;
 
     if (is_sigmoid) {
       den_sup_l = -1 + e_sup_l;
@@ -2315,7 +2312,7 @@ expr_t *expr_from_previous_layer(fppoly_internal_t *pr, expr_t *expr,
   // printf("coming here %zu\n",expr->size);
   //	fflush(stdout);
   neuron_t **prev_neurons = prev_layer->neurons;
-  size_t out_num_neurons = prev_layer->dims;
+  // size_t out_num_neurons = prev_layer->dims;
   size_t in_num_neurons = expr->size;
   size_t i, k;
   expr_t *res;
@@ -2401,7 +2398,7 @@ void *update_state_using_previous_layers(void *args) {
   int k;
 
   neuron_t **out_neurons = fp->layers[layerno]->neurons;
-  size_t num_out_neurons = fp->layers[layerno]->dims;
+  // size_t num_out_neurons = fp->layers[layerno]->dims;
   // printf("idx: %zu %zu\n",idx_start,idx_end);
   // fflush(stdout);
   for (i = idx_start; i < idx_end; i++) {
@@ -2415,7 +2412,7 @@ void *update_state_using_previous_layers(void *args) {
     for (k = layerno - 1; k >= 0; k--) {
 
       neuron_t **aux_neurons = fp->layers[k]->neurons;
-      size_t dims = fp->layers[k]->dims;
+      // size_t dims = fp->layers[k]->dims;
       expr_t *tmp_l;
       expr_t *tmp_u;
       if (fp->layers[k]->type != MAXPOOL) {
@@ -2537,8 +2534,8 @@ void update_state_using_previous_layers_parallel(elina_manager_t *man,
   size_t NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
   nn_thread_t args[NUM_THREADS];
   pthread_t threads[NUM_THREADS];
-  size_t num_out_neurons = fp->layers[layerno]->dims;
   size_t i;
+  size_t num_out_neurons = fp->layers[layerno]->dims;
   // printf("start %zu\n",num_out_neurons);
   // fflush(stdout);
   if (num_out_neurons < NUM_THREADS) {
@@ -2808,7 +2805,6 @@ void ffn_handle_last_tanh_layer(elina_manager_t *man,
 
 double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
                                     expr_t *expr) {
-  size_t i;
   int k;
   size_t numlayers = fp->numlayers;
   expr_t *lexpr = expr;
@@ -2920,7 +2916,7 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element, elina_dim_t y,
       if (exprA->type == DENSE) {
         sub->inf_coeff = (double *)malloc(sizeA * sizeof(double));
         sub->sup_coeff = (double *)malloc(sizeA * sizeof(double));
-        sub->dim == NULL;
+        sub->dim = NULL;
         sub->size = sizeA;
         sub->type = DENSE;
         if (exprB->type == DENSE) {
@@ -2946,7 +2942,7 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element, elina_dim_t y,
         if (exprB->type == DENSE) {
           sub->inf_coeff = (double *)malloc(sizeB * sizeof(double));
           sub->sup_coeff = (double *)malloc(sizeB * sizeof(double));
-          sub->dim == NULL;
+          sub->dim = NULL;
           sub->size = sizeB;
           sub->type = DENSE;
           i = 0;
@@ -2963,7 +2959,7 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element, elina_dim_t y,
         } else {
           sub->inf_coeff = (double *)malloc((sizeA + sizeB) * sizeof(double));
           sub->sup_coeff = (double *)malloc((sizeA + sizeB) * sizeof(double));
-          sub->dim == NULL;
+          sub->dim = NULL;
 
           sub->type = SPARSE;
           size_t l = 0;
@@ -3038,7 +3034,7 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
                              size_t num_filters, size_t *strides,
                              bool is_valid_padding, bool has_bias) {
 
-  size_t i, j;
+  size_t i;
   size_t num_pixels = input_size[0] * input_size[1] * input_size[2];
 
   size_t output_size[3];
@@ -3062,7 +3058,8 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
 
   neuron_t **neurons = res->layers[0]->neurons;
   size_t out_x, out_y, out_z;
-  size_t inp_x, inp_y, inp_z;
+  // size_t inp_x, inp_y;
+  size_t inp_z;
   size_t x_shift, y_shift;
 
   long int pad_along_height = 0, pad_along_width = 0;
@@ -3154,7 +3151,7 @@ void conv_handle_intermediate_relu_layer(
   // fflush(stdout);
   fppoly_t *fp = fppoly_of_abstract0(element);
   size_t numlayers = fp->numlayers;
-  size_t i, j;
+  size_t i;
   size_t num_pixels = input_size[0] * input_size[1] * input_size[2];
   size_t output_size[3];
   if (is_valid_padding) {
@@ -3174,7 +3171,8 @@ void conv_handle_intermediate_relu_layer(
   fppoly_add_new_layer(fp, num_out_neurons, CONV, RELU);
   neuron_t **out_neurons = fp->layers[numlayers]->neurons;
   size_t out_x, out_y, out_z;
-  size_t inp_x, inp_y, inp_z;
+  // size_t inp_x, inp_y;
+  size_t inp_z;
   size_t x_shift, y_shift;
 
   long int pad_along_height = 0, pad_along_width = 0;
@@ -3272,7 +3270,7 @@ size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
     output_size[i] = input_size[i] / pool_size[i];
   }
 
-  size_t num_input_neurons = input_size[0] * input_size[1] * input_size[2];
+  // size_t num_input_neurons = input_size[0]*input_size[1]*input_size[2];
   size_t num_out_neurons = output_size[0] * output_size[1] * output_size[2];
 
   size_t o12 = output_size[1] * output_size[2];
@@ -3296,7 +3294,7 @@ size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
     size_t inp_y = out_y * pool_size[1];
     size_t inp_z = out_z;
     size_t inp_pos = inp_x * i12 + inp_y * input_size[2] + inp_z;
-    size_t pool_start_dim = out_pos * pool_size[0] * pool_size[1];
+    // size_t pool_start_dim = out_pos*pool_size[0]*pool_size[1];
     // printf("inpXYZ: %zu, %zu, %zu %zu %zu\n", inp_x, inp_y, inp_z, out_pos,
     // num_out_neurons); printf("outXYZ: %zu, %zu, %zu\n", out_x, out_y, out_z);
     // fflush(stdout);
@@ -3306,9 +3304,9 @@ size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
     double max_u = -INFINITY;
     double max_l = -INFINITY;
 
-    size_t max_l_var = 0.0;
-    size_t max_u_var = 0.0;
-    size_t min_width_var = 0.0;
+    size_t max_l_var = 0;
+    size_t max_u_var = 0;
+    size_t min_width_var = 0;
     double min_width = INFINITY;
     for (x_shift = 0; x_shift < pool_size[0]; x_shift++) {
       for (y_shift = 0; y_shift < pool_size[1]; y_shift++) {
@@ -3596,7 +3594,6 @@ elina_linexpr0_t *get_expr_for_output_neuron(elina_manager_t *man,
   if (i >= output_size) {
     return NULL;
   }
-  size_t num_pixels = fp->num_pixels;
   expr_t *expr = NULL;
   if (is_lower) {
     expr = fp->out->lexpr[i];
