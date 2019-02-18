@@ -45,7 +45,7 @@ INSTALLd = install -d
 
 SOINST = libfppoly_gpu.so
 
-FPPOLYH = fppoly.h 
+FPPOLYH = fppoly_gpu.h
 
 all : libfppoly_gpu.so
 
@@ -53,8 +53,8 @@ libfppoly_gpu.so : $(OBJS) $(FPPOLYH)
 	g++ -shared $(CC_ELINA_DYLIB) $(CXXFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 
-fppoly_gpu.o : fppoly.h fppoly.cpp
-	g++ -c $(CXXFLAGS) $(INCLUDES) -o fppoly_gpu.o fppoly.cpp $(LIBS)
+fppoly_gpu.o : fppoly_gpu.h fppoly_gpu.cpp
+	g++ -c $(CXXFLAGS) $(INCLUDES) -o fppoly_gpu.o fppoly_gpu.cpp $(LIBS)
 
 
 
