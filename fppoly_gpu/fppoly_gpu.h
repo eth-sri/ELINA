@@ -21,9 +21,6 @@
 #ifndef __FPPOLY_H_INCLUDED__
 #define __FPPOLY_H_INCLUDED__
 
-#include <fenv.h>
-#include <pthread.h>
-#include <unistd.h>
 //#include <sys/sysinfo.h>
 #include "elina_generic.h"
 

@@ -21,7 +21,7 @@
 
 
 include ../Makefile.config
-CXXFLAGS = -Wcast-qual -Wswitch -Wall -Wextra -Wundef -Wcast-align -fPIC -O3 -DNDEBUG -Werror-implicit-function-declaration -std=c++17 -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING -pthread -fno-tree-vectorize -m64 -march=native
+CXXFLAGS = -Wcast-qual -Wswitch -Wall -Wextra -Wundef -Wcast-align -fPIC -O3 -DNDEBUG -Werror-implicit-function-declaration -std=c++17 -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING -fno-tree-vectorize -m64 -march=native
 
 LIBDIR = $(ELINA_PREFIX)/lib
 
@@ -33,10 +33,10 @@ INSTALLd = install -d
 OBJS = fppoly_gpu.o
 
 ifeq ($(IS_APRON),)
-LIBS = -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize -lpthread
+LIBS = -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize
 INCLUDES = -I../elina_auxiliary -I../elina_linearize
 else
-LIBS = -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize -lpthread
+LIBS = -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize
 INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize
 endif
 

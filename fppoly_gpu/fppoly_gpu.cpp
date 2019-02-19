@@ -282,7 +282,7 @@ elina_manager_t *fppoly_manager_alloc(void) {
   std::cout << "This is the GPU version of fppoly!" << std::endl;
 
   void **funptr;
-  fesetround(FE_UPWARD);
+  // fesetround(FE_UPWARD);
   fppoly_internal_t *pr = fppoly_internal_alloc();
   elina_manager_t *man = elina_manager_alloc(
       "fppoly",                              /* Library name */
@@ -1423,11 +1423,11 @@ expr_t *lexpr_replace_s_curve_bounds(fppoly_internal_t *pr, expr_t *expr,
     }
     double lb = neurons[k]->lb;
     double ub = neurons[k]->ub;
-    fesetround(FE_DOWNWARD);
+    // fesetround(FE_DOWNWARD);
     double e_sup_l = is_sigmoid ? -exp(ub) : -tanh(ub);
     double e_inf_l = is_sigmoid ? -exp(-lb) : -tanh(-lb);
 
-    fesetround(FE_UPWARD);
+    // fesetround(FE_UPWARD);
     double e_sup_u = is_sigmoid ? exp(ub) : tanh(ub);
     double e_inf_u = is_sigmoid ? exp(-lb) : tanh(-lb);
 
@@ -1756,11 +1756,11 @@ expr_t *uexpr_replace_s_curve_bounds(fppoly_internal_t *pr, expr_t *expr,
     }
     double lb = neurons[k]->lb;
     double ub = neurons[k]->ub;
-    fesetround(FE_DOWNWARD);
+    // fesetround(FE_DOWNWARD);
     double e_sup_l = is_sigmoid ? -exp(ub) : -tanh(ub);
     double e_inf_l = is_sigmoid ? -exp(-lb) : -tanh(-lb);
 
-    fesetround(FE_UPWARD);
+    // fesetround(FE_UPWARD);
     double e_sup_u = is_sigmoid ? exp(ub) : tanh(ub);
     double e_inf_u = is_sigmoid ? exp(-lb) : tanh(-lb);
 
@@ -2385,23 +2385,19 @@ expr_t *expr_from_previous_layer(fppoly_internal_t *pr, expr_t *expr,
   return res;
 }
 
-void *update_state_using_previous_layers(void *args) {
-  nn_thread_t *data = (nn_thread_t *)args;
-  elina_manager_t *man = data->man;
-  fppoly_t *fp = data->fp;
+void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
+                                        size_t layerno) {
+
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
-  size_t layerno = data->layerno;
-  size_t idx_start = data->start;
-  size_t idx_end = data->end;
+
   size_t i;
   int k;
 
   neuron_t **out_neurons = fp->layers[layerno]->neurons;
-  // size_t num_out_neurons = fp->layers[layerno]->dims;
-  // printf("idx: %zu %zu\n",idx_start,idx_end);
-  // fflush(stdout);
-  for (i = idx_start; i < idx_end; i++) {
+  size_t num_out_neurons = fp->layers[layerno]->dims;
+
+  for (i = 0; i < num_out_neurons; i++) {
     // printf("i %zu \n",i);
     // fflush(stdout);
     expr_t *lexpr = copy_expr(out_neurons[i]->expr);
@@ -2523,71 +2519,6 @@ void *update_state_using_previous_layers(void *args) {
       free_expr(uexpr);
     }
   }
-  // printf("thread finish\n");
-  // fflush(stdout);
-  return NULL;
-}
-
-void update_state_using_previous_layers_parallel(elina_manager_t *man,
-                                                 fppoly_t *fp, size_t layerno) {
-  // size_t NUM_THREADS = get_nprocs();
-  size_t NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
-  nn_thread_t args[NUM_THREADS];
-  pthread_t threads[NUM_THREADS];
-  size_t i;
-  size_t num_out_neurons = fp->layers[layerno]->dims;
-  // printf("start %zu\n",num_out_neurons);
-  // fflush(stdout);
-  if (num_out_neurons < NUM_THREADS) {
-    for (i = 0; i < num_out_neurons; i++) {
-      args[i].start = i;
-      args[i].end = i + 1;
-      args[i].man = man;
-      args[i].fp = fp;
-      args[i].layerno = layerno;
-      pthread_create(&threads[i], NULL, update_state_using_previous_layers,
-                     (void *)&args[i]);
-    }
-    for (i = 0; i < num_out_neurons; i = i + 1) {
-      pthread_join(threads[i], NULL);
-    }
-  } else {
-    size_t idx_start = 0;
-    size_t idx_n = num_out_neurons / NUM_THREADS;
-    size_t idx_end = idx_start + idx_n;
-
-    for (i = 0; i < NUM_THREADS; i++) {
-      args[i].start = idx_start;
-      args[i].end = idx_end;
-      args[i].man = man;
-      args[i].fp = fp;
-      args[i].layerno = layerno;
-      pthread_create(&threads[i], NULL, update_state_using_previous_layers,
-                     (void *)&args[i]);
-      idx_start = idx_end;
-      idx_end = idx_start + idx_n;
-      if (idx_end > num_out_neurons) {
-        idx_end = num_out_neurons;
-      }
-      if ((i == NUM_THREADS - 2)) {
-        idx_end = num_out_neurons;
-      }
-    }
-    // idx_start = idx_end;
-    // idx_end = num_out_neurons;
-    // args[i].start = idx_start;
-    // args[i].end = idx_end;
-    // args[i].man = man;
-    // args[i].fp = fp;
-    // args[i].layerno = layerno;
-    // pthread_create(&threads[i], NULL,update_state_using_previous_layers,
-    // (void*)&args[i]);
-    for (i = 0; i < NUM_THREADS; i = i + 1) {
-      pthread_join(threads[i], NULL);
-    }
-  }
-  // printf("end\n");
-  // fflush(stdout);
 }
 
 void ffn_handle_intermediate_layer(elina_manager_t *man,
@@ -2608,7 +2539,7 @@ void ffn_handle_intermediate_layer(elina_manager_t *man,
 
     out_neurons[i]->expr = create_dense_expr(weight_i, bias_i, num_in_neurons);
   }
-  update_state_using_previous_layers_parallel(man, fp, numlayers);
+  update_state_using_previous_layers(man, fp, numlayers);
 
   // printf("return here2\n");
   // fppoly_fprint(stdout,man,fp,NULL);
@@ -2765,7 +2696,7 @@ void ffn_handle_last_layer(elina_manager_t *man, elina_abstract0_t *element,
     double bias_i = bias[i];
     out_neurons[i]->expr = create_dense_expr(weight_i, bias_i, num_in_neurons);
   }
-  update_state_using_previous_layers_parallel(man, fp, numlayers);
+  update_state_using_previous_layers(man, fp, numlayers);
   if (activation == RELU) {
     handle_final_relu_layer(pr, fp->out, out_neurons, num_out_neurons,
                             has_activation);
@@ -3246,7 +3177,7 @@ void conv_handle_intermediate_relu_layer(
   }
   // printf("gets till here %zu\n",numlayers);
   // fflush(stdout);
-  update_state_using_previous_layers_parallel(man, fp, numlayers);
+  update_state_using_previous_layers(man, fp, numlayers);
 
   // printf("return here2\n");
   // fppoly_fprint(stdout,man,fp,NULL);
@@ -3430,7 +3361,7 @@ size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
     out_neurons[out_pos]->lb = -max_l;
     out_neurons[out_pos]->ub = max_u;
   }
-  // update_state_using_previous_layers_parallel(man,fp,numlayers);
+  // update_state_using_previous_layers(man,fp,numlayers);
   free(inf);
   free(sup);
   free(pool_map);
