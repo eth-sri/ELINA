@@ -21,7 +21,7 @@
 
 
 include ../Makefile.config
-CXXFLAGS = -Wcast-qual -Wswitch -Wall -Wextra -Wundef -Wcast-align -fPIC -O3 -DNDEBUG -Werror-implicit-function-declaration -std=c++17 -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING -fno-tree-vectorize -m64 -march=native
+CXXFLAGS = -Wcast-qual -Wswitch -Wall -Wextra -Wundef -Wcast-align -fPIC -O3 -DNDEBUG -Werror-implicit-function-declaration -std=c++14 -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING -fno-tree-vectorize -m64 -march=native
 
 LIBDIR = $(ELINA_PREFIX)/lib
 
@@ -50,11 +50,11 @@ FPPOLYH = fppoly_gpu.h
 all : libfppoly_gpu.so
 
 libfppoly_gpu.so : $(OBJS) $(FPPOLYH)
-	g++ -shared $(CC_ELINA_DYLIB) $(CXXFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
+	nvcc -ccbin g++ -shared $(CC_ELINA_DYLIB) --compiler-options "$(CXXFLAGS)" $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 
-fppoly_gpu.o : fppoly_gpu.h fppoly_gpu.cpp
-	g++ -c $(CXXFLAGS) $(INCLUDES) -o fppoly_gpu.o fppoly_gpu.cpp $(LIBS)
+fppoly_gpu.o : fppoly_gpu.h fppoly_gpu.cu
+	nvcc -ccbin g++ -c --compiler-options "$(CXXFLAGS)" $(INCLUDES) -o fppoly_gpu.o fppoly_gpu.cu $(LIBS)
 
 
 

@@ -21,6 +21,7 @@
 #include <iostream>
 
 #include "fppoly_gpu.h"
+#include <cuda.h>
 
 void elina_double_interval_mul(double *a_inf, double *a_sup, double b_inf, double b_sup, double c_inf, double c_sup){
 	if(c_inf<=0){
@@ -633,6 +634,7 @@ elina_abstract0_t * fppoly_from_network_input(elina_manager_t *man, size_t intdi
 	return abstract0_of_fppoly(man,res);
 }
 
+/*
 elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array, double *sup_array, 
                                                   double * lexpr_weights, double * lexpr_cst, size_t * lexpr_dim, double * uexpr_weights,
 						  double * uexpr_cst, size_t * uexpr_dim, size_t expr_size){
@@ -671,6 +673,7 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t i
 	return abstract0_of_fppoly(man,res);	
 
 }
+*/
 
 void fppoly_alloc_first_layer(fppoly_t *fp, size_t size, size_t num_pixels, layertype_t type, activation_type_t activation){
 	layer_t *layer = create_layer(size, type, activation);
@@ -1218,12 +1221,12 @@ void ffn_handle_first_relu_layer(elina_manager_t* man, elina_abstract0_t * abs, 
 }
 
 void ffn_handle_first_sigmoid_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels){
-        ffn_handle_first_layer(man, abs, weights, bias,  size, num_pixels, SIGMOID);
+        //ffn_handle_first_layer(man, abs, weights, bias,  size, num_pixels, SIGMOID);
 }
 
 
 void ffn_handle_first_tanh_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels){
-        ffn_handle_first_layer(man, abs, weights, bias,  size, num_pixels, TANH);
+        //ffn_handle_first_layer(man, abs, weights, bias,  size, num_pixels, TANH);
 }
 
 
@@ -1406,6 +1409,7 @@ expr_t * uexpr_replace_relu_bounds(fppoly_internal_t *pr, expr_t * expr, neuron_
 	return res;
 }
 
+/*
 void compute_chord_slope(double *slope_inf, double *slope_sup, double f_sup_l, double f_sup_u, 
 			 double f_inf_l, double f_inf_u, double inf_l, double inf_u, double sup_l, double sup_u){
 	double num_l =  f_sup_l + f_inf_u;
@@ -1416,7 +1420,9 @@ void compute_chord_slope(double *slope_inf, double *slope_sup, double f_sup_l, d
 	
     	elina_double_interval_div(slope_inf, slope_sup, num_l, num_u, den_l, den_u);
 }
+*/
 
+/*
 void compute_derivative(double *slope_inf, double *slope_sup, double s_curve_l, double s_curve_u, double sq_l, double sq_u, bool is_sigmoid){
     double sq_den_sup_l, sq_den_sup_u;
     elina_double_interval_mul(&sq_den_sup_l, &sq_den_sup_u, sq_l, sq_u, sq_l, sq_u);
@@ -1429,7 +1435,9 @@ void compute_derivative(double *slope_inf, double *slope_sup, double s_curve_l, 
     }
 
 }
+*/
 
+/*
 expr_t * lexpr_replace_s_curve_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons, bool is_sigmoid){
 	size_t num_neurons = expr->size;
 	size_t i,k;
@@ -1717,7 +1725,9 @@ expr_t * lexpr_replace_s_curve_bounds(fppoly_internal_t * pr, expr_t * expr, neu
 	}
 	return res;
 }
+*/
 
+/*
 expr_t * uexpr_replace_s_curve_bounds(fppoly_internal_t *pr, expr_t * expr, neuron_t ** neurons, bool is_sigmoid){
     size_t num_neurons = expr->size;
     size_t i,k;
@@ -2003,8 +2013,10 @@ expr_t * uexpr_replace_s_curve_bounds(fppoly_internal_t *pr, expr_t * expr, neur
     }
     return res;
 }
+*/
 
 
+/*
 expr_t * uexpr_replace_sigmoid_bounds(fppoly_internal_t *pr, expr_t * expr, neuron_t ** neurons){
     return uexpr_replace_s_curve_bounds(pr, expr, neurons, true);
 }
@@ -2020,6 +2032,7 @@ expr_t * lexpr_replace_sigmoid_bounds(fppoly_internal_t *pr, expr_t * expr, neur
 expr_t * lexpr_replace_tanh_bounds(fppoly_internal_t *pr, expr_t * expr, neuron_t ** neurons){
     return lexpr_replace_s_curve_bounds(pr, expr, neurons, false);
 }
+*/
 
 expr_t * lexpr_replace_maxpool_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons){
 	//printf("begin\n");
@@ -2355,6 +2368,7 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp, size
                     //fflush(stdout);
                     uexpr = uexpr_replace_relu_bounds(pr,uexpr,aux_neurons);
                 }
+		/*
                 else if(fp->layers[k]->activation==SIGMOID){
                         //printf("start\n");
                         //fflush(stdout);
@@ -2367,6 +2381,7 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp, size
                     lexpr = lexpr_replace_tanh_bounds(pr,lexpr,aux_neurons);
                     uexpr = uexpr_replace_tanh_bounds(pr,uexpr,aux_neurons);
                 }
+		*/
 				free_expr(tmp_l);
 				
 				free_expr(tmp_u);
@@ -2482,11 +2497,11 @@ void ffn_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t*
 }
 
 void ffn_handle_intermediate_sigmoid_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons){
-    ffn_handle_intermediate_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, SIGMOID);
+    //ffn_handle_intermediate_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, SIGMOID);
 }
 
 void ffn_handle_intermediate_tanh_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons){
-    ffn_handle_intermediate_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, TANH);
+    //ffn_handle_intermediate_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, TANH);
 }
 
 double apply_relu_lexpr(fppoly_internal_t *pr, expr_t **lexpr_p, neuron_t * neuron){
@@ -2619,11 +2634,11 @@ void ffn_handle_last_relu_layer(elina_manager_t* man, elina_abstract0_t* element
 }
 
 void ffn_handle_last_sigmoid_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons, bool has_sigmoid){
-    ffn_handle_last_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, has_sigmoid, SIGMOID);
+    //ffn_handle_last_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, has_sigmoid, SIGMOID);
 }
 
 void ffn_handle_last_tanh_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons, bool has_tanh){
-    ffn_handle_last_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, has_tanh, TANH);
+    //ffn_handle_last_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, has_tanh, TANH);
 }
 
 
@@ -2645,6 +2660,7 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
                 lexpr = lexpr_replace_relu_bounds(pr,lexpr,aux_neurons);
                 free_expr(tmp_l);
             }
+	    /*
             else if(fp->layers[k]->activation==SIGMOID){
                 tmp_l = lexpr;
 		//printf("start\n");
@@ -2659,6 +2675,7 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
                 lexpr = lexpr_replace_tanh_bounds(pr,lexpr,aux_neurons);
                 free_expr(tmp_l);
             }
+	    */
 				
 			tmp_l = lexpr;			
 			lexpr = expr_from_previous_layer(pr,lexpr, fp->layers[k]);		
@@ -2710,6 +2727,7 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y,
 		}
 		
 	}
+	/*
 	output_abstract_t * out = fp->out;
 	expr_t * exprA = out->lexpr[y];
 	expr_t * exprB = out->uexpr[x];
@@ -2860,15 +2878,12 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y,
 			}
 		}
 	}
+*/
 	
 }
 
 
-long int max(long int a, long int b){
-	return a> b? a : b;
-
-}
-
+/*
 void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs, double *filter_weights, double *filter_bias, 
 					  size_t *input_size, size_t *filter_size, size_t num_filters, size_t *strides, bool is_valid_padding, bool has_bias){
 	
@@ -2903,19 +2918,19 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs, doubl
 	if(!is_valid_padding){
 		if (input_size[0] % strides[0] == 0){
 			long int tmp = filter_size[0] - strides[0];
-	  		pad_along_height = max(tmp, 0);
+			pad_along_height = max(tmp, long(0));
 		}
 		else{
 			tmp = filter_size[0] - (input_size[0] % strides[0]);
-	  		pad_along_height = max(tmp, 0);
+			pad_along_height = max(tmp, long(0));
 		}
 		if (input_size[1] % strides[1] == 0){
 			tmp = filter_size[1] - strides[1];
-	  		pad_along_width = max(tmp, 0);
+			pad_along_width = max(tmp, long(0));
 		}
 		else{
 			tmp = filter_size[1] - (input_size[1] % strides[1]);
-	  		pad_along_width = max(tmp, 0);
+			pad_along_width = max(tmp, long(0));
 		}
 		pad_top = pad_along_height / 2;
 		
@@ -3012,19 +3027,19 @@ void conv_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t
 	if(!is_valid_padding){
 		if (input_size[0] % strides[0] == 0){
 			long int tmp = filter_size[0] - strides[0];
-	  		pad_along_height = max(tmp, 0);
+			pad_along_height = max(tmp, long(0));
 		}
 		else{
 			tmp = filter_size[0] - (input_size[0] % strides[0]);
-	  		pad_along_height = max(tmp, 0);
+			pad_along_height = max(tmp, long(0));
 		}
 		if (input_size[1] % strides[1] == 0){
 			tmp = filter_size[1] - strides[1];
-	  		pad_along_width = max(tmp, 0);
+			pad_along_width = max(tmp, long(0));
 		}
 		else{
 			tmp = filter_size[1] - (input_size[1] % strides[1]);
-	  		pad_along_width = max(tmp, 0);
+			pad_along_width = max(tmp, long(0));
 		}
 		pad_top = pad_along_height / 2;
 		
@@ -3082,8 +3097,10 @@ void conv_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t
 	//fflush(stdout);
 	return;
 }
+*/
 
 
+/*
 size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element, 
 			   size_t *pool_size, size_t *input_size){
 	//assert(dimensionality==3);
@@ -3269,6 +3286,7 @@ size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
 	//fflush(stdout);
 	return num_out_neurons;
 }
+*/
 
 void free_neuron(neuron_t *neuron){
 	if(neuron->expr){
