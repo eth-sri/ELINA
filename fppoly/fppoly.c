@@ -162,7 +162,7 @@ expr_t *create_sparse_expr(double *coeff, double cst, size_t *dim,
   if (size > 0) {
     expr->inf_coeff = (double *)malloc(size * sizeof(double));
     expr->sup_coeff = (double *)malloc(size * sizeof(double));
-    expr->dim = (size_t *)malloc(size * sizeof(double));
+    expr->dim = (size_t *)malloc(size * sizeof(size_t));
   } else {
     expr->inf_coeff = NULL;
     expr->sup_coeff = NULL;
