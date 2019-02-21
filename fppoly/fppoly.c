@@ -2932,7 +2932,7 @@ size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
 	size_t out_pos;
 	double * inf = (double *) calloc(p01,sizeof(double));
 	double * sup = (double *) calloc(p01,sizeof(double));
-	size_t * pool_map = (size_t *)calloc(p01,sizeof(double));
+	size_t * pool_map = (size_t *)calloc(p01,sizeof(size_t));
 	neuron_t ** out_neurons = fp->layers[numlayers]->neurons;
 	size_t count = 0;
 	for(out_pos=0; out_pos<num_out_neurons; out_pos++){
