@@ -1161,10 +1161,10 @@ elina_abstract0_t * tanh_zono_layerwise(elina_manager_t* man, bool destructive, 
 bool is_greater(elina_manager_t *man, elina_abstract0_t *elem, elina_dim_t y, elina_dim_t x){
     
 	zonotope_t * zo = zonotope_of_abstract0(elem);
-        if (zo->box_inf[y] > zo->box_sup[x]) {
-          return true;
-        }
-        elina_dimension_t dims = zonotope_dimension(man,zo);
+    if(-zo->box_inf[y]>zo->box_sup[x]){
+        return true;
+    }
+	elina_dimension_t dims = zonotope_dimension(man,zo);
 	elina_dim_t num_dim = dims.intdim + dims.realdim;
 
 	elina_dimchange_t *dimchange = elina_dimchange_alloc(0,1);
