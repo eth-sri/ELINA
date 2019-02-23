@@ -18,8 +18,8 @@
  *
  */
 
-#ifndef __FPPOLY_H_INCLUDED__
-#define __FPPOLY_H_INCLUDED__
+#ifndef __FPPOLY_GPU_H_INCLUDED__
+#define __FPPOLY_GPU_H_INCLUDED__
 
 //#include <sys/sysinfo.h>
 #include "elina_generic.h"
@@ -115,103 +115,113 @@ typedef struct fppoly_t {
   output_abstract_t *out;
 } fppoly_t;
 
-typedef struct nn_thread_t {
-  size_t start;
-  size_t end;
-  elina_manager_t *man;
-  fppoly_t *fp;
-  size_t layerno;
-} nn_thread_t;
-
-elina_manager_t *fppoly_manager_alloc(void);
+elina_manager_t *fppoly_manager_alloc();
 
 elina_abstract0_t *fppoly_from_network_input(elina_manager_t *man,
-                                             size_t intdim, size_t realdim,
-                                             double *inf_array,
-                                             double *sup_array);
+                                             const size_t intdim,
+                                             const size_t realdim,
+                                             const double *inf_array,
+                                             const double *sup_array);
 
 elina_abstract0_t *fppoly_from_network_input_poly(
-    elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array,
-    double *sup_array, double *lexpr_weights, double *lexpr_cst,
-    size_t *lexpr_dim, double *uexpr_weights, double *uexpr_cst,
-    size_t *uexpr_dim, size_t expr_size);
+    elina_manager_t *man, const size_t intdim, const size_t realdim,
+    const double *inf_array, const double *sup_array,
+    const double *lexpr_weights, const double *lexpr_cst,
+    const size_t *lexpr_dim, const double *uexpr_weights,
+    const double *uexpr_cst, const size_t *uexpr_dim, const size_t expr_size);
 
 void ffn_handle_first_relu_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                                 double **weights, double *bias, size_t size,
-                                 size_t num_pixels);
+                                 const double **weights, const double *bias,
+                                 const size_t size, const size_t num_pixels);
 
 void ffn_handle_first_sigmoid_layer(elina_manager_t *man,
-                                    elina_abstract0_t *abs, double **weights,
-                                    double *bias, size_t size,
-                                    size_t num_pixels);
+                                    elina_abstract0_t *abs,
+                                    const double **weights, const double *bias,
+                                    const size_t size, const size_t num_pixels);
 
 void ffn_handle_first_tanh_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                                 double **weights, double *bias, size_t size,
-                                 size_t num_pixels);
+                                 const double **weights, const double *bias,
+                                 const size_t size, const size_t num_pixels);
 
 void ffn_handle_intermediate_relu_layer(elina_manager_t *man,
                                         elina_abstract0_t *element,
-                                        double **weights, double *bias,
-                                        size_t num_out_neurons,
-                                        size_t num_in_neurons);
+                                        const double **weights,
+                                        const double *bias,
+                                        const size_t num_out_neurons,
+                                        const size_t num_in_neurons);
 
 void ffn_handle_intermediate_sigmoid_layer(elina_manager_t *man,
                                            elina_abstract0_t *element,
-                                           double **weights, double *bias,
-                                           size_t num_out_neurons,
-                                           size_t num_in_neurons);
+                                           const double **weights,
+                                           const double *bias,
+                                           const size_t num_out_neurons,
+                                           const size_t num_in_neurons);
 
 void ffn_handle_intermediate_tanh_layer(elina_manager_t *man,
                                         elina_abstract0_t *element,
-                                        double **weights, double *bias,
-                                        size_t num_out_neurons,
-                                        size_t num_in_neurons);
+                                        const double **weights,
+                                        const double *bias,
+                                        const size_t num_out_neurons,
+                                        const size_t num_in_neurons);
 
-void fppoly_fprint(FILE *stream, elina_manager_t *man, fppoly_t *fp,
-                   char **name_of_dim);
+void fppoly_fprint(FILE *const stream, elina_manager_t *man,
+                   const fppoly_t *const fp, const char **name_of_dim);
 
 void ffn_handle_last_relu_layer(elina_manager_t *man,
-                                elina_abstract0_t *element, double **weights,
-                                double *bias, size_t num_out_neurons,
-                                size_t num_in_neurons, bool has_relu);
+                                elina_abstract0_t *element,
+                                const double **weights, const double *bias,
+                                const size_t num_out_neurons,
+                                const size_t num_in_neurons,
+                                const bool has_relu);
 
 void ffn_handle_last_sigmoid_layer(elina_manager_t *man,
-                                   elina_abstract0_t *element, double **weights,
-                                   double *bias, size_t num_out_neurons,
-                                   size_t num_in_neurons, bool has_sigmoid);
+                                   elina_abstract0_t *element,
+                                   const double **weights, const double *bias,
+                                   const size_t num_out_neurons,
+                                   const size_t num_in_neurons,
+                                   const bool has_sigmoid);
 
 void ffn_handle_last_tanh_layer(elina_manager_t *man,
-                                elina_abstract0_t *element, double **weights,
-                                double *bias, size_t num_out_neurons,
-                                size_t num_in_neurons, bool has_tanh);
+                                elina_abstract0_t *element,
+                                const double **weights, const double *bias,
+                                const size_t num_out_neurons,
+                                const size_t num_in_neurons,
+                                const bool has_tanh);
 
 void fppoly_free(elina_manager_t *man, fppoly_t *fp);
 
-bool is_greater(elina_manager_t *man, elina_abstract0_t *element, elina_dim_t y,
-                elina_dim_t x);
+bool is_greater(elina_manager_t *man, elina_abstract0_t *element,
+                const elina_dim_t y, const elina_dim_t x);
 
 void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
-                             double *filter_weights, double *filter_bias,
-                             size_t *input_size, size_t *filter_size,
-                             size_t num_filters, size_t *strides,
-                             bool is_valid_padding, bool has_bias);
+                             const double *filter_weights,
+                             const double *filter_bias,
+                             const size_t *input_size,
+                             const size_t *filter_size,
+                             const size_t num_filters, const size_t *strides,
+                             const bool is_valid_padding, const bool has_bias);
 
 void conv_handle_intermediate_relu_layer(
-    elina_manager_t *man, elina_abstract0_t *element, double *filter_weights,
-    double *filter_bias, size_t *input_size, size_t *filter_size,
-    size_t num_filters, size_t *strides, bool is_valid_padding, bool has_bias);
+    elina_manager_t *man, elina_abstract0_t *element,
+    const double *filter_weights, const double *filter_bias,
+    const size_t *input_size, const size_t *filter_size,
+    const size_t num_filters, const size_t *strides,
+    const bool is_valid_padding, const bool has_bias);
 
 size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                            size_t *pool_size, size_t *input_size);
+                            const size_t *pool_size, const size_t *input_size);
 
-void fppoly_alloc_first_layer(fppoly_t *fp, size_t size, size_t num_pixels,
-                              layertype_t type, activation_type_t activation);
+void fppoly_alloc_first_layer(fppoly_t *const fp, const size_t size,
+                              const size_t num_pixels, const layertype_t type,
+                              const activation_type_t activation);
 
 elina_linexpr0_t *get_lexpr_for_output_neuron(elina_manager_t *man,
-                                              elina_abstract0_t *abs, size_t i);
+                                              elina_abstract0_t *abs,
+                                              const size_t i);
 
 elina_linexpr0_t *get_uexpr_for_output_neuron(elina_manager_t *man,
-                                              elina_abstract0_t *abs, size_t i);
+                                              elina_abstract0_t *abs,
+                                              const size_t i);
 
 #ifdef __cplusplus
 }
