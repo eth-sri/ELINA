@@ -21,7 +21,7 @@
 
 
 include ../Makefile.config
-CXXFLAGS = -Wcast-qual -Wswitch -Wall -Wextra -Wundef -Wcast-align -fPIC -O3 -DNDEBUG -Werror-implicit-function-declaration -std=c++14 -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING -fno-tree-vectorize -m64 -march=native
+CXXFLAGS = -Wcast-qual -Wswitch -Wall -Wextra -Wundef -Wcast-align -fPIC -O3 -DNDEBUG -Werror-implicit-function-declaration -std=c++14 -g -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING -fno-tree-vectorize -m64 -march=native
 
 LIBDIR = $(ELINA_PREFIX)/lib
 
