@@ -167,7 +167,7 @@ expr_t * create_sparse_expr(double *coeff, double cst, size_t *dim, size_t size)
 	if(size>0){
 		expr->inf_coeff = (double *)malloc(size*sizeof(double));
 		expr->sup_coeff = (double *)malloc(size*sizeof(double));
-		expr->dim = (size_t *)malloc(size*sizeof(double));
+		expr->dim = (size_t *)malloc(size*sizeof(size_t));
 	}
 	else{
 		expr->inf_coeff = NULL;
@@ -2942,7 +2942,7 @@ size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
 	size_t out_pos;
 	double * inf = (double *) calloc(p01,sizeof(double));
 	double * sup = (double *) calloc(p01,sizeof(double));
-	size_t * pool_map = (size_t *)calloc(p01,sizeof(double));
+	size_t * pool_map = (size_t *)calloc(p01,sizeof(size_t));
 	neuron_t ** out_neurons = fp->layers[numlayers]->neurons;
 	size_t count = 0;
 	for(out_pos=0; out_pos<num_out_neurons; out_pos++){
