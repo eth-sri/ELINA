@@ -239,9 +239,13 @@ void merge_sparse_expr(expr_t *expr, size_t l, size_t m, size_t r) {
   int n2 = r - m;
 
   /* create temp arrays */
-  size_t L[n1], R[n2];
-  double L2[n1], R2[n2];
-  double L3[n1], R3[n2];
+  size_t *L = (size_t *)malloc(n1 * sizeof(size_t));
+  size_t *R = (size_t *)malloc(n2 * sizeof(size_t));
+  double *L2 = (double *)malloc(n1 * sizeof(double));
+  double *R2 = (double *)malloc(n2 * sizeof(double));
+  double *L3 = (double *)malloc(n1 * sizeof(double));
+  double *R3 = (double *)malloc(n2 * sizeof(double));
+
   /* Copy data to temp arrays L[] and R[] */
   for (i = 0; i < n1; i++) {
     L[i] = expr->dim[l + i];
@@ -292,6 +296,12 @@ void merge_sparse_expr(expr_t *expr, size_t l, size_t m, size_t r) {
     j++;
     k++;
   }
+  free(L);
+  free(R);
+  free(L2);
+  free(R2);
+  free(L3);
+  free(R3);
 }
 
 /* l is for left index and r is right index of the
