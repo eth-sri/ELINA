@@ -1969,7 +1969,7 @@ expr_t *lexpr_replace_maxpool_bounds(fppoly_internal_t *pr, expr_t *expr,
 
       if (neuron_k->maxpool_uexpr == NULL) {
         mul_expr = (expr_t *)malloc(sizeof(expr_t));
-        mul_expr->inf_coeff = res->sup_coeff = NULL;
+        mul_expr->inf_coeff = mul_expr->sup_coeff = NULL;
         mul_expr->dim = NULL;
         mul_expr->size = 0;
         mul_expr->type = SPARSE;
@@ -1999,7 +1999,7 @@ expr_t *lexpr_replace_maxpool_bounds(fppoly_internal_t *pr, expr_t *expr,
 
       if (neuron_k->maxpool_lexpr == NULL) {
         mul_expr = (expr_t *)malloc(sizeof(expr_t));
-        mul_expr->inf_coeff = res->sup_coeff = NULL;
+        mul_expr->inf_coeff = mul_expr->sup_coeff = NULL;
         mul_expr->dim = NULL;
         mul_expr->size = 0;
         mul_expr->type = SPARSE;
