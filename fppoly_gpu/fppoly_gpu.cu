@@ -1029,7 +1029,9 @@ __device__ __host__ void add_expr(expr_t *const exprA, expr_t *const exprB) {
 }
 
 __device__ __host__ expr_t *
-replace_input_poly_cons_in_lexpr(expr_t *expr, const fppoly_t *const fp) {
+replace_input_poly_cons_in_lexpr(expr_t *expr, double *input_inf,
+                                 double *input_sup, expr_t **input_lexpr,
+                                 expr_t **input_uexpr) {
   double tmp1, tmp2;
   expr_t *res;
 
@@ -1044,9 +1046,9 @@ replace_input_poly_cons_in_lexpr(expr_t *expr, const fppoly_t *const fp) {
   expr_t *mul_expr = nullptr;
 
   if (expr->sup_coeff[0] < 0) {
-    mul_expr = fp->input_uexpr[k];
+    mul_expr = input_uexpr[k];
   } else if (expr->inf_coeff[0] < 0) {
-    mul_expr = fp->input_lexpr[k];
+    mul_expr = input_lexpr[k];
   }
 
   if (mul_expr != nullptr) {
@@ -1059,8 +1061,7 @@ replace_input_poly_cons_in_lexpr(expr_t *expr, const fppoly_t *const fp) {
 
   else {
     elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[0],
-                              expr->sup_coeff[0], fp->input_inf[k],
-                              fp->input_sup[k]);
+                              expr->sup_coeff[0], input_inf[k], input_sup[k]);
     res = create_cst_expr(tmp1, -tmp1);
   }
 
@@ -1075,9 +1076,9 @@ replace_input_poly_cons_in_lexpr(expr_t *expr, const fppoly_t *const fp) {
     expr_t *sum_expr = nullptr;
 
     if (expr->sup_coeff[i] < 0) {
-      mul_expr = fp->input_uexpr[k];
+      mul_expr = input_uexpr[k];
     } else if (expr->inf_coeff[i] < 0) {
-      mul_expr = fp->input_lexpr[k];
+      mul_expr = input_lexpr[k];
     }
 
     if (mul_expr != nullptr) {
@@ -1096,8 +1097,7 @@ replace_input_poly_cons_in_lexpr(expr_t *expr, const fppoly_t *const fp) {
       }
     } else {
       elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                expr->sup_coeff[i], fp->input_inf[k],
-                                fp->input_sup[k]);
+                                expr->sup_coeff[i], input_inf[k], input_sup[k]);
       res->inf_cst = res->inf_cst + tmp1;
       res->sup_cst = res->sup_cst - tmp1;
     }
@@ -1110,7 +1110,9 @@ replace_input_poly_cons_in_lexpr(expr_t *expr, const fppoly_t *const fp) {
 }
 
 __device__ __host__ expr_t *
-replace_input_poly_cons_in_uexpr(expr_t *expr, const fppoly_t *const fp) {
+replace_input_poly_cons_in_uexpr(expr_t *expr, double *input_inf,
+                                 double *input_sup, expr_t **input_lexpr,
+                                 expr_t **input_uexpr) {
   double tmp1, tmp2;
   expr_t *res;
 
@@ -1125,9 +1127,9 @@ replace_input_poly_cons_in_uexpr(expr_t *expr, const fppoly_t *const fp) {
   expr_t *mul_expr = nullptr;
 
   if (expr->sup_coeff[0] < 0) {
-    mul_expr = fp->input_lexpr[k];
+    mul_expr = input_lexpr[k];
   } else if (expr->inf_coeff[0] < 0) {
-    mul_expr = fp->input_uexpr[k];
+    mul_expr = input_uexpr[k];
   }
 
   if (mul_expr != nullptr) {
@@ -1138,8 +1140,7 @@ replace_input_poly_cons_in_uexpr(expr_t *expr, const fppoly_t *const fp) {
     }
   } else {
     elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[0],
-                              expr->sup_coeff[0], fp->input_inf[k],
-                              fp->input_sup[k]);
+                              expr->sup_coeff[0], input_inf[k], input_sup[k]);
     res = create_cst_expr(-tmp2, tmp2);
   }
   // printf("finish\n");
@@ -1155,9 +1156,9 @@ replace_input_poly_cons_in_uexpr(expr_t *expr, const fppoly_t *const fp) {
     expr_t *sum_expr = nullptr;
 
     if (expr->sup_coeff[i] < 0) {
-      mul_expr = fp->input_lexpr[k];
+      mul_expr = input_lexpr[k];
     } else if (expr->inf_coeff[i] < 0) {
-      mul_expr = fp->input_uexpr[k];
+      mul_expr = input_uexpr[k];
     }
 
     if (mul_expr != nullptr) {
@@ -1176,8 +1177,7 @@ replace_input_poly_cons_in_uexpr(expr_t *expr, const fppoly_t *const fp) {
       }
     } else {
       elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                expr->sup_coeff[i], fp->input_inf[k],
-                                fp->input_sup[k]);
+                                expr->sup_coeff[i], input_inf[k], input_sup[k]);
       res->inf_cst = res->inf_cst - tmp2;
       res->sup_cst = res->sup_cst + tmp2;
     }
@@ -1188,12 +1188,15 @@ replace_input_poly_cons_in_uexpr(expr_t *expr, const fppoly_t *const fp) {
   return res;
 }
 
-__device__ __host__ double compute_lb_from_expr(expr_t *expr,
-                                                const fppoly_t *const fp) {
+__device__ __host__ double compute_lb_from_expr(expr_t *expr, double *input_inf,
+                                                double *input_sup,
+                                                expr_t **input_lexpr,
+                                                expr_t **input_uexpr) {
   // printf("start\n");
   // fflush(stdout);
-  if ((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr)) {
-    expr = replace_input_poly_cons_in_lexpr(expr, fp);
+  if ((input_lexpr != nullptr) && (input_uexpr != nullptr)) {
+    expr = replace_input_poly_cons_in_lexpr(expr, input_inf, input_sup,
+                                            input_lexpr, input_uexpr);
   }
   // expr_print(expr);
   // fflush(stdout);
@@ -1215,14 +1218,13 @@ __device__ __host__ double compute_lb_from_expr(expr_t *expr,
     }
 
     elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                              expr->sup_coeff[i], fp->input_inf[k],
-                              fp->input_sup[k]);
+                              expr->sup_coeff[i], input_inf[k], input_sup[k]);
     // printf("tmp1: %g\n",tmp1);
     res_inf = res_inf + tmp1;
   }
   //    printf("inf: %g\n",-res_inf);
   //    fflush(stdout);
-  if ((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr)) {
+  if ((input_lexpr != nullptr) && (input_uexpr != nullptr)) {
     free_expr(expr);
   }
   // printf("finish\n");
@@ -1230,10 +1232,13 @@ __device__ __host__ double compute_lb_from_expr(expr_t *expr,
   return res_inf;
 }
 
-__device__ __host__ double compute_ub_from_expr(expr_t *expr,
-                                                const fppoly_t *const fp) {
-  if ((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr)) {
-    expr = replace_input_poly_cons_in_uexpr(expr, fp);
+__device__ __host__ double compute_ub_from_expr(expr_t *expr, double *input_inf,
+                                                double *input_sup,
+                                                expr_t **input_lexpr,
+                                                expr_t **input_uexpr) {
+  if ((input_lexpr != nullptr) && (input_uexpr != nullptr)) {
+    expr = replace_input_poly_cons_in_uexpr(expr, input_inf, input_sup,
+                                            input_lexpr, input_uexpr);
   }
 
   double res_sup = expr->sup_cst;
@@ -1253,50 +1258,55 @@ __device__ __host__ double compute_ub_from_expr(expr_t *expr,
     }
 
     elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                              expr->sup_coeff[i], fp->input_inf[k],
-                              fp->input_sup[k]);
+                              expr->sup_coeff[i], input_inf[k], input_sup[k]);
     res_sup = res_sup + tmp2;
   }
   // printf("sup: %g\n",res_sup);
   // fflush(stdout);
-  if ((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr)) {
+  if ((input_lexpr != nullptr) && (input_uexpr != nullptr)) {
     free_expr(expr);
   }
 
   return res_sup;
 }
 
+void layer_create_exprs(neuron_t **neurons, const double **weights,
+                        const double *bias, const size_t num_out_neurons,
+                        const size_t num_in_neurons) {
+  for (size_t i = 0; i < num_out_neurons; i++) {
+    neuron_t *neuron = neurons[i];
+    const double *weight_i = weights[i];
+    const double bias_i = bias[i];
+    neuron->expr = create_dense_expr(weight_i, bias_i, num_in_neurons);
+  }
+}
+
+void layer_compute_bounds_from_exprs(neuron_t **neurons, double *input_inf,
+                                     double *input_sup, expr_t **input_lexpr,
+                                     expr_t **input_uexpr, const size_t size) {
+  for (size_t i = 0; i < size; i++) {
+    neuron_t *neuron = neurons[i];
+    neuron->lb = compute_lb_from_expr(neuron->expr, input_inf, input_sup,
+                                      input_lexpr, input_uexpr);
+    neuron->ub = compute_ub_from_expr(neuron->expr, input_inf, input_sup,
+                                      input_lexpr, input_uexpr);
+  }
+}
+
 void ffn_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
                             const double **weights, const double *bias,
                             const size_t size, const size_t num_pixels,
                             const activation_type_t activation) {
-  // printf("start \n");
-  // fflush(stdout);
   fppoly_t *res = fppoly_of_abstract0(abs);
   fppoly_alloc_first_layer(res, size, num_pixels, FFN, activation);
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
-  // for(size_t i = 0; i < num_pixels; i++)
-  //{
-  //    elina_interval_print(itv[i]);
-  //    printf("\n");
-  //}
-  // fflush(stdout);
   neuron_t **neurons = res->layers[0]->neurons;
 
-  for (size_t i = 0; i < size; i++) {
-    neuron_t *neuron = neurons[i];
-    const double *weight_i = weights[i];
-    const double bias_i = bias[i];
-    neuron->expr = create_dense_expr(weight_i, bias_i, num_pixels);
-    neuron->lb = compute_lb_from_expr(neuron->expr, res);
-    neuron->ub = compute_ub_from_expr(neuron->expr, res);
-  }
-
-  // printf("return here\n");
-  // fppoly_fprint(stdout,man,res,nullptr);
-  // fflush(stdout);
+  layer_create_exprs(neurons, weights, bias, size, num_pixels);
+  layer_compute_bounds_from_exprs(neurons, res->input_inf, res->input_sup,
+                                  res->input_lexpr, res->input_uexpr, size);
 }
 
 void ffn_handle_first_relu_layer(elina_manager_t *man, elina_abstract0_t *abs,
@@ -1319,8 +1329,9 @@ void ffn_handle_first_tanh_layer(elina_manager_t *man, elina_abstract0_t *abs,
   // ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, TANH);
 }
 
-__device__ __host__ expr_t *lexpr_replace_relu_bounds(const expr_t *const expr,
-                                                      neuron_t **neurons) {
+__device__ __host__ void lexpr_replace_relu_bounds(expr_t **expr_ptr,
+                                                   neuron_t **neurons) {
+  expr_t *expr = *expr_ptr;
   const size_t num_neurons = expr->size;
 
   expr_t *res = alloc_expr();
@@ -1363,8 +1374,6 @@ __device__ __host__ expr_t *lexpr_replace_relu_bounds(const expr_t *const expr,
     } else if (expr->sup_coeff[i] < 0) {
       const double mu_inf = lambda_inf * neurons[k]->lb;
       const double mu_sup = lambda_sup * neurons[k]->lb;
-      // res->coeff[i] = lambda*expr->coeff[i];
-      // res->cst = res->cst + expr->coeff[i]*mu;
       elina_double_interval_mul_expr_coeff(
           &res->inf_coeff[i], &res->sup_coeff[i], lambda_inf, lambda_sup,
           expr->inf_coeff[i], expr->sup_coeff[i]);
@@ -1379,8 +1388,6 @@ __device__ __host__ expr_t *lexpr_replace_relu_bounds(const expr_t *const expr,
       const double area3 = 0.5 * lb * width;
 
       if ((area1 < area2) && (area1 < area3)) {
-        // if(1){
-        // res->coeff[i] = lambda*expr->coeff[i];
         elina_double_interval_mul_expr_coeff(
             &res->inf_coeff[i], &res->sup_coeff[i], lambda_inf, lambda_sup,
             expr->inf_coeff[i], expr->sup_coeff[i]);
@@ -1410,11 +1417,13 @@ __device__ __host__ expr_t *lexpr_replace_relu_bounds(const expr_t *const expr,
     }
   }
 
-  return res;
+  free_expr(expr);
+  *expr_ptr = res;
 }
 
-__device__ __host__ expr_t *uexpr_replace_relu_bounds(const expr_t *const expr,
-                                                      neuron_t **neurons) {
+__device__ __host__ void uexpr_replace_relu_bounds(expr_t **expr_ptr,
+                                                   neuron_t **neurons) {
+  expr_t *expr = *expr_ptr;
   const size_t num_neurons = expr->size;
 
   expr_t *res = alloc_expr();
@@ -1504,7 +1513,8 @@ __device__ __host__ expr_t *uexpr_replace_relu_bounds(const expr_t *const expr,
     }
   }
 
-  return res;
+  free_expr(expr);
+  *expr_ptr = res;
 }
 
 /*
@@ -2177,10 +2187,11 @@ false);
 }
 */
 
-__device__ __host__ expr_t *
-lexpr_replace_maxpool_bounds(const expr_t *const expr, neuron_t **neurons) {
+__device__ __host__ void lexpr_replace_maxpool_bounds(expr_t **expr_ptr,
+                                                      neuron_t **neurons) {
   // printf("begin\n");
   // fflush(stdout);
+  expr_t *expr = *expr_ptr;
   const size_t num_neurons = expr->size;
   expr_t *res;
 
@@ -2335,11 +2346,14 @@ lexpr_replace_maxpool_bounds(const expr_t *const expr, neuron_t **neurons) {
   // fflush(stdout);
   res->inf_cst = res->inf_cst + expr->inf_cst;
   res->sup_cst = res->sup_cst + expr->sup_cst;
-  return res;
+
+  free_expr(expr);
+  *expr_ptr = res;
 }
 
-__device__ __host__ expr_t *
-uexpr_replace_maxpool_bounds(const expr_t *const expr, neuron_t **neurons) {
+__device__ __host__ void uexpr_replace_maxpool_bounds(expr_t **expr_ptr,
+                                                      neuron_t **neurons) {
+  expr_t *expr = *expr_ptr;
   const size_t num_neurons = expr->size;
   expr_t *res;
 
@@ -2403,24 +2417,22 @@ uexpr_replace_maxpool_bounds(const expr_t *const expr, neuron_t **neurons) {
   res->inf_cst = res->inf_cst + expr->inf_cst;
   res->sup_cst = res->sup_cst + expr->sup_cst;
 
-  return res;
+  free_expr(expr);
+  *expr_ptr = res;
 }
 
-__device__ __host__ expr_t *
-expr_from_previous_layer(const expr_t *const expr,
-                         const layer_t *const prev_layer) {
+__device__ __host__ void expr_from_previous_layer(expr_t **expr_ptr,
+                                                  neuron_t **neurons) {
+  expr_t *expr = *expr_ptr;
+
   if (expr->size == 0) {
-    return copy_cst_expr(expr);
+    return;
   }
 
   if ((expr->inf_coeff == nullptr) || (expr->sup_coeff == nullptr)) {
-    return alloc_expr();
+    return;
   }
 
-  // printf("coming here %zu\n",expr->size);
-  //    fflush(stdout);
-  neuron_t **prev_neurons = prev_layer->neurons;
-  // size_t out_num_neurons = prev_layer->dims;
   const size_t in_num_neurons = expr->size;
   size_t k;
   expr_t *res;
@@ -2431,19 +2443,12 @@ expr_from_previous_layer(const expr_t *const expr,
     k = expr->dim[0];
   }
 
-  // printf("start\n");
-  // fflush(stdout);
-  // if(prev_layer->type==MAXPOOL){
-  // printf("i: %zu k: %zu\n",i,k);
-  // expr_print(prev_neurons[k]->expr);
-  // fflush(stdout);
-  //}
-  if (prev_neurons[k]->expr->size == 0) {
-    res = multiply_cst_expr(prev_neurons[k]->expr, expr->inf_coeff[0],
+  if (neurons[k]->expr->size == 0) {
+    res = multiply_cst_expr(neurons[k]->expr, expr->inf_coeff[0],
                             expr->sup_coeff[0]);
   } else {
-    res = multiply_expr(prev_neurons[k]->expr, expr->inf_coeff[0],
-                        expr->sup_coeff[0]);
+    res =
+        multiply_expr(neurons[k]->expr, expr->inf_coeff[0], expr->sup_coeff[0]);
   }
 
   for (size_t i = 1; i < in_num_neurons; i++) {
@@ -2454,41 +2459,25 @@ expr_from_previous_layer(const expr_t *const expr,
     }
 
     expr_t *mul_expr;
-    // printf("i: %zu k: %zu\n",i,k);
-    // expr_print(res);
-    // expr_print(prev_neurons[k]->expr);
-    // fflush(stdout);
-    // if(prev_layer->type==MAXPOOL){
 
-    //}
-    if (prev_neurons[k]->expr->size == 0) {
-      mul_expr = multiply_cst_expr(prev_neurons[k]->expr, expr->inf_coeff[i],
+    if (neurons[k]->expr->size == 0) {
+      mul_expr = multiply_cst_expr(neurons[k]->expr, expr->inf_coeff[i],
                                    expr->sup_coeff[i]);
       add_cst_expr(res, mul_expr);
       free_expr(mul_expr);
     } else if ((expr->inf_coeff[i] != 0) || (expr->sup_coeff[i] != 0)) {
-      mul_expr = multiply_expr(prev_neurons[k]->expr, expr->inf_coeff[i],
+      mul_expr = multiply_expr(neurons[k]->expr, expr->inf_coeff[i],
                                expr->sup_coeff[i]);
-      // printf("start\n");
-      // fflush(stdout);
       add_expr(res, mul_expr);
       free_expr(mul_expr);
-      // printf("finish\n");
-      // fflush(stdout);
     }
-    // if(prev_layer->type==MAXPOOL){
-    // printf("i: %zu k: %zu\n",i,k);
-    // expr_print(mul_expr);
-    // printf("output\n");
-    // expr_print(res);
-    // fflush(stdout);
-    //}
   }
+
   res->inf_cst = res->inf_cst + expr->inf_cst;
   res->sup_cst = res->sup_cst + expr->sup_cst;
-  // printf("finish\n");
-  // fflush(stdout);
-  return res;
+
+  free_expr(expr);
+  *expr_ptr = res;
 }
 
 void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
@@ -2496,125 +2485,37 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
-  int k;
-
   neuron_t **out_neurons = fp->layers[layerno]->neurons;
   const size_t num_out_neurons = fp->layers[layerno]->dims;
 
   for (size_t i = 0; i < num_out_neurons; i++) {
-    // printf("i %zu \n",i);
-    // fflush(stdout);
     expr_t *lexpr = copy_expr(out_neurons[i]->expr);
     expr_t *uexpr = copy_expr(out_neurons[i]->expr);
-    // printf("end\n");
-    //    fflush(stdout);
-    for (k = layerno - 1; k >= 0; k--) {
+
+    expr_t **lexpr_ptr = &lexpr;
+    expr_t **uexpr_ptr = &uexpr;
+
+    for (int k = layerno - 1; k >= 0; k--) {
       neuron_t **aux_neurons = fp->layers[k]->neurons;
-      // size_t dims = fp->layers[k]->dims;
-      expr_t *tmp_l;
-      expr_t *tmp_u;
       if (fp->layers[k]->type != MAXPOOL) {
-        tmp_l = lexpr;
-        tmp_u = uexpr;
-        // if(i==0 && layerno==1){
-        //    printf("before relu %zu\n",lexpr->size);
-        //    expr_print(lexpr);
-        //    expr_print(uexpr);
-        //    fflush(stdout);
-        //}
         if (fp->layers[k]->activation == RELU) {
-          lexpr = lexpr_replace_relu_bounds(lexpr, aux_neurons);
-          // printf("doesnt return\n");
-
-          // fflush(stdout);
-          uexpr = uexpr_replace_relu_bounds(uexpr, aux_neurons);
+          lexpr_replace_relu_bounds(lexpr_ptr, aux_neurons);
+          uexpr_replace_relu_bounds(uexpr_ptr, aux_neurons);
         }
-        /*
-                else if(fp->layers[k]->activation==SIGMOID){
-                        //printf("start\n");
-                        //fflush(stdout);
-                    lexpr = lexpr_replace_sigmoid_bounds(pr,lexpr,aux_neurons);
-                        //printf("finish\n");
-                        //fflush(stdout);
-                    uexpr = uexpr_replace_sigmoid_bounds(pr,uexpr,aux_neurons);
-                }
-                else if(fp->layers[k]->activation==TANH){
-                    lexpr = lexpr_replace_tanh_bounds(pr,lexpr,aux_neurons);
-                    uexpr = uexpr_replace_tanh_bounds(pr,uexpr,aux_neurons);
-                }
-        */
-        free_expr(tmp_l);
-        free_expr(tmp_u);
 
-        // if(i==0 && layerno==1){
-        //    printf("after relu %zu\n",lexpr->size);
-        //    expr_print(lexpr);
-        //   expr_print(uexpr);
-        //   fflush(stdout);
-        // }
-        // if(k>=1){
-        tmp_l = lexpr;
-        tmp_u = uexpr;
-        // if(fp->layers[k]->type==MAXPOOL){
-        // printf("before replacing %zu %zu\n",lexpr->size,uexpr->size);
-        // expr_print(lexpr);
-        // expr_print(uexpr);
-        // fflush(stdout);
-        //}
-        lexpr = expr_from_previous_layer(lexpr, fp->layers[k]);
-        // printf("doesnt return\n");
-        // expr_print(uexpr);
-        // fflush(stdout);
-        uexpr = expr_from_previous_layer(uexpr, fp->layers[k]);
-        // if(fp->layers[k]->type==MAXPOOL){
-        // printf("replacing expression from previous layer\n");
-        // expr_print(lexpr);
-        // expr_print(uexpr);
-        ////fflush(stdout);
-        //}
-        free_expr(tmp_l);
-        free_expr(tmp_u);
+        expr_from_previous_layer(lexpr_ptr, aux_neurons);
+        expr_from_previous_layer(uexpr_ptr, aux_neurons);
       } else {
-        expr_t *tmp_l = lexpr;
-        expr_t *tmp_u = uexpr;
-        // printf("before maxpool %zu %zu\n",lexpr->size,i);
-        // expr_print(lexpr);
-        // expr_print(uexpr);
-        // fflush(stdout);
-        lexpr = lexpr_replace_maxpool_bounds(lexpr, aux_neurons);
-
-        // fflush(stdout);
-        uexpr = uexpr_replace_maxpool_bounds(uexpr, aux_neurons);
-        // printf("after maxpool %zu\n",lexpr->size);
-        // expr_print(lexpr);
-        // fflush(stdout);
-        free_expr(tmp_l);
-
-        free_expr(tmp_u);
+        lexpr_replace_maxpool_bounds(lexpr_ptr, aux_neurons);
+        uexpr_replace_maxpool_bounds(uexpr_ptr, aux_neurons);
       }
-      //}
-      // else{
-      //    tmp_l = lexpr;
-      //    tmp_u = uexpr;
-      //    lexpr = expr_from_previous_layer(lexpr, fp->layers[0]);
-
-      //    uexpr = expr_from_previous_layer(uexpr, fp->layers[0]);
-
-      //    free_expr(tmp_l);
-      //    free_expr(tmp_u);
-      //}
-      // printf("coming here\n");
-      // fflush(stdout);
     }
-    // expr_print(lexpr);
-    // printf("uexpr: %zu %zu\n",uexpr->size,i);
-    // expr_print(uexpr);
-    // fflush(stdout);
 
-    out_neurons[i]->lb = compute_lb_from_expr(lexpr, fp);
-    //- bias_i;
-    out_neurons[i]->ub = compute_ub_from_expr(uexpr, fp); //+ bias_i;
-    // printf("lb: %g ub: %g\n",out_neurons[i]->lb,out_neurons[i]->ub);
+    out_neurons[i]->lb = compute_lb_from_expr(
+        lexpr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+    out_neurons[i]->ub = compute_ub_from_expr(
+        lexpr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+
     if (fp->out != nullptr) {
       fp->out->lexpr[i] = lexpr;
       fp->out->uexpr[i] = uexpr;
@@ -2638,11 +2539,8 @@ void ffn_handle_intermediate_layer(elina_manager_t *man,
   fppoly_add_new_layer(fp, num_out_neurons, FFN, activation);
   neuron_t **out_neurons = fp->layers[numlayers]->neurons;
 
-  for (size_t i = 0; i < num_out_neurons; i++) {
-    const double *weight_i = weights[i];
-    const double bias_i = bias[i];
-    out_neurons[i]->expr = create_dense_expr(weight_i, bias_i, num_in_neurons);
-  }
+  layer_create_exprs(out_neurons, weights, bias, num_out_neurons,
+                     num_in_neurons);
 
   update_state_using_previous_layers(man, fp, numlayers);
 
@@ -2788,16 +2686,32 @@ void handle_final_relu_layer(fppoly_internal_t *pr, output_abstract_t *out,
   }
 }
 
+void handle_final_non_relu_layer(fppoly_internal_t *pr, output_abstract_t *out,
+                                 neuron_t **neurons, const size_t size) {
+  for (size_t i = 0; i < size; i++) {
+    out->output_inf[i] = neurons[i]->lb;
+    out->output_sup[i] = neurons[i]->ub;
+  }
+}
+
+output_abstract_t *allocate_output_abstract(const size_t num_out_neurons) {
+  output_abstract_t *out =
+      (output_abstract_t *)malloc(sizeof(output_abstract_t));
+  out->output_inf = (double *)malloc(num_out_neurons * sizeof(double));
+  out->output_sup = (double *)malloc(num_out_neurons * sizeof(double));
+  out->lexpr = (expr_t **)malloc(num_out_neurons * sizeof(expr_t *));
+  out->uexpr = (expr_t **)malloc(num_out_neurons * sizeof(expr_t *));
+
+  return out;
+}
+
 void ffn_handle_last_layer(elina_manager_t *man, elina_abstract0_t *element,
                            const double **weights, const double *bias,
                            const size_t num_out_neurons,
                            const size_t num_in_neurons,
                            const bool has_activation,
                            const activation_type_t activation) {
-  // printf("last\n");
-  // fflush(stdout);
   fppoly_t *fp = fppoly_of_abstract0(element);
-  const size_t numlayers = fp->numlayers;
 
   if (has_activation) {
     fppoly_add_new_layer(fp, num_out_neurons, FFN, activation);
@@ -2805,35 +2719,24 @@ void ffn_handle_last_layer(elina_manager_t *man, elina_abstract0_t *element,
     fppoly_add_new_layer(fp, num_out_neurons, FFN, NONE);
   }
 
-  output_abstract_t *out =
-      (output_abstract_t *)malloc(sizeof(output_abstract_t));
-  out->output_inf = (double *)malloc(num_out_neurons * sizeof(double));
-  out->output_sup = (double *)malloc(num_out_neurons * sizeof(double));
-  out->lexpr = (expr_t **)malloc(num_out_neurons * sizeof(expr_t *));
-  out->uexpr = (expr_t **)malloc(num_out_neurons * sizeof(expr_t *));
-  fp->out = out;
-  neuron_t **out_neurons = fp->layers[numlayers]->neurons;
+  fp->out = allocate_output_abstract(num_out_neurons);
+
+  neuron_t **out_neurons = fp->layers[fp->numlayers - 1]->neurons;
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
-  for (size_t i = 0; i < num_out_neurons; i++) {
-    const double *weight_i = weights[i];
-    const double bias_i = bias[i];
-    out_neurons[i]->expr = create_dense_expr(weight_i, bias_i, num_in_neurons);
-  }
+  layer_create_exprs(out_neurons, weights, bias, num_out_neurons,
+                     num_in_neurons);
 
-  update_state_using_previous_layers(man, fp, numlayers);
+  update_state_using_previous_layers(man, fp, fp->numlayers - 1);
 
   if (activation == RELU) {
     handle_final_relu_layer(pr, fp->out, out_neurons, num_out_neurons,
                             has_activation);
   } else {
-    for (size_t i = 0; i < num_out_neurons; i++) {
-      out->output_inf[i] = out_neurons[i]->lb;
-      out->output_sup[i] = out_neurons[i]->ub;
-    }
+    handle_final_non_relu_layer(pr, fp->out, out_neurons, num_out_neurons);
   }
-  // fppoly_fprint(stdout,man,fp,nullptr);
+  // fppoly_fprint(stdout, man, fp, nullptr);
 }
 
 void ffn_handle_last_relu_layer(elina_manager_t *man,
@@ -2870,48 +2773,26 @@ double get_lb_using_previous_layers(elina_manager_t *man,
                                     const fppoly_t *const fp, expr_t *expr) {
   const size_t numlayers = fp->numlayers;
   expr_t *lexpr = expr;
+  expr_t **lexpr_ptr = &lexpr;
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
   for (int k = numlayers - 1; k >= 0; k--) {
-    //    printf("k: %zu\n",k);
-    //    fflush(stdout);
     neuron_t **aux_neurons = fp->layers[k]->neurons;
-    expr_t *tmp_l;
 
     if (fp->layers[k]->type != MAXPOOL) {
       if (fp->layers[k]->activation == RELU) {
-        tmp_l = lexpr;
-        lexpr = lexpr_replace_relu_bounds(lexpr, aux_neurons);
-        free_expr(tmp_l);
+        lexpr_replace_relu_bounds(lexpr_ptr, aux_neurons);
       }
-      /*
-          else if(fp->layers[k]->activation==SIGMOID){
-              tmp_l = lexpr;
-      //printf("start\n");
-      //fflush(stdout);
-              lexpr = lexpr_replace_sigmoid_bounds(lexpr,aux_neurons);
-      //printf("finish\n");
-      //fflush(stdout);
-              free_expr(tmp_l);
-          }
-          else if(fp->layers[k]->activation==TANH){
-               tmp_l = lexpr;
-              lexpr = lexpr_replace_tanh_bounds(lexpr,aux_neurons);
-              free_expr(tmp_l);
-          }
-      */
-      tmp_l = lexpr;
-      lexpr = expr_from_previous_layer(lexpr, fp->layers[k]);
-      free_expr(tmp_l);
+
+      expr_from_previous_layer(lexpr_ptr, aux_neurons);
     } else {
-      expr_t *tmp_l = lexpr;
-      lexpr = lexpr_replace_maxpool_bounds(lexpr, aux_neurons);
-      free_expr(tmp_l);
+      lexpr_replace_maxpool_bounds(lexpr_ptr, aux_neurons);
     }
   }
 
-  return compute_lb_from_expr(lexpr, fp);
+  return compute_lb_from_expr(lexpr, fp->input_inf, fp->input_sup,
+                              fp->input_lexpr, fp->input_uexpr);
 }
 
 bool is_greater(elina_manager_t *man, elina_abstract0_t *element,
@@ -3680,9 +3561,11 @@ elina_linexpr0_t *get_expr_for_output_neuron(elina_manager_t *man,
 
   if ((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr)) {
     if (is_lower) {
-      expr = replace_input_poly_cons_in_lexpr(expr, fp);
+      expr = replace_input_poly_cons_in_lexpr(
+          expr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
     } else {
-      expr = replace_input_poly_cons_in_uexpr(expr, fp);
+      expr = replace_input_poly_cons_in_uexpr(
+          expr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
     }
   }
 
