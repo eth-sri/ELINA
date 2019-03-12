@@ -2478,12 +2478,17 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   neuron_t **out_neurons = fp->layers[layerno]->neurons;
   const size_t num_out_neurons = fp->layers[layerno]->dims;
 
-  for (size_t i = 0; i < num_out_neurons; i++) {
-    expr_t *lexpr = copy_expr(out_neurons[i]->expr);
-    expr_t *uexpr = copy_expr(out_neurons[i]->expr);
+  expr_t **lexpr = (expr_t **)malloc(num_out_neurons * sizeof(expr_t *));
+  expr_t **uexpr = (expr_t **)malloc(num_out_neurons * sizeof(expr_t *));
 
-    expr_t **lexpr_ptr = &lexpr;
-    expr_t **uexpr_ptr = &uexpr;
+  for (size_t i = 0; i < num_out_neurons; i++) {
+    lexpr[i] = copy_expr(out_neurons[i]->expr);
+    uexpr[i] = copy_expr(out_neurons[i]->expr);
+  }
+
+  for (size_t i = 0; i < num_out_neurons; i++) {
+    expr_t **lexpr_ptr = &lexpr[i];
+    expr_t **uexpr_ptr = &uexpr[i];
 
     for (int k = layerno - 1; k >= 0; k--) {
       neuron_t **aux_neurons = fp->layers[k]->neurons;
@@ -2500,19 +2505,28 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
         uexpr_replace_maxpool_bounds(uexpr_ptr, aux_neurons);
       }
     }
+  }
 
-    out_neurons[i]->lb = compute_lb_from_expr(
-        lexpr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
-    out_neurons[i]->ub = compute_ub_from_expr(
-        lexpr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+  for (size_t i = 0; i < num_out_neurons; i++) {
+    out_neurons[i]->lb =
+        compute_lb_from_expr(lexpr[i], fp->input_inf, fp->input_sup,
+                             fp->input_lexpr, fp->input_uexpr);
+    out_neurons[i]->ub =
+        compute_ub_from_expr(uexpr[i], fp->input_inf, fp->input_sup,
+                             fp->input_lexpr, fp->input_uexpr);
+  }
 
-    if (fp->out != nullptr) {
-      fp->out->lexpr[i] = lexpr;
-      fp->out->uexpr[i] = uexpr;
-    } else {
-      free_expr(lexpr);
-      free_expr(uexpr);
+  if (fp->out != nullptr) {
+    fp->out->lexpr = lexpr;
+    fp->out->uexpr = uexpr;
+  } else {
+    for (size_t i = 0; i < num_out_neurons; i++) {
+      free_expr(lexpr[i]);
+      free_expr(uexpr[i]);
     }
+
+    free(lexpr);
+    free(uexpr);
   }
 }
 
@@ -2687,10 +2701,12 @@ void handle_final_non_relu_layer(fppoly_internal_t *pr, output_abstract_t *out,
 output_abstract_t *allocate_output_abstract(const size_t num_out_neurons) {
   output_abstract_t *out =
       (output_abstract_t *)malloc(sizeof(output_abstract_t));
+
   out->output_inf = (double *)malloc(num_out_neurons * sizeof(double));
   out->output_sup = (double *)malloc(num_out_neurons * sizeof(double));
-  out->lexpr = (expr_t **)malloc(num_out_neurons * sizeof(expr_t *));
-  out->uexpr = (expr_t **)malloc(num_out_neurons * sizeof(expr_t *));
+
+  out->lexpr = nullptr;
+  out->uexpr = nullptr;
 
   return out;
 }
