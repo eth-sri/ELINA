@@ -211,10 +211,6 @@ void conv_handle_intermediate_relu_layer(
 size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *abs,
                             const size_t *pool_size, const size_t *input_size);
 
-void fppoly_alloc_first_layer(fppoly_t *const fp, const size_t size,
-                              const size_t num_pixels, const layertype_t type,
-                              const activation_type_t activation);
-
 elina_linexpr0_t *get_lexpr_for_output_neuron(elina_manager_t *man,
                                               elina_abstract0_t *abs,
                                               const size_t i);

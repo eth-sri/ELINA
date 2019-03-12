@@ -693,15 +693,6 @@ elina_abstract0_t *fppoly_from_network_input_poly(
   return abstract0_of_fppoly(man, res);
 }
 
-void fppoly_alloc_first_layer(fppoly_t *const fp, const size_t size,
-                              const size_t num_pixels, const layertype_t type,
-                              const activation_type_t activation) {
-  layer_t *layer = create_layer(size, type, activation);
-  fp->layers = (layer_t **)malloc(20 * sizeof(layer_t *));
-  fp->layers[0] = layer;
-  fp->numlayers = 1;
-}
-
 void fppoly_add_new_layer(fppoly_t *const fp, const size_t size,
                           const layertype_t type,
                           const activation_type_t activation) {
@@ -1266,9 +1257,9 @@ __device__ __host__ double compute_ub_from_expr(expr_t *expr, double *input_inf,
   return res_sup;
 }
 
-void layer_create_exprs(neuron_t **neurons, const double **weights,
-                        const double *bias, const size_t num_out_neurons,
-                        const size_t num_in_neurons) {
+void layer_create_dense_exprs(neuron_t **neurons, const double **weights,
+                              const double *bias, const size_t num_out_neurons,
+                              const size_t num_in_neurons) {
   for (size_t i = 0; i < num_out_neurons; i++) {
     neuron_t *neuron = neurons[i];
     const double *weight_i = weights[i];
@@ -1294,13 +1285,16 @@ void ffn_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
                             const size_t size, const size_t num_pixels,
                             const activation_type_t activation) {
   fppoly_t *res = fppoly_of_abstract0(abs);
-  fppoly_alloc_first_layer(res, size, num_pixels, FFN, activation);
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
+  res->layers = (layer_t **)malloc(20 * sizeof(layer_t *));
+  res->numlayers = 0;
+  fppoly_add_new_layer(res, size, FFN, activation);
+
   neuron_t **neurons = res->layers[0]->neurons;
 
-  layer_create_exprs(neurons, weights, bias, size, num_pixels);
+  layer_create_dense_exprs(neurons, weights, bias, size, num_pixels);
   layer_compute_bounds_from_exprs(neurons, res->input_inf, res->input_sup,
                                   res->input_lexpr, res->input_uexpr, size);
 }
@@ -2535,8 +2529,8 @@ void ffn_handle_intermediate_layer(elina_manager_t *man,
   fppoly_add_new_layer(fp, num_out_neurons, FFN, activation);
   neuron_t **out_neurons = fp->layers[numlayers]->neurons;
 
-  layer_create_exprs(out_neurons, weights, bias, num_out_neurons,
-                     num_in_neurons);
+  layer_create_dense_exprs(out_neurons, weights, bias, num_out_neurons,
+                           num_in_neurons);
 
   update_state_using_previous_layers(man, fp, numlayers);
 
@@ -2721,8 +2715,8 @@ void ffn_handle_last_layer(elina_manager_t *man, elina_abstract0_t *element,
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
-  layer_create_exprs(out_neurons, weights, bias, num_out_neurons,
-                     num_in_neurons);
+  layer_create_dense_exprs(out_neurons, weights, bias, num_out_neurons,
+                           num_in_neurons);
 
   update_state_using_previous_layers(man, fp, fp->numlayers - 1);
 
@@ -2978,13 +2972,13 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element,
 */
 }
 
-void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                             const double *filter_weights,
-                             const double *filter_bias,
-                             const size_t *input_size,
-                             const size_t *filter_size,
-                             const size_t num_filters, const size_t *strides,
-                             const bool is_valid_padding, const bool has_bias) {
+void layer_create_sparse_exprs(fppoly_t *const fp, const double *filter_weights,
+                               const double *filter_bias,
+                               const size_t *input_size,
+                               const size_t *filter_size,
+                               const size_t num_filters, const size_t *strides,
+                               const bool is_valid_padding,
+                               const bool has_bias) {
   const size_t num_pixels = input_size[0] * input_size[1] * input_size[2];
 
   size_t output_size[3];
@@ -3000,14 +2994,12 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
   }
 
   output_size[2] = num_filters;
-  const size_t size = output_size[0] * output_size[1] * output_size[2];
 
-  fppoly_internal_t *pr =
-      fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
-  fppoly_t *res = fppoly_of_abstract0(abs);
-  fppoly_alloc_first_layer(res, size, num_pixels, CONV, RELU);
+  const size_t num_out_neurons =
+      output_size[0] * output_size[1] * output_size[2];
+  fppoly_add_new_layer(fp, num_out_neurons, CONV, RELU);
+  neuron_t **out_neurons = fp->layers[fp->numlayers - 1]->neurons;
 
-  neuron_t **neurons = res->layers[0]->neurons;
   size_t out_x, out_y, out_z;
   // size_t inp_x, inp_y;
   size_t inp_z;
@@ -3078,129 +3070,6 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
                   inp_z * output_size[2] + out_z;
               coeff[i] = filter_weights[filter_index];
               dim[i] = mat_y;
-              i++;
-              actual_coeff++;
-            }
-          }
-        }
-
-        const double cst = has_bias ? filter_bias[out_z] : 0;
-        neurons[mat_x]->expr =
-            create_sparse_expr(coeff, cst, dim, actual_coeff);
-        sort_sparse_expr(neurons[mat_x]->expr);
-
-        neurons[mat_x]->lb = compute_lb_from_expr(
-            neurons[mat_x]->expr, res->input_inf, res->input_sup,
-            res->input_lexpr, res->input_uexpr);
-        neurons[mat_x]->ub = compute_ub_from_expr(
-            neurons[mat_x]->expr, res->input_inf, res->input_sup,
-            res->input_lexpr, res->input_uexpr);
-
-        free(coeff);
-        free(dim);
-      }
-    }
-  }
-}
-
-void conv_handle_intermediate_relu_layer(
-    elina_manager_t *man, elina_abstract0_t *element,
-    const double *filter_weights, const double *filter_bias,
-    const size_t *input_size, const size_t *filter_size,
-    const size_t num_filters, const size_t *strides,
-    const bool is_valid_padding, const bool has_bias) {
-  fppoly_t *fp = fppoly_of_abstract0(element);
-  const size_t numlayers = fp->numlayers;
-
-  const size_t num_pixels = input_size[0] * input_size[1] * input_size[2];
-  size_t output_size[3];
-
-  if (is_valid_padding) {
-    output_size[0] =
-        ceil((double)(input_size[0] - filter_size[0] + 1) / (double)strides[0]);
-    output_size[1] =
-        ceil((double)(input_size[1] - filter_size[1] + 1) / (double)strides[1]);
-  } else {
-    output_size[0] = ceil((double)input_size[0] / (double)strides[0]);
-    output_size[1] = ceil((double)input_size[1] / (double)strides[1]);
-  }
-
-  output_size[2] = num_filters;
-  const size_t num_out_neurons =
-      output_size[0] * output_size[1] * output_size[2];
-  fppoly_add_new_layer(fp, num_out_neurons, CONV, RELU);
-  neuron_t **out_neurons = fp->layers[numlayers]->neurons;
-
-  size_t out_x, out_y, out_z;
-  // size_t inp_x, inp_y;
-  size_t inp_z;
-  size_t x_shift, y_shift;
-
-  long int pad_along_height = 0;
-  long int pad_along_width = 0;
-  long int pad_top = 0;
-  long int pad_left = 0;
-
-  if (!is_valid_padding) {
-    if (input_size[0] % strides[0] == 0) {
-      const long int tmp = filter_size[0] - strides[0];
-      pad_along_height = max(tmp, long(0));
-    } else {
-      const long int tmp = filter_size[0] - (input_size[0] % strides[0]);
-      pad_along_height = max(tmp, long(0));
-    }
-
-    if (input_size[1] % strides[1] == 0) {
-      const long int tmp = filter_size[1] - strides[1];
-      pad_along_width = max(tmp, long(0));
-    } else {
-      const long int tmp = filter_size[1] - (input_size[1] % strides[1]);
-      pad_along_width = max(tmp, long(0));
-    }
-
-    pad_top = pad_along_height / 2;
-    pad_left = pad_along_width / 2;
-  }
-
-  for (out_x = 0; out_x < output_size[0]; out_x++) {
-    for (out_y = 0; out_y < output_size[1]; out_y++) {
-      for (out_z = 0; out_z < output_size[2]; out_z++) {
-        const size_t mat_x = out_x * output_size[1] * output_size[2] +
-                             out_y * output_size[2] + out_z;
-        const size_t num_coeff =
-            input_size[2] * filter_size[0] * filter_size[1];
-        size_t actual_coeff = 0;
-        double *coeff = (double *)malloc(num_coeff * sizeof(double));
-        size_t *dim = (size_t *)malloc(num_coeff * sizeof(double));
-        size_t i = 0;
-
-        for (inp_z = 0; inp_z < input_size[2]; inp_z++) {
-          for (x_shift = 0; x_shift < filter_size[0]; x_shift++) {
-            for (y_shift = 0; y_shift < filter_size[1]; y_shift++) {
-              const long int x_val = out_x * strides[0] + x_shift - pad_top;
-              const long int y_val = out_y * strides[1] + y_shift - pad_left;
-
-              if ((y_val < 0) || (y_val >= (long int)input_size[1])) {
-                continue;
-              }
-
-              if ((x_val < 0) || (x_val >= (long int)input_size[0])) {
-                continue;
-              }
-
-              const size_t mat_y = x_val * input_size[1] * input_size[2] +
-                                   y_val * input_size[2] + inp_z;
-
-              if (mat_y >= num_pixels) {
-                continue;
-              }
-
-              const size_t filter_index =
-                  x_shift * filter_size[1] * input_size[2] * output_size[2] +
-                  y_shift * input_size[2] * output_size[2] +
-                  inp_z * output_size[2] + out_z;
-              coeff[i] = filter_weights[filter_index];
-              dim[i] = mat_y;
               actual_coeff++;
               i++;
             }
@@ -3217,8 +3086,44 @@ void conv_handle_intermediate_relu_layer(
       }
     }
   }
+}
 
-  update_state_using_previous_layers(man, fp, numlayers);
+void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
+                             const double *filter_weights,
+                             const double *filter_bias,
+                             const size_t *input_size,
+                             const size_t *filter_size,
+                             const size_t num_filters, const size_t *strides,
+                             const bool is_valid_padding, const bool has_bias) {
+  fppoly_t *const fp = fppoly_of_abstract0(element);
+  fp->layers = (layer_t **)malloc(20 * sizeof(layer_t *));
+  fp->numlayers = 0;
+
+  layer_create_sparse_exprs(fp, filter_weights, filter_bias, input_size,
+                            filter_size, num_filters, strides, is_valid_padding,
+                            has_bias);
+
+  const size_t num_out_neurons = fp->layers[fp->numlayers - 1]->dims;
+  neuron_t **out_neurons = fp->layers[fp->numlayers - 1]->neurons;
+
+  layer_compute_bounds_from_exprs(out_neurons, fp->input_inf, fp->input_sup,
+                                  fp->input_lexpr, fp->input_uexpr,
+                                  num_out_neurons);
+}
+
+void conv_handle_intermediate_relu_layer(
+    elina_manager_t *man, elina_abstract0_t *element,
+    const double *filter_weights, const double *filter_bias,
+    const size_t *input_size, const size_t *filter_size,
+    const size_t num_filters, const size_t *strides,
+    const bool is_valid_padding, const bool has_bias) {
+  fppoly_t *const fp = fppoly_of_abstract0(element);
+
+  layer_create_sparse_exprs(fp, filter_weights, filter_bias, input_size,
+                            filter_size, num_filters, strides, is_valid_padding,
+                            has_bias);
+
+  update_state_using_previous_layers(man, fp, fp->numlayers - 1);
 }
 
 size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
@@ -3226,6 +3131,7 @@ size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
   assert(pool_size[0] == 2 && pool_size[1] == 2 && pool_size[2] == 1);
 
   size_t *output_size = (size_t *)malloc(3 * sizeof(size_t));
+
   for (size_t i = 0; i < 3; i++) {
     output_size[i] = input_size[i] / pool_size[i];
   }
@@ -3238,15 +3144,14 @@ size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
   const size_t i12 = input_size[1] * input_size[2];
   const size_t p01 = pool_size[0] * pool_size[1];
 
-  fppoly_t *fp = fppoly_of_abstract0(element);
-  const size_t numlayers = fp->numlayers;
+  fppoly_t *const fp = fppoly_of_abstract0(element);
   fppoly_add_new_layer(fp, num_out_neurons, MAXPOOL, NONE);
+
   size_t out_pos;
   double *inf = (double *)calloc(p01, sizeof(double));
   double *sup = (double *)calloc(p01, sizeof(double));
-  size_t *pool_map = (size_t *)calloc(p01, sizeof(double));
-  neuron_t **out_neurons = fp->layers[numlayers]->neurons;
-  size_t count = 0;
+  size_t *pool_map = (size_t *)calloc(p01, sizeof(size_t));
+  neuron_t **out_neurons = fp->layers[fp->numlayers - 1]->neurons;
 
   for (out_pos = 0; out_pos < num_out_neurons; out_pos++) {
     const size_t out_x = out_pos / o12;
@@ -3277,8 +3182,10 @@ size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
             inp_pos + x_shift * i12 + y_shift * input_size[2];
         pool_map[l] = pool_cur_dim;
         // use the ReLU bounds from the previous layer
-        const double lb = -fp->layers[numlayers - 1]->neurons[pool_cur_dim]->lb;
-        const double ub = fp->layers[numlayers - 1]->neurons[pool_cur_dim]->ub;
+        const double lb =
+            -fp->layers[fp->numlayers - 2]->neurons[pool_cur_dim]->lb;
+        const double ub =
+            fp->layers[fp->numlayers - 2]->neurons[pool_cur_dim]->ub;
 
         if (ub <= 0) {
           inf[l] = 0.0;
@@ -3343,7 +3250,6 @@ size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
     }
 
     if (flag) {
-      count++;
       double coeff[1];
       size_t dim[1];
       coeff[0] = 1;
@@ -3374,7 +3280,7 @@ size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
     out_neurons[out_pos]->ub = max_u;
   }
 
-  // update_state_using_previous_layers(man, fp, numlayers);
+  // update_state_using_previous_layers(man, fp, fp->numlayers - 1);
 
   free(inf);
   free(sup);
