@@ -1248,8 +1248,10 @@ void add_expr(expr_t* const exprA, expr_t* const exprB)
 
 
 __device__ __host__
-expr_t* replace_input_poly_cons_in_lexpr(expr_t* expr, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr)
+void replace_input_poly_cons_in_lexpr(expr_t** expr_ptr, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr)
 {
+    expr_t* expr = *expr_ptr;
+
     double tmp1, tmp2;
     expr_t* res;
 
@@ -1345,13 +1347,16 @@ expr_t* replace_input_poly_cons_in_lexpr(expr_t* expr, double* input_inf, double
     res->inf_cst = res->inf_cst + expr->inf_cst;
     res->sup_cst = res->sup_cst + expr->sup_cst;
 
-    return res;
+    free(expr);
+    *expr_ptr = res;
 }
 
 
 __device__ __host__
-expr_t* replace_input_poly_cons_in_uexpr(expr_t* expr, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr)
+void replace_input_poly_cons_in_uexpr(expr_t** expr_ptr, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr)
 {
+    expr_t* expr = *expr_ptr;
+
     double tmp1, tmp2;
     expr_t* res;
 
@@ -1443,28 +1448,31 @@ expr_t* replace_input_poly_cons_in_uexpr(expr_t* expr, double* input_inf, double
             res->sup_cst = res->sup_cst + tmp2;
         }
     }
+
     res->inf_cst = res->inf_cst + expr->inf_cst;
     res->sup_cst = res->sup_cst + expr->sup_cst;
 
-    return res;
+    free(expr);
+    *expr_ptr = res;
 }
 
+
 __device__ __host__
-double compute_lb_from_expr(expr_t* expr, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr)
+void compute_lb_from_expr(double* lb, expr_t* expr, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr)
 {
-        //printf("start\n");
-        //fflush(stdout);
     if((input_lexpr != nullptr) && (input_uexpr != nullptr))
     {
-        expr = replace_input_poly_cons_in_lexpr(expr, input_inf, input_sup, input_lexpr, input_uexpr);
+        expr_t** expr_ptr = &expr;
+        replace_input_poly_cons_in_lexpr(expr_ptr, input_inf, input_sup, input_lexpr, input_uexpr);
     }
-        //expr_print(expr);
-    //fflush(stdout);
+
     double res_inf = expr->inf_cst;
 
     if((expr->inf_coeff == nullptr) || (expr->sup_coeff == nullptr))
     {
-        return 0;
+        *lb = 0;
+
+        return;
     }
 
     double tmp1, tmp2;
@@ -1472,7 +1480,6 @@ double compute_lb_from_expr(expr_t* expr, double* input_inf, double* input_sup, 
 
     for(size_t i = 0; i < expr->size; i++)
     {
-        //if(expr->inf_coeff[i]<0){
         if(expr->type == DENSE)
         {
             k = i;
@@ -1483,32 +1490,33 @@ double compute_lb_from_expr(expr_t* expr, double* input_inf, double* input_sup, 
         }
 
         elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i], expr->sup_coeff[i], input_inf[k], input_sup[k]);
-        //printf("tmp1: %g\n",tmp1);
         res_inf = res_inf + tmp1;
     }
-//    printf("inf: %g\n",-res_inf);
-//    fflush(stdout);
+
     if((input_lexpr != nullptr) && (input_uexpr != nullptr))
     {
         free_expr(expr);
     }
-        //printf("finish\n");
-        //fflush(stdout);
-    return res_inf;
+
+    *lb = res_inf;
 }
 
+
 __device__ __host__
-double compute_ub_from_expr(expr_t* expr, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr)
+void compute_ub_from_expr(double* ub, expr_t* expr, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr)
 {
     if((input_lexpr != nullptr) && (input_uexpr != nullptr))
     {
-        expr = replace_input_poly_cons_in_uexpr(expr, input_inf, input_sup, input_lexpr, input_uexpr);
+        expr_t** expr_ptr = &expr;
+        replace_input_poly_cons_in_uexpr(expr_ptr, input_inf, input_sup, input_lexpr, input_uexpr);
     }
 
     double res_sup = expr->sup_cst;
     if((expr->inf_coeff == nullptr) || (expr->sup_coeff == nullptr))
     {
-        return 0;
+        *ub = 0;
+
+        return;
     }
 
     double tmp1, tmp2;
@@ -1516,7 +1524,6 @@ double compute_ub_from_expr(expr_t* expr, double* input_inf, double* input_sup, 
 
     for(size_t i = 0; i < expr->size; i++)
     {
-        //if(expr->inf_coeff[i]<0){
         if(expr->type == DENSE)
         {
             k = i;
@@ -1529,14 +1536,13 @@ double compute_ub_from_expr(expr_t* expr, double* input_inf, double* input_sup, 
         elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i], expr->sup_coeff[i], input_inf[k], input_sup[k]);
         res_sup = res_sup + tmp2;
     }
-    //printf("sup: %g\n",res_sup);
-    //fflush(stdout);
+
     if((input_lexpr != nullptr) && (input_uexpr != nullptr))
     {
         free_expr(expr);
     }
 
-    return res_sup;
+   *ub = res_sup;
 }
 
 
@@ -1557,8 +1563,8 @@ void layer_compute_bounds_from_exprs(neuron_t** neurons, double* input_inf, doub
     for(size_t i = 0; i < size; i++)
     {
         neuron_t* neuron = neurons[i];
-        neuron->lb = compute_lb_from_expr(neuron->expr, input_inf, input_sup, input_lexpr, input_uexpr);
-        neuron->ub = compute_ub_from_expr(neuron->expr, input_inf, input_sup, input_lexpr, input_uexpr);
+        compute_lb_from_expr(&(neuron->lb), neuron->expr, input_inf, input_sup, input_lexpr, input_uexpr);
+        compute_ub_from_expr(&(neuron->ub), neuron->expr, input_inf, input_sup, input_lexpr, input_uexpr);
     }
 }
 
@@ -2837,8 +2843,8 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
 
     for(size_t i = 0; i < num_out_neurons; i++)
     {
-        out_neurons[i]->lb = compute_lb_from_expr(lexpr[i], fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
-        out_neurons[i]->ub = compute_ub_from_expr(uexpr[i], fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+        compute_lb_from_expr(&(out_neurons[i]->lb), lexpr[i], fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+        compute_ub_from_expr(&(out_neurons[i]->ub), uexpr[i], fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
     }
 
     if(fp->out != nullptr)
@@ -3109,7 +3115,10 @@ double get_lb_using_previous_layers(elina_manager_t* man, const fppoly_t* const 
         }
     }
 
-    return compute_lb_from_expr(lexpr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+    double lb;
+    compute_lb_from_expr(&lb, lexpr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+
+    return lb;
 }
 
 bool is_greater(elina_manager_t* man, elina_abstract0_t* element, const elina_dim_t y, const elina_dim_t x)
@@ -3838,11 +3847,13 @@ elina_linexpr0_t* get_expr_for_output_neuron(elina_manager_t* man, elina_abstrac
     {
         if(is_lower)
         {
-            expr = replace_input_poly_cons_in_lexpr(expr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+            expr_t** expr_ptr = &expr;
+            replace_input_poly_cons_in_lexpr(expr_ptr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
         }
         else
         {
-            expr = replace_input_poly_cons_in_uexpr(expr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+            expr_t** expr_ptr = &expr;
+            replace_input_poly_cons_in_uexpr(expr_ptr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
         }
     }
 
