@@ -1182,16 +1182,12 @@ replace_input_poly_cons_in_uexpr(expr_t **expr_ptr, double *input_inf,
   *expr_ptr = res;
 }
 
-__device__ __host__ void compute_lb_from_expr(double *lb, expr_t *expr,
+__device__ __host__ void compute_lb_from_expr(double *lb, expr_t **expr_ptr,
                                               double *input_inf,
                                               double *input_sup,
                                               expr_t **input_lexpr,
                                               expr_t **input_uexpr) {
-  if ((input_lexpr != nullptr) && (input_uexpr != nullptr)) {
-    expr_t **expr_ptr = &expr;
-    replace_input_poly_cons_in_lexpr(expr_ptr, input_inf, input_sup,
-                                     input_lexpr, input_uexpr);
-  }
+  expr_t *expr = *expr_ptr;
 
   double res_inf = expr->inf_cst;
 
@@ -1223,18 +1219,15 @@ __device__ __host__ void compute_lb_from_expr(double *lb, expr_t *expr,
   *lb = res_inf;
 }
 
-__device__ __host__ void compute_ub_from_expr(double *ub, expr_t *expr,
+__device__ __host__ void compute_ub_from_expr(double *ub, expr_t **expr_ptr,
                                               double *input_inf,
                                               double *input_sup,
                                               expr_t **input_lexpr,
                                               expr_t **input_uexpr) {
-  if ((input_lexpr != nullptr) && (input_uexpr != nullptr)) {
-    expr_t **expr_ptr = &expr;
-    replace_input_poly_cons_in_uexpr(expr_ptr, input_inf, input_sup,
-                                     input_lexpr, input_uexpr);
-  }
+  expr_t *expr = *expr_ptr;
 
   double res_sup = expr->sup_cst;
+
   if ((expr->inf_coeff == nullptr) || (expr->sup_coeff == nullptr)) {
     *ub = 0;
 
@@ -1279,9 +1272,17 @@ void layer_compute_bounds_from_exprs(neuron_t **neurons, double *input_inf,
                                      expr_t **input_uexpr, const size_t size) {
   for (size_t i = 0; i < size; i++) {
     neuron_t *neuron = neurons[i];
-    compute_lb_from_expr(&(neuron->lb), neuron->expr, input_inf, input_sup,
+
+    if ((input_lexpr != nullptr) && (input_uexpr != nullptr)) {
+      replace_input_poly_cons_in_lexpr(&(neuron->expr), input_inf, input_sup,
+                                       input_lexpr, input_uexpr);
+      replace_input_poly_cons_in_uexpr(&(neuron->expr), input_inf, input_sup,
+                                       input_lexpr, input_uexpr);
+    }
+
+    compute_lb_from_expr(&(neuron->lb), &(neuron->expr), input_inf, input_sup,
                          input_lexpr, input_uexpr);
-    compute_ub_from_expr(&(neuron->ub), neuron->expr, input_inf, input_sup,
+    compute_ub_from_expr(&(neuron->ub), &(neuron->expr), input_inf, input_sup,
                          input_lexpr, input_uexpr);
   }
 }
@@ -2530,9 +2531,18 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   }
 
   for (size_t i = 0; i < num_out_neurons; i++) {
-    compute_lb_from_expr(&(out_neurons[i]->lb), lexpr[i], fp->input_inf,
+    if ((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr)) {
+      replace_input_poly_cons_in_lexpr(&(lexpr[i]), fp->input_inf,
+                                       fp->input_sup, fp->input_lexpr,
+                                       fp->input_uexpr);
+      replace_input_poly_cons_in_uexpr(&(uexpr[i]), fp->input_inf,
+                                       fp->input_sup, fp->input_lexpr,
+                                       fp->input_uexpr);
+    }
+
+    compute_lb_from_expr(&(out_neurons[i]->lb), &(lexpr[i]), fp->input_inf,
                          fp->input_sup, fp->input_lexpr, fp->input_uexpr);
-    compute_ub_from_expr(&(out_neurons[i]->ub), uexpr[i], fp->input_inf,
+    compute_ub_from_expr(&(out_neurons[i]->ub), &(uexpr[i]), fp->input_inf,
                          fp->input_sup, fp->input_lexpr, fp->input_uexpr);
   }
 
@@ -2818,7 +2828,13 @@ double get_lb_using_previous_layers(elina_manager_t *man,
   }
 
   double lb;
-  compute_lb_from_expr(&lb, lexpr, fp->input_inf, fp->input_sup,
+
+  if ((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr)) {
+    replace_input_poly_cons_in_lexpr(lexpr_ptr, fp->input_inf, fp->input_sup,
+                                     fp->input_lexpr, fp->input_uexpr);
+  }
+
+  compute_lb_from_expr(&lb, lexpr_ptr, fp->input_inf, fp->input_sup,
                        fp->input_lexpr, fp->input_uexpr);
 
   return lb;
