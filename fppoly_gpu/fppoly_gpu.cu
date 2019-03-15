@@ -1248,72 +1248,33 @@ void add_expr(expr_t* const exprA, expr_t* const exprB)
 
 
 __device__ __host__
-void replace_input_poly_cons_in_lexpr(expr_t** expr_ptr, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr)
+void replace_input_poly_cons_in_lexpr(expr_t** expr_array, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr, const size_t size)
 {
-    expr_t* expr = *expr_ptr;
-
-    double tmp1, tmp2;
-    expr_t* res;
-
-    size_t k;
-
-    if(expr->type == DENSE)
+    for(size_t n = 0; n < size; n++)
     {
-        k = 0;
-    }
-    else
-    {
-        k = expr->dim[0];
-    }
+        expr_t* expr = expr_array[n];
 
-    expr_t* mul_expr = nullptr;
+        double tmp1, tmp2;
+        expr_t* res;
 
-    if(expr->sup_coeff[0] < 0)
-    {
-        mul_expr = input_uexpr[k];
-    }
-    else if(expr->inf_coeff[0] < 0)
-    {
-        mul_expr = input_lexpr[k];
-    }
+        size_t k;
 
-    if(mul_expr != nullptr)
-    {
-        if(mul_expr->size == 0)
-        {
-            res = multiply_cst_expr(mul_expr, expr->inf_coeff[0], expr->sup_coeff[0]);
-        }
-        else
-        {
-            res = multiply_expr(mul_expr, expr->inf_coeff[0], expr->sup_coeff[0]);
-        }
-    }
-
-    else
-    {
-        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[0], expr->sup_coeff[0], input_inf[k], input_sup[k]);
-        res = create_cst_expr(tmp1, -tmp1);
-    }
-
-    for(size_t i = 1; i < expr->size; i++)
-    {
         if(expr->type == DENSE)
         {
-            k = i;
+            k = 0;
         }
         else
         {
-            k = expr->dim[i];
+            k = expr->dim[0];
         }
 
         expr_t* mul_expr = nullptr;
-        expr_t* sum_expr = nullptr;
 
-        if(expr->sup_coeff[i] < 0)
+        if(expr->sup_coeff[0] < 0)
         {
             mul_expr = input_uexpr[k];
         }
-        else if(expr->inf_coeff[i] < 0)
+        else if(expr->inf_coeff[0] < 0)
         {
             mul_expr = input_lexpr[k];
         }
@@ -1322,103 +1283,106 @@ void replace_input_poly_cons_in_lexpr(expr_t** expr_ptr, double* input_inf, doub
         {
             if(mul_expr->size == 0)
             {
-                sum_expr = multiply_cst_expr(mul_expr, expr->inf_coeff[i], expr->sup_coeff[i]);
-                add_cst_expr(res, sum_expr);
+                res = multiply_cst_expr(mul_expr, expr->inf_coeff[0], expr->sup_coeff[0]);
             }
-            else if((expr->inf_coeff[i] != 0) && (expr->sup_coeff[i] != 0))
+            else
             {
-                sum_expr = multiply_expr(mul_expr, expr->inf_coeff[i], expr->sup_coeff[i]);
-                add_expr(res, sum_expr);
-            }
-                //free_expr(mul_expr);
-            if(sum_expr != nullptr)
-            {
-                free_expr(sum_expr);
+                res = multiply_expr(mul_expr, expr->inf_coeff[0], expr->sup_coeff[0]);
             }
         }
+
         else
         {
-            elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i], expr->sup_coeff[i], input_inf[k], input_sup[k]);
-            res->inf_cst = res->inf_cst + tmp1;
-            res->sup_cst = res->sup_cst - tmp1;
+            elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[0], expr->sup_coeff[0], input_inf[k], input_sup[k]);
+            res = create_cst_expr(tmp1, -tmp1);
         }
+
+        for(size_t i = 1; i < expr->size; i++)
+        {
+            if(expr->type == DENSE)
+            {
+                k = i;
+            }
+            else
+            {
+                k = expr->dim[i];
+            }
+
+            expr_t* mul_expr = nullptr;
+            expr_t* sum_expr = nullptr;
+
+            if(expr->sup_coeff[i] < 0)
+            {
+                mul_expr = input_uexpr[k];
+            }
+            else if(expr->inf_coeff[i] < 0)
+            {
+                mul_expr = input_lexpr[k];
+            }
+
+            if(mul_expr != nullptr)
+            {
+                if(mul_expr->size == 0)
+                {
+                    sum_expr = multiply_cst_expr(mul_expr, expr->inf_coeff[i], expr->sup_coeff[i]);
+                    add_cst_expr(res, sum_expr);
+                }
+                else if((expr->inf_coeff[i] != 0) && (expr->sup_coeff[i] != 0))
+                {
+                    sum_expr = multiply_expr(mul_expr, expr->inf_coeff[i], expr->sup_coeff[i]);
+                    add_expr(res, sum_expr);
+                }
+                    //free_expr(mul_expr);
+                if(sum_expr != nullptr)
+                {
+                    free_expr(sum_expr);
+                }
+            }
+            else
+            {
+                elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i], expr->sup_coeff[i], input_inf[k], input_sup[k]);
+                res->inf_cst = res->inf_cst + tmp1;
+                res->sup_cst = res->sup_cst - tmp1;
+            }
+        }
+
+        res->inf_cst = res->inf_cst + expr->inf_cst;
+        res->sup_cst = res->sup_cst + expr->sup_cst;
+
+        free(expr);
+        expr_array[n] = res;
     }
-
-    res->inf_cst = res->inf_cst + expr->inf_cst;
-    res->sup_cst = res->sup_cst + expr->sup_cst;
-
-    free(expr);
-    *expr_ptr = res;
 }
 
 
 __device__ __host__
-void replace_input_poly_cons_in_uexpr(expr_t** expr_ptr, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr)
+void replace_input_poly_cons_in_uexpr(expr_t** expr_array, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr, const size_t size)
 {
-    expr_t* expr = *expr_ptr;
+    for(size_t n = 0; n < size; n++)
+    {
+        expr_t* expr = expr_array[n];
 
-    double tmp1, tmp2;
-    expr_t* res;
+        double tmp1, tmp2;
+        expr_t* res;
 
-    size_t k;
+        size_t k;
 
-    if(expr->type == DENSE)
-    {
-        k = 0;
-    }
-    else
-    {
-        k = expr->dim[0];
-    }
-
-    expr_t * mul_expr = nullptr;
-
-    if(expr->sup_coeff[0] < 0)
-    {
-        mul_expr = input_lexpr[k];
-    }
-    else if(expr->inf_coeff[0] < 0)
-    {
-        mul_expr = input_uexpr[k];
-    }
-
-    if(mul_expr != nullptr)
-    {
-        if(mul_expr->size == 0)
-        {
-            res = multiply_cst_expr(mul_expr, expr->inf_coeff[0], expr->sup_coeff[0]);
-        }
-        else
-        {
-            res = multiply_expr(mul_expr, expr->inf_coeff[0], expr->sup_coeff[0]);
-        }
-    }
-    else
-    {
-        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[0], expr->sup_coeff[0], input_inf[k], input_sup[k]);
-        res = create_cst_expr(-tmp2, tmp2);
-    }
-                //printf("finish\n");
-        //fflush(stdout);
-    for(size_t i = 1; i < expr->size; i++)
-    {
         if(expr->type == DENSE)
         {
-            k = i;
+            k = 0;
         }
         else
         {
-            k = expr->dim[i];
+            k = expr->dim[0];
         }
 
-        expr_t* mul_expr = nullptr;
-        expr_t* sum_expr = nullptr;
+        expr_t * mul_expr = nullptr;
 
-        if(expr->sup_coeff[i] < 0)
+        if(expr->sup_coeff[0] < 0)
         {
             mul_expr = input_lexpr[k];
         }
-        else if(expr->inf_coeff[i] < 0)
+        else if(expr->inf_coeff[0] < 0)
         {
             mul_expr = input_uexpr[k];
         }
@@ -1427,115 +1391,153 @@ void replace_input_poly_cons_in_uexpr(expr_t** expr_ptr, double* input_inf, doub
         {
             if(mul_expr->size == 0)
             {
-                sum_expr = multiply_cst_expr(mul_expr, expr->inf_coeff[i], expr->sup_coeff[i]);
-                add_cst_expr(res, sum_expr);
+                res = multiply_cst_expr(mul_expr, expr->inf_coeff[0], expr->sup_coeff[0]);
             }
-            else if((expr->inf_coeff[i] != 0) && (expr->sup_coeff[i] != 0))
+            else
             {
-                sum_expr = multiply_expr(mul_expr, expr->inf_coeff[i], expr->sup_coeff[i]);
-                add_expr(res, sum_expr);
-            }
-                //free_expr(mul_expr);
-            if(sum_expr != nullptr)
-            {
-                free_expr(sum_expr);
+                res = multiply_expr(mul_expr, expr->inf_coeff[0], expr->sup_coeff[0]);
             }
         }
         else
         {
+            elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[0], expr->sup_coeff[0], input_inf[k], input_sup[k]);
+            res = create_cst_expr(-tmp2, tmp2);
+        }
+                    //printf("finish\n");
+            //fflush(stdout);
+        for(size_t i = 1; i < expr->size; i++)
+        {
+            if(expr->type == DENSE)
+            {
+                k = i;
+            }
+            else
+            {
+                k = expr->dim[i];
+            }
+
+            expr_t* mul_expr = nullptr;
+            expr_t* sum_expr = nullptr;
+
+            if(expr->sup_coeff[i] < 0)
+            {
+                mul_expr = input_lexpr[k];
+            }
+            else if(expr->inf_coeff[i] < 0)
+            {
+                mul_expr = input_uexpr[k];
+            }
+
+            if(mul_expr != nullptr)
+            {
+                if(mul_expr->size == 0)
+                {
+                    sum_expr = multiply_cst_expr(mul_expr, expr->inf_coeff[i], expr->sup_coeff[i]);
+                    add_cst_expr(res, sum_expr);
+                }
+                else if((expr->inf_coeff[i] != 0) && (expr->sup_coeff[i] != 0))
+                {
+                    sum_expr = multiply_expr(mul_expr, expr->inf_coeff[i], expr->sup_coeff[i]);
+                    add_expr(res, sum_expr);
+                }
+                    //free_expr(mul_expr);
+                if(sum_expr != nullptr)
+                {
+                    free_expr(sum_expr);
+                }
+            }
+            else
+            {
+                elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i], expr->sup_coeff[i], input_inf[k], input_sup[k]);
+                res->inf_cst = res->inf_cst - tmp2;
+                res->sup_cst = res->sup_cst + tmp2;
+            }
+        }
+
+        res->inf_cst = res->inf_cst + expr->inf_cst;
+        res->sup_cst = res->sup_cst + expr->sup_cst;
+
+        free(expr);
+        expr_array[n] = res;
+    }
+}
+
+
+__device__ __host__
+void compute_lb_from_expr(double* lb_array, expr_t** expr_array, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr, const size_t size)
+{
+    for(size_t n = 0; n < size; n++)
+    {
+        expr_t* expr = expr_array[n];
+
+        double res_inf = expr->inf_cst;
+
+        if((expr->inf_coeff == nullptr) || (expr->sup_coeff == nullptr))
+        {
+            lb_array[n] = 0;
+
+            continue;
+        }
+
+        double tmp1, tmp2;
+        size_t k;
+
+        for(size_t i = 0; i < expr->size; i++)
+        {
+            if(expr->type == DENSE)
+            {
+                k = i;
+            }
+            else
+            {
+                k = expr->dim[i];
+            }
+
             elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i], expr->sup_coeff[i], input_inf[k], input_sup[k]);
-            res->inf_cst = res->inf_cst - tmp2;
-            res->sup_cst = res->sup_cst + tmp2;
+            res_inf = res_inf + tmp1;
         }
+
+        lb_array[n] = res_inf;
     }
-
-    res->inf_cst = res->inf_cst + expr->inf_cst;
-    res->sup_cst = res->sup_cst + expr->sup_cst;
-
-    free(expr);
-    *expr_ptr = res;
 }
 
 
 __device__ __host__
-void compute_lb_from_expr(double* lb, expr_t** expr_ptr, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr)
+void compute_ub_from_expr(double* ub_array, expr_t** expr_array, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr, const size_t size)
 {
-    expr_t* expr = *expr_ptr;
-
-    double res_inf = expr->inf_cst;
-
-    if((expr->inf_coeff == nullptr) || (expr->sup_coeff == nullptr))
+    for(size_t n = 0; n < size; n++)
     {
-        *lb = 0;
+        expr_t* expr = expr_array[n];
 
-        return;
-    }
+        double res_sup = expr->sup_cst;
 
-    double tmp1, tmp2;
-    size_t k;
-
-    for(size_t i = 0; i < expr->size; i++)
-    {
-        if(expr->type == DENSE)
+        if((expr->inf_coeff == nullptr) || (expr->sup_coeff == nullptr))
         {
-            k = i;
-        }
-        else
-        {
-            k = expr->dim[i];
+            ub_array[n] = 0;
+
+            continue;
         }
 
-        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i], expr->sup_coeff[i], input_inf[k], input_sup[k]);
-        res_inf = res_inf + tmp1;
-    }
+        double tmp1, tmp2;
+        size_t k;
 
-    if((input_lexpr != nullptr) && (input_uexpr != nullptr))
-    {
-        free_expr(expr);
-    }
-
-    *lb = res_inf;
-}
-
-
-__device__ __host__
-void compute_ub_from_expr(double* ub, expr_t** expr_ptr, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr)
-{
-    expr_t* expr= *expr_ptr;
-
-    double res_sup = expr->sup_cst;
-
-    if((expr->inf_coeff == nullptr) || (expr->sup_coeff == nullptr))
-    {
-        *ub = 0;
-
-        return;
-    }
-
-    double tmp1, tmp2;
-    size_t k;
-
-    for(size_t i = 0; i < expr->size; i++)
-    {
-        if(expr->type == DENSE)
+        for(size_t i = 0; i < expr->size; i++)
         {
-            k = i;
-        }
-        else
-        {
-            k = expr->dim[i];
+            if(expr->type == DENSE)
+            {
+                k = i;
+            }
+            else
+            {
+                k = expr->dim[i];
+            }
+
+            elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i], expr->sup_coeff[i], input_inf[k], input_sup[k]);
+            res_sup = res_sup + tmp2;
         }
 
-        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i], expr->sup_coeff[i], input_inf[k], input_sup[k]);
-        res_sup = res_sup + tmp2;
+       ub_array[n] = res_sup;
     }
-
-    if((input_lexpr != nullptr) && (input_uexpr != nullptr))
-    {
-        free_expr(expr);
-    }
-
-   *ub = res_sup;
 }
 
 
@@ -1553,19 +1555,47 @@ void layer_create_dense_exprs(neuron_t** neurons, const double** weights, const 
 
 void layer_compute_bounds_from_exprs(neuron_t** neurons, double* input_inf, double* input_sup, expr_t** input_lexpr, expr_t** input_uexpr, const size_t size)
 {
+    // allocate
+    expr_t** lexpr_array = (expr_t**) malloc(size*sizeof(expr_t*));
+    expr_t** uexpr_array = (expr_t**) malloc(size*sizeof(expr_t*));
+
     for(size_t i = 0; i < size; i++)
     {
-        neuron_t* neuron = neurons[i];
-
-        if((input_lexpr != nullptr) && (input_uexpr != nullptr))
-        {
-            replace_input_poly_cons_in_lexpr(&(neuron->expr), input_inf, input_sup, input_lexpr, input_uexpr);
-            replace_input_poly_cons_in_uexpr(&(neuron->expr), input_inf, input_sup, input_lexpr, input_uexpr);
-        }
-
-        compute_lb_from_expr(&(neuron->lb), &(neuron->expr), input_inf, input_sup, input_lexpr, input_uexpr);
-        compute_ub_from_expr(&(neuron->ub), &(neuron->expr), input_inf, input_sup, input_lexpr, input_uexpr);
+        lexpr_array[i] = copy_expr(neurons[i]->expr);
+        uexpr_array[i] = copy_expr(neurons[i]->expr);
     }
+
+    double* lb_array = (double*) malloc(size*sizeof(double));
+    double* ub_array = (double*) malloc(size*sizeof(double));
+
+    // compute
+    if((input_lexpr != nullptr) && (input_uexpr != nullptr))
+    {
+        replace_input_poly_cons_in_lexpr(lexpr_array, input_inf, input_sup, input_lexpr, input_uexpr, size);
+        replace_input_poly_cons_in_uexpr(uexpr_array, input_inf, input_sup, input_lexpr, input_uexpr, size);
+    }
+
+    compute_lb_from_expr(lb_array, lexpr_array, input_inf, input_sup, input_lexpr, input_uexpr, size);
+    compute_ub_from_expr(ub_array, uexpr_array, input_inf, input_sup, input_lexpr, input_uexpr, size);
+
+    for(size_t i = 0; i < size; i++)
+    {
+        neurons[i]->lb = lb_array[i];
+        neurons[i]->ub = ub_array[i];
+    }
+
+    // free
+    for(size_t i = 0; i < size; i++)
+    {
+        free_expr(lexpr_array[i]);
+        free_expr(uexpr_array[i]);
+    }
+
+    free(lexpr_array);
+    free(uexpr_array);
+
+    free(lb_array);
+    free(ub_array);
 }
 
 
@@ -2803,7 +2833,6 @@ void expr_from_previous_layer(expr_t** expr_array, neuron_t** neurons, const siz
 }
 
 
-
 void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, const size_t layerno)
 {
     fppoly_internal_t* pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
@@ -2811,13 +2840,13 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
     neuron_t** out_neurons = fp->layers[layerno]->neurons;
     const size_t num_out_neurons = fp->layers[layerno]->dims;
 
-    expr_t** lexpr = (expr_t**) malloc(num_out_neurons*sizeof(expr_t*));
-    expr_t** uexpr = (expr_t**) malloc(num_out_neurons*sizeof(expr_t*));
+    expr_t** lexpr_array = (expr_t**) malloc(num_out_neurons*sizeof(expr_t*));
+    expr_t** uexpr_array = (expr_t**) malloc(num_out_neurons*sizeof(expr_t*));
 
     for(size_t i = 0; i < num_out_neurons; i++)
     {
-        lexpr[i] = copy_expr(out_neurons[i]->expr);
-        uexpr[i] = copy_expr(out_neurons[i]->expr);
+        lexpr_array[i] = copy_expr(out_neurons[i]->expr);
+        uexpr_array[i] = copy_expr(out_neurons[i]->expr);
     }
 
     for(int k = layerno - 1; k >= 0; k--)
@@ -2827,47 +2856,57 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
         {
             if(fp->layers[k]->activation == RELU)
             {
-                lexpr_replace_relu_bounds(lexpr, aux_neurons, num_out_neurons);
-                uexpr_replace_relu_bounds(uexpr, aux_neurons, num_out_neurons);
+                lexpr_replace_relu_bounds(lexpr_array, aux_neurons, num_out_neurons);
+                uexpr_replace_relu_bounds(uexpr_array, aux_neurons, num_out_neurons);
             }
 
-            expr_from_previous_layer(lexpr, aux_neurons, num_out_neurons);
-            expr_from_previous_layer(uexpr, aux_neurons, num_out_neurons);
+            expr_from_previous_layer(lexpr_array, aux_neurons, num_out_neurons);
+            expr_from_previous_layer(uexpr_array, aux_neurons, num_out_neurons);
         }
         else
         {
-            lexpr_replace_maxpool_bounds(lexpr, aux_neurons, num_out_neurons);
-            uexpr_replace_maxpool_bounds(uexpr, aux_neurons, num_out_neurons);
+            lexpr_replace_maxpool_bounds(lexpr_array, aux_neurons, num_out_neurons);
+            uexpr_replace_maxpool_bounds(uexpr_array, aux_neurons, num_out_neurons);
         }
     }
+
+    if((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr))
+    {
+        replace_input_poly_cons_in_lexpr(lexpr_array, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr, num_out_neurons);
+        replace_input_poly_cons_in_uexpr(uexpr_array, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr, num_out_neurons);
+    }
+
+    double* lb_array = (double*) malloc(num_out_neurons*sizeof(double));
+    double* ub_array = (double*) malloc(num_out_neurons*sizeof(double));
+
+    compute_lb_from_expr(lb_array, lexpr_array, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr, num_out_neurons);
+    compute_ub_from_expr(ub_array, uexpr_array, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr, num_out_neurons);
 
     for(size_t i = 0; i < num_out_neurons; i++)
     {
-        if((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr))
-        {
-            replace_input_poly_cons_in_lexpr(&(lexpr[i]), fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
-            replace_input_poly_cons_in_uexpr(&(uexpr[i]), fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
-        }
-
-        compute_lb_from_expr(&(out_neurons[i]->lb), &(lexpr[i]), fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
-        compute_ub_from_expr(&(out_neurons[i]->ub), &(uexpr[i]), fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+        out_neurons[i]->lb = lb_array[i];
+        out_neurons[i]->ub = ub_array[i];
     }
+
+    free(lb_array);
+    free(ub_array);
 
     if(fp->out != nullptr)
     {
-        fp->out->lexpr = lexpr;
-        fp->out->uexpr = uexpr;
+        //TODO: The (l/u)expr_array assigned here is not correct. The contents were changed in the replace_input_poly_cons_in_lexpr, but they should not have been changed there. Need to create another temporary array for the results of replace_input_poly_cons_in_lexpr. Maybe this is a feature, not a bug? Seems like this is exactly what the method get_expr_for_output_neuron is doing!
+        fp->out->lexpr = lexpr_array;
+        fp->out->uexpr = uexpr_array;
     }
     else
     {
         for(size_t i = 0; i < num_out_neurons; i++)
         {
-            free_expr(lexpr[i]);
-            free_expr(uexpr[i]);
+            free_expr(lexpr_array[i]);
+            free_expr(uexpr_array[i]);
         }
 
-        free(lexpr);
-        free(uexpr);
+        free(lexpr_array);
+        free(uexpr_array);
     }
 }
 
@@ -3125,10 +3164,10 @@ double get_lb_using_previous_layers(elina_manager_t* man, const fppoly_t* const 
 
     if((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr))
     {
-        replace_input_poly_cons_in_lexpr(lexpr_ptr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+        replace_input_poly_cons_in_lexpr(lexpr_ptr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr, 1);
     }
 
-    compute_lb_from_expr(&lb, lexpr_ptr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+    compute_lb_from_expr(&lb, lexpr_ptr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr, 1);
 
     return lb;
 }
@@ -3860,12 +3899,12 @@ elina_linexpr0_t* get_expr_for_output_neuron(elina_manager_t* man, elina_abstrac
         if(is_lower)
         {
             expr_t** expr_ptr = &expr;
-            replace_input_poly_cons_in_lexpr(expr_ptr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+            replace_input_poly_cons_in_lexpr(expr_ptr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr, 1);
         }
         else
         {
             expr_t** expr_ptr = &expr;
-            replace_input_poly_cons_in_uexpr(expr_ptr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr);
+            replace_input_poly_cons_in_uexpr(expr_ptr, fp->input_inf, fp->input_sup, fp->input_lexpr, fp->input_uexpr, 1);
         }
     }
 
