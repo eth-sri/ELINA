@@ -624,16 +624,30 @@ void fppoly_from_network_input_box(fppoly_t *const res, const size_t intdim,
                                    const double *sup_array) {
   res->layers = nullptr;
   res->numlayers = 0;
+
   size_t num_pixels = intdim + realdim;
+
+  double *tmp_input_inf = (double *)malloc(num_pixels * sizeof(double));
+  double *tmp_input_sup = (double *)malloc(num_pixels * sizeof(double));
+
+  for (size_t i = 0; i < num_pixels; i++) {
+    tmp_input_inf[i] = -inf_array[i];
+    tmp_input_sup[i] = sup_array[i];
+  }
+
   res->input_inf = (double *)malloc(num_pixels * sizeof(double));
   res->input_sup = (double *)malloc(num_pixels * sizeof(double));
+
   res->input_lexpr = nullptr;
   res->input_uexpr = nullptr;
 
-  for (size_t i = 0; i < num_pixels; i++) {
-    res->input_inf[i] = -inf_array[i];
-    res->input_sup[i] = sup_array[i];
-  }
+  cudaMemcpy(res->input_inf, tmp_input_inf, num_pixels * sizeof(double),
+             cudaMemcpyHostToHost);
+  cudaMemcpy(res->input_sup, tmp_input_sup, num_pixels * sizeof(double),
+             cudaMemcpyHostToHost);
+
+  free(tmp_input_inf);
+  free(tmp_input_sup);
 
   res->num_pixels = num_pixels;
   res->out = nullptr;
@@ -650,48 +664,51 @@ elina_abstract0_t *fppoly_from_network_input(elina_manager_t *man,
   return abstract0_of_fppoly(man, res);
 }
 
-elina_abstract0_t *fppoly_from_network_input_poly(
-    elina_manager_t *man, const size_t intdim, const size_t realdim,
-    const double *inf_array, const double *sup_array,
-    const double *lexpr_weights, const double *lexpr_cst,
-    const size_t *lexpr_dim, const double *uexpr_weights,
-    const double *uexpr_cst, const size_t *uexpr_dim, const size_t expr_size) {
-  fppoly_t *res = (fppoly_t *)malloc(sizeof(fppoly_t));
-  fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array);
+/*
+elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t* man, const
+size_t intdim, const size_t realdim, const double* inf_array, const double*
+sup_array, const double* lexpr_weights, const double* lexpr_cst, const size_t*
+lexpr_dim, const double* uexpr_weights, const double* uexpr_cst, const size_t*
+uexpr_dim, const size_t expr_size)
+{
+    fppoly_t* res = (fppoly_t*) malloc(sizeof(fppoly_t));
+    fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array);
 
-  size_t num_pixels = intdim + realdim;
+    size_t num_pixels = intdim + realdim;
 
-  res->input_lexpr = (expr_t **)malloc(num_pixels * sizeof(expr_t *));
-  res->input_uexpr = (expr_t **)malloc(num_pixels * sizeof(expr_t *));
+    res->input_lexpr = (expr_t**) malloc(num_pixels*sizeof(expr_t*));
+    res->input_uexpr = (expr_t**) malloc(num_pixels*sizeof(expr_t*));
 
-  double *tmp_weights = (double *)malloc(expr_size * sizeof(double));
-  size_t *tmp_dim = (size_t *)malloc(expr_size * sizeof(size_t));
+    double* tmp_weights = (double*) malloc(expr_size*sizeof(double));
+    size_t* tmp_dim = (size_t*) malloc(expr_size*sizeof(size_t));
 
-  for (size_t i = 0; i < num_pixels; i++) {
-    for (size_t j = 0; j < expr_size; j++) {
-      tmp_weights[j] = lexpr_weights[i * expr_size + j];
-      tmp_dim[j] = lexpr_dim[i * expr_size + j];
+    for(size_t i = 0; i < num_pixels; i++)
+    {
+        for(size_t j = 0; j < expr_size; j++)
+        {
+            tmp_weights[j] = lexpr_weights[i*expr_size + j];
+            tmp_dim[j] = lexpr_dim[i*expr_size + j];
+        }
+
+        res->input_lexpr[i] = create_sparse_expr(tmp_weights, lexpr_cst[i],
+tmp_dim, expr_size); sort_sparse_expr(res->input_lexpr[i]);
+
+        for(size_t j = 0; j < expr_size; j++)
+        {
+            tmp_weights[j] = uexpr_weights[i*expr_size + j];
+            tmp_dim[j] = uexpr_dim[i*expr_size + j];
+        }
+
+        res->input_uexpr[i] = create_sparse_expr(tmp_weights, uexpr_cst[i],
+tmp_dim, expr_size); sort_sparse_expr(res->input_uexpr[i]);
     }
 
-    res->input_lexpr[i] =
-        create_sparse_expr(tmp_weights, lexpr_cst[i], tmp_dim, expr_size);
-    sort_sparse_expr(res->input_lexpr[i]);
+    free(tmp_weights);
+    free(tmp_dim);
 
-    for (size_t j = 0; j < expr_size; j++) {
-      tmp_weights[j] = uexpr_weights[i * expr_size + j];
-      tmp_dim[j] = uexpr_dim[i * expr_size + j];
-    }
-
-    res->input_uexpr[i] =
-        create_sparse_expr(tmp_weights, uexpr_cst[i], tmp_dim, expr_size);
-    sort_sparse_expr(res->input_uexpr[i]);
-  }
-
-  free(tmp_weights);
-  free(tmp_dim);
-
-  return abstract0_of_fppoly(man, res);
+    return abstract0_of_fppoly(man, res);
 }
+*/
 
 void fppoly_add_new_layer(fppoly_t *const fp, const size_t size,
                           const layertype_t type,
@@ -1258,14 +1275,61 @@ compute_ub_from_expr(double *ub_array, expr_t **expr_array, double *input_inf,
   }
 }
 
+void device_layer_create_dense_expr(neuron_t **neurons, const double *weights,
+                                    const double *bias,
+                                    const size_t num_out_neurons,
+                                    const size_t num_in_neurons) {
+  for (size_t i = 0; i < num_out_neurons; i++) {
+    neuron_t *neuron = neurons[i];
+    const double *weight_i = weights + i * num_in_neurons;
+    const double bias_i = bias[i];
+    neuron->expr = create_dense_expr(weight_i, bias_i, num_in_neurons);
+  }
+}
+
 void layer_create_dense_exprs(neuron_t **neurons, const double **weights,
                               const double *bias, const size_t num_out_neurons,
                               const size_t num_in_neurons) {
+  double *tmp_weights =
+      (double *)malloc(num_out_neurons * num_in_neurons * sizeof(double));
+  double *tmp_bias = (double *)malloc(num_out_neurons * sizeof(double));
+
   for (size_t i = 0; i < num_out_neurons; i++) {
-    neuron_t *neuron = neurons[i];
-    const double *weight_i = weights[i];
-    const double bias_i = bias[i];
-    neuron->expr = create_dense_expr(weight_i, bias_i, num_in_neurons);
+    cudaMemcpy(tmp_weights + i * num_in_neurons, weights[i],
+               num_in_neurons * sizeof(double), cudaMemcpyHostToHost);
+  }
+
+  cudaMemcpy(tmp_bias, bias, num_out_neurons * sizeof(double),
+             cudaMemcpyHostToHost);
+
+  device_layer_create_dense_expr(neurons, tmp_weights, tmp_bias,
+                                 num_out_neurons, num_in_neurons);
+
+  free(tmp_weights);
+  free(tmp_bias);
+}
+
+void layer_copy_exprs(neuron_t **neurons, expr_t **lexpr_array,
+                      expr_t **uexpr_array, const size_t size) {
+  for (size_t i = 0; i < size; i++) {
+    lexpr_array[i] = copy_expr(neurons[i]->expr);
+    uexpr_array[i] = copy_expr(neurons[i]->expr);
+  }
+}
+
+void layer_assign_bounds(neuron_t **neurons, double *lb_array, double *ub_array,
+                         const size_t size) {
+  for (size_t i = 0; i < size; i++) {
+    neurons[i]->lb = lb_array[i];
+    neurons[i]->ub = ub_array[i];
+  }
+}
+
+void free_expr_arrays(expr_t **lexpr_array, expr_t **uexpr_array,
+                      const size_t size) {
+  for (size_t i = 0; i < size; i++) {
+    free_expr(lexpr_array[i]);
+    free_expr(uexpr_array[i]);
   }
 }
 
@@ -1276,10 +1340,7 @@ void layer_compute_bounds_from_exprs(neuron_t **neurons, double *input_inf,
   expr_t **lexpr_array = (expr_t **)malloc(size * sizeof(expr_t *));
   expr_t **uexpr_array = (expr_t **)malloc(size * sizeof(expr_t *));
 
-  for (size_t i = 0; i < size; i++) {
-    lexpr_array[i] = copy_expr(neurons[i]->expr);
-    uexpr_array[i] = copy_expr(neurons[i]->expr);
-  }
+  layer_copy_exprs(neurons, lexpr_array, uexpr_array, size);
 
   double *lb_array = (double *)malloc(size * sizeof(double));
   double *ub_array = (double *)malloc(size * sizeof(double));
@@ -1297,16 +1358,10 @@ void layer_compute_bounds_from_exprs(neuron_t **neurons, double *input_inf,
   compute_ub_from_expr(ub_array, uexpr_array, input_inf, input_sup, input_lexpr,
                        input_uexpr, size);
 
-  for (size_t i = 0; i < size; i++) {
-    neurons[i]->lb = lb_array[i];
-    neurons[i]->ub = ub_array[i];
-  }
+  layer_assign_bounds(neurons, lb_array, ub_array, size);
 
   // free
-  for (size_t i = 0; i < size; i++) {
-    free_expr(lexpr_array[i]);
-    free_expr(uexpr_array[i]);
-  }
+  free_expr_arrays(lexpr_array, uexpr_array, size);
 
   free(lexpr_array);
   free(uexpr_array);
@@ -1324,7 +1379,6 @@ void ffn_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
   res->layers = (layer_t **)malloc(20 * sizeof(layer_t *));
-  res->numlayers = 0;
   fppoly_add_new_layer(res, size, FFN, activation);
 
   neuron_t **neurons = res->layers[0]->neurons;
@@ -2537,10 +2591,7 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   expr_t **lexpr_array = (expr_t **)malloc(num_out_neurons * sizeof(expr_t *));
   expr_t **uexpr_array = (expr_t **)malloc(num_out_neurons * sizeof(expr_t *));
 
-  for (size_t i = 0; i < num_out_neurons; i++) {
-    lexpr_array[i] = copy_expr(out_neurons[i]->expr);
-    uexpr_array[i] = copy_expr(out_neurons[i]->expr);
-  }
+  layer_copy_exprs(out_neurons, lexpr_array, uexpr_array, num_out_neurons);
 
   for (int k = layerno - 1; k >= 0; k--) {
     neuron_t **aux_neurons = fp->layers[k]->neurons;
@@ -2575,10 +2626,7 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   compute_ub_from_expr(ub_array, uexpr_array, fp->input_inf, fp->input_sup,
                        fp->input_lexpr, fp->input_uexpr, num_out_neurons);
 
-  for (size_t i = 0; i < num_out_neurons; i++) {
-    out_neurons[i]->lb = lb_array[i];
-    out_neurons[i]->ub = ub_array[i];
-  }
+  layer_assign_bounds(out_neurons, lb_array, ub_array, num_out_neurons);
 
   free(lb_array);
   free(ub_array);
@@ -2593,10 +2641,7 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
     fp->out->lexpr = lexpr_array;
     fp->out->uexpr = uexpr_array;
   } else {
-    for (size_t i = 0; i < num_out_neurons; i++) {
-      free_expr(lexpr_array[i]);
-      free_expr(uexpr_array[i]);
-    }
+    free_expr_arrays(lexpr_array, uexpr_array, num_out_neurons);
 
     free(lexpr_array);
     free(uexpr_array);
@@ -2609,8 +2654,6 @@ void ffn_handle_intermediate_layer(elina_manager_t *man,
                                    const size_t num_out_neurons,
                                    const size_t num_in_neurons,
                                    const activation_type_t activation) {
-  // printf("ReLU start here %zu %zu\n",num_in_neurons,num_out_neurons);
-  // fflush(stdout);
   fppoly_t *fp = fppoly_of_abstract0(element);
   const size_t numlayers = fp->numlayers;
   fppoly_add_new_layer(fp, num_out_neurons, FFN, activation);
@@ -2620,10 +2663,6 @@ void ffn_handle_intermediate_layer(elina_manager_t *man,
                            num_in_neurons);
 
   update_state_using_previous_layers(man, fp, numlayers);
-
-  // printf("return here2\n");
-  // fppoly_fprint(stdout,man,fp,nullptr);
-  // fflush(stdout);
 }
 
 void ffn_handle_intermediate_relu_layer(elina_manager_t *man,
@@ -2656,119 +2695,137 @@ void ffn_handle_intermediate_tanh_layer(elina_manager_t *man,
   // num_in_neurons, TANH);
 }
 
-__device__ __host__ double apply_relu_lexpr(expr_t **lexpr_p,
-                                            const neuron_t *const neuron) {
-  expr_t *lexpr = *lexpr_p;
-  const size_t size = lexpr->size;
-  const double lb = neuron->lb;
-  const double ub = neuron->ub;
-  const double width = lb + ub;
+__device__ __host__ void apply_relu_lexpr(double *lb_array,
+                                          expr_t **lexpr_array,
+                                          neuron_t **neurons,
+                                          const size_t num_out_neurons) {
+  for (size_t n = 0; n < num_out_neurons; n++) {
+    expr_t *lexpr = lexpr_array[n];
 
-  if (ub < 0) {
-    free_expr(*lexpr_p);
-    *lexpr_p = nullptr;
+    const size_t size = lexpr->size;
+    const double lb = neurons[n]->lb;
+    const double ub = neurons[n]->ub;
+    const double width = lb + ub;
 
-    return 0;
+    if (ub < 0) {
+      free_expr(lexpr_array[n]);
+      lexpr_array[n] = nullptr;
+
+      lb_array[n] = 0;
+
+      continue;
+    }
+
+    if (lb < 0) {
+      lb_array[n] = lb;
+
+      continue;
+    }
+
+    const double area1 = lb * ub;
+    const double area2 = 0.5 * ub * width;
+
+    if (area1 < area2) {
+      const double lambda_inf = -ub / width;
+      const double lambda_sup = ub / width;
+
+      for (size_t i = 0; i < size; i++) {
+        // lexpr->coeff[i] = lexpr->coeff[i]*lambda;
+        elina_double_interval_mul_expr_coeff(
+            &lexpr->inf_coeff[i], &lexpr->sup_coeff[i], lambda_inf, lambda_sup,
+            lexpr->inf_coeff[i], lexpr->sup_coeff[i]);
+      }
+      // lexpr->cst = lexpr->cst*lambda;
+      elina_double_interval_mul_cst_coeff(&lexpr->inf_cst, &lexpr->sup_cst,
+                                          lambda_inf, lambda_sup,
+                                          lexpr->inf_cst, lexpr->sup_cst);
+      // double res, res1;
+
+      lb_array[n] = -(lambda_inf * lb);
+    } else {
+      free_expr(lexpr_array[n]);
+      lexpr_array[n] = nullptr;
+
+      lb_array[n] = 0;
+    }
   }
+}
 
-  if (lb < 0) {
-    return lb;
-  }
+__device__ __host__ void apply_relu_uexpr(double *ub_array,
+                                          expr_t **uexpr_array,
+                                          neuron_t **neurons,
+                                          const size_t num_out_neurons) {
+  for (size_t n = 0; n < num_out_neurons; n++) {
+    expr_t *uexpr = uexpr_array[n];
 
-  const double area1 = lb * ub;
-  const double area2 = 0.5 * ub * width;
+    const size_t size = uexpr->size;
+    const double lb = neurons[n]->lb;
+    const double ub = neurons[n]->ub;
+    const double width = lb + ub;
 
-  if (area1 < area2) {
+    if (ub < 0) {
+      free_expr(uexpr_array[n]);
+      uexpr_array[n] = nullptr;
+
+      ub_array[n] = 0;
+
+      continue;
+    }
+
+    if (lb < 0) {
+      ub_array[n] = ub;
+
+      continue;
+    }
+
     const double lambda_inf = -ub / width;
     const double lambda_sup = ub / width;
 
     for (size_t i = 0; i < size; i++) {
-      // lexpr->coeff[i] = lexpr->coeff[i]*lambda;
+      // uexpr->coeff[i] = uexpr->coeff[i]*lambda;
       elina_double_interval_mul_expr_coeff(
-          &lexpr->inf_coeff[i], &lexpr->sup_coeff[i], lambda_inf, lambda_sup,
-          lexpr->inf_coeff[i], lexpr->sup_coeff[i]);
+          &uexpr->inf_coeff[i], &uexpr->sup_coeff[i], lambda_inf, lambda_sup,
+          uexpr->inf_coeff[i], uexpr->sup_coeff[i]);
     }
-    // lexpr->cst = lexpr->cst*lambda;
-    elina_double_interval_mul_cst_coeff(&lexpr->inf_cst, &lexpr->sup_cst,
-                                        lambda_inf, lambda_sup, lexpr->inf_cst,
-                                        lexpr->sup_cst);
-    // double res, res1;
 
-    return -(lambda_inf * lb);
-  } else {
-    free_expr(*lexpr_p);
-    *lexpr_p = nullptr;
+    elina_double_interval_mul_cst_coeff(&uexpr->inf_cst, &uexpr->sup_cst,
+                                        lambda_inf, lambda_sup, uexpr->inf_cst,
+                                        uexpr->sup_cst);
+    const double mu_inf = lambda_inf * lb;
+    const double mu_sup = lambda_sup * lb;
+    // uexpr->cst = uexpr->cst*lambda;
+    // uexpr->cst = uexpr->cst + lambda*lb;
+    uexpr->inf_cst += mu_inf;
+    uexpr->sup_cst += mu_sup;
 
-    return 0;
+    ub_array[n] = ub;
   }
 }
 
-__device__ __host__ double apply_relu_uexpr(expr_t **uexpr_p,
-                                            neuron_t *neuron) {
-  expr_t *uexpr = *uexpr_p;
-  const size_t size = uexpr->size;
-  const double lb = neuron->lb;
-  const double ub = neuron->ub;
-  const double width = lb + ub;
-
-  if (ub < 0) {
-    free_expr(*uexpr_p);
-    *uexpr_p = nullptr;
-
-    return 0;
+void assign_output_inf_sup(double *lb_array, double *ub_array,
+                           neuron_t **neurons, const size_t num_out_neurons) {
+  for (size_t i = 0; i < num_out_neurons; i++) {
+    lb_array[i] = neurons[i]->lb;
+    ub_array[i] = neurons[i]->ub;
+    printf("out inf numer %i is: %f\n", i, lb_array[i]);
+    printf("out sup numer %i is: %f\n", i, ub_array[i]);
   }
-
-  if (lb < 0) {
-    return ub;
-  }
-
-  const double lambda_inf = -ub / width;
-  const double lambda_sup = ub / width;
-
-  for (size_t i = 0; i < size; i++) {
-    // uexpr->coeff[i] = uexpr->coeff[i]*lambda;
-    elina_double_interval_mul_expr_coeff(
-        &uexpr->inf_coeff[i], &uexpr->sup_coeff[i], lambda_inf, lambda_sup,
-        uexpr->inf_coeff[i], uexpr->sup_coeff[i]);
-  }
-
-  elina_double_interval_mul_cst_coeff(&uexpr->inf_cst, &uexpr->sup_cst,
-                                      lambda_inf, lambda_sup, uexpr->inf_cst,
-                                      uexpr->sup_cst);
-  const double mu_inf = lambda_inf * lb;
-  const double mu_sup = lambda_sup * lb;
-  // uexpr->cst = uexpr->cst*lambda;
-  // uexpr->cst = uexpr->cst + lambda*lb;
-  uexpr->inf_cst += mu_inf;
-  uexpr->sup_cst += mu_sup;
-
-  return ub;
 }
 
 void handle_final_relu_layer(fppoly_internal_t *pr, output_abstract_t *out,
                              neuron_t **neurons, const size_t size,
                              const bool has_relu) {
   if (has_relu) {
-    for (size_t i = 0; i < size; i++) {
-      out->output_inf[i] = apply_relu_lexpr(&out->lexpr[i], neurons[i]);
-      out->output_sup[i] = apply_relu_uexpr(&out->uexpr[i], neurons[i]);
-    }
+    apply_relu_lexpr(out->output_inf, out->lexpr, neurons, size);
+    apply_relu_uexpr(out->output_sup, out->uexpr, neurons, size);
   } else {
-    for (size_t i = 0; i < size; i++) {
-      out->output_inf[i] = neurons[i]->lb;
-      out->output_sup[i] = neurons[i]->ub;
-      printf("out inf numer %i is: %f\n", i, out->output_inf[i]);
-      printf("out sup numer %i is: %f\n", i, out->output_sup[i]);
-    }
+    assign_output_inf_sup(out->output_inf, out->output_sup, neurons, size);
   }
 }
 
 void handle_final_non_relu_layer(fppoly_internal_t *pr, output_abstract_t *out,
                                  neuron_t **neurons, const size_t size) {
-  for (size_t i = 0; i < size; i++) {
-    out->output_inf[i] = neurons[i]->lb;
-    out->output_sup[i] = neurons[i]->ub;
-  }
+  assign_output_inf_sup(out->output_inf, out->output_sup, neurons, size);
 }
 
 output_abstract_t *allocate_output_abstract(const size_t num_out_neurons) {
@@ -2815,7 +2872,6 @@ void ffn_handle_last_layer(elina_manager_t *man, elina_abstract0_t *element,
   } else {
     handle_final_non_relu_layer(pr, fp->out, out_neurons, num_out_neurons);
   }
-  // fppoly_fprint(stdout, man, fp, nullptr);
 }
 
 void ffn_handle_last_relu_layer(elina_manager_t *man,
@@ -2848,8 +2904,8 @@ void ffn_handle_last_tanh_layer(elina_manager_t *man,
   // num_in_neurons, has_tanh, TANH);
 }
 
-double get_lb_using_previous_layers(elina_manager_t *man,
-                                    const fppoly_t *const fp, expr_t *expr) {
+void get_lb_using_previous_layers(double *lb, elina_manager_t *man,
+                                  const fppoly_t *const fp, expr_t *expr) {
   const size_t numlayers = fp->numlayers;
   expr_t *lexpr = expr;
   expr_t **lexpr_ptr = &lexpr;
@@ -2870,17 +2926,29 @@ double get_lb_using_previous_layers(elina_manager_t *man,
     }
   }
 
-  double lb;
-
   if ((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr)) {
     replace_input_poly_cons_in_lexpr(lexpr_ptr, fp->input_inf, fp->input_sup,
                                      fp->input_lexpr, fp->input_uexpr, 1);
   }
 
-  compute_lb_from_expr(&lb, lexpr_ptr, fp->input_inf, fp->input_sup,
+  compute_lb_from_expr(lb, lexpr_ptr, fp->input_inf, fp->input_sup,
                        fp->input_lexpr, fp->input_uexpr, 1);
+}
 
-  return lb;
+void create_sub_expr(expr_t *sub, const elina_dim_t y, const elina_dim_t x) {
+  sub->inf_cst = 0;
+  sub->sup_cst = 0;
+  sub->inf_coeff = (double *)malloc(2 * sizeof(double));
+  sub->sup_coeff = (double *)malloc(2 * sizeof(double));
+  sub->dim = (size_t *)malloc(2 * sizeof(size_t));
+  sub->size = 2;
+  sub->type = SPARSE;
+  sub->inf_coeff[0] = -1;
+  sub->sup_coeff[0] = 1;
+  sub->dim[0] = y;
+  sub->inf_coeff[1] = 1;
+  sub->sup_coeff[1] = -1;
+  sub->dim[1] = x;
 }
 
 bool is_greater(elina_manager_t *man, elina_abstract0_t *element,
@@ -2889,33 +2957,28 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element,
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
-  if (1) {
-    expr_t *sub = (expr_t *)malloc(sizeof(expr_t));
-    // sub->size = size;
-    sub->inf_cst = 0;
-    sub->sup_cst = 0;
-    sub->inf_coeff = (double *)malloc(2 * sizeof(double));
-    sub->sup_coeff = (double *)malloc(2 * sizeof(double));
-    sub->dim = (size_t *)malloc(2 * sizeof(size_t));
-    sub->size = 2;
-    sub->type = SPARSE;
-    sub->inf_coeff[0] = -1;
-    sub->sup_coeff[0] = 1;
-    sub->dim[0] = y;
-    sub->inf_coeff[1] = 1;
-    sub->sup_coeff[1] = -1;
-    sub->dim[1] = x;
+  expr_t *sub = (expr_t *)malloc(sizeof(expr_t));
 
-    const double lb = get_lb_using_previous_layers(man, fp, sub);
+  create_sub_expr(sub, y, x);
 
-    // free_expr(sub);
+  double lb;
 
-    if (lb < 0) {
-      return true;
-    } else {
-      return false;
-    }
+  double *lb_dev = (double *)malloc(sizeof(double));
+
+  get_lb_using_previous_layers(lb_dev, man, fp, sub);
+
+  cudaMemcpy(&lb, lb_dev, sizeof(double), cudaMemcpyHostToHost);
+
+  // free_expr(sub);
+
+  if (lb < 0) {
+    return true;
+  } else {
+    return false;
   }
+
+  free(lb_dev);
+
   /*
   output_abstract_t * out = fp->out;
   expr_t * exprA = out->lexpr[y];
@@ -3070,323 +3133,352 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element,
 */
 }
 
-void layer_create_sparse_exprs(fppoly_t *const fp, const double *filter_weights,
-                               const double *filter_bias,
-                               const size_t *input_size,
-                               const size_t *filter_size,
-                               const size_t num_filters, const size_t *strides,
-                               const bool is_valid_padding,
-                               const bool has_bias) {
-  const size_t num_pixels = input_size[0] * input_size[1] * input_size[2];
+/*
+void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights,
+const double* filter_bias, const size_t* input_size, const size_t* filter_size,
+const size_t num_filters, const size_t* strides, const bool is_valid_padding,
+const bool has_bias)
+{
+    const size_t num_pixels = input_size[0]*input_size[1]*input_size[2];
 
-  size_t output_size[3];
+    size_t output_size[3];
 
-  if (is_valid_padding) {
-    output_size[0] =
-        ceil((double)(input_size[0] - filter_size[0] + 1) / (double)strides[0]);
-    output_size[1] =
-        ceil((double)(input_size[1] - filter_size[1] + 1) / (double)strides[1]);
-  } else {
-    output_size[0] = ceil((double)input_size[0] / (double)strides[0]);
-    output_size[1] = ceil((double)input_size[1] / (double)strides[1]);
-  }
-
-  output_size[2] = num_filters;
-
-  const size_t num_out_neurons =
-      output_size[0] * output_size[1] * output_size[2];
-  fppoly_add_new_layer(fp, num_out_neurons, CONV, RELU);
-  neuron_t **out_neurons = fp->layers[fp->numlayers - 1]->neurons;
-
-  size_t out_x, out_y, out_z;
-  // size_t inp_x, inp_y;
-  size_t inp_z;
-  size_t x_shift, y_shift;
-
-  long int pad_along_height = 0;
-  long int pad_along_width = 0;
-  long int pad_top = 0;
-  long int pad_left = 0;
-
-  if (!is_valid_padding) {
-    if (input_size[0] % strides[0] == 0) {
-      const long int tmp = filter_size[0] - strides[0];
-      pad_along_height = max(tmp, long(0));
-    } else {
-      const long int tmp = filter_size[0] - (input_size[0] % strides[0]);
-      pad_along_height = max(tmp, long(0));
+    if(is_valid_padding)
+    {
+        output_size[0] = ceil((double)(input_size[0] - filter_size[0] +
+1)/(double)strides[0]); output_size[1] = ceil((double)(input_size[1] -
+filter_size[1] + 1)/(double)strides[1]);
+    }
+    else
+    {
+        output_size[0] = ceil((double)input_size[0]/(double)strides[0]);
+        output_size[1] = ceil((double)input_size[1]/(double)strides[1]);
     }
 
-    if (input_size[1] % strides[1] == 0) {
-      const long int tmp = filter_size[1] - strides[1];
-      pad_along_width = max(tmp, long(0));
-    } else {
-      const long int tmp = filter_size[1] - (input_size[1] % strides[1]);
-      pad_along_width = max(tmp, long(0));
+    output_size[2] = num_filters;
+
+    const size_t num_out_neurons = output_size[0]*output_size[1]*output_size[2];
+    fppoly_add_new_layer(fp, num_out_neurons, CONV, RELU);
+    neuron_t** out_neurons = fp->layers[fp->numlayers - 1]->neurons;
+
+    size_t out_x, out_y, out_z;
+    //size_t inp_x, inp_y;
+    size_t inp_z;
+    size_t x_shift, y_shift;
+
+    long int pad_along_height = 0;
+    long int pad_along_width = 0;
+    long int pad_top = 0;
+    long int pad_left = 0;
+
+    if(!is_valid_padding)
+    {
+        if(input_size[0]%strides[0] == 0)
+        {
+            const long int tmp = filter_size[0] - strides[0];
+            pad_along_height = max(tmp, long(0));
+        }
+        else
+        {
+            const long int tmp = filter_size[0] - (input_size[0]%strides[0]);
+            pad_along_height = max(tmp, long(0));
+        }
+
+        if(input_size[1]%strides[1] == 0)
+        {
+            const long int tmp = filter_size[1] - strides[1];
+            pad_along_width = max(tmp, long(0));
+        }
+        else
+        {
+            const long int tmp = filter_size[1] - (input_size[1]%strides[1]);
+            pad_along_width = max(tmp, long(0));
+        }
+
+        pad_top = pad_along_height/2;
+        pad_left = pad_along_width/2;
     }
 
-    pad_top = pad_along_height / 2;
-    pad_left = pad_along_width / 2;
-  }
+    for(out_x = 0; out_x < output_size[0]; out_x++)
+    {
+        for(out_y = 0; out_y < output_size[1]; out_y++)
+        {
+            for(out_z = 0; out_z < output_size[2]; out_z++)
+            {
+                const size_t mat_x = out_x*output_size[1]*output_size[2] +
+out_y*output_size[2] + out_z; const size_t num_coeff =
+input_size[2]*filter_size[0]*filter_size[1]; size_t actual_coeff = 0; double*
+coeff = (double*) malloc(num_coeff*sizeof(double)); size_t* dim = (size_t*)
+malloc(num_coeff*sizeof(size_t)); size_t i = 0;
 
-  for (out_x = 0; out_x < output_size[0]; out_x++) {
-    for (out_y = 0; out_y < output_size[1]; out_y++) {
-      for (out_z = 0; out_z < output_size[2]; out_z++) {
-        const size_t mat_x = out_x * output_size[1] * output_size[2] +
-                             out_y * output_size[2] + out_z;
-        const size_t num_coeff =
-            input_size[2] * filter_size[0] * filter_size[1];
-        size_t actual_coeff = 0;
-        double *coeff = (double *)malloc(num_coeff * sizeof(double));
-        size_t *dim = (size_t *)malloc(num_coeff * sizeof(size_t));
-        size_t i = 0;
+                for(inp_z = 0; inp_z < input_size[2]; inp_z++)
+                {
+                    for(x_shift = 0; x_shift < filter_size[0]; x_shift++)
+                    {
+                        for(y_shift = 0; y_shift < filter_size[1]; y_shift++)
+                        {
+                            const long int x_val = out_x*strides[0] + x_shift -
+pad_top; const long int y_val = out_y*strides[1] + y_shift - pad_left;
 
-        for (inp_z = 0; inp_z < input_size[2]; inp_z++) {
-          for (x_shift = 0; x_shift < filter_size[0]; x_shift++) {
-            for (y_shift = 0; y_shift < filter_size[1]; y_shift++) {
-              const long int x_val = out_x * strides[0] + x_shift - pad_top;
-              const long int y_val = out_y * strides[1] + y_shift - pad_left;
+                            if((y_val < 0) || (y_val >= (long
+int)input_size[1]))
+                            {
+                                continue;
+                            }
 
-              if ((y_val < 0) || (y_val >= (long int)input_size[1])) {
-                continue;
-              }
+                            if((x_val < 0) || (x_val >= (long
+int)input_size[0]))
+                            {
+                                continue;
+                            }
 
-              if ((x_val < 0) || (x_val >= (long int)input_size[0])) {
-                continue;
-              }
+                            const size_t mat_y =
+x_val*input_size[1]*input_size[2] + y_val*input_size[2] + inp_z;
 
-              const size_t mat_y = x_val * input_size[1] * input_size[2] +
-                                   y_val * input_size[2] + inp_z;
+                            if(mat_y >= num_pixels)
+                            {
+                                continue;
+                            }
 
-              if (mat_y >= num_pixels) {
-                continue;
-              }
+                            const size_t filter_index =
+x_shift*filter_size[1]*input_size[2]*output_size[2] +
+y_shift*input_size[2]*output_size[2] + inp_z*output_size[2] + out_z; coeff[i] =
+filter_weights[filter_index]; dim[i] = mat_y; actual_coeff++; i++;
+                        }
+                    }
+                }
 
-              const size_t filter_index =
-                  x_shift * filter_size[1] * input_size[2] * output_size[2] +
-                  y_shift * input_size[2] * output_size[2] +
-                  inp_z * output_size[2] + out_z;
-              coeff[i] = filter_weights[filter_index];
-              dim[i] = mat_y;
-              actual_coeff++;
-              i++;
+                const double cst = has_bias ? filter_bias[out_z] : 0;
+                out_neurons[mat_x]->expr = create_sparse_expr(coeff, cst, dim,
+actual_coeff); sort_sparse_expr(out_neurons[mat_x]->expr);
+
+                free(coeff);
+                free(dim);
             }
-          }
         }
-
-        const double cst = has_bias ? filter_bias[out_z] : 0;
-        out_neurons[mat_x]->expr =
-            create_sparse_expr(coeff, cst, dim, actual_coeff);
-        sort_sparse_expr(out_neurons[mat_x]->expr);
-
-        free(coeff);
-        free(dim);
-      }
     }
-  }
 }
 
-void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
-                             const double *filter_weights,
-                             const double *filter_bias,
-                             const size_t *input_size,
-                             const size_t *filter_size,
-                             const size_t num_filters, const size_t *strides,
-                             const bool is_valid_padding, const bool has_bias) {
-  fppoly_t *const fp = fppoly_of_abstract0(element);
-  fp->layers = (layer_t **)malloc(20 * sizeof(layer_t *));
-  fp->numlayers = 0;
 
-  layer_create_sparse_exprs(fp, filter_weights, filter_bias, input_size,
-                            filter_size, num_filters, strides, is_valid_padding,
-                            has_bias);
+void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element,
+const double* filter_weights, const double* filter_bias, const size_t*
+input_size, const size_t* filter_size, const size_t num_filters, const size_t*
+strides, const bool is_valid_padding, const bool has_bias)
+{
+    fppoly_t* const fp = fppoly_of_abstract0(element);
+    fp->layers = (layer_t**) malloc(20*sizeof(layer_t*));
 
-  const size_t num_out_neurons = fp->layers[fp->numlayers - 1]->dims;
-  neuron_t **out_neurons = fp->layers[fp->numlayers - 1]->neurons;
+    layer_create_sparse_exprs(fp, filter_weights, filter_bias, input_size,
+filter_size, num_filters, strides, is_valid_padding, has_bias);
 
-  layer_compute_bounds_from_exprs(out_neurons, fp->input_inf, fp->input_sup,
-                                  fp->input_lexpr, fp->input_uexpr,
-                                  num_out_neurons);
+    const size_t num_out_neurons = fp->layers[fp->numlayers - 1]->dims;
+    neuron_t** out_neurons = fp->layers[fp->numlayers - 1]->neurons;
+
+    layer_compute_bounds_from_exprs(out_neurons, fp->input_inf, fp->input_sup,
+fp->input_lexpr, fp->input_uexpr, num_out_neurons);
 }
 
-void conv_handle_intermediate_relu_layer(
-    elina_manager_t *man, elina_abstract0_t *element,
-    const double *filter_weights, const double *filter_bias,
-    const size_t *input_size, const size_t *filter_size,
-    const size_t num_filters, const size_t *strides,
-    const bool is_valid_padding, const bool has_bias) {
-  fppoly_t *const fp = fppoly_of_abstract0(element);
 
-  layer_create_sparse_exprs(fp, filter_weights, filter_bias, input_size,
-                            filter_size, num_filters, strides, is_valid_padding,
-                            has_bias);
+void conv_handle_intermediate_relu_layer(elina_manager_t* man,
+elina_abstract0_t* element, const double* filter_weights, const double*
+filter_bias, const size_t* input_size, const size_t* filter_size, const size_t
+num_filters, const size_t* strides, const bool is_valid_padding, const bool
+has_bias)
+{
+    fppoly_t* const fp = fppoly_of_abstract0(element);
 
-  update_state_using_previous_layers(man, fp, fp->numlayers - 1);
+    layer_create_sparse_exprs(fp, filter_weights, filter_bias, input_size,
+filter_size, num_filters, strides, is_valid_padding, has_bias);
+
+    update_state_using_previous_layers(man, fp, fp->numlayers - 1);
 }
 
-size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *element,
-                            const size_t *pool_size, const size_t *input_size) {
-  assert(pool_size[0] == 2 && pool_size[1] == 2 && pool_size[2] == 1);
 
-  size_t *output_size = (size_t *)malloc(3 * sizeof(size_t));
+size_t handle_maxpool_layer(elina_manager_t* man, elina_abstract0_t* element,
+const size_t* pool_size, const size_t* input_size)
+{
+    assert(pool_size[0] == 2 && pool_size[1] == 2 && pool_size[2] == 1);
 
-  for (size_t i = 0; i < 3; i++) {
-    output_size[i] = input_size[i] / pool_size[i];
-  }
+    size_t* output_size = (size_t*) malloc(3*sizeof(size_t));
 
-  // size_t num_input_neurons = input_size[0]*input_size[1]*input_size[2];
-  const size_t num_out_neurons =
-      output_size[0] * output_size[1] * output_size[2];
-
-  const size_t o12 = output_size[1] * output_size[2];
-  const size_t i12 = input_size[1] * input_size[2];
-  const size_t p01 = pool_size[0] * pool_size[1];
-
-  fppoly_t *const fp = fppoly_of_abstract0(element);
-  fppoly_add_new_layer(fp, num_out_neurons, MAXPOOL, NONE);
-
-  size_t out_pos;
-  double *inf = (double *)calloc(p01, sizeof(double));
-  double *sup = (double *)calloc(p01, sizeof(double));
-  size_t *pool_map = (size_t *)calloc(p01, sizeof(size_t));
-  neuron_t **out_neurons = fp->layers[fp->numlayers - 1]->neurons;
-
-  for (out_pos = 0; out_pos < num_out_neurons; out_pos++) {
-    const size_t out_x = out_pos / o12;
-    const size_t out_y = (out_pos - out_x * o12) / output_size[2];
-    const size_t out_z = out_pos - out_x * o12 - out_y * output_size[2];
-
-    const size_t inp_x = out_x * pool_size[0];
-    const size_t inp_y = out_y * pool_size[1];
-    const size_t inp_z = out_z;
-
-    const size_t inp_pos = inp_x * i12 + inp_y * input_size[2] + inp_z;
-
-    size_t x_shift, y_shift, l = 0;
-
-    double sum_u = 0.0;
-    double sum_l = 0.0;
-    double max_u = -INFINITY;
-    double max_l = -INFINITY;
-
-    size_t max_l_var = 0;
-    size_t max_u_var = 0;
-    size_t min_width_var = 0;
-    double min_width = INFINITY;
-
-    for (x_shift = 0; x_shift < pool_size[0]; x_shift++) {
-      for (y_shift = 0; y_shift < pool_size[1]; y_shift++) {
-        const size_t pool_cur_dim =
-            inp_pos + x_shift * i12 + y_shift * input_size[2];
-        pool_map[l] = pool_cur_dim;
-        // use the ReLU bounds from the previous layer
-        const double lb =
-            -fp->layers[fp->numlayers - 2]->neurons[pool_cur_dim]->lb;
-        const double ub =
-            fp->layers[fp->numlayers - 2]->neurons[pool_cur_dim]->ub;
-
-        if (ub <= 0) {
-          inf[l] = 0.0;
-          sup[l] = 0.0;
-        } else if (lb > 0) {
-          inf[l] = lb;
-          sup[l] = ub;
-        } else {
-          inf[l] = 0;
-          sup[l] = ub;
-        }
-
-        sum_u = sum_u + sup[l];
-        sum_l = sum_l + inf[l];
-
-        if (sup[l] > max_u) {
-          max_u = sup[l];
-          max_u_var = pool_map[l];
-        }
-
-        if (inf[l] > max_l) {
-          max_l = inf[l];
-          max_l_var = pool_map[l];
-        }
-
-        if ((ub - lb) < min_width) {
-          min_width = ub - lb;
-          min_width_var = pool_map[l];
-        }
-
-        l++;
-      }
+    for(size_t i = 0; i < 3; i++)
+    {
+        output_size[i] = input_size[i]/pool_size[i];
     }
 
-    bool flag = false;
-    size_t var = 0;
+    //size_t num_input_neurons = input_size[0]*input_size[1]*input_size[2];
+    const size_t num_out_neurons = output_size[0]*output_size[1]*output_size[2];
 
-    for (size_t j = 0; j < p01; j++) {
-      bool is_greater = true;
+    const size_t o12 = output_size[1]*output_size[2];
+    const size_t i12 = input_size[1]*input_size[2];
+    const size_t p01 = pool_size[0]*pool_size[1];
 
-      for (size_t k = 0; k < p01; k++) {
-        if (k == j) {
-          continue;
+    fppoly_t* const fp = fppoly_of_abstract0(element);
+    fppoly_add_new_layer(fp, num_out_neurons, MAXPOOL, NONE);
+
+    size_t out_pos;
+    double* inf = (double*) calloc(p01, sizeof(double));
+    double* sup = (double*) calloc(p01, sizeof(double));
+    size_t* pool_map = (size_t*) calloc(p01, sizeof(size_t));
+    neuron_t** out_neurons = fp->layers[fp->numlayers - 1]->neurons;
+
+    for(out_pos = 0; out_pos < num_out_neurons; out_pos++)
+    {
+        const size_t out_x = out_pos/o12;
+        const size_t out_y = (out_pos - out_x*o12)/output_size[2];
+        const size_t out_z = out_pos - out_x*o12 - out_y*output_size[2];
+
+        const size_t inp_x = out_x*pool_size[0];
+        const size_t inp_y = out_y*pool_size[1];
+        const size_t inp_z = out_z;
+
+        const size_t inp_pos = inp_x*i12 + inp_y*input_size[2] + inp_z;
+
+        size_t x_shift, y_shift, l = 0;
+
+        double sum_u = 0.0;
+        double sum_l = 0.0;
+        double max_u = -INFINITY;
+        double max_l = -INFINITY;
+
+        size_t max_l_var = 0;
+        size_t max_u_var = 0;
+        size_t min_width_var = 0;
+        double min_width = INFINITY;
+
+        for(x_shift = 0; x_shift < pool_size[0]; x_shift++)
+        {
+            for(y_shift = 0; y_shift < pool_size[1]; y_shift++)
+            {
+                const size_t pool_cur_dim = inp_pos + x_shift*i12 +
+y_shift*input_size[2]; pool_map[l] = pool_cur_dim;
+                // use the ReLU bounds from the previous layer
+                const double lb = -fp->layers[fp->numlayers -
+2]->neurons[pool_cur_dim]->lb; const double ub = fp->layers[fp->numlayers -
+2]->neurons[pool_cur_dim]->ub;
+
+                if(ub <= 0)
+                {
+                    inf[l] = 0.0;
+                    sup[l] = 0.0;
+                }
+                else if(lb > 0)
+                {
+                    inf[l] = lb;
+                    sup[l] = ub;
+                }
+                else
+                {
+                    inf[l] = 0;
+                    sup[l] = ub;
+                }
+
+                sum_u = sum_u + sup[l];
+                sum_l = sum_l + inf[l];
+
+                if(sup[l] > max_u)
+                {
+                    max_u = sup[l];
+                    max_u_var = pool_map[l];
+                }
+
+                if(inf[l] > max_l)
+                {
+                    max_l = inf[l];
+                    max_l_var = pool_map[l];
+                }
+
+                if((ub-lb) < min_width)
+                {
+                    min_width = ub - lb;
+                    min_width_var = pool_map[l];
+                }
+
+                l++;
+            }
         }
 
-        if ((inf[k] == sup[k]) && (inf[j] >= sup[k])) {
-          continue;
-        } else if ((inf[j] == inf[k]) && (sup[j] == sup[k]) &&
-                   (inf[j] == sup[j])) {
-          continue;
-        } else if (inf[j] <= sup[k]) {
-          is_greater = false;
-          break;
+        bool flag = false;
+        size_t var = 0;
+
+        for(size_t j = 0; j < p01; j++)
+        {
+            bool is_greater = true;
+
+            for(size_t k = 0; k < p01; k++)
+            {
+                if(k == j)
+                {
+                    continue;
+                }
+
+                if((inf[k] == sup[k]) && (inf[j] >= sup[k]))
+                {
+                    continue;
+                }
+                else if((inf[j] == inf[k]) && (sup[j] == sup[k]) && (inf[j] ==
+sup[j]))
+                {
+                    continue;
+                }
+                else if(inf[j] <= sup[k])
+                {
+                    is_greater = false;
+                    break;
+                }
+            }
+
+            if(is_greater)
+            {
+                flag = true;
+                var = pool_map[j];
+                break;
+            }
         }
-      }
 
-      if (is_greater) {
-        flag = true;
-        var = pool_map[j];
-        break;
-      }
+        if(flag)
+        {
+            double coeff[1];
+            size_t dim[1];
+            coeff[0] = 1;
+            dim[0] = var;
+            out_neurons[out_pos]->maxpool_lexpr = create_sparse_expr(coeff, 0,
+dim, 1); out_neurons[out_pos]->maxpool_uexpr = create_sparse_expr(coeff, 0, dim,
+1);
+            //out_neurons[out_pos]->expr = create_sparse_expr(coeff, 0, dim, 1);
+        }
+        else
+        {
+            double lcoeff[1];
+            size_t ldim[1];
+            lcoeff[0] = 1;
+            ldim[0] = max_l_var;
+
+            out_neurons[out_pos]->maxpool_lexpr = create_sparse_expr(lcoeff, 0,
+ldim, 1);
+
+            double ucoeff[1];
+            size_t udim[1];
+            ucoeff[0] = 0;
+            udim[0] = 0;
+            out_neurons[out_pos]->maxpool_uexpr = create_sparse_expr(ucoeff,
+max_u, udim, 1);
+        }
+
+        out_neurons[out_pos]->lb = -max_l;
+        out_neurons[out_pos]->ub = max_u;
     }
 
-    if (flag) {
-      double coeff[1];
-      size_t dim[1];
-      coeff[0] = 1;
-      dim[0] = var;
-      out_neurons[out_pos]->maxpool_lexpr =
-          create_sparse_expr(coeff, 0, dim, 1);
-      out_neurons[out_pos]->maxpool_uexpr =
-          create_sparse_expr(coeff, 0, dim, 1);
-      // out_neurons[out_pos]->expr = create_sparse_expr(coeff, 0, dim, 1);
-    } else {
-      double lcoeff[1];
-      size_t ldim[1];
-      lcoeff[0] = 1;
-      ldim[0] = max_l_var;
+    //update_state_using_previous_layers(man, fp, fp->numlayers - 1);
 
-      out_neurons[out_pos]->maxpool_lexpr =
-          create_sparse_expr(lcoeff, 0, ldim, 1);
+    free(inf);
+    free(sup);
+    free(pool_map);
+    free(output_size);
 
-      double ucoeff[1];
-      size_t udim[1];
-      ucoeff[0] = 0;
-      udim[0] = 0;
-      out_neurons[out_pos]->maxpool_uexpr =
-          create_sparse_expr(ucoeff, max_u, udim, 1);
-    }
-
-    out_neurons[out_pos]->lb = -max_l;
-    out_neurons[out_pos]->ub = max_u;
-  }
-
-  // update_state_using_previous_layers(man, fp, fp->numlayers - 1);
-
-  free(inf);
-  free(sup);
-  free(pool_map);
-  free(output_size);
-
-  return num_out_neurons;
+    return num_out_neurons;
 }
+*/
 
 __device__ __host__ void free_neuron(neuron_t *neuron) {
   if (neuron->expr) {
@@ -3532,81 +3624,97 @@ elina_interval_t ** box_for_layer(elina_abstract0_t * abs, size_t layerno){
 }
 */
 
-elina_linexpr0_t *get_expr_for_output_neuron(elina_manager_t *man,
-                                             elina_abstract0_t *abs,
-                                             const size_t i,
-                                             const bool is_lower) {
-  fppoly_internal_t *pr =
-      fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
-  fppoly_t *fp = fppoly_of_abstract0(abs);
+/*
+elina_linexpr0_t* get_expr_for_output_neuron(elina_manager_t* man,
+elina_abstract0_t* abs, const size_t i, const bool is_lower)
+{
+    fppoly_internal_t* pr = fppoly_init_from_manager(man,
+ELINA_FUNID_ASSIGN_LINEXPR_ARRAY); fppoly_t* fp = fppoly_of_abstract0(abs);
 
-  const size_t output_size = fp->layers[fp->numlayers - 1]->dims;
+    const size_t output_size = fp->layers[fp->numlayers - 1]->dims;
 
-  if (i >= output_size) {
-    return nullptr;
-  }
-
-  expr_t *expr = nullptr;
-
-  if (is_lower) {
-    expr = fp->out->lexpr[i];
-  } else {
-    expr = fp->out->uexpr[i];
-  }
-
-  elina_linexpr0_t *res = nullptr;
-
-  if ((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr)) {
-    if (is_lower) {
-      expr_t **expr_ptr = &expr;
-      replace_input_poly_cons_in_lexpr(expr_ptr, fp->input_inf, fp->input_sup,
-                                       fp->input_lexpr, fp->input_uexpr, 1);
-    } else {
-      expr_t **expr_ptr = &expr;
-      replace_input_poly_cons_in_uexpr(expr_ptr, fp->input_inf, fp->input_sup,
-                                       fp->input_lexpr, fp->input_uexpr, 1);
-    }
-  }
-
-  size_t expr_size = expr->size;
-
-  if (expr->type == SPARSE) {
-    sort_sparse_expr(expr);
-    res = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE, expr_size);
-  } else {
-    res = elina_linexpr0_alloc(ELINA_LINEXPR_DENSE, expr_size);
-  }
-
-  elina_linexpr0_set_cst_interval_double(res, -expr->inf_cst, expr->sup_cst);
-
-  size_t k;
-
-  for (size_t j = 0; j < expr_size; j++) {
-    if (expr->type == DENSE) {
-      k = j;
-    } else {
-      k = expr->dim[j];
+    if(i >= output_size)
+    {
+        return nullptr;
     }
 
-    elina_linexpr0_set_coeff_interval_double(res, k, -expr->inf_coeff[j],
-                                             expr->sup_coeff[j]);
-  }
+    expr_t* expr = nullptr;
 
-  if ((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr)) {
-    free_expr(expr);
-  }
+    if(is_lower)
+    {
+        expr = fp->out->lexpr[i];
+    }
+    else
+    {
+        expr = fp->out->uexpr[i];
+    }
 
-  return res;
+    elina_linexpr0_t* res = nullptr;
+
+    if((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr))
+    {
+        if(is_lower)
+        {
+            expr_t** expr_ptr = &expr;
+            replace_input_poly_cons_in_lexpr(expr_ptr, fp->input_inf,
+fp->input_sup, fp->input_lexpr, fp->input_uexpr, 1);
+        }
+        else
+        {
+            expr_t** expr_ptr = &expr;
+            replace_input_poly_cons_in_uexpr(expr_ptr, fp->input_inf,
+fp->input_sup, fp->input_lexpr, fp->input_uexpr, 1);
+        }
+    }
+
+    size_t expr_size = expr->size;
+
+    if(expr->type == SPARSE)
+    {
+        sort_sparse_expr(expr);
+        res = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE, expr_size);
+    }
+    else
+    {
+        res = elina_linexpr0_alloc(ELINA_LINEXPR_DENSE, expr_size);
+    }
+
+    elina_linexpr0_set_cst_interval_double(res, -expr->inf_cst, expr->sup_cst);
+
+    size_t k;
+
+    for(size_t j = 0; j < expr_size; j++)
+    {
+        if(expr->type == DENSE)
+        {
+            k = j;
+        }
+        else
+        {
+            k = expr->dim[j];
+        }
+
+        elina_linexpr0_set_coeff_interval_double(res, k, -expr->inf_coeff[j],
+expr->sup_coeff[j]);
+    }
+
+    if((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr))
+    {
+        free_expr(expr);
+    }
+
+    return res;
 }
 
-elina_linexpr0_t *get_lexpr_for_output_neuron(elina_manager_t *man,
-                                              elina_abstract0_t *abs,
-                                              const size_t i) {
-  return get_expr_for_output_neuron(man, abs, i, true);
+elina_linexpr0_t* get_lexpr_for_output_neuron(elina_manager_t* man,
+elina_abstract0_t* abs, const size_t i)
+{
+    return get_expr_for_output_neuron(man, abs, i, true);
 }
 
-elina_linexpr0_t *get_uexpr_for_output_neuron(elina_manager_t *man,
-                                              elina_abstract0_t *abs,
-                                              const size_t i) {
-  return get_expr_for_output_neuron(man, abs, i, false);
+elina_linexpr0_t* get_uexpr_for_output_neuron(elina_manager_t* man,
+elina_abstract0_t* abs, const size_t i)
+{
+    return get_expr_for_output_neuron(man, abs, i, false);
 }
+*/
