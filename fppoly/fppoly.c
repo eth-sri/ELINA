@@ -639,13 +639,13 @@ void add_expr(fppoly_internal_t *pr,expr_t * exprA, expr_t * exprB){
 				//printf("before sort\n");
 				//expr_print(exprA);
 				//fflush(stdout);
-				if(exprA->size>0){
-					sort_sparse_expr(exprA);
-				}
+				//if(exprA->size>0){
+				//	sort_sparse_expr(exprA);
+				//}
 				//printf("after sort\n");
 				//expr_print(exprA);
 				//fflush(stdout);
-				sort_sparse_expr(exprB);
+				//sort_sparse_expr(exprB);
 				new_inf_coeff = (double *)malloc((sizeA+sizeB)*sizeof(double));
 				new_sup_coeff = (double *)malloc((sizeA+sizeB)*sizeof(double));
 				size_t * new_dim = (size_t *)malloc((sizeA+sizeB)*sizeof(size_t));
@@ -2577,7 +2577,7 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y,
 			if(exprA->type==DENSE){
 				sub->inf_coeff = (double*)malloc(sizeA*sizeof(double));
 				sub->sup_coeff = (double*)malloc(sizeA*sizeof(double));
-				sub->dim==NULL;
+				sub->dim=NULL;
 				sub->size = sizeA;
 				sub->type = DENSE;
 				if(exprB->type==DENSE){
@@ -2606,7 +2606,7 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y,
 				if(exprB->type==DENSE){
 					sub->inf_coeff = (double*)malloc(sizeB*sizeof(double));
 					sub->sup_coeff = (double*)malloc(sizeB*sizeof(double));
-					sub->dim==NULL;
+					sub->dim=NULL;
 					sub->size = sizeB;
 					sub->type = DENSE;
 					i = 0;
@@ -2625,7 +2625,7 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y,
 				else{
 					sub->inf_coeff = (double*)malloc((sizeA+sizeB)*sizeof(double));
 					sub->sup_coeff = (double*)malloc((sizeA+sizeB)*sizeof(double));
-					sub->dim==NULL;
+					sub->dim=NULL;
 					
 					sub->type = SPARSE;
 					size_t l = 0;
