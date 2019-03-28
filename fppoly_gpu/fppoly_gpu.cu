@@ -689,117 +689,222 @@ expr_t* copy_expr(const expr_t* const src)
 }
 
 
+// merges an array of size_t and mirrors the same merge operation to two arrays of double
 __device__ __host__
-void merge_sparse_expr(expr_t* const expr, const size_t l, const size_t m, const size_t r)
+void merge(size_t* source, size_t* target, double* source_mirror_1, double* target_mirror_1, double* source_mirror_2, double* target_mirror_2, size_t llength, size_t ulength)
 {
-    int i, j, k;
+    size_t length = llength + ulength;
 
-    const int n1 = m - l + 1;
-    const int n2 = r - m;
+    size_t* lsource_ptr = source;
+    size_t* usource_ptr = source + llength;
+    size_t* target_ptr = target;
 
-    /* create temp arrays */
-    size_t* L =  (size_t*) malloc(n1*sizeof(size_t));
-    size_t* R =  (size_t*) malloc(n2*sizeof(size_t));
+    double* lsource_mirror_1_ptr = source_mirror_1;
+    double* usource_mirror_1_ptr = source_mirror_1 + llength;
+    double* target_mirror_1_ptr = target_mirror_1;
 
-    double* L2 = (double*) malloc(n1*sizeof(double));
-    double* R2 = (double*) malloc(n2*sizeof(double));
+    double* lsource_mirror_2_ptr = source_mirror_2;
+    double* usource_mirror_2_ptr = source_mirror_2 + llength;
+    double* target_mirror_2_ptr = target_mirror_2;
 
-    double* L3 = (double*) malloc(n1*sizeof(double));
-    double* R3 = (double*) malloc(n2*sizeof(double));
-
-    /* Copy data to temp arrays L[] and R[] */
-    for (i = 0; i < n1; i++)
+    while(lsource_ptr < (source + llength) && usource_ptr < (source + length))
     {
-        L[i] = expr->dim[l + i];
-        L2[i] = expr->inf_coeff[l + i];
-        L3[i] = expr->sup_coeff[l + i];
-    }
-
-    for (j = 0; j < n2; j++)
-    {
-        R[j] = expr->dim[m + 1 + j];
-        R2[j] = expr->inf_coeff[m + 1 + j];
-        R3[j] = expr->sup_coeff[m + 1 + j];
-    }
-
-    /* Merge the temp arrays back into arr[l..r]*/
-    i = 0; // Initial index of first subarray
-    j = 0; // Initial index of second subarray
-    k = l; // Initial index of merged subarray
-
-    while (i < n1 && j < n2)
-    {
-        if (L[i] <= R[j])
+        if(*lsource_ptr < *usource_ptr)
         {
-            expr->dim[k] = L[i];
-            expr->inf_coeff[k] = L2[i];
-            expr->sup_coeff[k] = L3[i];
-            i++;
+            *target_ptr = *lsource_ptr;
+
+            *target_mirror_1_ptr = *lsource_mirror_1_ptr;
+            *target_mirror_2_ptr = *lsource_mirror_2_ptr;
+
+            lsource_ptr++;
+            target_ptr++;
+
+            lsource_mirror_1_ptr++;
+            target_mirror_1_ptr++;
+
+            lsource_mirror_2_ptr++;
+            target_mirror_2_ptr++;
         }
         else
         {
-            expr->dim[k] = R[j];
-            expr->inf_coeff[k] = R2[j];
-            expr->sup_coeff[k] = R3[j];
-            j++;
+            *target_ptr = *usource_ptr;
+
+            *target_mirror_1_ptr = *usource_mirror_1_ptr;
+            *target_mirror_2_ptr = *usource_mirror_2_ptr;
+
+            usource_ptr++;
+            target_ptr++;
+
+            usource_mirror_1_ptr++;
+            target_mirror_1_ptr++;
+
+            usource_mirror_2_ptr++;
+            target_mirror_2_ptr++;
         }
-
-        k++;
     }
 
-    /* Copy the remaining elements of L[], if there are any */
-    while (i < n1)
+    while(lsource_ptr < (source + llength))
     {
-        expr->dim[k] = L[i];
-        expr->inf_coeff[k] = L2[i];
-        expr->sup_coeff[k] = L3[i];
-        i++;
-        k++;
+        *target_ptr = *lsource_ptr;
+
+        *target_mirror_1_ptr = *lsource_mirror_1_ptr;
+        *target_mirror_2_ptr = *lsource_mirror_2_ptr;
+
+        lsource_ptr++;
+        target_ptr++;
+
+        lsource_mirror_1_ptr++;
+        target_mirror_1_ptr++;
+
+        lsource_mirror_2_ptr++;
+        target_mirror_2_ptr++;
     }
 
-    /* Copy the remaining elements of R[], if there are any */
-    while (j < n2)
+    while(usource_ptr < (source + length))
     {
-        expr->dim[k] = R[j];
-        expr->inf_coeff[k] = R2[j];
-        expr->sup_coeff[k] = R3[j];
-        j++;
-        k++;
-    }
+        *target_ptr = *usource_ptr;
 
-    free(L);
-    free(R);
-    free(L2);
-    free(R2);
-    free(L3);
-    free(R3);
-}
+        *target_mirror_1_ptr = *usource_mirror_1_ptr;
+        *target_mirror_2_ptr = *usource_mirror_2_ptr;
 
+        usource_ptr++;
+        target_ptr++;
 
-/* l is for left index and r is right index of the
-   sub-array of arr to be sorted */
-__device__ __host__
-void merge_sort_sparse_expr(expr_t* const expr, const size_t l, const size_t r)
-{
-    if (l < r)
-    {
-        // Same as (l+r)/2, but avoids overflow for
-        // large l and h
-        const size_t m = l + (r - l) / 2;
+        usource_mirror_1_ptr++;
+        target_mirror_1_ptr++;
 
-        // Sort first and second halves
-        merge_sort_sparse_expr(expr, l, m);
-        merge_sort_sparse_expr(expr, m + 1, r);
-
-        merge_sparse_expr(expr, l, m, r);
+        usource_mirror_2_ptr++;
+        target_mirror_2_ptr++;
     }
 }
 
 
+// sorts an array of size_t and mirrors the same permutation to two arrays of double
 __device__ __host__
 void sort_sparse_expr(expr_t* const expr)
 {
-    merge_sort_sparse_expr(expr, 0, expr->size - 1);
+    const size_t length = expr->size;
+
+    size_t* array = expr->dim;
+    double* mirror_array_1 = expr->inf_coeff;
+    double* mirror_array_2 = expr->sup_coeff;
+
+    size_t* a = array;
+    size_t* b = nullptr;
+    double* mirror_1_a = mirror_array_1;
+    double* mirror_1_b = nullptr;
+    double* mirror_2_a = mirror_array_2;
+    double* mirror_2_b = nullptr;
+
+    bool sorted = true;
+
+    size_t startl = 0;
+    size_t startu;
+    size_t endu;
+
+    bool first = true;
+    size_t i = 0;
+
+    // check if the array is sorted before going in the main loop
+    for(; i < length - 1; i++)
+    {
+        if(a[i] > a[i + 1])
+        {
+            startu = i + 1;
+            first = false;
+            sorted = false;
+
+            // only allocate memory if the array is not sorted
+            b = (size_t*) malloc(length*sizeof(size_t));
+            mirror_1_b = (double*) malloc(length*sizeof(double));
+            mirror_2_b = (double*) malloc(length*sizeof(double));
+
+            i++;
+
+            break;
+        }
+    }
+
+    if(sorted)
+    {
+        return;
+    }
+
+    while(true)
+    {
+        for(; i < length - 1; i++)
+        {
+            if(a[i] > a[i + 1])
+            {
+                if(first)
+                {
+                    // mark end of first chunk when encountering a descending number
+                    startu = i + 1;
+                    first = false;
+                    sorted = false;
+                }
+                else
+                {
+                    // mark end of second chunk when encountering a descending number and merge the two chunks
+                    endu = i + 1;
+                    merge(a + startl, b + startl, mirror_1_a + startl, mirror_1_b + startl, mirror_2_a + startl, mirror_2_b + startl, startu - startl, endu - startu);
+                    first = true;
+                    startl = endu;
+                }
+            }
+        }
+
+        if(sorted == true)
+        {
+            break;
+        }
+
+        if(first)
+        {
+            // for odd numbers of chunks, need to copy the last chunk over
+            memcpy(b + startl, a + startl, (length - startl)*sizeof(size_t));
+            memcpy(mirror_1_b + startl, mirror_1_a + startl, (length - startl)*sizeof(double));
+            memcpy(mirror_2_b + startl, mirror_2_a + startl, (length - startl)*sizeof(double));
+        }
+        else
+        {
+            // for even numbers of chunks, need to mark past-the-end pointer as endu and do a merge
+            endu = length;
+            merge(a + startl, b + startl, mirror_1_a + startl, mirror_1_b + startl, mirror_2_a + startl, mirror_2_b + startl, startu - startl, endu - startu);
+            first = true;
+        }
+
+        std::swap(a, b);
+        std::swap(mirror_1_a, mirror_1_b);
+        std::swap(mirror_2_a, mirror_2_b);
+
+        i = 0;
+        startl = 0;
+        sorted = true;
+    }
+
+    if(array == a)
+    {
+        // if a points to the original array, just free the temporaries
+        free(b);
+        free(mirror_1_b);
+        free(mirror_2_b);
+    }
+    else
+    {
+        // if a points to the temporaries created in merge_sort, swap, then memcpy from b to a, then free the temporaries
+        std::swap(a, b);
+        std::swap(mirror_1_a, mirror_1_b);
+        std::swap(mirror_2_a, mirror_2_b);
+
+        memcpy(a, b, length*sizeof(size_t));
+        memcpy(mirror_1_a, mirror_1_b, length*sizeof(double));
+        memcpy(mirror_2_a, mirror_2_b, length*sizeof(double));
+
+        free(b);
+        free(mirror_1_b);
+        free(mirror_2_b);
+    }
 }
 
 
@@ -1223,12 +1328,12 @@ void add_expr(expr_t* const exprA, expr_t* const exprB)
                 //fflush(stdout);
                 if(exprA->size > 0)
                 {
-                    //sort_sparse_expr(exprA);
+                    sort_sparse_expr(exprA);
                 }
                 //printf("after sort\n");
                 //expr_print(exprA);
                 //fflush(stdout);
-                //sort_sparse_expr(exprB);
+                sort_sparse_expr(exprB);
                 new_inf_coeff = (double*) malloc((sizeA+sizeB)*sizeof(double));
                 new_sup_coeff = (double*) malloc((sizeA+sizeB)*sizeof(double));
                 size_t* new_dim = (size_t*) malloc((sizeA+sizeB)*sizeof(size_t));
