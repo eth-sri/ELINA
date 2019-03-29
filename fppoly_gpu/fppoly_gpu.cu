@@ -20,6 +20,7 @@
 
 #include "fppoly_gpu.h"
 
+#include <chrono>
 #include <cuda.h>
 #include <iostream>
 
@@ -316,7 +317,7 @@ fppoly_internal_t *fppoly_init_from_manager(elina_manager_t *man,
 
 elina_manager_t *fppoly_manager_alloc() {
   std::cout << "This is the GPU version of fppoly!" << std::endl;
-  size_t set_limit = 2u << 30u;
+  size_t set_limit = 3 * size_t(2u << 30u);
   size_t limit;
 
   if (!initialized) {
@@ -1203,7 +1204,7 @@ __global__ void
 replace_input_poly_cons_in_lexpr(expr_t **expr_array, double *input_inf,
                                  double *input_sup, expr_t **input_lexpr,
                                  expr_t **input_uexpr, const size_t size) {
-  size_t n = blockIdx.x;
+  size_t n = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (n < size) {
     expr_t *expr = expr_array[n];
@@ -1293,7 +1294,7 @@ __global__ void
 replace_input_poly_cons_in_uexpr(expr_t **expr_array, double *input_inf,
                                  double *input_sup, expr_t **input_lexpr,
                                  expr_t **input_uexpr, const size_t size) {
-  size_t n = blockIdx.x;
+  size_t n = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (n < size) {
     expr_t *expr = expr_array[n];
@@ -1382,7 +1383,7 @@ __global__ void compute_lb_from_expr(double *lb_array, expr_t **expr_array,
                                      double *input_inf, double *input_sup,
                                      const size_t size) {
 
-  size_t n = blockIdx.x;
+  size_t n = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (n < size) {
     expr_t *expr = expr_array[n];
@@ -1417,7 +1418,7 @@ __global__ void compute_lb_from_expr(double *lb_array, expr_t **expr_array,
 __global__ void compute_ub_from_expr(double *ub_array, expr_t **expr_array,
                                      double *input_inf, double *input_sup,
                                      const size_t size) {
-  size_t n = blockIdx.x;
+  size_t n = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (n < size) {
     expr_t *expr = expr_array[n];
@@ -1490,7 +1491,7 @@ void layer_create_dense_exprs(neuron_t **neurons, const double **weights,
 
 __global__ void layer_copy_exprs(neuron_t **neurons, expr_t **lexpr_array,
                                  expr_t **uexpr_array, const size_t size) {
-  size_t i = blockIdx.x;
+  size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (i < size) {
     lexpr_array[i] = copy_expr(neurons[i]->expr);
@@ -1500,7 +1501,7 @@ __global__ void layer_copy_exprs(neuron_t **neurons, expr_t **lexpr_array,
 
 __global__ void layer_assign_bounds(neuron_t **neurons, double *lb_array,
                                     double *ub_array, const size_t size) {
-  size_t i = blockIdx.x;
+  size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (i < size) {
     neurons[i]->lb = lb_array[i];
@@ -1509,7 +1510,7 @@ __global__ void layer_assign_bounds(neuron_t **neurons, double *lb_array,
 }
 
 __global__ void free_expr_array(expr_t **expr_array, const size_t size) {
-  size_t i = blockIdx.x;
+  size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (i < size) {
     free_expr(expr_array[i]);
@@ -1600,7 +1601,7 @@ void ffn_handle_first_tanh_layer(elina_manager_t *man, elina_abstract0_t *abs,
 __global__ void lexpr_replace_relu_bounds(expr_t **expr_array,
                                           neuron_t **neurons,
                                           const size_t num_out_neurons) {
-  size_t n = blockIdx.x;
+  size_t n = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (n < num_out_neurons) {
     expr_t *expr = expr_array[n];
@@ -1699,7 +1700,7 @@ __global__ void lexpr_replace_relu_bounds(expr_t **expr_array,
 __global__ void uexpr_replace_relu_bounds(expr_t **expr_array,
                                           neuron_t **neurons,
                                           const size_t num_out_neurons) {
-  size_t n = blockIdx.x;
+  size_t n = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (n < num_out_neurons) {
     expr_t *expr = expr_array[n];
@@ -2472,7 +2473,7 @@ false);
 __global__ void lexpr_replace_maxpool_bounds(expr_t **expr_array,
                                              neuron_t **neurons,
                                              const size_t num_out_neurons) {
-  size_t n = blockIdx.x;
+  size_t n = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (n < num_out_neurons) {
     expr_t *expr = expr_array[n];
@@ -2641,7 +2642,7 @@ __global__ void lexpr_replace_maxpool_bounds(expr_t **expr_array,
 __global__ void uexpr_replace_maxpool_bounds(expr_t **expr_array,
                                              neuron_t **neurons,
                                              const size_t num_out_neurons) {
-  size_t n = blockIdx.x;
+  size_t n = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (n < num_out_neurons) {
     expr_t *expr = expr_array[n];
@@ -2718,7 +2719,7 @@ __global__ void uexpr_replace_maxpool_bounds(expr_t **expr_array,
 __global__ void expr_from_previous_layer(expr_t **expr_array,
                                          neuron_t **neurons,
                                          const size_t num_out_neurons) {
-  size_t n = blockIdx.x;
+  size_t n = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (n < num_out_neurons) {
     expr_t *expr = expr_array[n];
@@ -2781,11 +2782,16 @@ __global__ void expr_from_previous_layer(expr_t **expr_array,
 
 void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
                                         const size_t layerno) {
+  auto start = std::chrono::system_clock::now();
+
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
   neuron_t **out_neurons = fp->layers[layerno]->neurons;
   const size_t num_out_neurons = fp->layers[layerno]->dims;
+
+  const size_t threads_per_block = 128;
+  const size_t blocks = num_out_neurons / threads_per_block + 1;
 
   expr_t **lexpr_array;
   expr_t **uexpr_array;
@@ -2793,37 +2799,37 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   cudaMalloc((void **)&lexpr_array, num_out_neurons * sizeof(expr_t *));
   cudaMalloc((void **)&uexpr_array, num_out_neurons * sizeof(expr_t *));
 
-  layer_copy_exprs<<<num_out_neurons, 1>>>(out_neurons, lexpr_array,
-                                           uexpr_array, num_out_neurons);
+  layer_copy_exprs<<<blocks, threads_per_block>>>(out_neurons, lexpr_array,
+                                                  uexpr_array, num_out_neurons);
 
   for (int k = layerno - 1; k >= 0; k--) {
     neuron_t **aux_neurons = fp->layers[k]->neurons;
 
     if (fp->layers[k]->type != MAXPOOL) {
       if (fp->layers[k]->activation == RELU) {
-        lexpr_replace_relu_bounds<<<num_out_neurons, 1>>>(
+        lexpr_replace_relu_bounds<<<blocks, threads_per_block>>>(
             lexpr_array, aux_neurons, num_out_neurons);
-        uexpr_replace_relu_bounds<<<num_out_neurons, 1>>>(
+        uexpr_replace_relu_bounds<<<blocks, threads_per_block>>>(
             uexpr_array, aux_neurons, num_out_neurons);
       }
 
-      expr_from_previous_layer<<<num_out_neurons, 1>>>(lexpr_array, aux_neurons,
-                                                       num_out_neurons);
-      expr_from_previous_layer<<<num_out_neurons, 1>>>(uexpr_array, aux_neurons,
-                                                       num_out_neurons);
-    } else {
-      lexpr_replace_maxpool_bounds<<<num_out_neurons, 1>>>(
+      expr_from_previous_layer<<<blocks, threads_per_block>>>(
           lexpr_array, aux_neurons, num_out_neurons);
-      uexpr_replace_maxpool_bounds<<<num_out_neurons, 1>>>(
+      expr_from_previous_layer<<<blocks, threads_per_block>>>(
+          uexpr_array, aux_neurons, num_out_neurons);
+    } else {
+      lexpr_replace_maxpool_bounds<<<blocks, threads_per_block>>>(
+          lexpr_array, aux_neurons, num_out_neurons);
+      uexpr_replace_maxpool_bounds<<<blocks, threads_per_block>>>(
           uexpr_array, aux_neurons, num_out_neurons);
     }
   }
 
   if ((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr)) {
-    replace_input_poly_cons_in_lexpr<<<num_out_neurons, 1>>>(
+    replace_input_poly_cons_in_lexpr<<<blocks, threads_per_block>>>(
         lexpr_array, fp->input_inf, fp->input_sup, fp->input_lexpr,
         fp->input_uexpr, num_out_neurons);
-    replace_input_poly_cons_in_uexpr<<<num_out_neurons, 1>>>(
+    replace_input_poly_cons_in_uexpr<<<blocks, threads_per_block>>>(
         uexpr_array, fp->input_inf, fp->input_sup, fp->input_lexpr,
         fp->input_uexpr, num_out_neurons);
   }
@@ -2834,13 +2840,13 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   cudaMalloc((void **)&lb_array, num_out_neurons * sizeof(double));
   cudaMalloc((void **)&ub_array, num_out_neurons * sizeof(double));
 
-  compute_lb_from_expr<<<num_out_neurons, 1>>>(
+  compute_lb_from_expr<<<blocks, threads_per_block>>>(
       lb_array, lexpr_array, fp->input_inf, fp->input_sup, num_out_neurons);
-  compute_ub_from_expr<<<num_out_neurons, 1>>>(
+  compute_ub_from_expr<<<blocks, threads_per_block>>>(
       ub_array, uexpr_array, fp->input_inf, fp->input_sup, num_out_neurons);
 
-  layer_assign_bounds<<<num_out_neurons, 1>>>(out_neurons, lb_array, ub_array,
-                                              num_out_neurons);
+  layer_assign_bounds<<<blocks, threads_per_block>>>(out_neurons, lb_array,
+                                                     ub_array, num_out_neurons);
 
   cudaFree(lb_array);
   cudaFree(ub_array);
@@ -2855,12 +2861,23 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
     fp->out->lexpr = lexpr_array;
     fp->out->uexpr = uexpr_array;
   } else {
-    free_expr_array<<<num_out_neurons, 1>>>(lexpr_array, num_out_neurons);
-    free_expr_array<<<num_out_neurons, 1>>>(uexpr_array, num_out_neurons);
+    free_expr_array<<<blocks, threads_per_block>>>(lexpr_array,
+                                                   num_out_neurons);
+    free_expr_array<<<blocks, threads_per_block>>>(uexpr_array,
+                                                   num_out_neurons);
 
     cudaFree(lexpr_array);
     cudaFree(uexpr_array);
   }
+
+  cudaDeviceSynchronize();
+
+  auto end = std::chrono::system_clock::now();
+
+  std::chrono::duration<double> elapsed_seconds = end - start;
+  std::cout << "elapsed time: " << elapsed_seconds.count()
+            << "s, Num Neurons: " << num_out_neurons << " Blocks: " << blocks
+            << " Threads per Block: " << threads_per_block << std::endl;
 }
 
 void ffn_handle_intermediate_layer(elina_manager_t *man,
