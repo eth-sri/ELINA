@@ -779,6 +779,16 @@ void merge(size_t* source, size_t* target, double* source_mirror_1, double* targ
 }
 
 
+template<typename T>
+__device__ __host__
+void swap(T& a, T& b)
+{
+    T tmp = b;
+    b = a;
+    a = tmp;
+}
+
+
 // sorts an array of size_t and mirrors the same permutation to two arrays of double
 __device__ __host__
 void sort_sparse_expr(expr_t* const expr)
@@ -874,9 +884,9 @@ void sort_sparse_expr(expr_t* const expr)
             first = true;
         }
 
-        std::swap(a, b);
-        std::swap(mirror_1_a, mirror_1_b);
-        std::swap(mirror_2_a, mirror_2_b);
+        swap(a, b);
+        swap(mirror_1_a, mirror_1_b);
+        swap(mirror_2_a, mirror_2_b);
 
         i = 0;
         startl = 0;
@@ -893,9 +903,9 @@ void sort_sparse_expr(expr_t* const expr)
     else
     {
         // if a points to the temporaries created in merge_sort, swap, then memcpy from b to a, then free the temporaries
-        std::swap(a, b);
-        std::swap(mirror_1_a, mirror_1_b);
-        std::swap(mirror_2_a, mirror_2_b);
+        swap(a, b);
+        swap(mirror_1_a, mirror_1_b);
+        swap(mirror_2_a, mirror_2_b);
 
         memcpy(a, b, length*sizeof(size_t));
         memcpy(mirror_1_a, mirror_1_b, length*sizeof(double));
@@ -992,38 +1002,40 @@ elina_abstract0_t* fppoly_from_network_input(elina_manager_t* man, const size_t 
 
 
 __global__
-void create_sparse_expr_device_expr(expr_t** expr_array, size_t index, double* inf_coeff, double* sup_coeff, size_t* dim, double inf_cst, double sup_cst, size_t size, exprtype_t type)
+void device_layer_create_sparse_exprs(expr_t** expr_array, const double* weights, const double* bias, const size_t* dims, const size_t num_out_neurons, const size_t num_in_neurons)
 {
-    expr_t* expr = (expr_t*) malloc(sizeof(expr_t));
+    size_t i = blockIdx.x;
 
-    expr->inf_cst = inf_cst;
-    expr->sup_cst = sup_cst;
-
-    expr->inf_coeff = inf_coeff;
-    expr->sup_coeff = sup_coeff;
-    expr->dim = dim;
-    expr->size = size;
-    expr->type = type;
-
-    expr_array[index] = expr;
+    if(i < num_out_neurons)
+    {
+        const double* weight_i = weights + i*num_in_neurons;
+        const size_t* dims_i = dims + i*num_in_neurons;
+        const double bias_i = bias[i];
+        expr_array[i] = create_sparse_expr(weight_i, bias_i, dims_i, num_in_neurons);
+        sort_sparse_expr(expr_array[i]);
+    }
 }
 
 
-void copy_sparse_expr_host_to_device_expr(expr_t** expr_array, size_t index, const expr_t* const src)
+void layer_create_sparse_exprs(expr_t** expr_array, const double* weights, const double* bias, const size_t* dims, const size_t num_out_neurons, const size_t num_in_neurons)
 {
-    double* inf_coeff_tmp;
-    double* sup_coeff_tmp;
-    size_t* dim_tmp;
+    double* tmp_weights;
+    cudaMalloc((void**) &tmp_weights, num_out_neurons*num_in_neurons*sizeof(double));
+    size_t* tmp_dims;
+    cudaMalloc((void**) &tmp_dims   , num_out_neurons*num_in_neurons*sizeof(size_t));
 
-    cudaMalloc((void**) &inf_coeff_tmp, src->size*sizeof(double));
-    cudaMalloc((void**) &sup_coeff_tmp, src->size*sizeof(double));
-    cudaMalloc((void**) &dim_tmp, src->size*sizeof(size_t));
+    cudaMemcpy(tmp_weights, weights, num_out_neurons*num_in_neurons*sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(tmp_dims   , dims   , num_out_neurons*num_in_neurons*sizeof(size_t), cudaMemcpyHostToDevice);
 
-    cudaMemcpy(inf_coeff_tmp, src->inf_coeff, src->size*sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(sup_coeff_tmp, src->sup_coeff, src->size*sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(dim_tmp, src->dim, src->size*sizeof(size_t), cudaMemcpyHostToDevice);
+    double* tmp_bias;
+    cudaMalloc((void**) &tmp_bias, num_out_neurons*sizeof(double));
+    cudaMemcpy(tmp_bias, bias, num_out_neurons*sizeof(double), cudaMemcpyHostToDevice);
 
-    create_sparse_expr_device_expr<<<1, 1>>>(expr_array, index, inf_coeff_tmp, sup_coeff_tmp, dim_tmp, src->inf_cst, src->sup_cst, src->size, src->type);
+    device_layer_create_sparse_exprs<<<num_out_neurons, 1>>>(expr_array, tmp_weights, tmp_bias, tmp_dims, num_out_neurons, num_in_neurons);
+
+    cudaFree(tmp_weights);
+    cudaFree(tmp_dims);
+    cudaFree(tmp_bias);
 }
 
 
@@ -1039,36 +1051,8 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t* man, const si
     cudaMalloc((void**) &res->input_lexpr, num_pixels*sizeof(expr_t*));
     cudaMalloc((void**) &res->input_uexpr, num_pixels*sizeof(expr_t*));
 
-    double* tmp_weights = (double*) malloc(expr_size*sizeof(double));
-    size_t* tmp_dim = (size_t*) malloc(expr_size*sizeof(size_t));
-
-    for(size_t i = 0; i < num_pixels; i++)
-    {
-        for(size_t j = 0; j < expr_size; j++)
-        {
-            tmp_weights[j] = lexpr_weights[i*expr_size + j];
-            tmp_dim[j] = lexpr_dim[i*expr_size + j];
-        }
-
-        expr_t* lexpr = create_sparse_expr(tmp_weights, lexpr_cst[i], tmp_dim, expr_size);
-        sort_sparse_expr(lexpr);
-        copy_sparse_expr_host_to_device_expr(res->input_lexpr, i, lexpr);
-        free_expr(lexpr);
-
-        for(size_t j = 0; j < expr_size; j++)
-        {
-            tmp_weights[j] = uexpr_weights[i*expr_size + j];
-            tmp_dim[j] = uexpr_dim[i*expr_size + j];
-        }
-
-        expr_t* uexpr = create_sparse_expr(tmp_weights, uexpr_cst[i], tmp_dim, expr_size);
-        sort_sparse_expr(uexpr);
-        copy_sparse_expr_host_to_device_expr(res->input_uexpr, i, uexpr);
-        free_expr(uexpr);
-    }
-
-    free(tmp_weights);
-    free(tmp_dim);
+    layer_create_sparse_exprs(res->input_lexpr, lexpr_weights, lexpr_cst, lexpr_dim, num_pixels, expr_size);
+    layer_create_sparse_exprs(res->input_uexpr, uexpr_weights, uexpr_cst, uexpr_dim, num_pixels, expr_size);
 
     return abstract0_of_fppoly(man, res);
 }
@@ -3700,75 +3684,15 @@ void copy_sparse_expr_host_to_device_neuron(neuron_t** neurons, size_t neuron_in
     create_sparse_expr_device_neuron<<<1, 1>>>(neurons, neuron_index, inf_coeff_tmp, sup_coeff_tmp, dim_tmp, src->inf_cst, src->sup_cst, src->size, src->type);
 }
 
-
-void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights, const double* filter_bias,
-                               const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides,
-                               const bool is_valid_padding, const bool has_bias)
+void device_layer_create_sparse_exprs(neuron_t** out_neurons, const double* filter_weights, const double* filter_bias,
+                               const size_t* input_size, const size_t* output_size, const size_t* filter_size, const size_t* strides,
+                                const bool has_bias, const long int pad_top, const long int pad_left, const size_t num_pixels)
 {
-    const size_t num_pixels = input_size[0]*input_size[1]*input_size[2];
-
-    size_t output_size[3];
-
-    if(is_valid_padding)
+    for(size_t out_x = 0; out_x < output_size[0]; out_x++)
     {
-        output_size[0] = ceil((double)(input_size[0] - filter_size[0] + 1)/(double)strides[0]);
-        output_size[1] = ceil((double)(input_size[1] - filter_size[1] + 1)/(double)strides[1]);
-    }
-    else
-    {
-        output_size[0] = ceil((double)input_size[0]/(double)strides[0]);
-        output_size[1] = ceil((double)input_size[1]/(double)strides[1]);
-    }
-
-    output_size[2] = num_filters;
-
-    const size_t num_out_neurons = output_size[0]*output_size[1]*output_size[2];
-    fppoly_add_new_layer(fp, num_out_neurons, CONV, RELU);
-    neuron_t** out_neurons = fp->layers[fp->numlayers - 1]->neurons;
-
-    size_t out_x, out_y, out_z;
-    //size_t inp_x, inp_y;
-    size_t inp_z;
-    size_t x_shift, y_shift;
-
-    long int pad_along_height = 0;
-    long int pad_along_width = 0;
-    long int pad_top = 0;
-    long int pad_left = 0;
-
-    if(!is_valid_padding)
-    {
-        if(input_size[0]%strides[0] == 0)
+        for(size_t out_y = 0; out_y < output_size[1]; out_y++)
         {
-            const long int tmp = filter_size[0] - strides[0];
-            pad_along_height = max(tmp, long(0));
-        }
-        else
-        {
-            const long int tmp = filter_size[0] - (input_size[0]%strides[0]);
-            pad_along_height = max(tmp, long(0));
-        }
-
-        if(input_size[1]%strides[1] == 0)
-        {
-            const long int tmp = filter_size[1] - strides[1];
-            pad_along_width = max(tmp, long(0));
-        }
-        else
-        {
-            const long int tmp = filter_size[1] - (input_size[1]%strides[1]);
-            pad_along_width = max(tmp, long(0));
-        }
-
-        pad_top = pad_along_height/2;
-        pad_left = pad_along_width/2;
-    }
-
-    for(out_x = 0; out_x < output_size[0]; out_x++)
-    {
-        for(out_y = 0; out_y < output_size[1]; out_y++)
-        {
-            for(out_z = 0; out_z < output_size[2]; out_z++)
+            for(size_t out_z = 0; out_z < output_size[2]; out_z++)
             {
                 const size_t mat_x = out_x*output_size[1]*output_size[2] + out_y*output_size[2] + out_z;
                 const size_t num_coeff = input_size[2]*filter_size[0]*filter_size[1];
@@ -3777,11 +3701,11 @@ void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights,
                 size_t* dim = (size_t*) malloc(num_coeff*sizeof(size_t));
                 size_t i = 0;
 
-                for(inp_z = 0; inp_z < input_size[2]; inp_z++)
+                for(size_t inp_z = 0; inp_z < input_size[2]; inp_z++)
                 {
-                    for(x_shift = 0; x_shift < filter_size[0]; x_shift++)
+                    for(size_t x_shift = 0; x_shift < filter_size[0]; x_shift++)
                     {
-                        for(y_shift = 0; y_shift < filter_size[1]; y_shift++)
+                        for(size_t y_shift = 0; y_shift < filter_size[1]; y_shift++)
                         {
                             const long int x_val = out_x*strides[0] + x_shift - pad_top;
                             const long int y_val = out_y*strides[1] + y_shift - pad_left;
@@ -3824,6 +3748,95 @@ void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights,
             }
         }
     }
+}
+
+
+void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights, const double* filter_bias,
+                               const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides,
+                               const bool is_valid_padding, const bool has_bias)
+{
+    const size_t num_pixels = input_size[0]*input_size[1]*input_size[2];
+
+    size_t output_size[3];
+
+    if(is_valid_padding)
+    {
+        output_size[0] = ceil((double)(input_size[0] - filter_size[0] + 1)/(double)strides[0]);
+        output_size[1] = ceil((double)(input_size[1] - filter_size[1] + 1)/(double)strides[1]);
+    }
+    else
+    {
+        output_size[0] = ceil((double)input_size[0]/(double)strides[0]);
+        output_size[1] = ceil((double)input_size[1]/(double)strides[1]);
+    }
+
+    output_size[2] = num_filters;
+
+    const size_t num_out_neurons = output_size[0]*output_size[1]*output_size[2];
+    fppoly_add_new_layer(fp, num_out_neurons, CONV, RELU);
+    neuron_t** out_neurons = fp->layers[fp->numlayers - 1]->neurons;
+
+    long int pad_along_height = 0;
+    long int pad_along_width = 0;
+    long int pad_top = 0;
+    long int pad_left = 0;
+
+    if(!is_valid_padding)
+    {
+        if(input_size[0]%strides[0] == 0)
+        {
+            const long int tmp = filter_size[0] - strides[0];
+            pad_along_height = max(tmp, long(0));
+        }
+        else
+        {
+            const long int tmp = filter_size[0] - (input_size[0]%strides[0]);
+            pad_along_height = max(tmp, long(0));
+        }
+
+        if(input_size[1]%strides[1] == 0)
+        {
+            const long int tmp = filter_size[1] - strides[1];
+            pad_along_width = max(tmp, long(0));
+        }
+        else
+        {
+            const long int tmp = filter_size[1] - (input_size[1]%strides[1]);
+            pad_along_width = max(tmp, long(0));
+        }
+
+        pad_top = pad_along_height/2;
+        pad_left = pad_along_width/2;
+    }
+
+    const size_t size = filter_size[0]*filter_size[1]*input_size[2]*output_size[2];
+
+    double* filter_weights_tmp = (double*) malloc(size*sizeof(double));
+    double* filter_bias_tmp = (double*) malloc(output_size[2]*sizeof(double));
+
+    size_t* input_size_tmp = (size_t*) malloc(3*sizeof(size_t));
+    size_t* output_size_tmp = (size_t*) malloc(3*sizeof(size_t));
+    size_t* filter_size_tmp = (size_t*) malloc(2*sizeof(size_t));
+    size_t* strides_tmp = (size_t*) malloc(2*sizeof(size_t));
+
+    cudaMemcpy(filter_weights_tmp, filter_weights, size*sizeof(double), cudaMemcpyHostToHost);
+    cudaMemcpy(filter_bias_tmp, filter_bias, output_size[2]*sizeof(double), cudaMemcpyHostToHost);
+
+    cudaMemcpy(input_size_tmp, input_size, 3*sizeof(size_t), cudaMemcpyHostToHost);
+    cudaMemcpy(output_size_tmp, output_size, 3*sizeof(size_t), cudaMemcpyHostToHost);
+    cudaMemcpy(filter_size_tmp, filter_size, 2*sizeof(size_t), cudaMemcpyHostToHost);
+    cudaMemcpy(strides_tmp, strides, 2*sizeof(size_t), cudaMemcpyHostToHost);
+
+    device_layer_create_sparse_exprs(out_neurons, filter_weights_tmp, filter_bias_tmp, input_size_tmp, output_size_tmp,
+                                     filter_size_tmp, strides_tmp, has_bias, pad_top, pad_left, num_pixels);
+
+    free(filter_weights_tmp);
+    free(filter_bias_tmp);
+
+    free(input_size_tmp);
+    free(output_size_tmp);
+    free(filter_size_tmp);
+    free(strides_tmp);
 }
 
 
