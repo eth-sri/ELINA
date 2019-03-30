@@ -389,104 +389,74 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 				poly[res]->nbeq++;			
 				poly[res]->is_minimized = false;
 				if(!opk->exn){
-                                  if (need_refine) {
+					//if( need_refine){
+                    if(0){
+						comp_list_t * clv = find(acl,var);
+					
+						
+						comp_t * ci = cli_copy->head;
+						while(ci!=NULL){
+							remove_comp(clv,ci->num);
+							ci = ci->next;
+						}
+						unsigned short int *ca1 = to_sorted_array(clv,maxcols);
+						unsigned short int *ca2 = to_sorted_array(cli_copy,maxcols);
+						unsigned short int * ind_map_a = map_index(ca1,ca,clv->size);
+						unsigned short int * ind_map_b = map_index(ca2,ca,cli_copy->size);
+						opt_pk_t * tmp = poly[res];
+						opt_matrix_t * F = tmp->F;
+						opt_matrix_t * C = tmp->C;
+						bool is_pos = false;
+						poly[res] = opt_poly_alloc(clv->size,0);
+						poly[res]->C = opt_matrix_alloc(C->nbrows+1,clv->size+opk->dec,false);
+						poly[res]->F = opt_matrix_alloc(F->nbrows,clv->size+opk->dec,false);
+						poly[res]->nbeq = split_matrix(opk,poly[res]->C,C,ind_map_a,clv->size, &is_pos);
+						//if(!is_pos){
+						//	size_t nbrows = poly[res]->C->nbrows;
+						//	poly[res]->C->p[nbrows][0] = 1;
+						//	poly[res]->C->p[nbrows][1] = 1;
+						//	poly[res]->C->nbrows++;
+						//}
+						poly[res]->nbline = split_matrix(opk,poly[res]->F,F,ind_map_a,clv->size,&is_pos); 
 
-                                    comp_list_t *clv = find(acl, var);
+						is_pos = false;
+						poly[num_comp] = opt_poly_alloc(cli_copy->size,0);
+						poly[num_comp]->C = opt_matrix_alloc(C->nbrows+1,cli_copy->size+opk->dec,false);
+						poly[num_comp]->F = opt_matrix_alloc(F->nbrows,cli_copy->size+opk->dec,false); 
+						poly[num_comp]->nbeq = split_matrix(opk,poly[num_comp]->C,C,ind_map_b,cli_copy->size, &is_pos);
+						//if(!is_pos){
+						//	size_t nbrows = poly[num_comp]->C->nbrows;
+						//	poly[num_comp]->C->p[nbrows][0] = 1;
+						//	poly[num_comp]->C->p[nbrows][1] = 1;
+						//	poly[num_comp]->C->nbrows++;
+						//}
+						poly[num_comp]->nbline = split_matrix(opk,poly[num_comp]->F,F,ind_map_b,cli_copy->size, &is_pos); 
+					
+					
+						poly[res]->satC = opt_satmat_alloc(poly[res]->F->nbrows,opt_bitindex_size(poly[res]->C->nbrows));
+						combine_satmat(opk,poly[res],clv->size,poly[res]->C->nbrows,true);
+						poly[num_comp]->satC = opt_satmat_alloc(poly[num_comp]->F->nbrows,opt_bitindex_size(poly[num_comp]->C->nbrows));
+						combine_satmat(opk,poly[num_comp],cli_copy->size,poly[num_comp]->C->nbrows,true);
 
-                                    comp_t *ci = cli_copy->head;
-                                    while (ci != NULL) {
-                                      remove_comp(clv, ci->num);
-                                      ci = ci->next;
-                                    }
-                                    unsigned short int *ca1 =
-                                        to_sorted_array(clv, maxcols);
-                                    unsigned short int *ca2 =
-                                        to_sorted_array(cli_copy, maxcols);
-                                    unsigned short int *ind_map_a =
-                                        map_index(ca1, ca, clv->size);
-                                    unsigned short int *ind_map_b =
-                                        map_index(ca2, ca, cli_copy->size);
-                                    opt_pk_t *tmp = poly[res];
-                                    opt_matrix_t *F = tmp->F;
-                                    opt_matrix_t *C = tmp->C;
-                                    bool is_pos = false;
-                                    poly[res] = opt_poly_alloc(clv->size, 0);
-                                    poly[res]->C = opt_matrix_alloc(
-                                        C->nbrows + 1, clv->size + opk->dec,
-                                        false);
-                                    poly[res]->F = opt_matrix_alloc(
-                                        F->nbrows, clv->size + opk->dec, false);
-                                    poly[res]->nbeq = split_matrix(
-                                        opk, poly[res]->C, C, ind_map_a,
-                                        clv->size, &is_pos);
-                                    // if(!is_pos){
-                                    //	size_t nbrows = poly[res]->C->nbrows;
-                                    //	poly[res]->C->p[nbrows][0] = 1;
-                                    //	poly[res]->C->p[nbrows][1] = 1;
-                                    //	poly[res]->C->nbrows++;
-                                    //}
-                                    poly[res]->nbline = split_matrix(
-                                        opk, poly[res]->F, F, ind_map_a,
-                                        clv->size, &is_pos);
-
-                                    is_pos = false;
-                                    poly[num_comp] =
-                                        opt_poly_alloc(cli_copy->size, 0);
-                                    poly[num_comp]->C = opt_matrix_alloc(
-                                        C->nbrows + 1,
-                                        cli_copy->size + opk->dec, false);
-                                    poly[num_comp]->F = opt_matrix_alloc(
-                                        F->nbrows, cli_copy->size + opk->dec,
-                                        false);
-                                    poly[num_comp]->nbeq = split_matrix(
-                                        opk, poly[num_comp]->C, C, ind_map_b,
-                                        cli_copy->size, &is_pos);
-                                    // if(!is_pos){
-                                    //	size_t nbrows =
-                                    //poly[num_comp]->C->nbrows;
-                                    //	poly[num_comp]->C->p[nbrows][0] = 1;
-                                    //	poly[num_comp]->C->p[nbrows][1] = 1;
-                                    //	poly[num_comp]->C->nbrows++;
-                                    //}
-                                    poly[num_comp]->nbline = split_matrix(
-                                        opk, poly[num_comp]->F, F, ind_map_b,
-                                        cli_copy->size, &is_pos);
-
-                                    poly[res]->satC = opt_satmat_alloc(
-                                        poly[res]->F->nbrows,
-                                        opt_bitindex_size(
-                                            poly[res]->C->nbrows));
-                                    combine_satmat(opk, poly[res], clv->size,
-                                                   poly[res]->C->nbrows, true);
-                                    poly[num_comp]->satC = opt_satmat_alloc(
-                                        poly[num_comp]->F->nbrows,
-                                        opt_bitindex_size(
-                                            poly[num_comp]->C->nbrows));
-                                    combine_satmat(
-                                        opk, poly[num_comp], cli_copy->size,
-                                        poly[num_comp]->C->nbrows, true);
-
-                                    insert_comp_list_tail(acl, cli_copy);
-
-                                    free(ca1);
-                                    free(ca2);
-                                    free(ind_map_a);
-                                    free(ind_map_b);
-
-                                    opt_matrix_free(C);
-                                    opt_matrix_free(F);
-                                    free(tmp);
-
-                                  } else {
-                                    poly[res]->satC = opt_satmat_alloc(
-                                        poly[res]->F->nbrows,
-                                        opt_bitindex_size(
-                                            poly[res]->C->nbrows));
-                                    combine_satmat(opk, poly[res],
-                                                   matC->nbcolumns - opk->dec,
-                                                   poly[res]->C->nbrows, true);
-                                  }
-                                }
+						 
+						insert_comp_list_tail(acl,cli_copy);
+						 
+					
+						free(ca1);
+						free(ca2);
+						free(ind_map_a);
+						free(ind_map_b);
+					
+						opt_matrix_free(C);
+						opt_matrix_free(F);
+						free(tmp);
+					
+					}
+					else {
+						poly[res]->satC = opt_satmat_alloc(poly[res]->F->nbrows,opt_bitindex_size(poly[res]->C->nbrows));
+						combine_satmat(opk,poly[res],matC->nbcolumns - opk->dec,poly[res]->C->nbrows,true);
+					}
+				}
 				else{
 					opk->exn = ELINA_EXC_NONE;
 					exc_map[res] = 1;
