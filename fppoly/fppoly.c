@@ -3280,6 +3280,8 @@ void layer_free(layer_t * layer){
 	layer = NULL;
 }
 
+
+
 void fppoly_free(elina_manager_t *man, fppoly_t *fp){
 	size_t i;
 	size_t output_size = fp->layers[fp->numlayers-1]->dims;
@@ -3357,40 +3359,52 @@ void fppoly_fprint(FILE* stream, elina_manager_t* man, fppoly_t* fp, char** name
         }
 }
 
-elina_interval_t *box_for_neuron(elina_abstract0_t *abs, size_t layerno,
-                                 size_t neuron_no) {
-  fppoly_t *fp = fppoly_of_abstract0(abs);
-  if (layerno >= fp->numlayers) {
-    fprintf(stdout, "the layer does not exist\n");
-    return NULL;
-  }
-  layer_t *layer = fp->layers[layerno];
-  size_t dims = layer->dims;
-  if (neuron_no >= dims) {
-    fprintf(stdout, "the neuron does not exist\n");
-    return NULL;
-  }
-  neuron_t *neuron = layer->neurons[neuron_no];
-  elina_interval_t *res = elina_interval_alloc();
-  elina_interval_set_double(res, -neuron->lb, neuron->ub);
-  return res;
+
+elina_interval_t * box_for_neuron(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno, size_t neuron_no){
+	fppoly_t *fp = fppoly_of_abstract0(abs);
+	if(layerno >= fp->numlayers){
+		fprintf(stdout,"the layer does not exist\n");
+		return NULL;
+	}
+	layer_t * layer = fp->layers[layerno];
+	size_t dims = layer->dims;
+	if(neuron_no >= dims){
+		fprintf(stdout,"the neuron does not exist\n");
+		return NULL;
+	}
+	neuron_t * neuron = layer->neurons[neuron_no];
+	elina_interval_t * res = elina_interval_alloc();
+	elina_interval_set_double(res,-neuron->lb,neuron->ub);
+	return res;
 }
 
-elina_interval_t **box_for_layer(elina_abstract0_t *abs, size_t layerno) {
-  fppoly_t *fp = fppoly_of_abstract0(abs);
-  if (layerno >= fp->numlayers) {
-    fprintf(stdout, "the layer does not exist\n");
-    return NULL;
-  }
-  layer_t *layer = fp->layers[layerno];
-  size_t dims = layer->dims;
-  elina_interval_t **itv_arr =
-      (elina_interval_t **)malloc(dims * sizeof(elina_interval_t *));
-  size_t i;
-  for (i = 0; i < dims; i++) {
-    itv_arr[i] = box_for_neuron(abs, layerno, i);
-  }
-  return itv_arr;
+elina_interval_t ** box_for_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno){
+	fppoly_t *fp = fppoly_of_abstract0(abs);
+	if(layerno >= fp->numlayers){
+		fprintf(stdout,"the layer does not exist\n");
+		return NULL;
+	}
+	layer_t * layer = fp->layers[layerno];
+	size_t dims = layer->dims;
+	elina_interval_t ** itv_arr = (elina_interval_t **)malloc(dims*sizeof(elina_interval_t *));
+	size_t i;
+	for(i=0; i< dims; i++){
+		itv_arr[i] = box_for_neuron(man, abs, layerno, i);
+	}
+	return itv_arr;
+}
+
+
+size_t get_num_neurons_in_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno){
+	fppoly_t *fp = fppoly_of_abstract0(abs);
+	if(layerno >= fp->numlayers){
+		fprintf(stdout,"the layer does not exist\n");
+		return 0;
+	}
+	layer_t * layer = fp->layers[layerno];
+	size_t dims = layer->dims;
+	
+	return dims;
 }
 
 elina_linexpr0_t * get_expr_for_output_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t i, bool is_lower){
