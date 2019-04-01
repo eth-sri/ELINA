@@ -610,12 +610,14 @@ def handle_maxpool_layer(man, element, pool_size, input_size):
     return res
 
 
-def box_for_neuron(element,layerno, neuron_no):
+def box_for_neuron(man, element,layerno, neuron_no):
     """
     returns bounds for a neuron in a layer
     
     Parameters
     ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
     element : ElinaAbstract0Ptr
         Pointer to the ElinaAbstract0.
     layerno: c_size_t
@@ -633,20 +635,22 @@ def box_for_neuron(element,layerno, neuron_no):
     try:
         box_for_neuron_c = fppoly_api.box_for_neuron
         box_for_neuron_c.restype = ElinaIntervalPtr
-        box_for_neuron_c.argtypes = [ElinaAbstract0Ptr, c_size_t, c_size_t]
-        interval = box_for_neuron_c(element,layerno, neuron_no)
+        box_for_neuron_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t]
+        interval = box_for_neuron_c(man, element,layerno, neuron_no)
     except:
         print('Problem with loading/calling "box_for_neuron" from "fppoly.so"')
-        print('Make sure you are passing ElinaAbstract0Ptr, c_size_t, c_size_t to the function')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t to the function')
 
     return interval
 
-def box_for_layer(element,layerno):
+def box_for_layer(man, element,layerno):
     """
     returns bounds for all neurons in a layer
     
     Parameters
     ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
     element : ElinaAbstract0Ptr
         Pointer to the ElinaAbstract0.
     layerno: c_size_t
@@ -662,14 +666,44 @@ def box_for_layer(element,layerno):
     try:
         box_for_layer_c = fppoly_api.box_for_layer
         box_for_layer_c.restype = ElinaIntervalArray
-        box_for_layer_c.argtypes = [ElinaAbstract0Ptr, c_size_t]
-        interval_array = box_for_layer_c(element,layerno)
+        box_for_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t]
+        interval_array = box_for_layer_c(man, element,layerno)
     except:
         print('Problem with loading/calling "box_for_layer" from "fppoly.so"')
-        print('Make sure you are passing ElinaAbstract0Ptr, c_size_t to the function')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t to the function')
 
     return interval_array
 
+def get_num_neurons_in_layer(man, element,layerno):
+    """
+    returns the number of neurons in a layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    layerno: c_size_t
+        the layer number
+    Returns
+    -------
+    interval_array : ElinaIntervalArray
+        ElinaIntervalArray representing the hypercube.
+
+    """
+
+    res = 0
+    try:
+        get_num_neurons_in_layer_c = fppoly_api.get_num_neurons_in_layer
+        get_num_neurons_in_layer_c.restype = c_size_t
+        get_num_neurons_in_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t]
+        res = get_num_neurons_in_layer_c(man, element,layerno)
+    except:
+        print('Problem with loading/calling "get_num_neurons_in_layer" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t to the function')
+
+    return res
 
 
 def get_lexpr_for_output_neuron(man,element,i):

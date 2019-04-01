@@ -182,6 +182,12 @@ elina_linexpr0_t * get_lexpr_for_output_neuron(elina_manager_t *man, elina_abstr
 
 elina_linexpr0_t * get_uexpr_for_output_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t i);
 
+elina_interval_t * box_for_neuron(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno, size_t neuron_no);
+
+elina_interval_t ** box_for_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno);
+
+size_t get_num_neurons_in_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno);
+
 #ifdef __cplusplus
  }
 #endif
