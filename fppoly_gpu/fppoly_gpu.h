@@ -81,19 +81,17 @@ typedef struct expr_t {
   size_t size;
 } expr_t;
 
-typedef struct neuron_t {
-  double lb;
-  double ub;
-  expr_t *expr;
-  expr_t *maxpool_lexpr;
-  expr_t *maxpool_uexpr;
-} neuron_t;
-
 typedef struct layer_t {
   size_t dims;
   layertype_t type;
   activation_type_t activation;
-  neuron_t **neurons;
+
+  double *lb_array;
+  double *ub_array;
+
+  expr_t **expr_array;
+  expr_t **maxpool_lexpr_array;
+  expr_t **maxpool_uexpr_array;
 } layer_t;
 
 typedef struct output_abstract_t {
