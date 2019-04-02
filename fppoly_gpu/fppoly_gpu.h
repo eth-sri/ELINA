@@ -97,7 +97,9 @@ typedef struct expr_t
 
 typedef struct layer_t
 {
-    size_t dims;
+    size_t num_out_neurons;
+    size_t num_in_neurons;
+
     layertype_t type;
     activation_type_t activation;
 
