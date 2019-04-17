@@ -3035,6 +3035,8 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
 
   const size_t num_out_neurons_last_layer =
       fp->layers[layerno]->num_out_neurons;
+  std::cout << "num_out_neurons_last " << num_out_neurons_last_layer
+            << std::endl;
 
   expr_t **expr_array = fp->layers[layerno]->expr_array;
 
@@ -3063,6 +3065,9 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   for (int k = layerno - 1; k >= 0; k--) {
     const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
     const size_t num_in_neurons_current_layer = fp->layers[k]->num_in_neurons;
+    std::cout << "num_out_neurons_current " << num_out_neurons_current_layer
+              << " num_in_neurons_current " << num_in_neurons_current_layer
+              << std::endl;
 
     const size_t num_threads = 512;
 
@@ -3160,13 +3165,16 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
     cudaFree(uexpr_array);
   }
 
+  cudaFree(lexpr_array_tmp);
+  cudaFree(uexpr_array_tmp);
+
   cudaDeviceSynchronize();
 
   auto end = std::chrono::system_clock::now();
 
   std::chrono::duration<double> elapsed_seconds = end - start;
-  std::cout << "elapsed time: " << elapsed_seconds.count()
-            << "s, Num Neurons: " << num_out_neurons_last_layer << std::endl;
+  std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl
+            << std::endl;
 }
 
 void ffn_handle_intermediate_layer(elina_manager_t *man,
@@ -3440,14 +3448,62 @@ void ffn_handle_last_tanh_layer(elina_manager_t *man,
   // num_in_neurons, has_tanh, TANH);
 }
 
-void get_lb_using_previous_layers(double *lb_dev, elina_manager_t *man,
-                                  const fppoly_t *const fp, expr_t **expr) {
+__global__ void create_sub_expr(expr_t **sub, const elina_dim_t y,
+                                const elina_dim_t x) {
+
+  expr_t *expr = (expr_t *)malloc(sizeof(expr_t));
+
+  expr->inf_cst = 0;
+  expr->sup_cst = 0;
+
+  expr->inf_coeff = (double *)malloc(10 * sizeof(double));
+  expr->sup_coeff = (double *)malloc(10 * sizeof(double));
+  expr->dim = nullptr;
+
+  expr->size = 10;
+  expr->type = DENSE;
+
+  for (size_t i = 0; i < 10; i++) {
+    expr->inf_coeff[i] = 0.;
+    expr->sup_coeff[i] = 0.;
+  }
+
+  expr->inf_coeff[y] = -1.;
+  expr->sup_coeff[y] = 1.;
+
+  expr->inf_coeff[x] = 1.;
+  expr->sup_coeff[x] = -1.;
+
+  *sub = expr;
+}
+
+double get_lb_using_previous_layers(elina_manager_t *man,
+                                    const fppoly_t *const fp,
+                                    const elina_dim_t y, const elina_dim_t x) {
   const size_t numlayers = fp->numlayers;
-  expr_t **lexpr_ptr = expr;
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
+  double *lb_dev;
+  cudaMalloc((void **)&lb_dev, sizeof(double));
+
+  expr_t **lexpr_array;
+  cudaMalloc((void **)&lexpr_array, sizeof(expr_t *));
+
+  create_sub_expr<<<1, 1>>>(lexpr_array, y, x);
+
+  expr_t **lexpr_array_tmp;
+  cudaMalloc((void **)&lexpr_array_tmp, sizeof(expr_t *));
+
   for (int k = numlayers - 1; k >= 0; k--) {
+    const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
+    const size_t num_in_neurons_current_layer = fp->layers[k]->num_in_neurons;
+
+    const size_t num_threads = 512;
+
+    const dim3 num_blocks_relu(1, num_out_neurons_current_layer / 512 + 1, 1);
+    const dim3 num_blocks_linear(1, num_in_neurons_current_layer / 512 + 1, 1);
+
     expr_t **aux_expr_array = fp->layers[k]->expr_array;
     expr_t **aux_maxpool_lexpr_array = fp->layers[k]->maxpool_lexpr_array;
     expr_t **aux_maxpool_uexpr_array = fp->layers[k]->maxpool_uexpr_array;
@@ -3457,54 +3513,46 @@ void get_lb_using_previous_layers(double *lb_dev, elina_manager_t *man,
 
     if (fp->layers[k]->type != MAXPOOL) {
       if (fp->layers[k]->activation == RELU) {
-        lexpr_replace_relu_bounds<<<1, 1>>>(lexpr_ptr, aux_lb_array,
-                                            aux_ub_array, 1);
+        lexpr_replace_relu_bounds_specialized<<<num_blocks_relu, num_threads>>>(
+            lexpr_array, aux_lb_array, aux_ub_array, 1,
+            num_out_neurons_current_layer);
       }
 
-      expr_from_previous_layer<<<1, 1>>>(lexpr_ptr, aux_expr_array, 1);
+      layer_allocate_exprs<<<1, 1>>>(lexpr_array_tmp, 1,
+                                     num_in_neurons_current_layer);
+
+      expr_from_previous_layer_specialized<<<num_blocks_linear, num_threads>>>(
+          lexpr_array, lexpr_array_tmp, aux_expr_array, 1,
+          num_out_neurons_current_layer, num_in_neurons_current_layer);
+
+      std::swap(lexpr_array, lexpr_array_tmp);
+
+      free_expr_array<<<1, 1>>>(lexpr_array_tmp, num_out_neurons_current_layer);
     } else {
-      lexpr_replace_maxpool_bounds<<<1, 1>>>(lexpr_ptr, aux_maxpool_lexpr_array,
-                                             aux_maxpool_uexpr_array,
-                                             aux_lb_array, aux_ub_array, 1);
+      lexpr_replace_maxpool_bounds<<<1, 1>>>(
+          lexpr_array, aux_maxpool_lexpr_array, aux_maxpool_uexpr_array,
+          aux_lb_array, aux_ub_array, 1);
     }
   }
 
   if ((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr)) {
-    replace_input_poly_cons_in_lexpr<<<1, 1>>>(lexpr_ptr, fp->input_inf,
+    replace_input_poly_cons_in_lexpr<<<1, 1>>>(lexpr_array, fp->input_inf,
                                                fp->input_sup, fp->input_lexpr,
                                                fp->input_uexpr, 1);
   }
 
-  compute_lb_from_expr<<<1, 1>>>(lb_dev, lexpr_ptr, fp->input_inf,
+  compute_lb_from_expr<<<1, 1>>>(lb_dev, lexpr_array, fp->input_inf,
                                  fp->input_sup, 1);
-}
 
-__global__ void create_sub_expr(expr_t **sub, const elina_dim_t y,
-                                const elina_dim_t x) {
+  double lb;
+  cudaMemcpy(&lb, lb_dev, sizeof(double), cudaMemcpyDeviceToHost);
 
-  expr_t *expr = (expr_t *)malloc(sizeof(expr_t));
+  free_expr_array<<<1, 1>>>(lexpr_array, 1);
+  cudaFree(lexpr_array);
+  cudaFree(lexpr_array_tmp);
+  cudaFree(lb_dev);
 
-  expr->inf_cst = 0;
-  expr->sup_cst = 0;
-
-  expr->inf_coeff = (double *)malloc(2 * sizeof(double));
-  expr->sup_coeff = (double *)malloc(2 * sizeof(double));
-  expr->dim = (size_t *)malloc(2 * sizeof(size_t));
-  expr->size = 2;
-  expr->type = SPARSE;
-
-  expr->inf_coeff[0] = -1;
-  expr->sup_coeff[0] = 1;
-  expr->dim[0] = y;
-
-  expr->inf_coeff[1] = 1;
-  expr->sup_coeff[1] = -1;
-  expr->dim[1] = x;
-
-  printf("y, %lu\n", expr->dim[0]);
-  printf("x, %lu\n", expr->dim[1]);
-
-  *sub = expr;
+  return lb;
 }
 
 bool is_greater(elina_manager_t *man, elina_abstract0_t *element,
@@ -3513,24 +3561,7 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element,
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
-  double *lb_dev;
-  cudaMalloc((void **)&lb_dev, sizeof(double));
-
-  expr_t **sub;
-  cudaMalloc((void **)&sub, sizeof(expr_t *));
-
-  create_sub_expr<<<1, 1>>>(sub, y, x);
-
-  double lb;
-
-  get_lb_using_previous_layers(lb_dev, man, fp, sub);
-
-  cudaMemcpy(&lb, lb_dev, sizeof(double), cudaMemcpyDeviceToHost);
-
-  free_expr_array<<<1, 1>>>(sub, 1);
-  cudaFree(sub);
-
-  cudaFree(lb_dev);
+  double lb = get_lb_using_previous_layers(man, fp, y, x);
 
   if (lb < 0) {
     return true;
@@ -3692,17 +3723,23 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element,
 */
 }
 
-__global__ void create_dense_expr_device(expr_t **expr_array, size_t index,
-                                         double *inf_coeff, double *sup_coeff,
-                                         double inf_cst, double sup_cst,
-                                         size_t size, exprtype_t type) {
+__global__ void
+create_dense_expr_device(expr_t **expr_array, const size_t index,
+                         const double *inf_coeff, const double *sup_coeff,
+                         const double inf_cst, const double sup_cst,
+                         const size_t size, const exprtype_t type) {
   expr_t *expr = (expr_t *)malloc(sizeof(expr_t));
 
   expr->inf_cst = inf_cst;
   expr->sup_cst = sup_cst;
 
-  expr->inf_coeff = inf_coeff;
-  expr->sup_coeff = sup_coeff;
+  expr->inf_coeff = (double *)malloc(size * sizeof(double));
+  expr->sup_coeff = (double *)malloc(size * sizeof(double));
+
+  for (size_t i = 0; i < size; i++) {
+    expr->inf_coeff[i] = inf_coeff[i];
+    expr->sup_coeff[i] = sup_coeff[i];
+  }
 
   expr->dim = nullptr;
   expr->size = size;
@@ -3727,6 +3764,9 @@ void copy_dense_expr_host_to_device(expr_t **expr_array, size_t index,
   create_dense_expr_device<<<1, 1>>>(expr_array, index, inf_coeff_tmp,
                                      sup_coeff_tmp, src->inf_cst, src->sup_cst,
                                      src->size, src->type);
+
+  cudaFree(inf_coeff_tmp);
+  cudaFree(sup_coeff_tmp);
 }
 
 void device_layer_create_sparse_exprs(
