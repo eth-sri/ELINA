@@ -51,7 +51,6 @@ typedef struct fppoly_internal_t
   /* raised when a conversion from/to a user type resulted in an
      overapproximation
   */
-  bool conv;
   double min_denormal;
   double ulp;
   /* back pointer to elina_manager*/
@@ -76,22 +75,12 @@ typedef enum activation_type_t
 } activation_type_t;
 
 
-typedef enum exprtype_t
-{
- DENSE,
- SPARSE,
-} exprtype_t;
-
-
 typedef struct expr_t
 {
     double* inf_coeff;
     double* sup_coeff;
     double inf_cst;
     double sup_cst;
-    exprtype_t type;
-    size_t* dim;
-    size_t size;
 } expr_t;
 
 
@@ -107,18 +96,7 @@ typedef struct layer_t
     double* ub_array;
 
     expr_t** expr_array;
-    expr_t** maxpool_lexpr_array;
-    expr_t** maxpool_uexpr_array;
 } layer_t;
-
-
-typedef struct output_abstract_t
-{
-    double* output_inf;
-    double* output_sup;
-    expr_t** lexpr;
-    expr_t** uexpr;
-} output_abstract_t;
 
 
 typedef struct fppoly_t
@@ -127,11 +105,8 @@ typedef struct fppoly_t
     size_t numlayers;
     double* input_inf;
     double* input_sup;
-    expr_t** input_lexpr;
-    expr_t** input_uexpr;
     size_t size;
     size_t num_pixels;
-    output_abstract_t* out;
 } fppoly_t;
 
 
