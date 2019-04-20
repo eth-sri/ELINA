@@ -24,6 +24,10 @@
 #include <cuda.h>
 #include <iostream>
 
+bool results[90];
+bool results_calculated;
+size_t output_counter;
+
 #define gpuErrchk(ans)                                                         \
   { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line,
@@ -36,7 +40,6 @@ inline void gpuAssert(cudaError_t code, const char *file, int line,
   }
 }
 
-// Global const variables can be used from CPU and from GPU.
 __constant__ const double min_denormal = 4.940656458412465441766e-324;
 __constant__ const double ulp = 2.220446049250313080848e-16;
 
@@ -317,6 +320,8 @@ fppoly_internal_t *fppoly_init_from_manager(elina_manager_t *man,
 
 elina_manager_t *fppoly_manager_alloc() {
   std::cout << "This is the GPU version of fppoly!" << std::endl;
+  results_calculated = false;
+  output_counter = 1;
   size_t set_limit = 3 * size_t(2u << 30u);
   size_t limit;
 
@@ -3341,8 +3346,8 @@ __global__ void assign_output_inf_sup(double *lb_array, double *ub_array,
   if (i < num_out_neurons) {
     lb_array[i] = aux_lb_array[i];
     ub_array[i] = aux_ub_array[i];
-    printf("out inf numer %i is: %g\n", i, lb_array[i]);
-    printf("out sup numer %i is: %g\n", i, ub_array[i]);
+    printf("out inf number %i is: %g\n", i, lb_array[i]);
+    printf("out sup number %i is: %g\n", i, ub_array[i]);
   }
 }
 
@@ -3448,8 +3453,8 @@ void ffn_handle_last_tanh_layer(elina_manager_t *man,
   // num_in_neurons, has_tanh, TANH);
 }
 
-__global__ void create_sub_expr(expr_t **sub, const elina_dim_t y,
-                                const elina_dim_t x) {
+__global__ void create_sub_expr(expr_t **sub, const size_t index,
+                                const elina_dim_t y, const elina_dim_t x) {
 
   expr_t *expr = (expr_t *)malloc(sizeof(expr_t));
 
@@ -3474,26 +3479,38 @@ __global__ void create_sub_expr(expr_t **sub, const elina_dim_t y,
   expr->inf_coeff[x] = 1.;
   expr->sup_coeff[x] = -1.;
 
-  *sub = expr;
+  sub[index] = expr;
 }
 
-double get_lb_using_previous_layers(elina_manager_t *man,
-                                    const fppoly_t *const fp,
-                                    const elina_dim_t y, const elina_dim_t x) {
+void get_lb_using_previous_layers(elina_manager_t *man,
+                                  const fppoly_t *const fp) {
   const size_t numlayers = fp->numlayers;
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
+  const size_t num_out_neurons_last_layer = 90;
+
   double *lb_dev;
-  cudaMalloc((void **)&lb_dev, sizeof(double));
+  cudaMalloc((void **)&lb_dev, num_out_neurons_last_layer * sizeof(double));
 
   expr_t **lexpr_array;
-  cudaMalloc((void **)&lexpr_array, sizeof(expr_t *));
+  cudaMalloc((void **)&lexpr_array,
+             num_out_neurons_last_layer * sizeof(expr_t *));
 
-  create_sub_expr<<<1, 1>>>(lexpr_array, y, x);
+  size_t index = 0;
+
+  for (elina_dim_t y = 0; y < 10; y++) {
+    for (elina_dim_t x = 0; x < 10; x++) {
+      if (y != x) {
+        create_sub_expr<<<1, 1>>>(lexpr_array, index, y, x);
+        index++;
+      }
+    }
+  }
 
   expr_t **lexpr_array_tmp;
-  cudaMalloc((void **)&lexpr_array_tmp, sizeof(expr_t *));
+  cudaMalloc((void **)&lexpr_array_tmp,
+             num_out_neurons_last_layer * sizeof(expr_t *));
 
   for (int k = numlayers - 1; k >= 0; k--) {
     const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
@@ -3501,8 +3518,10 @@ double get_lb_using_previous_layers(elina_manager_t *man,
 
     const size_t num_threads = 512;
 
-    const dim3 num_blocks_relu(1, num_out_neurons_current_layer / 512 + 1, 1);
-    const dim3 num_blocks_linear(1, num_in_neurons_current_layer / 512 + 1, 1);
+    const dim3 num_blocks_relu(num_out_neurons_last_layer,
+                               num_out_neurons_current_layer / 512 + 1, 1);
+    const dim3 num_blocks_linear(num_out_neurons_last_layer,
+                                 num_in_neurons_current_layer / 512 + 1, 1);
 
     expr_t **aux_expr_array = fp->layers[k]->expr_array;
     expr_t **aux_maxpool_lexpr_array = fp->layers[k]->maxpool_lexpr_array;
@@ -3514,45 +3533,57 @@ double get_lb_using_previous_layers(elina_manager_t *man,
     if (fp->layers[k]->type != MAXPOOL) {
       if (fp->layers[k]->activation == RELU) {
         lexpr_replace_relu_bounds_specialized<<<num_blocks_relu, num_threads>>>(
-            lexpr_array, aux_lb_array, aux_ub_array, 1,
+            lexpr_array, aux_lb_array, aux_ub_array, num_out_neurons_last_layer,
             num_out_neurons_current_layer);
       }
 
-      layer_allocate_exprs<<<1, 1>>>(lexpr_array_tmp, 1,
-                                     num_in_neurons_current_layer);
+      layer_allocate_exprs<<<num_out_neurons_last_layer, 1>>>(
+          lexpr_array_tmp, num_out_neurons_last_layer,
+          num_in_neurons_current_layer);
 
       expr_from_previous_layer_specialized<<<num_blocks_linear, num_threads>>>(
-          lexpr_array, lexpr_array_tmp, aux_expr_array, 1,
-          num_out_neurons_current_layer, num_in_neurons_current_layer);
+          lexpr_array, lexpr_array_tmp, aux_expr_array,
+          num_out_neurons_last_layer, num_out_neurons_current_layer,
+          num_in_neurons_current_layer);
 
       std::swap(lexpr_array, lexpr_array_tmp);
 
-      free_expr_array<<<1, 1>>>(lexpr_array_tmp, num_out_neurons_current_layer);
+      free_expr_array<<<num_out_neurons_last_layer, 1>>>(
+          lexpr_array_tmp, num_out_neurons_current_layer);
     } else {
-      lexpr_replace_maxpool_bounds<<<1, 1>>>(
+      lexpr_replace_maxpool_bounds<<<num_out_neurons_last_layer, 1>>>(
           lexpr_array, aux_maxpool_lexpr_array, aux_maxpool_uexpr_array,
-          aux_lb_array, aux_ub_array, 1);
+          aux_lb_array, aux_ub_array, num_out_neurons_last_layer);
     }
   }
 
   if ((fp->input_lexpr != nullptr) && (fp->input_uexpr != nullptr)) {
-    replace_input_poly_cons_in_lexpr<<<1, 1>>>(lexpr_array, fp->input_inf,
-                                               fp->input_sup, fp->input_lexpr,
-                                               fp->input_uexpr, 1);
+    replace_input_poly_cons_in_lexpr<<<num_out_neurons_last_layer, 1>>>(
+        lexpr_array, fp->input_inf, fp->input_sup, fp->input_lexpr,
+        fp->input_uexpr, num_out_neurons_last_layer);
   }
 
-  compute_lb_from_expr<<<1, 1>>>(lb_dev, lexpr_array, fp->input_inf,
-                                 fp->input_sup, 1);
+  compute_lb_from_expr<<<num_out_neurons_last_layer, 1>>>(
+      lb_dev, lexpr_array, fp->input_inf, fp->input_sup,
+      num_out_neurons_last_layer);
 
-  double lb;
-  cudaMemcpy(&lb, lb_dev, sizeof(double), cudaMemcpyDeviceToHost);
+  double lb[num_out_neurons_last_layer];
+  cudaMemcpy(&lb, lb_dev, num_out_neurons_last_layer * sizeof(double),
+             cudaMemcpyDeviceToHost);
 
-  free_expr_array<<<1, 1>>>(lexpr_array, 1);
+  free_expr_array<<<num_out_neurons_last_layer, 1>>>(
+      lexpr_array, num_out_neurons_last_layer);
   cudaFree(lexpr_array);
   cudaFree(lexpr_array_tmp);
   cudaFree(lb_dev);
 
-  return lb;
+  for (size_t i = 0; i < num_out_neurons_last_layer; i++) {
+    if (lb[i] < 0) {
+      results[i] = true;
+    } else {
+      results[i] = false;
+    }
+  }
 }
 
 bool is_greater(elina_manager_t *man, elina_abstract0_t *element,
@@ -3561,166 +3592,17 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element,
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
-  double lb = get_lb_using_previous_layers(man, fp, y, x);
+  if (!results_calculated) {
+    get_lb_using_previous_layers(man, fp);
+    results_calculated = true;
 
-  if (lb < 0) {
-    return true;
+    return results[0];
   } else {
-    return false;
+    bool result = results[output_counter];
+    output_counter++;
+
+    return result;
   }
-
-  /*
-  output_abstract_t * out = fp->out;
-  expr_t * exprA = out->lexpr[y];
-  expr_t * exprB = out->uexpr[x];
-  if(exprA==nullptr){
-      return false;
-  }
-  else{
-      if(exprB==nullptr){
-          if(out->output_inf[y]<0){
-              return true;
-          }
-          else{
-              return false;
-          }
-
-      }
-      else{
-          //printf("before access %zu %zu\n", exprA->size,exprB->size);
-          //fflush(stdout);
-          size_t sizeA = exprA->size;
-          size_t sizeB = exprB->size;
-          //printf("after access\n");
-          //fflush(stdout);
-          size_t i,k;
-          expr_t * sub = (expr_t *)malloc(sizeof(expr_t));
-          //
-          //sub->size = size;
-          sub->inf_cst = exprA->inf_cst + exprB->sup_cst;
-          sub->sup_cst = exprA->sup_cst + exprB->inf_cst;
-          //printf("getting here\n");
-          //expr_print(exprA);
-          //expr_print(exprB);
-          //fflush(stdout);
-          if(exprA->type==DENSE){
-              sub->inf_coeff = (double*)malloc(sizeA*sizeof(double));
-              sub->sup_coeff = (double*)malloc(sizeA*sizeof(double));
-              sub->dim = nullptr;
-              sub->size = sizeA;
-              sub->type = DENSE;
-              if(exprB->type==DENSE){
-                      for(i=0; i < sizeA; i++){
-                          sub->inf_coeff[i] = exprA->inf_coeff[i] +
-  exprB->sup_coeff[i]; sub->sup_coeff[i] = exprA->sup_coeff[i] +
-  exprB->inf_coeff[i];
-                      }
-              }
-              else{
-                  k = 0;
-                  for(i=0; i < sizeA; i++){
-                      if(k < sizeB && exprB->dim[k]==i){
-                          sub->inf_coeff[i] = exprA->inf_coeff[i] +
-  exprB->sup_coeff[k]; sub->sup_coeff[i] = exprA->sup_coeff[i] +
-  exprB->inf_coeff[k]; k++;
-                      }
-                      else{
-                          sub->inf_coeff[i] = exprA->inf_coeff[i];
-                          sub->sup_coeff[i] = exprA->sup_coeff[i];
-                      }
-                  }
-              }
-
-          }
-          else{
-              if(exprB->type==DENSE){
-                  sub->inf_coeff = (double*)malloc(sizeB*sizeof(double));
-                  sub->sup_coeff = (double*)malloc(sizeB*sizeof(double));
-                  sub->dim = nullptr;
-                  sub->size = sizeB;
-                  sub->type = DENSE;
-                  i = 0;
-                  for(k=0; k < sizeB; k++){
-                      if(i < sizeA && exprA->dim[i]==k){
-                          sub->inf_coeff[k] = exprA->inf_coeff[i] +
-  exprB->sup_coeff[k]; sub->sup_coeff[k] = exprA->sup_coeff[i] +
-  exprB->inf_coeff[k]; i++;
-                      }
-                      else{
-                          sub->inf_coeff[i] = exprB->sup_coeff[k];
-                          sub->sup_coeff[i] = exprB->inf_coeff[k];
-                      }
-                  }
-              }
-              else{
-                  sub->inf_coeff =
-  (double*)malloc((sizeA+sizeB)*sizeof(double)); sub->sup_coeff =
-  (double*)malloc((sizeA+sizeB)*sizeof(double)); sub->dim = nullptr;
-
-                  sub->type = SPARSE;
-                  size_t l = 0;
-                  i=0;
-                  k=0;
-                  sub->dim = (size_t *)malloc((sizeA+sizeB)*sizeof(size_t));
-                  while(i < sizeA && k < sizeB){
-                      if(exprA->dim[i] < exprB->dim[k]){
-                          sub->inf_coeff[l] = exprA->inf_coeff[i];
-                          sub->sup_coeff[l] = exprA->sup_coeff[i];
-                          sub->dim[l] = exprA->dim[i];
-                          i++;
-
-                      }
-                      else if(exprB->dim[k] < exprA->dim[i]){
-                          sub->inf_coeff[l] = exprB->sup_coeff[k];
-                          sub->sup_coeff[l] = exprB->inf_coeff[k];
-                          sub->dim[l] = exprB->dim[k];
-                          k++;
-                      }
-                      else{
-                          sub->inf_coeff[l] = exprA->inf_coeff[i] +
-  exprB->sup_coeff[k]; sub->sup_coeff[l] = exprA->sup_coeff[i] +
-  exprB->inf_coeff[k]; sub->dim[l] = exprA->dim[i]; i++; k++;
-                      }
-                      l++;
-                  }
-                  while(i < sizeA){
-                      sub->inf_coeff[l] = exprA->inf_coeff[i];
-                      sub->sup_coeff[l] = exprA->sup_coeff[i];
-                      sub->dim[l] = exprA->dim[i];
-                      i++;
-                      l++;
-                  }
-                  while(k < sizeB){
-                      sub->inf_coeff[l] = exprB->inf_coeff[k];
-                      sub->sup_coeff[l] = exprB->sup_coeff[k];
-                      sub->dim[l] = exprB->dim[k];
-                      k++;
-                      l++;
-                  }
-                  sub->size = l;
-                  sub->inf_coeff =
-  (double*)realloc(sub->inf_coeff,l*sizeof(double)); sub->sup_coeff =
-  (double*)realloc(sub->sup_coeff,l*sizeof(double)); sub->dim = (size_t
-  *)realloc(sub->dim,l*sizeof(size_t));
-              }
-          }
-
-          //expr_print(sub);
-          //fflush(stdout);
-          double lb = compute_lb_from_expr(pr,sub,fp);
-          //printf("y: %zu x: %zu lb: %g\n",y,x,lb);
-          //fflush(stdout);
-          free_expr(sub);
-          //double lb = -out->output_inf[y] - out->output_sup[x];
-          if(lb<0){
-              return true;
-          }
-          else{
-              return false;
-          }
-      }
-  }
-*/
 }
 
 __global__ void
