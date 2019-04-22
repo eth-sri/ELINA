@@ -385,177 +385,6 @@ i);
 }
 */
 
-// merges an array of size_t and mirrors the same merge operation to two arrays
-// of double
-__device__ __host__ void merge(size_t *source, size_t *target,
-                               double *source_mirror, double *target_mirror,
-                               size_t llength, size_t ulength) {
-  size_t length = llength + ulength;
-
-  size_t *lsource_ptr = source;
-  size_t *usource_ptr = source + llength;
-  size_t *target_ptr = target;
-
-  double *lsource_mirror_ptr = source_mirror;
-  double *usource_mirror_ptr = source_mirror + llength;
-  double *target_mirror_ptr = target_mirror;
-
-  while (lsource_ptr < (source + llength) && usource_ptr < (source + length)) {
-    if (*lsource_ptr < *usource_ptr) {
-      *target_ptr = *lsource_ptr;
-      lsource_ptr++;
-      target_ptr++;
-
-      *target_mirror_ptr = *lsource_mirror_ptr;
-      lsource_mirror_ptr++;
-      target_mirror_ptr++;
-    } else {
-      *target_ptr = *usource_ptr;
-
-      usource_ptr++;
-      target_ptr++;
-
-      *target_mirror_ptr = *usource_mirror_ptr;
-
-      usource_mirror_ptr++;
-      target_mirror_ptr++;
-    }
-  }
-
-  while (lsource_ptr < (source + llength)) {
-    *target_ptr = *lsource_ptr;
-
-    lsource_ptr++;
-    target_ptr++;
-
-    *target_mirror_ptr = *lsource_mirror_ptr;
-
-    lsource_mirror_ptr++;
-    target_mirror_ptr++;
-  }
-
-  while (usource_ptr < (source + length)) {
-    *target_ptr = *usource_ptr;
-
-    usource_ptr++;
-    target_ptr++;
-
-    *target_mirror_ptr = *usource_mirror_ptr;
-
-    usource_mirror_ptr++;
-    target_mirror_ptr++;
-  }
-}
-
-template <typename T> __device__ __host__ void swap(T &a, T &b) {
-  T tmp = b;
-  b = a;
-  a = tmp;
-}
-
-// sorts an array of size_t and mirrors the same permutation to two arrays of
-// double
-__device__ __host__ void sort_sparse_expr(size_t *array, double *mirror_array,
-                                          const size_t length) {
-  size_t *a = array;
-  size_t *b = nullptr;
-  double *mirror_a = mirror_array;
-  double *mirror_b = nullptr;
-
-  bool sorted = true;
-
-  size_t startl = 0;
-  size_t startu;
-  size_t endu;
-
-  bool first = true;
-  size_t i = 0;
-
-  // check if the array is sorted before going in the main loop
-  for (; i < length - 1; i++) {
-    if (a[i] > a[i + 1]) {
-      startu = i + 1;
-      first = false;
-      sorted = false;
-
-      // only allocate memory if the array is not sorted
-      b = (size_t *)malloc(length * sizeof(size_t));
-      mirror_b = (double *)malloc(length * sizeof(double));
-
-      i++;
-
-      break;
-    }
-  }
-
-  if (sorted) {
-    return;
-  }
-
-  while (true) {
-    for (; i < length - 1; i++) {
-      if (a[i] > a[i + 1]) {
-        if (first) {
-          // mark end of first chunk when encountering a descending number
-          startu = i + 1;
-          first = false;
-          sorted = false;
-        } else {
-          // mark end of second chunk when encountering a descending number and
-          // merge the two chunks
-          endu = i + 1;
-          merge(a + startl, b + startl, mirror_a + startl, mirror_b + startl,
-                startu - startl, endu - startu);
-          first = true;
-          startl = endu;
-        }
-      }
-    }
-
-    if (sorted == true) {
-      break;
-    }
-
-    if (first) {
-      // for odd numbers of chunks, need to copy the last chunk over
-      memcpy(b + startl, a + startl, (length - startl) * sizeof(size_t));
-      memcpy(mirror_b + startl, mirror_a + startl,
-             (length - startl) * sizeof(double));
-    } else {
-      // for even numbers of chunks, need to mark past-the-end pointer as endu
-      // and do a merge
-      endu = length;
-      merge(a + startl, b + startl, mirror_a + startl, mirror_b + startl,
-            startu - startl, endu - startu);
-      first = true;
-    }
-
-    swap(a, b);
-    swap(mirror_a, mirror_b);
-
-    i = 0;
-    startl = 0;
-    sorted = true;
-  }
-
-  if (array == a) {
-    // if a points to the original array, just free the temporaries
-    free(b);
-    free(mirror_b);
-  } else {
-    // if a points to the temporaries created in merge_sort, swap, then memcpy
-    // from b to a, then free the temporaries
-    swap(a, b);
-    swap(mirror_a, mirror_b);
-
-    memcpy(a, b, length * sizeof(size_t));
-    memcpy(mirror_a, mirror_b, length * sizeof(double));
-
-    free(b);
-    free(mirror_b);
-  }
-}
-
 layer_t *create_layer(const size_t num_out_neurons, const size_t num_in_neurons,
                       const layertype_t type,
                       const activation_type_t activation) {
@@ -1587,9 +1416,9 @@ void device_layer_create_sparse_exprs(
         size_t *dim = (size_t *)malloc(num_coeff * sizeof(size_t));
         size_t i = 0;
 
-        for (size_t inp_z = 0; inp_z < input_size[2]; inp_z++) {
-          for (size_t x_shift = 0; x_shift < filter_size[0]; x_shift++) {
-            for (size_t y_shift = 0; y_shift < filter_size[1]; y_shift++) {
+        for (size_t x_shift = 0; x_shift < filter_size[0]; x_shift++) {
+          for (size_t y_shift = 0; y_shift < filter_size[1]; y_shift++) {
+            for (size_t inp_z = 0; inp_z < input_size[2]; inp_z++) {
               const long int x_val = out_x * strides[0] + x_shift - pad_top;
               const long int y_val = out_y * strides[1] + y_shift - pad_left;
 
@@ -1620,20 +1449,12 @@ void device_layer_create_sparse_exprs(
           }
         }
 
-        sort_sparse_expr(dim, coeff, actual_coeff);
+        const double cst = filter_bias[out_z];
 
-        const double cst = has_bias ? filter_bias[out_z] : 0;
+        double *dense_coeff = (double *)calloc(num_pixels, sizeof(double));
 
-        double *dense_coeff = (double *)malloc(num_pixels * sizeof(double));
-
-        size_t k = 0;
-        for (size_t i = 0; i < num_pixels; i++) {
-          if ((dim[k] == i) && (k < actual_coeff)) {
-            dense_coeff[i] = coeff[k];
-            k++;
-          } else {
-            dense_coeff[i] = 0.;
-          }
+        for (size_t i = 0; i < actual_coeff; i++) {
+          dense_coeff[dim[i]] = coeff[i];
         }
 
         expr_t *res = (expr_t *)malloc(sizeof(expr_t));
@@ -1730,7 +1551,7 @@ void layer_create_sparse_exprs(fppoly_t *const fp, const double *filter_weights,
       filter_size[0] * filter_size[1] * input_size[2] * output_size[2];
 
   double *filter_weights_tmp = (double *)malloc(size * sizeof(double));
-  double *filter_bias_tmp = (double *)malloc(output_size[2] * sizeof(double));
+  double *filter_bias_tmp = (double *)calloc(output_size[2], sizeof(double));
 
   size_t *input_size_tmp = (size_t *)malloc(3 * sizeof(size_t));
   size_t *output_size_tmp = (size_t *)malloc(3 * sizeof(size_t));
@@ -1739,8 +1560,11 @@ void layer_create_sparse_exprs(fppoly_t *const fp, const double *filter_weights,
 
   cudaMemcpy(filter_weights_tmp, filter_weights, size * sizeof(double),
              cudaMemcpyHostToHost);
-  cudaMemcpy(filter_bias_tmp, filter_bias, output_size[2] * sizeof(double),
-             cudaMemcpyHostToHost);
+
+  if (has_bias) {
+    cudaMemcpy(filter_bias_tmp, filter_bias, output_size[2] * sizeof(double),
+               cudaMemcpyHostToHost);
+  }
 
   cudaMemcpy(input_size_tmp, input_size, 3 * sizeof(size_t),
              cudaMemcpyHostToHost);
