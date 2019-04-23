@@ -1422,49 +1422,15 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, const elina_di
 }
 
 
-__global__
-void create_dense_expr_device(expr_t** expr_array, const size_t index, const double* inf_coeff, const double* sup_coeff, const double inf_cst, const double sup_cst, const size_t size)
-{
-    expr_t* expr = (expr_t*) malloc(sizeof(expr_t));
-
-    expr->inf_cst = inf_cst;
-    expr->sup_cst = sup_cst;
-
-    expr->inf_coeff = (double*) malloc(size*sizeof(double));
-    expr->sup_coeff = (double*) malloc(size*sizeof(double));
-
-    for(size_t i = 0; i < size; i++)
-    {
-        expr->inf_coeff[i] = inf_coeff[i];
-        expr->sup_coeff[i] = sup_coeff[i];
-    }
-
-    expr_array[index] = expr;
-}
-
-
-void copy_dense_expr_host_to_device(expr_t** expr_array, size_t index, const expr_t* const src, const size_t num_pixels)
-{
-    double* inf_coeff_tmp;
-    double* sup_coeff_tmp;
-
-    cudaMalloc((void**) &inf_coeff_tmp, num_pixels*sizeof(double));
-    cudaMalloc((void**) &sup_coeff_tmp, num_pixels*sizeof(double));
-
-    cudaMemcpy(inf_coeff_tmp, src->inf_coeff, num_pixels*sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(sup_coeff_tmp, src->sup_coeff, num_pixels*sizeof(double), cudaMemcpyHostToDevice);
-
-    create_dense_expr_device<<<1, 1>>>(expr_array, index, inf_coeff_tmp, sup_coeff_tmp, src->inf_cst, src->sup_cst, num_pixels);
-
-    cudaFree(inf_coeff_tmp);
-    cudaFree(sup_coeff_tmp);
-}
-
-
 void device_layer_create_sparse_exprs(expr_t** expr_array, const double* filter_weights, const double* filter_bias,
                                const size_t* input_size, const size_t* output_size, const size_t* filter_size, const size_t* strides,
-                                const bool has_bias, const long int pad_top, const long int pad_left, const size_t num_pixels)
+                               const long int pad_top, const long int pad_left, const size_t num_pixels)
 {
+    const size_t num_out_neurons = output_size[0]*output_size[1]*output_size[2];
+
+    double* dense_coeff = (double*) calloc(num_out_neurons*num_pixels, sizeof(double));
+    double* bias = (double*) calloc(num_out_neurons, sizeof(double));
+
     for(size_t out_x = 0; out_x < output_size[0]; out_x++)
     {
         for(size_t out_y = 0; out_y < output_size[1]; out_y++)
@@ -1473,10 +1439,6 @@ void device_layer_create_sparse_exprs(expr_t** expr_array, const double* filter_
             {
                 const size_t mat_x = out_x*output_size[1]*output_size[2] + out_y*output_size[2] + out_z;
                 const size_t num_coeff = input_size[2]*filter_size[0]*filter_size[1];
-                size_t actual_coeff = 0;
-                double* coeff = (double*) malloc(num_coeff*sizeof(double));
-                size_t* dim = (size_t*) malloc(num_coeff*sizeof(size_t));
-                size_t i = 0;
 
                 for(size_t x_shift = 0; x_shift < filter_size[0]; x_shift++)
                 {
@@ -1505,60 +1467,32 @@ void device_layer_create_sparse_exprs(expr_t** expr_array, const double* filter_
                             }
 
                             const size_t filter_index = x_shift*filter_size[1]*input_size[2]*output_size[2] + y_shift*input_size[2]*output_size[2] + inp_z*output_size[2] + out_z;
-                            coeff[i] = filter_weights[filter_index];
-                            dim[i] = mat_y;
-                            actual_coeff++;
-                            i++;
+                            dense_coeff[mat_x*num_pixels + mat_y] = filter_weights[filter_index];
                         }
                     }
                 }
 
-                const double cst = filter_bias[out_z];
-
-                double* dense_coeff = (double*) calloc(num_pixels, sizeof(double));
-
-                for(size_t i = 0; i < actual_coeff; i++)
-                {
-                    dense_coeff[dim[i]] = coeff[i];
-                }
-
-                expr_t* res = (expr_t*) malloc(sizeof(expr_t));
-
-                res->inf_coeff = (double*) malloc(num_pixels*sizeof(double));
-                res->sup_coeff = (double*) malloc(num_pixels*sizeof(double));
-
-                res->inf_cst = -cst;
-                res->sup_cst = cst;
-
-                for(size_t i = 0; i < num_pixels; i++)
-                {
-                    res->inf_coeff[i] = -dense_coeff[i];
-                    res->sup_coeff[i] = dense_coeff[i];
-                }
-
-                copy_dense_expr_host_to_device(expr_array, mat_x, res, num_pixels);
-
-                if(res->inf_coeff)
-                {
-                    free(res->inf_coeff);
-                    res->inf_coeff = nullptr;
-                }
-
-                if(res->sup_coeff)
-                {
-                    free(res->sup_coeff);
-                    res->sup_coeff = nullptr;
-                }
-
-                free(res);
-                res = nullptr;
-
-                free(coeff);
-                free(dense_coeff);
-                free(dim);
+                bias[mat_x] = filter_bias[out_z];
             }
         }
     }
+
+    double* dense_coeff_dev;
+    double* bias_dev;
+
+    cudaMalloc((void**) &dense_coeff_dev, num_out_neurons*num_pixels*sizeof(double));
+    cudaMalloc((void**) &bias_dev, num_out_neurons*sizeof(double));
+
+    cudaMemcpy(dense_coeff_dev, dense_coeff, num_out_neurons*num_pixels*sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(bias_dev, bias, num_out_neurons*sizeof(double), cudaMemcpyHostToDevice);
+
+    device_layer_create_dense_expr<<<num_out_neurons, 1>>>(expr_array, dense_coeff_dev, bias_dev, num_out_neurons, num_pixels);
+
+    cudaFree(dense_coeff_dev);
+    cudaFree(bias_dev);
+
+    free(dense_coeff);
+    free(bias);
 }
 
 
@@ -1643,7 +1577,7 @@ void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights,
     cudaMemcpy(strides_tmp, strides, 2*sizeof(size_t), cudaMemcpyHostToHost);
 
     device_layer_create_sparse_exprs(expr_array, filter_weights_tmp, filter_bias_tmp, input_size_tmp, output_size_tmp,
-                                     filter_size_tmp, strides_tmp, has_bias, pad_top, pad_left, num_pixels);
+                                     filter_size_tmp, strides_tmp, pad_top, pad_left, num_pixels);
 
     free(filter_weights_tmp);
     free(filter_bias_tmp);
