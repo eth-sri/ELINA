@@ -896,8 +896,8 @@ void lexpr_replace_relu_bounds(expr_t** expr_array, double* lb_array, double* ub
                 elina_double_interval_mul_expr_coeff(&expr->inf_coeff[i], &expr->sup_coeff[i], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
                 double tmp1, tmp2;
                 elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
-                expr->inf_cst = expr->inf_cst + tmp1 + min_denormal;
-                expr->sup_cst = expr->sup_cst + tmp2 + min_denormal;
+                atomicAdd(&expr->inf_cst, tmp1 + min_denormal);
+                atomicAdd(&expr->sup_cst, tmp2 + min_denormal);
             }
             else if (old_inf_coeff < 0)
             {
@@ -926,8 +926,8 @@ void lexpr_replace_relu_bounds(expr_t** expr_array, double* lb_array, double* ub
                 expr->sup_coeff[i] = 0.0;
                 double tmp1, tmp2;
                 elina_double_interval_mul(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
-                expr->inf_cst = expr->inf_cst + tmp1;
-                expr->sup_cst = expr->sup_cst - tmp1;
+                atomicAdd(&expr->inf_cst, tmp1);
+                atomicAdd(&expr->sup_cst, -tmp1);
             }
         }
     }
@@ -981,8 +981,8 @@ void uexpr_replace_relu_bounds(expr_t** expr_array, double* lb_array, double* ub
                 elina_double_interval_mul_expr_coeff(&expr->inf_coeff[i], &expr->sup_coeff[i], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
                 double tmp1, tmp2;
                 elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
-                expr->inf_cst = expr->inf_cst + tmp1 + min_denormal;
-                expr->sup_cst = expr->sup_cst + tmp2 + min_denormal;
+                atomicAdd(&expr->inf_cst, tmp1 + min_denormal);
+                atomicAdd(&expr->sup_cst, tmp2 + min_denormal);
             }
             else if(old_sup_coeff < 0)
             {
@@ -1011,8 +1011,8 @@ void uexpr_replace_relu_bounds(expr_t** expr_array, double* lb_array, double* ub
                 expr->sup_coeff[i] = 0.0;
                 double tmp1, tmp2;
                 elina_double_interval_mul(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
-                expr->inf_cst = expr->inf_cst - tmp2;
-                expr->sup_cst = expr->sup_cst + tmp2;
+                atomicAdd(&expr->inf_cst, -tmp2);
+                atomicAdd(&expr->sup_cst, tmp2);
             }
         }
     }
