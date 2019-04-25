@@ -65,13 +65,6 @@ typedef enum activation_type_t {
   NONE,
 } activation_type_t;
 
-typedef struct expr_t {
-  double *inf_coeff;
-  double *sup_coeff;
-  double inf_cst;
-  double sup_cst;
-} expr_t;
-
 typedef struct layer_t {
   size_t num_out_neurons;
   size_t num_in_neurons;
@@ -82,7 +75,10 @@ typedef struct layer_t {
   double *lb_array;
   double *ub_array;
 
-  expr_t **expr_array;
+  double **inf_coeff;
+  double **sup_coeff;
+  double *inf_cst;
+  double *sup_cst;
 } layer_t;
 
 typedef struct fppoly_t {
