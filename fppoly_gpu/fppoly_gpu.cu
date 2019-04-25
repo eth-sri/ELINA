@@ -971,46 +971,16 @@ void uexpr_replace_relu_bounds(double** inf_coeff, double** sup_coeff, double* i
 
 
 __global__
-void expr_from_previous_layer(double** expr_inf_coeff, double** expr_sup_coeff, double* expr_inf_cst, double* expr_sup_cst, double** res_inf_coeff, double** res_sup_coeff, double* res_inf_cst, double* res_sup_cst, double** aux_inf_coeff, double** aux_sup_coeff, double* aux_inf_cst, double* aux_sup_cst, const size_t num_out_neurons_last_layer, const size_t num_out_neurons_current_layer, const size_t num_in_neurons_current_layer)
+void coeffs_from_previous_layer(double** expr_inf_coeff, double** expr_sup_coeff, double** res_inf_coeff, double** res_sup_coeff, double** aux_inf_coeff, double** aux_sup_coeff, const size_t num_out_neurons_last_layer, const size_t num_out_neurons_current_layer, const size_t num_in_neurons_current_layer)
 {
     size_t n = blockIdx.x;
     size_t j = blockIdx.y*blockDim.x + threadIdx.x;
 
     if(n < num_out_neurons_last_layer)
     {
-        size_t i;
-
         if(j < num_in_neurons_current_layer)
         {
-            if(j == 0)
-            {
-                i = 0;
-
-                elina_double_interval_mul_cst_coeff(&res_inf_cst[n], &res_sup_cst[n], expr_inf_coeff[n][0], expr_sup_coeff[n][0], aux_inf_cst[i], aux_sup_cst[i]);
-
-                double tmp1, tmp2;
-                double maxRes, maxMul;
-
-                for(i = 1; i < num_out_neurons_current_layer; i++)
-                {
-                    if((expr_inf_coeff[n][i] != 0) || (expr_sup_coeff[n][i] != 0))
-                    {
-                        elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, expr_inf_coeff[n][i], expr_sup_coeff[n][i], aux_inf_cst[i], aux_sup_cst[i]);
-
-                        maxRes = fmax(fabs(res_inf_cst[n]), fabs(res_sup_cst[n]));
-                        maxMul = fmax(fabs(tmp1), fabs(tmp2));
-
-                        res_inf_cst[n] += tmp1 + (maxRes + maxMul)*ulp + min_denormal;
-                        res_sup_cst[n] += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
-                    }
-
-                }
-
-                res_inf_cst[n] = res_inf_cst[n] + expr_inf_cst[n];
-                res_sup_cst[n] = res_sup_cst[n] + expr_sup_cst[n];
-            }
-
-            i = 0;
+            size_t i = 0;
 
             elina_double_interval_mul_expr_coeff(&res_inf_coeff[n][j], &res_sup_coeff[n][j], expr_inf_coeff[n][0], expr_sup_coeff[n][0], aux_inf_coeff[i][j], aux_sup_coeff[i][j]);
 
@@ -1031,6 +1001,41 @@ void expr_from_previous_layer(double** expr_inf_coeff, double** expr_sup_coeff, 
                 }
             }
         }
+    }
+}
+
+
+__global__
+void csts_from_previous_layer(double** expr_inf_coeff, double** expr_sup_coeff, double* expr_inf_cst, double* expr_sup_cst, double* res_inf_cst, double* res_sup_cst, double* aux_inf_cst, double* aux_sup_cst, const size_t num_out_neurons_last_layer, const size_t num_out_neurons_current_layer)
+{
+    size_t n = blockIdx.x;
+
+    if(n < num_out_neurons_last_layer)
+    {
+        size_t i = 0;
+
+        elina_double_interval_mul_cst_coeff(&res_inf_cst[n], &res_sup_cst[n], expr_inf_coeff[n][0], expr_sup_coeff[n][0], aux_inf_cst[i], aux_sup_cst[i]);
+
+        double tmp1, tmp2;
+        double maxRes, maxMul;
+
+        for(i = 1; i < num_out_neurons_current_layer; i++)
+        {
+            if((expr_inf_coeff[n][i] != 0) || (expr_sup_coeff[n][i] != 0))
+            {
+                elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, expr_inf_coeff[n][i], expr_sup_coeff[n][i], aux_inf_cst[i], aux_sup_cst[i]);
+
+                maxRes = fmax(fabs(res_inf_cst[n]), fabs(res_sup_cst[n]));
+                maxMul = fmax(fabs(tmp1), fabs(tmp2));
+
+                res_inf_cst[n] += tmp1 + (maxRes + maxMul)*ulp + min_denormal;
+                res_sup_cst[n] += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
+            }
+
+        }
+
+        res_inf_cst[n] = res_inf_cst[n] + expr_inf_cst[n];
+        res_sup_cst[n] = res_sup_cst[n] + expr_sup_cst[n];
     }
 }
 
@@ -1142,8 +1147,11 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
         layer_allocate_exprs<<<num_out_neurons_last_layer, 1>>>(linf_coeff_tmp, lsup_coeff_tmp, linf_cst_tmp, lsup_cst_tmp, num_out_neurons_last_layer, num_in_neurons_current_layer);
         layer_allocate_exprs<<<num_out_neurons_last_layer, 1>>>(uinf_coeff_tmp, usup_coeff_tmp, uinf_cst_tmp, usup_cst_tmp, num_out_neurons_last_layer, num_in_neurons_current_layer);
 
-        expr_from_previous_layer<<<num_blocks_linear, num_threads>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_coeff_tmp, lsup_coeff_tmp, linf_cst_tmp, lsup_cst_tmp, aux_inf_coeff, aux_sup_coeff, aux_inf_cst, aux_sup_cst, num_out_neurons_last_layer, num_out_neurons_current_layer, num_in_neurons_current_layer);
-        expr_from_previous_layer<<<num_blocks_linear, num_threads>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, uinf_coeff_tmp, usup_coeff_tmp, uinf_cst_tmp, usup_cst_tmp, aux_inf_coeff, aux_sup_coeff, aux_inf_cst, aux_sup_cst, num_out_neurons_last_layer, num_out_neurons_current_layer, num_in_neurons_current_layer);
+        coeffs_from_previous_layer<<<num_blocks_linear, num_threads>>>(linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, aux_inf_coeff, aux_sup_coeff, num_out_neurons_last_layer, num_out_neurons_current_layer, num_in_neurons_current_layer);
+        coeffs_from_previous_layer<<<num_blocks_linear, num_threads>>>(uinf_coeff, usup_coeff, uinf_coeff_tmp, usup_coeff_tmp, aux_inf_coeff, aux_sup_coeff, num_out_neurons_last_layer, num_out_neurons_current_layer, num_in_neurons_current_layer);
+
+        csts_from_previous_layer<<<num_out_neurons_last_layer, 1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp, lsup_cst_tmp, aux_inf_cst, aux_sup_cst, num_out_neurons_last_layer, num_out_neurons_current_layer);
+        csts_from_previous_layer<<<num_out_neurons_last_layer, 1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, uinf_cst_tmp, usup_cst_tmp, aux_inf_cst, aux_sup_cst, num_out_neurons_last_layer, num_out_neurons_current_layer);
 
         std::swap(linf_coeff, linf_coeff_tmp);
         std::swap(lsup_coeff, lsup_coeff_tmp);
@@ -1377,7 +1385,9 @@ void get_lb_using_previous_layers(elina_manager_t* man, const fppoly_t* const fp
 
         layer_allocate_exprs<<<num_out_neurons_last_layer, 1>>>(linf_coeff_tmp, lsup_coeff_tmp, linf_cst_tmp, lsup_cst_tmp, num_out_neurons_last_layer, num_in_neurons_current_layer);
 
-        expr_from_previous_layer<<<num_blocks_linear, num_threads>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_coeff_tmp, lsup_coeff_tmp, linf_cst_tmp, lsup_cst_tmp, aux_inf_coeff, aux_sup_coeff, aux_inf_cst, aux_sup_cst, num_out_neurons_last_layer, num_out_neurons_current_layer, num_in_neurons_current_layer);
+        coeffs_from_previous_layer<<<num_blocks_linear, num_threads>>>(linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, aux_inf_coeff, aux_sup_coeff, num_out_neurons_last_layer, num_out_neurons_current_layer, num_in_neurons_current_layer);
+
+        csts_from_previous_layer<<<num_out_neurons_last_layer, 1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp, lsup_cst_tmp, aux_inf_cst, aux_sup_cst, num_out_neurons_last_layer, num_out_neurons_current_layer);
 
         std::swap(linf_coeff, linf_coeff_tmp);
         std::swap(lsup_coeff, lsup_coeff_tmp);
