@@ -502,11 +502,14 @@ __device__ void elina_double_interval_mul_cst_coeff(float_type *const res_inf,
   *res_sup += min_denormal;
 }
 
-__global__ void
-compute_lb_from_expr(float_type *lb_array, float_type *inf_coeff,
-                     float_type *sup_coeff, const float_type *inf_cst,
-                     const float_type *input_inf, const float_type *input_sup,
-                     const size_t num_exprs, const size_t expr_size) {
+__global__ void compute_lb_from_expr(float_type *__restrict__ lb_array,
+                                     const float_type *__restrict__ inf_coeff,
+                                     const float_type *__restrict__ sup_coeff,
+                                     const float_type *__restrict__ inf_cst,
+                                     const float_type *__restrict__ input_inf,
+                                     const float_type *__restrict__ input_sup,
+                                     const size_t num_exprs,
+                                     const size_t expr_size) {
   const size_t n = blockIdx.x;
 
   float_type res_inf = inf_cst[n];
@@ -523,11 +526,14 @@ compute_lb_from_expr(float_type *lb_array, float_type *inf_coeff,
   lb_array[n] = res_inf;
 }
 
-__global__ void
-compute_ub_from_expr(float_type *ub_array, float_type *inf_coeff,
-                     float_type *sup_coeff, const float_type *sup_cst,
-                     const float_type *input_inf, const float_type *input_sup,
-                     const size_t num_exprs, const size_t expr_size) {
+__global__ void compute_ub_from_expr(float_type *__restrict__ ub_array,
+                                     const float_type *__restrict__ inf_coeff,
+                                     const float_type *__restrict__ sup_coeff,
+                                     const float_type *__restrict__ sup_cst,
+                                     const float_type *__restrict__ input_inf,
+                                     const float_type *__restrict__ input_sup,
+                                     const size_t num_exprs,
+                                     const size_t expr_size) {
   const size_t n = blockIdx.x;
 
   float_type res_sup = sup_cst[n];
@@ -545,8 +551,9 @@ compute_ub_from_expr(float_type *ub_array, float_type *inf_coeff,
 }
 
 __global__ void device_layer_create_dense_expr(
-    float_type *inf_coeff, float_type *sup_coeff, float_type *inf_cst,
-    float_type *sup_cst, const double *weights, const double *bias,
+    float_type *__restrict__ inf_coeff, float_type *__restrict__ sup_coeff,
+    float_type *__restrict__ inf_cst, float_type *__restrict__ sup_cst,
+    const double *__restrict__ weights, const double *__restrict__ bias,
     const size_t num_out_neurons, const size_t num_in_neurons) {
   const size_t i = blockIdx.x;
 
@@ -590,12 +597,16 @@ void layer_create_dense_exprs(float_type *inf_coeff, float_type *sup_coeff,
   cudaFree(tmp_bias);
 }
 
-__global__ void
-copy_expr_array(float_type *target_inf_coeff, float_type *target_sup_coeff,
-                float_type *target_inf_cst, float_type *target_sup_cst,
-                float_type *source_inf_coeff, float_type *source_sup_coeff,
-                float_type *source_inf_cst, float_type *source_sup_cst,
-                const size_t num_exprs, const size_t expr_size) {
+__global__ void copy_expr_array(float_type *__restrict__ target_inf_coeff,
+                                float_type *__restrict__ target_sup_coeff,
+                                float_type *__restrict__ target_inf_cst,
+                                float_type *__restrict__ target_sup_cst,
+                                const float_type *__restrict__ source_inf_coeff,
+                                const float_type *__restrict__ source_sup_coeff,
+                                const float_type *__restrict__ source_inf_cst,
+                                const float_type *__restrict__ source_sup_cst,
+                                const size_t num_exprs,
+                                const size_t expr_size) {
   const size_t i = blockIdx.x;
 
   for (size_t j = 0; j < expr_size; j++) {
@@ -665,12 +676,13 @@ void ffn_handle_first_tanh_layer(elina_manager_t *man, elina_abstract0_t *abs,
   // ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, TANH);
 }
 
-__global__ void
-lexpr_replace_relu_bounds(float_type *inf_coeff, float_type *sup_coeff,
-                          float_type *inf_cst, float_type *sup_cst,
-                          float_type *lb_array, float_type *ub_array,
-                          const size_t num_out_neurons_last_layer,
-                          const size_t num_out_neurons_current_layer) {
+__global__ void lexpr_replace_relu_bounds(
+    float_type *__restrict__ inf_coeff, float_type *__restrict__ sup_coeff,
+    float_type *__restrict__ inf_cst, float_type *__restrict__ sup_cst,
+    const float_type *__restrict__ lb_array,
+    const float_type *__restrict__ ub_array,
+    const size_t num_out_neurons_last_layer,
+    const size_t num_out_neurons_current_layer) {
   const size_t n = blockIdx.x;
   const size_t i = blockIdx.y * blockDim.x + threadIdx.x;
 
@@ -740,12 +752,13 @@ lexpr_replace_relu_bounds(float_type *inf_coeff, float_type *sup_coeff,
   }
 }
 
-__global__ void
-uexpr_replace_relu_bounds(float_type *inf_coeff, float_type *sup_coeff,
-                          float_type *inf_cst, float_type *sup_cst,
-                          float_type *lb_array, float_type *ub_array,
-                          const size_t num_out_neurons_last_layer,
-                          const size_t num_out_neurons_current_layer) {
+__global__ void uexpr_replace_relu_bounds(
+    float_type *__restrict__ inf_coeff, float_type *__restrict__ sup_coeff,
+    float_type *__restrict__ inf_cst, float_type *__restrict__ sup_cst,
+    const float_type *__restrict__ lb_array,
+    const float_type *__restrict__ ub_array,
+    const size_t num_out_neurons_last_layer,
+    const size_t num_out_neurons_current_layer) {
   const size_t n = blockIdx.x;
   const size_t i = blockIdx.y * blockDim.x + threadIdx.x;
 
@@ -816,10 +829,12 @@ uexpr_replace_relu_bounds(float_type *inf_coeff, float_type *sup_coeff,
 }
 
 __global__ void
-coeffs_from_previous_layer(float_type *expr_inf_coeff,
-                           float_type *expr_sup_coeff,
-                           float_type *res_inf_coeff, float_type *res_sup_coeff,
-                           float_type *aux_inf_coeff, float_type *aux_sup_coeff,
+coeffs_from_previous_layer(const float_type *__restrict__ expr_inf_coeff,
+                           const float_type *__restrict__ expr_sup_coeff,
+                           float_type *__restrict__ res_inf_coeff,
+                           float_type *__restrict__ res_sup_coeff,
+                           const float_type *__restrict__ aux_inf_coeff,
+                           const float_type *__restrict__ aux_sup_coeff,
                            const size_t num_out_neurons_last_layer,
                            const size_t num_out_neurons_current_layer,
                            const size_t num_in_neurons_current_layer) {
@@ -860,10 +875,14 @@ coeffs_from_previous_layer(float_type *expr_inf_coeff,
 }
 
 __global__ void
-csts_from_previous_layer(float_type *expr_inf_coeff, float_type *expr_sup_coeff,
-                         float_type *expr_inf_cst, float_type *expr_sup_cst,
-                         float_type *res_inf_cst, float_type *res_sup_cst,
-                         float_type *aux_inf_cst, float_type *aux_sup_cst,
+csts_from_previous_layer(const float_type *__restrict__ expr_inf_coeff,
+                         const float_type *__restrict__ expr_sup_coeff,
+                         const float_type *__restrict__ expr_inf_cst,
+                         const float_type *__restrict__ expr_sup_cst,
+                         float_type *__restrict__ res_inf_cst,
+                         float_type *__restrict__ res_sup_cst,
+                         const float_type *__restrict__ aux_inf_cst,
+                         const float_type *__restrict__ aux_sup_cst,
                          const size_t num_out_neurons_last_layer,
                          const size_t num_out_neurons_current_layer) {
   const size_t n = blockIdx.x;
@@ -1154,7 +1173,7 @@ void ffn_handle_intermediate_tanh_layer(elina_manager_t *man,
   // num_in_neurons, TANH);
 }
 
-__global__ void print_bounds(float_type *bounds_array,
+__global__ void print_bounds(const float_type *__restrict__ bounds_array,
                              const size_t num_out_neurons) {
   for (size_t i = 0; i < num_out_neurons; i++) {
     printf("out inf number %i is: %g\n", i, bounds_array[i]);
@@ -1225,8 +1244,10 @@ void ffn_handle_last_tanh_layer(elina_manager_t *man,
   // num_in_neurons, has_tanh, TANH);
 }
 
-__global__ void create_sub_expr(float_type *inf_coeff, float_type *sup_coeff,
-                                float_type *inf_cst, float_type *sup_cst,
+__global__ void create_sub_expr(float_type *__restrict__ inf_coeff,
+                                float_type *__restrict__ sup_coeff,
+                                float_type *__restrict__ inf_cst,
+                                float_type *__restrict__ sup_cst,
                                 const size_t index, const elina_dim_t y,
                                 const elina_dim_t x) {
   inf_cst[index] = 0;
