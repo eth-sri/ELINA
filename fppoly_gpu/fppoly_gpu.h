@@ -75,8 +75,8 @@ typedef struct layer_t {
   double *lb_array;
   double *ub_array;
 
-  double **inf_coeff;
-  double **sup_coeff;
+  double *inf_coeff;
+  double *sup_coeff;
   double *inf_cst;
   double *sup_cst;
 } layer_t;
