@@ -19,6 +19,7 @@
  */
 
 
+#define not_single
 
 #ifndef __FPPOLY_GPU_H_INCLUDED__
 #define __FPPOLY_GPU_H_INCLUDED__
@@ -40,6 +41,11 @@ extern "C"
 {
 #endif
 
+#ifdef single
+using float_type = float;
+#else
+using float_type = double;
+#endif
 
 typedef struct fppoly_internal_t
 {
@@ -51,8 +57,8 @@ typedef struct fppoly_internal_t
   /* raised when a conversion from/to a user type resulted in an
      overapproximation
   */
-  double min_denormal;
-  double ulp;
+  float_type min_denormal;
+  float_type ulp;
   /* back pointer to elina_manager*/
   elina_manager_t* man;
 } fppoly_internal_t;
@@ -83,13 +89,13 @@ typedef struct layer_t
     layertype_t type;
     activation_type_t activation;
 
-    double* lb_array;
-    double* ub_array;
+    float_type* lb_array;
+    float_type* ub_array;
 
-    double* inf_coeff;
-    double* sup_coeff;
-    double* inf_cst;
-    double* sup_cst;
+    float_type* inf_coeff;
+    float_type* sup_coeff;
+    float_type* inf_cst;
+    float_type* sup_cst;
 } layer_t;
 
 
@@ -97,8 +103,8 @@ typedef struct fppoly_t
 {
     layer_t** layers;
     size_t numlayers;
-    double* input_inf;
-    double* input_sup;
+    float_type* input_inf;
+    float_type* input_sup;
     size_t size;
     size_t num_pixels;
 } fppoly_t;
