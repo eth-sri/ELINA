@@ -349,6 +349,7 @@ layer_t * create_layer(size_t size, layertype_t type, activation_type_t activati
 	layer_t *layer = (layer_t*)malloc(sizeof(layer_t));
 	layer->dims = size;
 	layer->type = type;
+	layer->scaling_factor = 0;
         layer->activation = activation;
 	layer->neurons = (neuron_t**)malloc(size*sizeof(neuron_t*));
 	size_t i;
@@ -938,10 +939,11 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp)
 }
 
 
-void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, activation_type_t activation){
+void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias, double scaling_factor, size_t size, size_t num_pixels, activation_type_t activation){
 	//printf("start \n");
 	//fflush(stdout);
 	fppoly_t *res = fppoly_of_abstract0(abs);
+	res->layers[0]->scaling_factor = scaling_factor;
 	fppoly_alloc_first_layer(res,size, num_pixels, FFN, activation);
 	fppoly_internal_t *pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	size_t i, j;
@@ -967,19 +969,394 @@ void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t * abs, doubl
 	return;	
 }
 
-void ffn_handle_first_relu_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels){
-        ffn_handle_first_layer(man, abs, weights, bias,  size, num_pixels, RELU);
+void ffn_handle_first_relu_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,   size_t size, size_t num_pixels){
+        ffn_handle_first_layer(man, abs, weights, bias, 1, size, num_pixels, RELU);
 }
 
 void ffn_handle_first_sigmoid_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels){
-        ffn_handle_first_layer(man, abs, weights, bias,  size, num_pixels, SIGMOID);
+        ffn_handle_first_layer(man, abs, weights, bias, 1, size, num_pixels, SIGMOID);
 }
 
 
 void ffn_handle_first_tanh_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels){
-        ffn_handle_first_layer(man, abs, weights, bias,  size, num_pixels, TANH);
+        ffn_handle_first_layer(man, abs, weights, bias, 1,  size, num_pixels, TANH);
 }
 
+
+void ffn_handle_first_parabola_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  double scaling_factor, size_t size, size_t num_pixels){
+        ffn_handle_first_layer(man, abs, weights, bias, scaling_factor, size, num_pixels, PARABOLA);
+}
+
+void ffn_handle_first_log_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels){
+        ffn_handle_first_layer(man, abs, weights, bias, 1, size, num_pixels, LOG);
+}
+
+expr_t * lexpr_replace_parabola_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons, double scaling_factor){
+	size_t num_neurons = expr->size;
+	size_t i,k;
+	expr_t * res = alloc_expr();  
+	res->inf_coeff = (double *)malloc(num_neurons*sizeof(double));
+	res->sup_coeff = (double *)malloc(num_neurons*sizeof(double));
+	res->inf_cst = expr->inf_cst;
+	res->sup_cst = expr->sup_cst;
+	res->type = expr->type;
+	res->size = num_neurons;  
+
+	for(i = 0; i < num_neurons; i++){
+		if(expr->type==DENSE){
+			k = i;
+		}
+		else{
+			k = expr->dim[i];
+		}
+		neuron_t *neuron_k = neurons[k];
+		double lb = neurons[k]->lb;
+		double ub = neurons[k]->ub;
+		if((expr->sup_coeff[i]==0) && (expr->inf_coeff[i]==0)){
+			res->inf_coeff[i] = 0.0;
+			res->sup_coeff[i] = 0.0;
+			continue;
+		}
+		double u_plus_l_sup = (ub-lb);
+                double u_plus_l_inf = -(ub-lb);
+		
+		
+                //= (u_plus_l)*(u_plus_l)
+		if(expr->sup_coeff[i]<0){
+			
+			double lu_sup = lb*ub;
+			double lu_inf = -lb*ub;
+			//res->coeff[i] = lambda*expr->coeff[i];
+			//res->cst = res->cst + expr->coeff[i]*mu;
+			elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],u_plus_l_inf,u_plus_l_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			double tmp1, tmp2;
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,lu_inf,lu_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+			res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
+		}
+		else if (expr->inf_coeff[i]<0){
+			
+			double u_plus_l_sq_inf, u_plus_l_sq_sup; 
+			//u_plus_l_sq_inf = u_plus_l_inf/2;
+			//u_plus_l_sq_sup = u_plus_l_sup/2;
+                        elina_double_interval_mul_cst_coeff(pr,&u_plus_l_sq_inf,&u_plus_l_sq_sup,u_plus_l_inf/2,u_plus_l_sup/2,u_plus_l_inf/2,u_plus_l_sup/2);
+			elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],u_plus_l_inf,u_plus_l_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			double tmp1, tmp2;
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,-u_plus_l_sq_inf,-u_plus_l_sq_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+			res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
+		}
+		else{
+			
+			res->inf_coeff[i] = 0.0;
+			res->sup_coeff[i] = 0.0;
+			double tmp1, tmp2;
+			elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],0,ub*ub);
+			res->inf_cst = res->inf_cst + tmp1;
+			res->sup_cst = res->sup_cst - tmp1;
+		}
+	}
+	for(i=0; i < num_neurons; i++){
+		res->inf_coeff[i] = res->inf_coeff[i]/scaling_factor;
+		res->sup_coeff[i] = res->sup_coeff[i]/scaling_factor;
+	}
+	if(expr->type==SPARSE){
+		res->dim = (size_t*)malloc(num_neurons*sizeof(size_t));
+		for(i=0; i < num_neurons; i++){
+			res->dim[i] = expr->dim[i];
+		}
+	}
+	return res;
+}
+
+expr_t * uexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t * expr, neuron_t ** neurons, double scaling_factor){
+	size_t num_neurons = expr->size;
+	size_t i, k;
+	expr_t * res = alloc_expr();
+	res->inf_coeff = (double *)malloc(num_neurons*sizeof(double));
+	res->sup_coeff = (double *)malloc(num_neurons*sizeof(double));
+	res->inf_cst = expr->inf_cst;
+	res->sup_cst = expr->sup_cst;
+	res->type = expr->type;
+	res->size = num_neurons;  
+	for(i = 0; i < num_neurons; i++){
+		if(expr->type==DENSE){
+			k = i;
+		}
+		else{
+			k = expr->dim[i];
+		}
+		neuron_t *neuron_k = neurons[k];
+		double lb = neurons[k]->lb;
+		double ub = neurons[k]->ub;
+		if((expr->sup_coeff[i]==0) && (expr->inf_coeff[i]==0)){
+			res->inf_coeff[i] = 0.0;
+			res->sup_coeff[i] = 0.0;
+			continue;
+		}
+		double u_plus_l_sup = (ub-lb);
+                double u_plus_l_inf = -(ub-lb);
+		
+		
+                //= (u_plus_l)*(u_plus_l)
+		if(expr->inf_coeff[i]<0){
+			
+			double lu_sup = lb*ub;
+			double lu_inf = -lb*ub;
+			//res->coeff[i] = lambda*expr->coeff[i];
+			//res->cst = res->cst + expr->coeff[i]*mu;
+			elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],u_plus_l_inf,u_plus_l_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			double tmp1, tmp2;
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,lu_inf,lu_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+			res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
+		}
+		else if (expr->sup_coeff[i]<0){
+			
+			double u_plus_l_sq_inf, u_plus_l_sq_sup; 
+			//u_plus_l_sq_inf = u_plus_l_inf/2;
+			//u_plus_l_sq_sup = u_plus_l_sup/2;
+                        elina_double_interval_mul_cst_coeff(pr,&u_plus_l_sq_inf,&u_plus_l_sq_sup,u_plus_l_inf/2,u_plus_l_sup/2,u_plus_l_inf/2,u_plus_l_sup/2);
+			elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],u_plus_l_inf,u_plus_l_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			double tmp1, tmp2;
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,-u_plus_l_sq_inf,-u_plus_l_sq_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+			res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
+		}
+		else{
+			
+			res->inf_coeff[i] = 0.0;
+			res->sup_coeff[i] = 0.0;
+			double tmp1, tmp2;
+			elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],0,ub*ub);
+			res->inf_cst = res->inf_cst - tmp2;
+			res->sup_cst = res->sup_cst + tmp2;			
+		}
+		
+	}
+
+	for(i=0; i < num_neurons; i++){
+		res->inf_coeff[i] = res->inf_coeff[i]/scaling_factor;
+		res->sup_coeff[i] = res->sup_coeff[i]/scaling_factor;
+	}
+
+	if(expr->type==SPARSE){
+		res->dim = (size_t*)malloc(num_neurons*sizeof(size_t));
+		for(i=0; i < num_neurons; i++){
+			res->dim[i] = expr->dim[i];
+		}
+	}
+	return res;
+}
+
+
+
+expr_t * lexpr_replace_log_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons){
+	size_t num_neurons = expr->size;
+	size_t i,k;
+	expr_t * res = alloc_expr();  
+	res->inf_coeff = (double *)malloc(num_neurons*sizeof(double));
+	res->sup_coeff = (double *)malloc(num_neurons*sizeof(double));
+	res->inf_cst = expr->inf_cst;
+	res->sup_cst = expr->sup_cst;
+	res->type = expr->type;
+	res->size = num_neurons;  
+
+	for(i = 0; i < num_neurons; i++){
+		if(expr->type==DENSE){
+			k = i;
+		}
+		else{
+			k = expr->dim[i];
+		}
+		neuron_t *neuron_k = neurons[k];
+		double lb = neurons[k]->lb;
+		double ub = neurons[k]->ub;
+		if((expr->sup_coeff[i]==0) && (expr->inf_coeff[i]==0)){
+			res->inf_coeff[i] = 0.0;
+			res->sup_coeff[i] = 0.0;
+			continue;
+		}
+		double u_plus_l_inf = -(lb+ub);
+                double u_plus_l_sup = -u_plus_l_inf;
+		
+		
+                //= (u_plus_l)*(u_plus_l)
+		if(expr->sup_coeff[i]<0){
+			double one_inf = 1;
+			double one_sup = -1;
+			double u_plus_l_sup = ub-lb;
+			double u_plus_l_inf = -(ub-lb);
+
+			double lambda_sup = -2/u_plus_l_inf;
+			double lambda_inf = -2/u_plus_l_sup;
+			elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],lambda_inf,lambda_sup,expr->inf_coeff[i],expr->sup_coeff[i]);			
+	
+			
+			fesetround(FE_DOWNWARD);
+			double mu_inf = -log(-u_plus_l_inf/2);
+			fesetround(FE_UPWARD);
+			double mu_sup = log(u_plus_l_sup/2);			
+			elina_double_interval_add_cst_coeff(pr,&mu_inf,&mu_sup,one_inf, one_sup, mu_inf, mu_sup);
+			double tmp1, tmp2;
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,mu_inf,mu_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+			res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
+		}
+		else if (expr->inf_coeff[i]<0){
+
+			double u_minus_l_sup = ub +lb;
+			double u_minus_l_inf = -(ub+lb);
+			double inv_u_by_l_sup = -1/u_minus_l_inf;
+			double inv_u_by_l_inf = -1/u_minus_l_sup;
+
+			double u_by_l_sup = -ub/lb;
+			double u_by_l_inf = ub/lb;
+
+			fesetround(FE_DOWNWARD);			
+			double log_u_by_l_inf = -log(-u_by_l_inf);
+			double log_l_inf = -log(-lb);
+	
+			fesetround(FE_UPWARD);
+			double log_u_by_l_sup = log(u_by_l_sup);
+			double log_l_sup = log(-lb);
+			
+			double lambda_inf, lambda_sup;
+			elina_double_interval_mul_cst_coeff(pr,&lambda_inf,&lambda_sup,log_u_by_l_inf,log_u_by_l_sup,inv_u_by_l_inf,inv_u_by_l_sup);
+			elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],lambda_inf,lambda_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+
+			double mu_inf, mu_sup;
+			elina_double_interval_mul_cst_coeff(pr,&mu_inf,&mu_sup,lb,-lb,lambda_inf,lambda_sup);
+			elina_double_interval_add_cst_coeff(pr,&mu_inf,&mu_sup,log_l_inf, log_l_sup, mu_inf, mu_sup);
+
+			double tmp1, tmp2;
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,mu_inf,mu_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+			res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
+			   
+		}
+		else{
+			
+			res->inf_coeff[i] = 0.0;
+			res->sup_coeff[i] = 0.0;
+			
+			res->inf_cst = INFINITY;
+			res->sup_cst = -INFINITY;
+		}
+	}
+	
+	if(expr->type==SPARSE){
+		res->dim = (size_t*)malloc(num_neurons*sizeof(size_t));
+		for(i=0; i < num_neurons; i++){
+			res->dim[i] = expr->dim[i];
+		}
+	}
+	return res;
+}
+
+expr_t * uexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t * expr, neuron_t ** neurons){
+	size_t num_neurons = expr->size;
+	size_t i, k;
+	expr_t * res = alloc_expr();
+	res->inf_coeff = (double *)malloc(num_neurons*sizeof(double));
+	res->sup_coeff = (double *)malloc(num_neurons*sizeof(double));
+	res->inf_cst = expr->inf_cst;
+	res->sup_cst = expr->sup_cst;
+	res->type = expr->type;
+	res->size = num_neurons;  
+	for(i = 0; i < num_neurons; i++){
+		if(expr->type==DENSE){
+			k = i;
+		}
+		else{
+			k = expr->dim[i];
+		}
+		neuron_t *neuron_k = neurons[k];
+		double lb = neurons[k]->lb;
+		double ub = neurons[k]->ub;
+		if((expr->sup_coeff[i]==0) && (expr->inf_coeff[i]==0)){
+			res->inf_coeff[i] = 0.0;
+			res->sup_coeff[i] = 0.0;
+			continue;
+		}
+		double u_plus_l_inf = -(lb+ub);
+                double u_plus_l_sup = -u_plus_l_inf;
+		
+		
+                //= (u_plus_l)*(u_plus_l)
+		if(expr->inf_coeff[i]<0){
+			double one_inf = 1;
+			double one_sup = -1;
+			double u_plus_l_sup = ub-lb;
+			double u_plus_l_inf = -(ub-lb);
+
+			double lambda_sup = -2/u_plus_l_inf;
+			double lambda_inf = -2/u_plus_l_sup;
+			elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],lambda_inf,lambda_sup,expr->inf_coeff[i],expr->sup_coeff[i]);			
+	
+			
+			fesetround(FE_DOWNWARD);
+			double mu_inf = -log(-u_plus_l_inf/2);
+			fesetround(FE_UPWARD);
+			double mu_sup = log(u_plus_l_sup/2);			
+			elina_double_interval_add_cst_coeff(pr,&mu_inf,&mu_sup,one_inf, one_sup, mu_inf, mu_sup);
+			double tmp1, tmp2;
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,mu_inf,mu_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+			res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
+		}
+		else if (expr->sup_coeff[i]<0){
+			double u_minus_l_sup = ub +lb;
+			double u_minus_l_inf = -(ub+lb);
+			double inv_u_by_l_sup = -1/u_minus_l_inf;
+			double inv_u_by_l_inf = -1/u_minus_l_sup;
+
+			double u_by_l_sup = -ub/lb;
+			double u_by_l_inf = ub/lb;
+
+			fesetround(FE_DOWNWARD);			
+			double log_u_by_l_inf = -log(-u_by_l_inf);
+			double log_l_inf = -log(-lb);
+	
+			fesetround(FE_UPWARD);
+			double log_u_by_l_sup = log(u_by_l_sup);
+			double log_l_sup = log(-lb);
+			
+			double lambda_inf, lambda_sup;
+			elina_double_interval_mul_cst_coeff(pr,&lambda_inf,&lambda_sup,log_u_by_l_inf,log_u_by_l_sup,inv_u_by_l_inf,inv_u_by_l_sup);
+			elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],lambda_inf,lambda_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+
+			double mu_inf, mu_sup;
+			elina_double_interval_mul_cst_coeff(pr,&mu_inf,&mu_sup,lb,-lb,lambda_inf,lambda_sup);
+			elina_double_interval_add_cst_coeff(pr,&mu_inf,&mu_sup,log_l_inf, log_l_sup, mu_inf, mu_sup);
+
+			double tmp1, tmp2;
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,mu_inf,mu_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+			res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
+			   
+		}
+		else{
+			
+			res->inf_coeff[i] = 0.0;
+			res->sup_coeff[i] = 0.0;
+			
+			res->inf_cst = -INFINITY;
+			res->sup_cst = INFINITY;
+		}
+		
+	}
+
+	
+
+	if(expr->type==SPARSE){
+		res->dim = (size_t*)malloc(num_neurons*sizeof(size_t));
+		for(i=0; i < num_neurons; i++){
+			res->dim[i] = expr->dim[i];
+		}
+	}
+	return res;
+}
 
 
 expr_t * lexpr_replace_relu_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons){
@@ -2130,6 +2507,16 @@ void * update_state_using_previous_layers(void *args){
                     lexpr = lexpr_replace_tanh_bounds(pr,lexpr,aux_neurons);
                     uexpr = uexpr_replace_tanh_bounds(pr,uexpr,aux_neurons);
                 }
+		else if(fp->layers[k]->activation==PARABOLA){
+		    lexpr = lexpr_replace_parabola_bounds(pr,lexpr,aux_neurons, fp->layers[k]->scaling_factor);
+                    uexpr = uexpr_replace_parabola_bounds(pr,uexpr,aux_neurons, fp->layers[k]->scaling_factor);
+		}
+		else if(fp->layers[k]->activation==LOG){
+		    lexpr = lexpr_replace_log_bounds(pr,lexpr,aux_neurons);
+                    uexpr = uexpr_replace_log_bounds(pr,uexpr,aux_neurons);
+		}
+		//else if(fp->layers[k]->activation==MULT){
+		//}	
 				free_expr(tmp_l);
 				
 				free_expr(tmp_u);
@@ -2282,13 +2669,15 @@ void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t 
 	//fflush(stdout);
 }
 
-void ffn_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons, activation_type_t activation){
+void ffn_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, 
+                                   double scaling_factor, size_t num_out_neurons, size_t num_in_neurons, activation_type_t activation){
     //printf("ReLU start here %zu %zu\n",num_in_neurons,num_out_neurons);
     //fflush(stdout);
     fppoly_t *fp = fppoly_of_abstract0(element);
     size_t numlayers = fp->numlayers;
     fppoly_add_new_layer(fp,num_out_neurons, FFN, activation);
     neuron_t ** out_neurons = fp->layers[numlayers]->neurons;
+    fp->layers[numlayers]->scaling_factor = scaling_factor;
     size_t i;
     for(i=0; i < num_out_neurons; i++){
         double * weight_i = weights[i];
@@ -2306,16 +2695,26 @@ void ffn_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* elem
 
 
 void ffn_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons){
-    ffn_handle_intermediate_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, RELU);
+    ffn_handle_intermediate_layer(man, element, weights, bias, 1, num_out_neurons, num_in_neurons, RELU);
 }
 
 void ffn_handle_intermediate_sigmoid_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons){
-    ffn_handle_intermediate_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, SIGMOID);
+    ffn_handle_intermediate_layer(man, element, weights, bias, 1, num_out_neurons, num_in_neurons, SIGMOID);
 }
 
 void ffn_handle_intermediate_tanh_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons){
-    ffn_handle_intermediate_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, TANH);
+    ffn_handle_intermediate_layer(man, element, weights, bias, 1, num_out_neurons, num_in_neurons, TANH);
 }
+
+
+void ffn_handle_intermediate_parabola_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  double scaling_factor, size_t num_out_neurons, size_t num_in_neurons){
+    ffn_handle_intermediate_layer(man, element, weights, bias, scaling_factor, num_out_neurons, num_in_neurons, PARABOLA);
+}
+
+void ffn_handle_intermediate_log_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons){
+    ffn_handle_intermediate_layer(man, element, weights, bias,  1, num_out_neurons, num_in_neurons, LOG);
+}
+
 
 double apply_relu_lexpr(fppoly_internal_t *pr, expr_t **lexpr_p, neuron_t * neuron){
 	expr_t * lexpr = *lexpr_p;
@@ -2402,17 +2801,21 @@ void handle_final_relu_layer(fppoly_internal_t *pr, output_abstract_t * out, neu
 	}	
 }
 
-void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons, bool has_activation, activation_type_t activation){
+
+
+
+void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, double scaling_factor, size_t num_out_neurons, size_t num_in_neurons, bool has_activation, activation_type_t activation){
 	//printf("last\n");
 	//fflush(stdout);
 	fppoly_t *fp = fppoly_of_abstract0(element);
 	size_t numlayers = fp->numlayers;
-    if(has_activation){
-	fppoly_add_new_layer(fp,num_out_neurons, FFN, activation);
-    }
-    else{
-       fppoly_add_new_layer(fp,num_out_neurons, FFN, NONE);
-    }
+        if(has_activation){
+	   fppoly_add_new_layer(fp,num_out_neurons, FFN, activation);
+        }
+        else{
+           fppoly_add_new_layer(fp,num_out_neurons, FFN, NONE);
+        }
+        fp->layers[numlayers]->scaling_factor = scaling_factor;
 	output_abstract_t * out = (output_abstract_t*)malloc(sizeof(output_abstract_t));
 	out->output_inf = (double *)malloc(num_out_neurons*sizeof(double)); 
 	out->output_sup = (double *)malloc(num_out_neurons*sizeof(double)); 
@@ -2431,6 +2834,18 @@ void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, dou
     if(activation==RELU){
         handle_final_relu_layer(pr,fp->out,out_neurons, num_out_neurons, has_activation);
     }
+    /*else if(activation==SIGMOID){
+	handle_final_sigmoid_layer(pr,fp->out,out_neurons, num_out_neurons, has_activation);
+    }
+    else if(activation==TANH){
+	handle_final_tanh_layer(pr,fp->out,out_neurons, num_out_neurons, has_activation);
+    }
+    else if(activation==PARABOLA){
+	handle_final_parabola_layer(pr,fp->out,out_neurons, num_out_neurons, has_activation);
+    }
+    else if(activation==LOG){
+	handle_final_log_layer(pr,fp->out,out_neurons, num_out_neurons, has_activation);
+    }*/
     else{
 	for(i=0; i < num_out_neurons; i++){
 		out->output_inf[i] = out_neurons[i]->lb;
@@ -2445,15 +2860,24 @@ void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, dou
 }
 
 void ffn_handle_last_relu_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons, bool has_relu){
-    ffn_handle_last_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, has_relu, RELU);
+    ffn_handle_last_layer(man, element, weights, bias, 1, num_out_neurons, num_in_neurons, has_relu, RELU);
 }
 
 void ffn_handle_last_sigmoid_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons, bool has_sigmoid){
-    ffn_handle_last_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, has_sigmoid, SIGMOID);
+    ffn_handle_last_layer(man, element, weights, bias, 1, num_out_neurons, num_in_neurons, has_sigmoid, SIGMOID);
 }
 
 void ffn_handle_last_tanh_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons, bool has_tanh){
-    ffn_handle_last_layer(man, element, weights, bias,  num_out_neurons, num_in_neurons, has_tanh, TANH);
+    ffn_handle_last_layer(man, element, weights, bias, 1, num_out_neurons, num_in_neurons, has_tanh, TANH);
+}
+
+void ffn_handle_last_parabola_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, 
+                                    double scaling_factor, size_t num_out_neurons, size_t num_in_neurons, bool has_parabola){
+    ffn_handle_last_layer(man, element, weights, bias, scaling_factor, num_out_neurons, num_in_neurons, has_parabola, PARABOLA);
+}
+
+void ffn_handle_last_log_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons, bool has_log){
+    ffn_handle_last_layer(man, element, weights, bias, 1, num_out_neurons, num_in_neurons, has_log, LOG);
 }
 
 
@@ -2490,7 +2914,17 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
                 lexpr = lexpr_replace_tanh_bounds(pr,lexpr,aux_neurons);
                 free_expr(tmp_l);
             }
-				
+	
+            else if(fp->layers[k]->activation==PARABOLA){
+                 tmp_l = lexpr;
+                lexpr = lexpr_replace_parabola_bounds(pr,lexpr,aux_neurons, fp->layers[k]->scaling_factor);
+                free_expr(tmp_l);
+            }		
+		else if(fp->layers[k]->activation==LOG){
+			tmp_l = lexpr;
+                	lexpr = lexpr_replace_log_bounds(pr,lexpr,aux_neurons);
+                	free_expr(tmp_l);
+		}	
 			tmp_l = lexpr;			
 			lexpr = expr_from_previous_layer(pr,lexpr, fp->layers[k]);		
 			free_expr(tmp_l);
@@ -3233,6 +3667,7 @@ elina_interval_t ** box_for_layer(elina_manager_t* man, elina_abstract0_t * abs,
 	size_t i;
 	for(i=0; i< dims; i++){
 		itv_arr[i] = box_for_neuron(man, abs, layerno, i);
+		
 	}
 	return itv_arr;
 }
