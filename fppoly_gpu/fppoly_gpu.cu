@@ -329,7 +329,6 @@ elina_manager_t *fppoly_manager_alloc() {
   output_counter = 1;
 
   void **funptr;
-  // fesetround(FE_UPWARD);
   fppoly_internal_t *pr = fppoly_internal_alloc();
 
   elina_manager_t *man = elina_manager_alloc(
@@ -828,6 +827,8 @@ __global__ void uexpr_replace_relu_bounds(
   }
 }
 
+// TODO: Try to load values from aux-array only once and use them multiple
+// times!
 __global__ void
 coeffs_from_previous_layer(const float_type *__restrict__ expr_inf_coeff,
                            const float_type *__restrict__ expr_sup_coeff,
@@ -862,10 +863,13 @@ coeffs_from_previous_layer(const float_type *__restrict__ expr_inf_coeff,
       a++;
       c += num_in_neurons_current_layer;
 
-      if ((expr_inf_coeff[a] != 0) || (expr_sup_coeff[a] != 0)) {
-        elina_double_interval_mul_expr_coeff(
-            &tmp1, &tmp2, expr_inf_coeff[a], expr_sup_coeff[a],
-            aux_inf_coeff[c], aux_sup_coeff[c]);
+      const float_type prev_inf_coeff = expr_inf_coeff[a];
+      const float_type prev_sup_coeff = expr_sup_coeff[a];
+
+      if ((prev_inf_coeff != 0) || (prev_sup_coeff != 0)) {
+        elina_double_interval_mul_expr_coeff(&tmp1, &tmp2, prev_inf_coeff,
+                                             prev_sup_coeff, aux_inf_coeff[c],
+                                             aux_sup_coeff[c]);
 
         maxRes = fmax(fabs(inf_coeff), fabs(sup_coeff));
         maxMul = fmax(fabs(tmp1), fabs(tmp2));
@@ -910,9 +914,12 @@ csts_from_previous_layer(const float_type *__restrict__ expr_inf_coeff,
   for (i = 1; i < num_out_neurons_current_layer; i++) {
     a++;
 
-    if ((expr_inf_coeff[a] != 0) || (expr_sup_coeff[a] != 0)) {
-      elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, expr_inf_coeff[a],
-                                          expr_sup_coeff[a], aux_inf_cst[i],
+    const float_type prev_inf_coeff = expr_inf_coeff[a];
+    const float_type prev_sup_coeff = expr_sup_coeff[a];
+
+    if ((prev_inf_coeff != 0) || (prev_sup_coeff != 0)) {
+      elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, prev_inf_coeff,
+                                          prev_sup_coeff, aux_inf_cst[i],
                                           aux_sup_cst[i]);
 
       maxRes = fmax(fabs(inf_cst), fabs(sup_cst));
