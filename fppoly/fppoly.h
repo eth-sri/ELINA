@@ -73,6 +73,9 @@ typedef enum activation_type_t{
     RELU,
     SIGMOID,
     TANH,
+    PARABOLA,  /* Parabolic assignments */
+    LOG,       /* Logrithmic assignments */
+    MULT,      /* Mutiplication of two deeppoly elements */
     NONE,
 }activation_type_t;
     
@@ -103,6 +106,7 @@ typedef struct layer_t{
 	size_t dims;
 	layertype_t type;
         activation_type_t activation;
+	double scaling_factor;
 	neuron_t **neurons;
 }layer_t;
 
@@ -149,11 +153,19 @@ void ffn_handle_first_sigmoid_layer(elina_manager_t* man, elina_abstract0_t * ab
         
 void ffn_handle_first_tanh_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels);
 
+void ffn_handle_first_parabola_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias, double scaling_factor, size_t size, size_t num_pixels);
+
+void ffn_handle_first_log_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels);
+
 void ffn_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons);
     
 void ffn_handle_intermediate_sigmoid_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons);
     
 void ffn_handle_intermediate_tanh_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons);
+
+void ffn_handle_intermediate_parabola_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, double scaling_factor, size_t num_out_neurons, size_t num_in_neurons);
+
+void ffn_handle_intermediate_log_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons);
 
 void fppoly_fprint(FILE* stream, elina_manager_t* man, fppoly_t* fp, char** name_of_dim);
 
@@ -162,6 +174,11 @@ void ffn_handle_last_relu_layer(elina_manager_t* man, elina_abstract0_t* element
 void ffn_handle_last_sigmoid_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons, bool has_sigmoid);
     
 void ffn_handle_last_tanh_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons, bool has_tanh);
+
+void ffn_handle_last_parabola_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, 
+				    double scaling_factor, size_t num_out_neurons, size_t num_in_neurons, bool has_parabola);
+
+void ffn_handle_last_log_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons, bool has_log);
 
 void fppoly_free(elina_manager_t *man, fppoly_t *fp);
 
