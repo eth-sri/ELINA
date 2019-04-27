@@ -1,7 +1,7 @@
 #
 #
 #  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
-#  ELINA is Copyright  2018 Department of Computer Science, ETH Zurich
+#  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
 #  This software is distributed under GNU Lesser General Public License Version 3.0.
 #  For more information, see the ELINA project website at:
 #  http://elina.ethz.ch
@@ -248,7 +248,7 @@ def ffn_handle_first_tanh_layer(man, element,weights, bias,  size, num_pixels):
 
 def ffn_handle_first_parabola_layer(man, element,weights, bias, scaling_factor,  size, num_pixels):
     """
-    handle the first FFN Parabola layer
+    handle the first FFN Parabolic layer
     
     Parameters
     ----------
@@ -427,7 +427,7 @@ def ffn_handle_intermediate_tanh_layer(man, element, weights, bias, num_out_neur
 
 def ffn_handle_intermediate_parabola_layer(man, element, weights, bias, scaling_factor, num_out_neurons, num_in_neurons):
     """
-    handle the intermediate FFN Parabola layer
+    handle the intermediate FFN Parabolic layer
     
     Parameters
     ----------
@@ -607,7 +607,7 @@ def ffn_handle_last_tanh_layer(man, element, weights, bias, num_out_neurons, num
 
 def ffn_handle_last_parabola_layer(man, element, weights, bias, scaling_factor, num_out_neurons, num_in_neurons, has_parabola):
     """
-    handle the last FFN Parabola layer
+    handle the last FFN Parabolic layer
     
     Parameters
     ----------
