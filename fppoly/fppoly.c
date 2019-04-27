@@ -638,12 +638,12 @@ void add_expr(fppoly_internal_t *pr, expr_t *exprA, expr_t *exprB) {
         // expr_print(exprA);
         // fflush(stdout);
         if (exprA->size > 0) {
-          sort_sparse_expr(exprA);
+          // sort_sparse_expr(exprA);
         }
         // printf("after sort\n");
         // expr_print(exprA);
         // fflush(stdout);
-        sort_sparse_expr(exprB);
+        // sort_sparse_expr(exprB);
         new_inf_coeff = (double *)malloc((sizeA + sizeB) * sizeof(double));
         new_sup_coeff = (double *)malloc((sizeA + sizeB) * sizeof(double));
         size_t *new_dim = (size_t *)malloc((sizeA + sizeB) * sizeof(size_t));
