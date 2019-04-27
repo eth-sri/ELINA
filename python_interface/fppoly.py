@@ -246,6 +246,76 @@ def ffn_handle_first_tanh_layer(man, element,weights, bias,  size, num_pixels):
     
     return
 
+def ffn_handle_first_parabola_layer(man, element,weights, bias, scaling_factor,  size, num_pixels):
+    """
+    handle the first FFN Parabola layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    weights : POINTER(POINTER(c_double))
+        The weight matrix
+    bias : POINTER(c_double)
+        The bias vector
+    scaling_factor: c_double
+        The scaling factor for the parabola layer
+    size: c_size_t
+	Number of neurons in the first layer
+    num_pixels:
+        Number of pixels in the input
+    Returns
+    -------
+    res : ElinaAbstract0Ptr
+        Pointer to the new abstract object.
+
+    """
+    
+    try:
+        ffn_handle_first_parabola_layer_c = fppoly_api.ffn_handle_first_parabola_layer
+        ffn_handle_first_parabola_layer_c.restype = None
+        ffn_handle_first_parabola_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_double, c_size_t, c_size_t]
+        ffn_handle_first_parabola_layer_c(man,element,weights, bias, scaling_factor, size, num_pixels)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_first_parabola_layer" from "libfppoly.so"')
+        print(inst)	
+    
+    return
+
+
+def ffn_handle_first_log_layer(man, element,weights, bias,  size, num_pixels):
+    """
+    handle the first FFN log layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    weights : POINTER(POINTER(c_double))
+        The weight matrix
+    bias : POINTER(c_double)
+        The bias vector
+    size: c_size_t
+	Number of neurons in the first layer
+    num_pixels:
+        Number of pixels in the input
+    Returns
+    -------
+    res : ElinaAbstract0Ptr
+        Pointer to the new abstract object.
+
+    """
+    
+    try:
+        ffn_handle_first_log_layer_c = fppoly_api.ffn_handle_first_log_layer
+        ffn_handle_first_log_layer_c.restype = None
+        ffn_handle_first_log_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double),  c_size_t, c_size_t]
+        ffn_handle_first_log_layer_c(man,element,weights, bias,  size, num_pixels)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_first_log_layer" from "libfppoly.so"')
+        print(inst)	
+    
+    return
 
 
 
@@ -280,7 +350,7 @@ def ffn_handle_intermediate_relu_layer(man, element, weights, bias, num_out_neur
         ffn_handle_intermediate_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t]
         ffn_handle_intermediate_relu_layer_c(man,element,weights,bias, num_out_neurons, num_in_neurons)
     except Exception as inst:
-        print('Problem with loading/calling "affine_transform_handle_relu_layer" from "libfppoly.so"')
+        print('Problem with loading/calling "ffn_handle_intermediate_relu_layer" from "libfppoly.so"')
         print(inst)
 
 
@@ -317,7 +387,7 @@ def ffn_handle_intermediate_sigmoid_layer(man, element, weights, bias, num_out_n
         ffn_handle_intermediate_sigmoid_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t]
         ffn_handle_intermediate_sigmoid_layer_c(man,element,weights,bias, num_out_neurons, num_in_neurons)
     except Exception as inst:
-        print('Problem with loading/calling "ffn_handle_sigmoid_layer" from "libfppoly.so"')
+        print('Problem with loading/calling "ffn_handle_intermediate_sigmoid_layer" from "libfppoly.so"')
         print(inst)
 
 
@@ -352,7 +422,78 @@ def ffn_handle_intermediate_tanh_layer(man, element, weights, bias, num_out_neur
         ffn_handle_intermediate_tanh_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t]
         ffn_handle_intermediate_tanh_layer_c(man,element,weights,bias, num_out_neurons, num_in_neurons)
     except Exception as inst:
-        print('Problem with loading/calling "ffn_handle_tanh_layer" from "libfppoly.so"')
+        print('Problem with loading/calling "ffn_handle_intermediate_tanh_layer" from "libfppoly.so"')
+        print(inst)
+
+def ffn_handle_intermediate_parabola_layer(man, element, weights, bias, scaling_factor, num_out_neurons, num_in_neurons):
+    """
+    handle the intermediate FFN Parabola layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the abstract element
+    weights: POINTER(POINTER(c_double))
+        The weight matrix.
+    bias: POINTER(c_size_t)
+        The bias vector
+    scaling_factor: c_double
+        The scaling factor for the parabola layer
+    num_out_neurons: c_size_t
+        number of output neurons
+    num_in_neurons: c_size_t
+	number of input neurons
+    
+    Returns
+    -------
+    None
+
+    """
+    
+    try:
+        ffn_handle_intermediate_parabola_layer_c = fppoly_api.ffn_handle_intermediate_parabola_layer
+        ffn_handle_intermediate_parabola_layer_c.restype = None
+        ffn_handle_intermediate_parabola_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_double, c_size_t, c_size_t]
+        ffn_handle_intermediate_parabola_layer_c(man,element,weights,bias, scaling_factor, num_out_neurons, num_in_neurons)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_intermediate_parabola_layer" from "libfppoly.so"')
+        print(inst)
+
+
+def ffn_handle_intermediate_log_layer(man, element, weights, bias, num_out_neurons, num_in_neurons):
+    """
+    handle the intermediate FFN Log layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the abstract element
+    weights: POINTER(POINTER(c_double))
+        The weight matrix.
+    bias: POINTER(c_size_t)
+        The bias vector
+    num_out_neurons: c_size_t
+        number of output neurons
+    num_in_neurons: c_size_t
+	number of input neurons
+    
+    Returns
+    -------
+    None
+
+    """
+    
+    try:
+        ffn_handle_intermediate_log_layer_c = fppoly_api.ffn_handle_intermediate_log_layer
+        ffn_handle_intermediate_log_layer_c.restype = None
+        ffn_handle_intermediate_log_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t]
+        ffn_handle_intermediate_log_layer_c(man,element,weights,bias, num_out_neurons, num_in_neurons)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_intermediate_log_layer" from "libfppoly.so"')
         print(inst)
 
 
@@ -394,7 +535,7 @@ def ffn_handle_last_relu_layer(man, element, weights, bias, num_out_neurons, num
 
 def ffn_handle_last_sigmoid_layer(man, element, weights, bias, num_out_neurons, num_in_neurons, has_sigmoid):
     """
-    handle the last FFN ReLU layer
+    handle the last FFN Sigmoid layer
     
     Parameters
     ----------
@@ -430,7 +571,7 @@ def ffn_handle_last_sigmoid_layer(man, element, weights, bias, num_out_neurons, 
 
 def ffn_handle_last_tanh_layer(man, element, weights, bias, num_out_neurons, num_in_neurons, has_tanh):
     """
-    handle the last FFN ReLU layer
+    handle the last FFN Tanh layer
     
     Parameters
     ----------
@@ -463,6 +604,79 @@ def ffn_handle_last_tanh_layer(man, element, weights, bias, num_out_neurons, num
         print('Problem with loading/calling "ffn_handle_last_tanh_layer" from "libfppoly.so"')
         print(inst)
 
+
+def ffn_handle_last_parabola_layer(man, element, weights, bias, scaling_factor, num_out_neurons, num_in_neurons, has_parabola):
+    """
+    handle the last FFN Parabola layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0 abstract element
+    weights: POINTER(POINTER(c_double))
+        The weight matrix 
+    bias : POINTER(c_size_t)
+        The bias vector
+    scaling_factor: c_double
+        The scaling factor for the parabola layer
+    num_out_neurons: c_size_t
+        The number of output neurons
+    num_in_neurons: c_size_t
+	The number of input_neurons
+    has_parabola: c_bool
+        if the last layer has a Parabola activation
+    Returns
+    -------
+    None
+
+    """
+    
+    try:
+        ffn_handle_last_parabola_layer_c = fppoly_api.ffn_handle_last_parabola_layer
+        ffn_handle_last_parabola_layer_c.restype = None
+        ffn_handle_last_parabola_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_double, c_size_t, c_size_t, c_bool]
+        ffn_handle_last_parabola_layer_c(man,element,weights,bias, scaling_factor num_out_neurons, num_in_neurons, has_parabola)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_last_parabola_layer" from "libfppoly.so"')
+        print(inst)
+
+
+def ffn_handle_last_log_layer(man, element, weights, bias, num_out_neurons, num_in_neurons, has_log):
+    """
+    handle the last FFN Log layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0 abstract element
+    weights: POINTER(POINTER(c_double))
+        The weight matrix 
+    bias : POINTER(c_size_t)
+        The bias vector
+    num_out_neurons: c_size_t
+        The number of output neurons
+    num_in_neurons: c_size_t
+	The number of input_neurons
+    has_log: c_bool
+        if the last layer has a Log activation
+    Returns
+    -------
+    None
+
+    """
+    
+    try:
+        ffn_handle_last_log_layer_c = fppoly_api.ffn_handle_last_log_layer
+        ffn_handle_last_log_layer_c.restype = None
+        ffn_handle_last_log_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t, c_bool]
+        ffn_handle_last_log_layer_c(man,element,weights,bias, num_out_neurons, num_in_neurons, has_log)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_last_log_layer" from "libfppoly.so"')
+        print(inst)
 
 def is_greater(man, element, y, x):
     """
