@@ -1405,76 +1405,50 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, const elina_di
 }
 
 
-void device_layer_create_sparse_exprs(float_type* inf_coeff, float_type* sup_coeff, float_type* inf_cst, float_type* sup_cst, const double* filter_weights,
+__global__
+void device_layer_create_sparse_exprs(double* dense_coeff, double* bias, const double* filter_weights,
                                       const double* filter_bias, const size_t* input_size, const size_t* output_size, const size_t* filter_size,
                                       const size_t* strides, const long int pad_top, const long int pad_left, const size_t num_pixels)
 {
-    const size_t num_out_neurons = output_size[0]*output_size[1]*output_size[2];
+    size_t out_x = blockIdx.x;
+    size_t out_y = blockIdx.y;
+    size_t out_z = blockIdx.z;
 
-    double* dense_coeff = (double*) calloc(num_out_neurons*num_pixels, sizeof(double));
-    double* bias = (double*) calloc(num_out_neurons, sizeof(double));
+    const size_t mat_x = out_x*output_size[1]*output_size[2] + out_y*output_size[2] + out_z;
 
-    for(size_t out_x = 0; out_x < output_size[0]; out_x++)
+    for(size_t x_shift = 0; x_shift < filter_size[0]; x_shift++)
     {
-        for(size_t out_y = 0; out_y < output_size[1]; out_y++)
+        for(size_t y_shift = 0; y_shift < filter_size[1]; y_shift++)
         {
-            for(size_t out_z = 0; out_z < output_size[2]; out_z++)
+            for(size_t inp_z = 0; inp_z < input_size[2]; inp_z++)
             {
-                const size_t mat_x = out_x*output_size[1]*output_size[2] + out_y*output_size[2] + out_z;
+                const long int x_val = out_x*strides[0] + x_shift - pad_top;
+                const long int y_val = out_y*strides[1] + y_shift - pad_left;
 
-                for(size_t x_shift = 0; x_shift < filter_size[0]; x_shift++)
+                if((y_val < 0) || (y_val >= (long int)input_size[1]))
                 {
-                    for(size_t y_shift = 0; y_shift < filter_size[1]; y_shift++)
-                    {
-                        for(size_t inp_z = 0; inp_z < input_size[2]; inp_z++)
-                        {
-                            const long int x_val = out_x*strides[0] + x_shift - pad_top;
-                            const long int y_val = out_y*strides[1] + y_shift - pad_left;
-
-                            if((y_val < 0) || (y_val >= (long int)input_size[1]))
-                            {
-                                continue;
-                            }
-
-                            if((x_val < 0) || (x_val >= (long int)input_size[0]))
-                            {
-                                continue;
-                            }
-
-                            const size_t mat_y = x_val*input_size[1]*input_size[2] + y_val*input_size[2] + inp_z;
-
-                            if(mat_y >= num_pixels)
-                            {
-                                continue;
-                            }
-
-                            const size_t filter_index = x_shift*filter_size[1]*input_size[2]*output_size[2] + y_shift*input_size[2]*output_size[2] + inp_z*output_size[2] + out_z;
-                            dense_coeff[mat_x*num_pixels + mat_y] = filter_weights[filter_index];
-                        }
-                    }
+                    continue;
                 }
 
-                bias[mat_x] = filter_bias[out_z];
+                if((x_val < 0) || (x_val >= (long int)input_size[0]))
+                {
+                    continue;
+                }
+
+                const size_t mat_y = x_val*input_size[1]*input_size[2] + y_val*input_size[2] + inp_z;
+
+                if(mat_y >= num_pixels)
+                {
+                    continue;
+                }
+
+                const size_t filter_index = x_shift*filter_size[1]*input_size[2]*output_size[2] + y_shift*input_size[2]*output_size[2] + inp_z*output_size[2] + out_z;
+                dense_coeff[mat_x*num_pixels + mat_y] = filter_weights[filter_index];
             }
         }
     }
 
-    double* dense_coeff_dev;
-    double* bias_dev;
-
-    cudaMalloc((void**) &dense_coeff_dev, num_out_neurons*num_pixels*sizeof(double));
-    cudaMalloc((void**) &bias_dev, num_out_neurons*sizeof(double));
-
-    cudaMemcpy(dense_coeff_dev, dense_coeff, num_out_neurons*num_pixels*sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(bias_dev, bias, num_out_neurons*sizeof(double), cudaMemcpyHostToDevice);
-
-    device_layer_create_dense_expr<<<num_out_neurons, 1>>>(inf_coeff, sup_coeff, inf_cst, sup_cst, dense_coeff_dev, bias_dev, num_out_neurons, num_pixels);
-
-    cudaFree(dense_coeff_dev);
-    cudaFree(bias_dev);
-
-    free(dense_coeff);
-    free(bias);
+    bias[mat_x] = filter_bias[out_z];
 }
 
 
@@ -1543,36 +1517,56 @@ void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights,
 
     const size_t size = filter_size[0]*filter_size[1]*input_size[2]*output_size[2];
 
-    double* filter_weights_tmp = (double*) malloc(size*sizeof(double));
-    double* filter_bias_tmp = (double*) calloc(output_size[2], sizeof(double));
+    double* filter_weights_dev;
+    double* filter_bias_dev;
 
-    size_t* input_size_tmp = (size_t*) malloc(3*sizeof(size_t));
-    size_t* output_size_tmp = (size_t*) malloc(3*sizeof(size_t));
-    size_t* filter_size_tmp = (size_t*) malloc(2*sizeof(size_t));
-    size_t* strides_tmp = (size_t*) malloc(2*sizeof(size_t));
+    cudaMalloc((void**) &filter_weights_dev, size*sizeof(double));
+    cudaMalloc((void**) &filter_bias_dev, output_size[2]*sizeof(double));
+    cudaMemset(filter_bias_dev, 0, output_size[2]*sizeof(double));
 
-    cudaMemcpy(filter_weights_tmp, filter_weights, size*sizeof(double), cudaMemcpyHostToHost);
+    size_t* input_size_dev;
+    size_t* output_size_dev;
+    size_t* filter_size_dev;
+    size_t* strides_dev;
+
+    cudaMalloc((void**) &input_size_dev, 3*sizeof(size_t));
+    cudaMalloc((void**) &output_size_dev, 3*sizeof(size_t));
+    cudaMalloc((void**) &filter_size_dev, 2*sizeof(size_t));
+    cudaMalloc((void**) &strides_dev, 2*sizeof(size_t));
+
+    double* dense_coeff;
+    cudaMalloc((void**) &dense_coeff, num_out_neurons*num_pixels*sizeof(double));
+    cudaMemset(dense_coeff, 0, num_out_neurons*num_pixels*sizeof(double));
+    double* bias;
+    cudaMalloc((void**) &bias, num_out_neurons*sizeof(double));
+    cudaMemset(bias, 0, num_out_neurons*sizeof(double));
+
+    cudaMemcpy(filter_weights_dev, filter_weights, size*sizeof(double), cudaMemcpyHostToDevice);
 
     if(has_bias)
     {
-        cudaMemcpy(filter_bias_tmp, filter_bias, output_size[2]*sizeof(double), cudaMemcpyHostToHost);
+        cudaMemcpy(filter_bias_dev, filter_bias, output_size[2]*sizeof(double), cudaMemcpyHostToDevice);
     }
 
-    cudaMemcpy(input_size_tmp, input_size, 3*sizeof(size_t), cudaMemcpyHostToHost);
-    cudaMemcpy(output_size_tmp, output_size, 3*sizeof(size_t), cudaMemcpyHostToHost);
-    cudaMemcpy(filter_size_tmp, filter_size, 2*sizeof(size_t), cudaMemcpyHostToHost);
-    cudaMemcpy(strides_tmp, strides, 2*sizeof(size_t), cudaMemcpyHostToHost);
+    cudaMemcpy(input_size_dev, input_size, 3*sizeof(size_t), cudaMemcpyHostToDevice);
+    cudaMemcpy(output_size_dev, output_size, 3*sizeof(size_t), cudaMemcpyHostToDevice);
+    cudaMemcpy(filter_size_dev, filter_size, 2*sizeof(size_t), cudaMemcpyHostToDevice);
+    cudaMemcpy(strides_dev, strides, 2*sizeof(size_t), cudaMemcpyHostToDevice);
 
-    device_layer_create_sparse_exprs(inf_coeff, sup_coeff, inf_cst, sup_cst, filter_weights_tmp, filter_bias_tmp, input_size_tmp, output_size_tmp,
-                                     filter_size_tmp, strides_tmp, pad_top, pad_left, num_pixels);
+    device_layer_create_sparse_exprs<<<dim3(output_size[0], output_size[1], output_size[2]), 1>>>(dense_coeff, bias, filter_weights_dev, filter_bias_dev, input_size_dev, output_size_dev, filter_size_dev, strides_dev, pad_top, pad_left, num_pixels);
 
-    free(filter_weights_tmp);
-    free(filter_bias_tmp);
+    device_layer_create_dense_expr<<<num_out_neurons, 1>>>(inf_coeff, sup_coeff, inf_cst, sup_cst, dense_coeff, bias, num_out_neurons, num_pixels);
 
-    free(input_size_tmp);
-    free(output_size_tmp);
-    free(filter_size_tmp);
-    free(strides_tmp);
+    cudaFree(dense_coeff);
+    cudaFree(bias);
+
+    cudaFree(input_size_dev);
+    cudaFree(output_size_dev);
+    cudaFree(filter_size_dev);
+    cudaFree(strides_dev);
+
+    cudaFree(filter_weights_dev);
+    cudaFree(filter_bias_dev);
 }
 
 
