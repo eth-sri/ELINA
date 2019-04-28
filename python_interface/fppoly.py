@@ -637,7 +637,7 @@ def ffn_handle_last_parabola_layer(man, element, weights, bias, scaling_factor, 
         ffn_handle_last_parabola_layer_c = fppoly_api.ffn_handle_last_parabola_layer
         ffn_handle_last_parabola_layer_c.restype = None
         ffn_handle_last_parabola_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_double, c_size_t, c_size_t, c_bool]
-        ffn_handle_last_parabola_layer_c(man,element,weights,bias, scaling_factor num_out_neurons, num_in_neurons, has_parabola)
+        ffn_handle_last_parabola_layer_c(man,element,weights,bias, scaling_factor, num_out_neurons, num_in_neurons, has_parabola)
     except Exception as inst:
         print('Problem with loading/calling "ffn_handle_last_parabola_layer" from "libfppoly.so"')
         print(inst)
