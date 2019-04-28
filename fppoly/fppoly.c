@@ -943,8 +943,12 @@ void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t * abs, doubl
 	//printf("start \n");
 	//fflush(stdout);
 	fppoly_t *res = fppoly_of_abstract0(abs);
-	res->layers[0]->scaling_factor = scaling_factor;
+	//printf("coming here\n");
+	//fflush(stdout);
+	
+	
 	fppoly_alloc_first_layer(res,size, num_pixels, FFN, activation);
+	res->layers[0]->scaling_factor = scaling_factor;
 	fppoly_internal_t *pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	size_t i, j;
 	
@@ -2708,7 +2712,9 @@ void ffn_handle_intermediate_tanh_layer(elina_manager_t* man, elina_abstract0_t*
 
 
 void ffn_handle_intermediate_parabola_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  double scaling_factor, size_t num_out_neurons, size_t num_in_neurons){
+	
     ffn_handle_intermediate_layer(man, element, weights, bias, scaling_factor, num_out_neurons, num_in_neurons, PARABOLA);
+	
 }
 
 void ffn_handle_intermediate_log_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons){
