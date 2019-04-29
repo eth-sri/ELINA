@@ -374,31 +374,6 @@ i);
 }
 */
 
-layer_t *create_layer(const size_t num_out_neurons, const size_t num_in_neurons,
-                      const layertype_t type,
-                      const activation_type_t activation) {
-  layer_t *layer = (layer_t *)malloc(sizeof(layer_t));
-
-  layer->num_out_neurons = num_out_neurons;
-  layer->num_in_neurons = num_in_neurons;
-
-  layer->type = type;
-  layer->activation = activation;
-
-  cudaMalloc((void **)&layer->lb_array, num_out_neurons * sizeof(float_type));
-  cudaMalloc((void **)&layer->ub_array, num_out_neurons * sizeof(float_type));
-
-  cudaMalloc((void **)&layer->inf_coeff,
-             num_out_neurons * num_in_neurons * sizeof(float_type));
-  cudaMalloc((void **)&layer->sup_coeff,
-             num_out_neurons * num_in_neurons * sizeof(float_type));
-
-  cudaMalloc((void **)&layer->inf_cst, num_out_neurons * sizeof(float_type));
-  cudaMalloc((void **)&layer->sup_cst, num_out_neurons * sizeof(float_type));
-
-  return layer;
-}
-
 void fppoly_from_network_input_box(fppoly_t *const res, const size_t intdim,
                                    const size_t realdim,
                                    const double *inf_array,
@@ -443,12 +418,38 @@ elina_abstract0_t *fppoly_from_network_input(elina_manager_t *man,
   return abstract0_of_fppoly(man, res);
 }
 
-void fppoly_add_new_layer(fppoly_t *const fp, const size_t num_out_neurons,
-                          const size_t num_in_neurons, const layertype_t type,
-                          const activation_type_t activation) {
-  const size_t numlayers = fp->numlayers;
-  fp->layers[numlayers] =
-      create_layer(num_out_neurons, num_in_neurons, type, activation);
+void ffn_add_layer(fppoly_t *const fp, const size_t num_out_neurons,
+                   const size_t num_in_neurons, const layertype_t type,
+                   const activation_type_t activation) {
+  layer_t *layer = (layer_t *)malloc(sizeof(layer_t));
+
+  layer->num_out_neurons = num_out_neurons;
+  layer->num_in_neurons = num_in_neurons;
+
+  layer->type = type;
+  layer->activation = activation;
+
+  cudaMalloc((void **)&layer->lb_array, num_out_neurons * sizeof(float_type));
+  cudaMalloc((void **)&layer->ub_array, num_out_neurons * sizeof(float_type));
+
+  cudaMalloc((void **)&layer->inf_coeff,
+             num_out_neurons * num_in_neurons * sizeof(float_type));
+  cudaMalloc((void **)&layer->sup_coeff,
+             num_out_neurons * num_in_neurons * sizeof(float_type));
+
+  cudaMalloc((void **)&layer->inf_cst, num_out_neurons * sizeof(float_type));
+  cudaMalloc((void **)&layer->sup_cst, num_out_neurons * sizeof(float_type));
+
+  layer->filter_weights = nullptr;
+  layer->filter_bias = nullptr;
+
+  layer->input_size = nullptr;
+  layer->output_size = nullptr;
+  layer->filter_size = nullptr;
+  layer->strides = nullptr;
+
+  fp->layers[fp->numlayers] = layer;
+
   fp->numlayers++;
 }
 
@@ -639,7 +640,7 @@ void ffn_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
   res->layers = (layer_t **)malloc(20 * sizeof(layer_t *));
-  fppoly_add_new_layer(res, size, num_pixels, FFN, activation);
+  ffn_add_layer(res, size, num_pixels, FFN, activation);
 
   float_type *inf_coeff = res->layers[0]->inf_coeff;
   float_type *sup_coeff = res->layers[0]->sup_coeff;
@@ -675,6 +676,8 @@ void ffn_handle_first_tanh_layer(elina_manager_t *man, elina_abstract0_t *abs,
   // ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, TANH);
 }
 
+// TODO: Assess if non-determinism introduced by atomics is problematic for
+// analyzer.
 __global__ void lexpr_replace_relu_bounds(
     float_type *__restrict__ inf_coeff, float_type *__restrict__ sup_coeff,
     float_type *__restrict__ inf_cst, float_type *__restrict__ sup_cst,
@@ -1145,7 +1148,7 @@ void ffn_handle_intermediate_layer(elina_manager_t *man,
                                    const size_t num_in_neurons,
                                    const activation_type_t activation) {
   fppoly_t *fp = fppoly_of_abstract0(element);
-  fppoly_add_new_layer(fp, num_out_neurons, num_in_neurons, FFN, activation);
+  ffn_add_layer(fp, num_out_neurons, num_in_neurons, FFN, activation);
 
   float_type *inf_coeff = fp->layers[fp->numlayers - 1]->inf_coeff;
   float_type *sup_coeff = fp->layers[fp->numlayers - 1]->sup_coeff;
@@ -1207,9 +1210,9 @@ void ffn_handle_last_layer(elina_manager_t *man, elina_abstract0_t *element,
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
   if (has_activation) {
-    fppoly_add_new_layer(fp, num_out_neurons, num_in_neurons, FFN, activation);
+    ffn_add_layer(fp, num_out_neurons, num_in_neurons, FFN, activation);
   } else {
-    fppoly_add_new_layer(fp, num_out_neurons, num_in_neurons, FFN, NONE);
+    ffn_add_layer(fp, num_out_neurons, num_in_neurons, FFN, NONE);
   }
 
   float_type *inf_coeff = fp->layers[fp->numlayers - 1]->inf_coeff;
@@ -1435,6 +1438,44 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element,
   }
 }
 
+void conv_add_layer(fppoly_t *const fp, const size_t num_out_neurons,
+                    const size_t num_in_neurons,
+                    const size_t num_nonzero_weights, const size_t num_biases,
+                    const layertype_t type,
+                    const activation_type_t activation) {
+  layer_t *layer = (layer_t *)malloc(sizeof(layer_t));
+
+  layer->num_out_neurons = num_out_neurons;
+  layer->num_in_neurons = num_in_neurons;
+
+  layer->type = type;
+  layer->activation = activation;
+
+  cudaMalloc((void **)&layer->lb_array, num_out_neurons * sizeof(float_type));
+  cudaMalloc((void **)&layer->ub_array, num_out_neurons * sizeof(float_type));
+
+  cudaMalloc((void **)&layer->inf_coeff,
+             num_out_neurons * num_in_neurons * sizeof(float_type));
+  cudaMalloc((void **)&layer->sup_coeff,
+             num_out_neurons * num_in_neurons * sizeof(float_type));
+  cudaMalloc((void **)&layer->inf_cst, num_out_neurons * sizeof(float_type));
+  cudaMalloc((void **)&layer->sup_cst, num_out_neurons * sizeof(float_type));
+
+  cudaMalloc((void **)&layer->filter_weights,
+             num_nonzero_weights * sizeof(double));
+  cudaMalloc((void **)&layer->filter_bias, num_biases * sizeof(double));
+  cudaMemset(layer->filter_bias, 0, num_biases * sizeof(double));
+
+  cudaMalloc((void **)&layer->input_size, 3 * sizeof(size_t));
+  cudaMalloc((void **)&layer->output_size, 3 * sizeof(size_t));
+  cudaMalloc((void **)&layer->filter_size, 2 * sizeof(size_t));
+  cudaMalloc((void **)&layer->strides, 2 * sizeof(size_t));
+
+  fp->layers[fp->numlayers] = layer;
+
+  fp->numlayers++;
+}
+
 __global__ void device_layer_create_sparse_exprs(
     double *dense_coeff, double *bias, const double *filter_weights,
     const double *filter_bias, const size_t *input_size,
@@ -1505,13 +1546,19 @@ void layer_create_sparse_exprs(fppoly_t *const fp, const double *filter_weights,
 
   const size_t num_out_neurons =
       output_size[0] * output_size[1] * output_size[2];
-  fppoly_add_new_layer(fp, num_out_neurons, num_pixels, CONV, RELU);
+  const size_t size =
+      filter_size[0] * filter_size[1] * input_size[2] * output_size[2];
 
-  float_type *inf_coeff = fp->layers[fp->numlayers - 1]->inf_coeff;
-  float_type *sup_coeff = fp->layers[fp->numlayers - 1]->sup_coeff;
+  conv_add_layer(fp, num_out_neurons, num_pixels, size, output_size[2], CONV,
+                 RELU);
 
-  float_type *inf_cst = fp->layers[fp->numlayers - 1]->inf_cst;
-  float_type *sup_cst = fp->layers[fp->numlayers - 1]->sup_cst;
+  layer_t *current_layer = fp->layers[fp->numlayers - 1];
+
+  float_type *inf_coeff = current_layer->inf_coeff;
+  float_type *sup_coeff = current_layer->sup_coeff;
+
+  float_type *inf_cst = current_layer->inf_cst;
+  float_type *sup_cst = current_layer->sup_cst;
 
   long int pad_along_height = 0;
   long int pad_along_width = 0;
@@ -1539,55 +1586,38 @@ void layer_create_sparse_exprs(fppoly_t *const fp, const double *filter_weights,
     pad_left = pad_along_width / 2;
   }
 
-  const size_t size =
-      filter_size[0] * filter_size[1] * input_size[2] * output_size[2];
-
-  double *filter_weights_dev;
-  double *filter_bias_dev;
-
-  cudaMalloc((void **)&filter_weights_dev, size * sizeof(double));
-  cudaMalloc((void **)&filter_bias_dev, output_size[2] * sizeof(double));
-  cudaMemset(filter_bias_dev, 0, output_size[2] * sizeof(double));
-
-  size_t *input_size_dev;
-  size_t *output_size_dev;
-  size_t *filter_size_dev;
-  size_t *strides_dev;
-
-  cudaMalloc((void **)&input_size_dev, 3 * sizeof(size_t));
-  cudaMalloc((void **)&output_size_dev, 3 * sizeof(size_t));
-  cudaMalloc((void **)&filter_size_dev, 2 * sizeof(size_t));
-  cudaMalloc((void **)&strides_dev, 2 * sizeof(size_t));
-
   double *dense_coeff;
+  double *bias;
+
   cudaMalloc((void **)&dense_coeff,
              num_out_neurons * num_pixels * sizeof(double));
   cudaMemset(dense_coeff, 0, num_out_neurons * num_pixels * sizeof(double));
-  double *bias;
   cudaMalloc((void **)&bias, num_out_neurons * sizeof(double));
   cudaMemset(bias, 0, num_out_neurons * sizeof(double));
 
-  cudaMemcpy(filter_weights_dev, filter_weights, size * sizeof(double),
-             cudaMemcpyHostToDevice);
+  cudaMemcpy(current_layer->filter_weights, filter_weights,
+             size * sizeof(double), cudaMemcpyHostToDevice);
 
   if (has_bias) {
-    cudaMemcpy(filter_bias_dev, filter_bias, output_size[2] * sizeof(double),
-               cudaMemcpyHostToDevice);
+    cudaMemcpy(current_layer->filter_bias, filter_bias,
+               output_size[2] * sizeof(double), cudaMemcpyHostToDevice);
   }
 
-  cudaMemcpy(input_size_dev, input_size, 3 * sizeof(size_t),
+  cudaMemcpy(current_layer->input_size, input_size, 3 * sizeof(size_t),
              cudaMemcpyHostToDevice);
-  cudaMemcpy(output_size_dev, output_size, 3 * sizeof(size_t),
+  cudaMemcpy(current_layer->output_size, output_size, 3 * sizeof(size_t),
              cudaMemcpyHostToDevice);
-  cudaMemcpy(filter_size_dev, filter_size, 2 * sizeof(size_t),
+  cudaMemcpy(current_layer->filter_size, filter_size, 2 * sizeof(size_t),
              cudaMemcpyHostToDevice);
-  cudaMemcpy(strides_dev, strides, 2 * sizeof(size_t), cudaMemcpyHostToDevice);
+  cudaMemcpy(current_layer->strides, strides, 2 * sizeof(size_t),
+             cudaMemcpyHostToDevice);
 
   device_layer_create_sparse_exprs<<<
       dim3(output_size[0], output_size[1], output_size[2]), 1>>>(
-      dense_coeff, bias, filter_weights_dev, filter_bias_dev, input_size_dev,
-      output_size_dev, filter_size_dev, strides_dev, pad_top, pad_left,
-      num_pixels);
+      dense_coeff, bias, current_layer->filter_weights,
+      current_layer->filter_bias, current_layer->input_size,
+      current_layer->output_size, current_layer->filter_size,
+      current_layer->strides, pad_top, pad_left, num_pixels);
 
   device_layer_create_dense_expr<<<num_out_neurons, 1>>>(
       inf_coeff, sup_coeff, inf_cst, sup_cst, dense_coeff, bias,
@@ -1595,14 +1625,6 @@ void layer_create_sparse_exprs(fppoly_t *const fp, const double *filter_weights,
 
   cudaFree(dense_coeff);
   cudaFree(bias);
-
-  cudaFree(input_size_dev);
-  cudaFree(output_size_dev);
-  cudaFree(filter_size_dev);
-  cudaFree(strides_dev);
-
-  cudaFree(filter_weights_dev);
-  cudaFree(filter_bias_dev);
 }
 
 void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
@@ -1662,6 +1684,24 @@ void free_layer(layer_t *layer) {
 
   layer->lb_array = nullptr;
   layer->ub_array = nullptr;
+
+  if (layer->type == CONV) {
+    cudaFree(layer->filter_weights);
+    cudaFree(layer->filter_bias);
+
+    layer->filter_weights = nullptr;
+    layer->filter_bias = nullptr;
+
+    cudaFree(layer->input_size);
+    cudaFree(layer->output_size);
+    cudaFree(layer->filter_size);
+    cudaFree(layer->strides);
+
+    layer->input_size = nullptr;
+    layer->output_size = nullptr;
+    layer->filter_size = nullptr;
+    layer->strides = nullptr;
+  }
 
   free(layer);
   layer = nullptr;
