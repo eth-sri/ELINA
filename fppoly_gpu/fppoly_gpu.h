@@ -19,8 +19,6 @@
  */
 
 
-#define not_single
-
 #ifndef __FPPOLY_GPU_H_INCLUDED__
 #define __FPPOLY_GPU_H_INCLUDED__
 
@@ -40,6 +38,8 @@
 extern "C"
 {
 #endif
+
+#define not_single
 
 #ifdef single
 using float_type = float;
@@ -96,6 +96,14 @@ typedef struct layer_t
     float_type* sup_coeff;
     float_type* inf_cst;
     float_type* sup_cst;
+
+    double* filter_weights;
+    double* filter_bias;
+
+    size_t* input_size;
+    size_t* output_size;
+    size_t* filter_size;
+    size_t* strides;
 } layer_t;
 
 
