@@ -64,9 +64,10 @@ typedef struct fppoly_internal_t{
 
 
 typedef enum layertype_t {
-  FFN, /* FFN layer */
+  FFN,  /* FFN layer */
   CONV,    /* CONV layer */
   MAXPOOL,   /* MAXPOOL layer */
+  LSTM, /* LSTM layer */
 } layertype_t;
 
 typedef enum activation_type_t{
@@ -75,7 +76,6 @@ typedef enum activation_type_t{
     TANH,
     PARABOLA,  /* Parabolic assignments */
     LOG,       /* Logrithmic assignments */
-    MULT,      /* Mutiplication of two deeppoly elements */
     NONE,
 }activation_type_t;
     
@@ -98,8 +98,8 @@ typedef struct neuron_t{
 	double lb;
 	double ub;
 	expr_t * expr;
-	expr_t * maxpool_lexpr;
-	expr_t * maxpool_uexpr;
+	expr_t * lexpr;
+	expr_t * uexpr;
 }neuron_t;
 
 typedef struct layer_t{
@@ -108,6 +108,10 @@ typedef struct layer_t{
         activation_type_t activation;
 	double scaling_factor;
 	neuron_t **neurons;
+	double * h_t_inf;
+	double * h_t_sup;
+	double * c_t_inf;
+	double * c_t_sup;
 }layer_t;
 
 typedef struct output_abstract_t{
@@ -126,6 +130,7 @@ typedef struct fppoly_t{
 	expr_t ** input_uexpr;
 	size_t size;
 	size_t num_pixels;
+	size_t lstm_index;
 	output_abstract_t * out;
 }fppoly_t;
 
@@ -193,7 +198,11 @@ void conv_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t
 size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *abs, 
 			   size_t *pool_size, size_t *input_size);
 
-void fppoly_alloc_first_layer(fppoly_t *fp, size_t size,  size_t num_pixels, layertype_t type, activation_type_t activation);
+void create_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, size_t h);
+
+void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, double **weights,  double *bias, size_t d, size_t h);
+
+void fppoly_alloc_first_layer(fppoly_t *fp, size_t size,  layertype_t type, activation_type_t activation);
 
 elina_linexpr0_t * get_lexpr_for_output_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t i);
 
@@ -204,6 +213,8 @@ elina_interval_t * box_for_neuron(elina_manager_t* man, elina_abstract0_t * abs,
 elina_interval_t ** box_for_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno);
 
 size_t get_num_neurons_in_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno);
+
+void free_neuron(neuron_t *neuron);
 
 #ifdef __cplusplus
  }
