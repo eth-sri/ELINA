@@ -152,6 +152,8 @@ def ffn_handle_first_relu_layer(man, element,weights, bias,  size, num_pixels):
     ----------
     man : ElinaManagerPtr
         Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
     weights : POINTER(POINTER(c_double))
         The weight matrix.
     bias : POINTER(c_double)
@@ -984,3 +986,69 @@ def get_uexpr_for_output_neuron(man,element,i):
         print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t to the function')
 
     return linexpr0
+
+
+def create_lstm_layer(man, element,h):
+    """"
+    creates an lstm layer for the neural network, this should be called only once per each lstm layer
+
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    h: c_size_t
+        size of h_t
+
+    Returns
+    --------
+    None
+    """"
+    try:
+        create_lstm_layer_c = fppoly_api.create_lstm_layer
+        create_lstm_layer_c.restype = None
+        create_lstm_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t]
+        create_lstm_layer_c(man,element,h)
+    except:
+        print('Problem with loading/calling "create_lstm_layer" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t to the function')
+
+    return
+   
+
+def handle_lstm_layer(man, element, weights, bias, d, h):
+    """"
+    computes the hidden states and output vectors of the lstm unit, to be called at each time step after creating an LSTM unit
+
+    Parameters
+    -----------    
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    weights : POINTER(POINTER(c_double))
+        The weight matrix of size 4*h \times d+h, with h rows each for f_t, i_t, o_t, and c_t in order, 
+        columnwise the first d entries correspond to x_t and the remaining correspond to h_t
+    bias : POINTER(c_double)
+        The bias vector of size 4*h, in the same format as weights
+    d: c_size_t
+       size of x_t
+    h: c_size_t
+       size of h_t
+
+    Returns
+    --------
+    None
+    """"
+    try:
+        handle_lstm_layer_c = fppoly_api.handle_lstm_layer
+        handle_lstm_layer_c.restype = None
+        handle_lstm_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t]
+        handle_lstm_layer_c(man,element,h)
+    except:
+        print('Problem with loading/calling "handle_lstm_layer" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t to the function')
+
+    return
+
