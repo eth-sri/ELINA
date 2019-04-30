@@ -92,10 +92,8 @@ typedef struct layer_t
     float_type* lb_array;
     float_type* ub_array;
 
-    float_type* inf_coeff;
-    float_type* sup_coeff;
-    float_type* inf_cst;
-    float_type* sup_cst;
+    float_type* coeffs;
+    float_type* csts;
 
     double* filter_weights;
     double* filter_bias;
