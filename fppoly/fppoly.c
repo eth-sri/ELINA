@@ -3151,7 +3151,7 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, double **we
 
 		expr_t *f_t_uexpr = copy_expr(f_t_lexpr);
 		double lb_f_t = get_lb_using_previous_layers(man, fp, f_t_lexpr);
-		double ub_f_t = get_ub_using_previous_layers(man, fp, f_t_lexpr);
+		double ub_f_t = get_ub_using_previous_layers(man, fp, f_t_uexpr);
 		neuron->lb = lb_f_t;
 		neuron->ub = ub_f_t;	
 		lb_f_t = apply_sigmoid_lexpr(pr, &f_t_lexpr, neuron);
