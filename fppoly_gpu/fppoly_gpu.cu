@@ -547,14 +547,15 @@ __global__ void compute_ub_from_expr(float_type *__restrict__ ub_array,
   ub_array[n] = res_sup;
 }
 
+template <typename FloatType>
 __global__ void device_layer_create_dense_expr(
     float_type *__restrict__ coeffs, float_type *__restrict__ csts,
-    const double *__restrict__ weights, const double *__restrict__ bias,
+    const FloatType *__restrict__ weights, const FloatType *__restrict__ bias,
     const size_t num_out_neurons, const size_t num_in_neurons) {
   const size_t i = blockIdx.x;
 
-  const double *weight_i = weights + i * num_in_neurons;
-  const double bias_i = bias[i];
+  const FloatType *weight_i = weights + i * num_in_neurons;
+  const FloatType bias_i = bias[i];
 
   csts[i] = bias_i;
 
@@ -934,8 +935,8 @@ csts_from_previous_layer(const float_type *__restrict__ expr_inf_coeff,
 }
 
 __global__ void device_layer_create_sparse_exprs(
-    double *dense_coeff, double *bias, const double *filter_weights,
-    const double *filter_bias, const size_t input_size_x,
+    float_type *dense_coeff, float_type *bias, const float_type *filter_weights,
+    const float_type *filter_bias, const size_t input_size_x,
     const size_t input_size_y, const size_t input_size_z,
     const size_t output_size_x, const size_t output_size_y,
     const size_t output_size_z, const size_t filter_size_x,
@@ -970,9 +971,9 @@ __global__ void device_layer_create_sparse_exprs(
         }
 
         const size_t filter_index =
-            x_shift * filter_size_y * input_size_z * output_size_z +
-            y_shift * input_size_z * output_size_z + inp_z * output_size_z +
-            out_z;
+            out_z * filter_size_x * filter_size_y * input_size_z +
+            x_shift * filter_size_y * input_size_z + y_shift * input_size_z +
+            inp_z;
         dense_coeff[mat_x * num_pixels + mat_y] = filter_weights[filter_index];
       }
     }
@@ -982,15 +983,17 @@ __global__ void device_layer_create_sparse_exprs(
 }
 
 void sparse_to_dense(layer_t *layer) {
-  double *dense_coeff;
-  double *bias;
+  float_type *dense_coeff;
+  float_type *bias;
 
-  cudaMalloc((void **)&dense_coeff,
-             layer->num_out_neurons * layer->num_in_neurons * sizeof(double));
+  cudaMalloc((void **)&dense_coeff, layer->num_out_neurons *
+                                        layer->num_in_neurons *
+                                        sizeof(float_type));
   cudaMemset(dense_coeff, 0,
-             layer->num_out_neurons * layer->num_in_neurons * sizeof(double));
-  cudaMalloc((void **)&bias, layer->num_out_neurons * sizeof(double));
-  cudaMemset(bias, 0, layer->num_out_neurons * sizeof(double));
+             layer->num_out_neurons * layer->num_in_neurons *
+                 sizeof(float_type));
+  cudaMalloc((void **)&bias, layer->num_out_neurons * sizeof(float_type));
+  cudaMemset(bias, 0, layer->num_out_neurons * sizeof(float_type));
 
   device_layer_create_sparse_exprs<<<
       dim3(layer->output_size[0], layer->output_size[1], layer->output_size[2]),
@@ -1517,9 +1520,9 @@ void conv_add_layer(fppoly_t *const fp, const size_t num_out_neurons,
   cudaMalloc((void **)&layer->csts, num_out_neurons * sizeof(float_type));
 
   cudaMalloc((void **)&layer->filter_weights,
-             num_nonzero_weights * sizeof(double));
-  cudaMalloc((void **)&layer->filter_bias, num_biases * sizeof(double));
-  cudaMemset(layer->filter_bias, 0, num_biases * sizeof(double));
+             num_nonzero_weights * sizeof(float_type));
+  cudaMalloc((void **)&layer->filter_bias, num_biases * sizeof(float_type));
+  cudaMemset(layer->filter_bias, 0, num_biases * sizeof(float_type));
 
   layer->input_size = (size_t *)malloc(3 * sizeof(size_t));
   layer->output_size = (size_t *)malloc(3 * sizeof(size_t));
@@ -1593,12 +1596,36 @@ void layer_create_sparse_exprs(fppoly_t *const fp, const double *filter_weights,
 
   const long int pad[2] = {pad_top, pad_left};
 
-  cudaMemcpy(current_layer->filter_weights, filter_weights,
-             size * sizeof(double), cudaMemcpyHostToDevice);
+  float_type *filter_weights_tmp =
+      (float_type *)malloc(size * sizeof(float_type));
+  float_type *filter_bias_tmp = (float_type *)malloc(size * sizeof(float_type));
+
+  for (size_t out_z = 0; out_z < output_size[2]; out_z++) {
+    for (size_t inp_z = 0; inp_z < input_size[2]; inp_z++) {
+      for (size_t x_shift = 0; x_shift < filter_size[0]; x_shift++) {
+        for (size_t y_shift = 0; y_shift < filter_size[1]; y_shift++) {
+          const size_t read_index =
+              x_shift * filter_size[1] * input_size[2] * output_size[2] +
+              y_shift * input_size[2] * output_size[2] +
+              inp_z * output_size[2] + out_z;
+          const size_t write_index =
+              out_z * filter_size[0] * filter_size[1] * input_size[2] +
+              x_shift * filter_size[1] * input_size[2] +
+              y_shift * input_size[2] + inp_z;
+          filter_weights_tmp[write_index] = filter_weights[read_index];
+        }
+      }
+    }
+
+    filter_bias_tmp[out_z] = filter_bias[out_z];
+  }
+
+  cudaMemcpy(current_layer->filter_weights, filter_weights_tmp,
+             size * sizeof(float_type), cudaMemcpyHostToDevice);
 
   if (has_bias) {
-    cudaMemcpy(current_layer->filter_bias, filter_bias,
-               output_size[2] * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(current_layer->filter_bias, filter_bias_tmp,
+               output_size[2] * sizeof(float_type), cudaMemcpyHostToDevice);
   }
 
   cudaMemcpy(current_layer->input_size, input_size, 3 * sizeof(size_t),
@@ -1611,6 +1638,9 @@ void layer_create_sparse_exprs(fppoly_t *const fp, const double *filter_weights,
              cudaMemcpyHostToHost);
   cudaMemcpy(current_layer->pad, pad, 2 * sizeof(long int),
              cudaMemcpyHostToHost);
+
+  free(filter_weights_tmp);
+  free(filter_bias_tmp);
 }
 
 void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,

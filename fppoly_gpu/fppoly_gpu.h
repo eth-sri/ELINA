@@ -86,8 +86,8 @@ typedef struct layer_t {
   float_type *coeffs;
   float_type *csts;
 
-  double *filter_weights;
-  double *filter_bias;
+  float_type *filter_weights;
+  float_type *filter_bias;
 
   size_t *input_size;
   size_t *output_size;
