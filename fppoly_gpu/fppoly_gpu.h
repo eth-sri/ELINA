@@ -104,6 +104,7 @@ typedef struct layer_t
     size_t* output_size;
     size_t* filter_size;
     size_t* strides;
+    long int* pad;
 } layer_t;
 
 

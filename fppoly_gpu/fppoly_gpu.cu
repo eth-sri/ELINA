@@ -566,8 +566,9 @@ void ffn_add_layer(fppoly_t* const fp, const size_t num_out_neurons, const size_
 
     layer->input_size = nullptr;
     layer->output_size = nullptr;
-    layer->filter_size= nullptr;
-    layer->strides= nullptr;
+    layer->filter_size = nullptr;
+    layer->strides = nullptr;
+    layer->pad = nullptr;
 
     fp->layers[fp->numlayers] = layer;
 
@@ -1016,8 +1017,79 @@ void csts_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, con
 }
 
 
+__global__
+void device_layer_create_sparse_exprs(double* dense_coeff, double* bias, const double* filter_weights,
+                                      const double* filter_bias, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t filter_size_x, const size_t filter_size_y,
+                                      const size_t stride_x, const size_t stride_y, const long int pad_x, const long int pad_y, const size_t num_pixels)
+{
+    size_t out_x = blockIdx.x;
+    size_t out_y = blockIdx.y;
+    size_t out_z = blockIdx.z;
+
+    const size_t mat_x = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
+
+    for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
+    {
+        for(size_t y_shift = 0; y_shift < filter_size_y; y_shift++)
+        {
+            for(size_t inp_z = 0; inp_z < input_size_z; inp_z++)
+            {
+                const long int x_val = out_x*stride_x + x_shift - pad_x;
+                const long int y_val = out_y*stride_y + y_shift - pad_y;
+
+                if((y_val < 0) || (y_val >= (long int)input_size_y))
+                {
+                    continue;
+                }
+
+                if((x_val < 0) || (x_val >= (long int)input_size_x))
+                {
+                    continue;
+                }
+
+                const size_t mat_y = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
+
+                if(mat_y >= num_pixels)
+                {
+                    continue;
+                }
+
+                const size_t filter_index = x_shift*filter_size_y*input_size_z*output_size_z + y_shift*input_size_z*output_size_z + inp_z*output_size_z + out_z;
+                dense_coeff[mat_x*num_pixels + mat_y] = filter_weights[filter_index];
+            }
+        }
+    }
+
+    bias[mat_x] = filter_bias[out_z];
+}
+
+
+void sparse_to_dense(layer_t* layer)
+{
+    double* dense_coeff;
+    double* bias;
+
+    cudaMalloc((void**) &dense_coeff, layer->num_out_neurons*layer->num_in_neurons*sizeof(double));
+    cudaMemset(dense_coeff, 0, layer->num_out_neurons*layer->num_in_neurons*sizeof(double));
+    cudaMalloc((void**) &bias, layer->num_out_neurons*sizeof(double));
+    cudaMemset(bias, 0, layer->num_out_neurons*sizeof(double));
+
+    device_layer_create_sparse_exprs<<<dim3(layer->output_size[0], layer->output_size[1], layer->output_size[2]), 1>>>(dense_coeff, bias, layer->filter_weights, layer->filter_bias, layer->input_size[0], layer->input_size[1], layer->input_size[2], layer->output_size[0], layer->output_size[1], layer->output_size[2], layer->filter_size[0], layer->filter_size[1], layer->strides[0], layer->strides[1], layer->pad[0], layer->pad[1], layer->num_in_neurons);
+
+    device_layer_create_dense_expr<<<layer->num_out_neurons, 1>>>(layer->inf_coeff, layer->sup_coeff, layer->inf_cst, layer->sup_cst, dense_coeff, bias, layer->num_out_neurons, layer->num_in_neurons);
+
+    cudaFree(dense_coeff);
+    cudaFree(bias);
+}
+
+
 void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, const size_t layerno)
 {
+    if(fp->layers[layerno]->type == CONV)
+    {
+        sparse_to_dense(fp->layers[layerno]);
+    }
+
     auto start = std::chrono::system_clock::now();
 
     fppoly_internal_t* pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
@@ -1430,61 +1502,15 @@ void conv_add_layer(fppoly_t* const fp, const size_t num_out_neurons, const size
     cudaMalloc((void**) &layer->filter_bias, num_biases*sizeof(double));
     cudaMemset(layer->filter_bias, 0, num_biases*sizeof(double));
 
-    cudaMalloc((void**) &layer->input_size, 3*sizeof(size_t));
-    cudaMalloc((void**) &layer->output_size, 3*sizeof(size_t));
-    cudaMalloc((void**) &layer->filter_size, 2*sizeof(size_t));
-    cudaMalloc((void**) &layer->strides, 2*sizeof(size_t));
+    layer->input_size = (size_t*) malloc(3*sizeof(size_t));
+    layer->output_size = (size_t*) malloc(3*sizeof(size_t));
+    layer->filter_size = (size_t*) malloc(2*sizeof(size_t));
+    layer->strides = (size_t*) malloc(2*sizeof(size_t));
+    layer->pad = (long int*) malloc(2*sizeof(long int));
 
     fp->layers[fp->numlayers] = layer;
 
     fp->numlayers++;
-}
-
-
-__global__
-void device_layer_create_sparse_exprs(double* dense_coeff, double* bias, const double* filter_weights,
-                                      const double* filter_bias, const size_t* input_size, const size_t* output_size, const size_t* filter_size,
-                                      const size_t* strides, const long int pad_top, const long int pad_left, const size_t num_pixels)
-{
-    size_t out_x = blockIdx.x;
-    size_t out_y = blockIdx.y;
-    size_t out_z = blockIdx.z;
-
-    const size_t mat_x = out_x*output_size[1]*output_size[2] + out_y*output_size[2] + out_z;
-
-    for(size_t x_shift = 0; x_shift < filter_size[0]; x_shift++)
-    {
-        for(size_t y_shift = 0; y_shift < filter_size[1]; y_shift++)
-        {
-            for(size_t inp_z = 0; inp_z < input_size[2]; inp_z++)
-            {
-                const long int x_val = out_x*strides[0] + x_shift - pad_top;
-                const long int y_val = out_y*strides[1] + y_shift - pad_left;
-
-                if((y_val < 0) || (y_val >= (long int)input_size[1]))
-                {
-                    continue;
-                }
-
-                if((x_val < 0) || (x_val >= (long int)input_size[0]))
-                {
-                    continue;
-                }
-
-                const size_t mat_y = x_val*input_size[1]*input_size[2] + y_val*input_size[2] + inp_z;
-
-                if(mat_y >= num_pixels)
-                {
-                    continue;
-                }
-
-                const size_t filter_index = x_shift*filter_size[1]*input_size[2]*output_size[2] + y_shift*input_size[2]*output_size[2] + inp_z*output_size[2] + out_z;
-                dense_coeff[mat_x*num_pixels + mat_y] = filter_weights[filter_index];
-            }
-        }
-    }
-
-    bias[mat_x] = filter_bias[out_z];
 }
 
 
@@ -1515,12 +1541,6 @@ void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights,
     conv_add_layer(fp, num_out_neurons, num_pixels, size, output_size[2], CONV, RELU);
 
     layer_t* current_layer = fp->layers[fp->numlayers - 1];
-
-    float_type* inf_coeff = current_layer->inf_coeff;
-    float_type* sup_coeff = current_layer->sup_coeff;
-
-    float_type* inf_cst = current_layer->inf_cst;
-    float_type* sup_cst = current_layer->sup_cst;
 
     long int pad_along_height = 0;
     long int pad_along_width = 0;
@@ -1555,13 +1575,7 @@ void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights,
         pad_left = pad_along_width/2;
     }
 
-    double* dense_coeff;
-    double* bias;
-
-    cudaMalloc((void**) &dense_coeff, num_out_neurons*num_pixels*sizeof(double));
-    cudaMemset(dense_coeff, 0, num_out_neurons*num_pixels*sizeof(double));
-    cudaMalloc((void**) &bias, num_out_neurons*sizeof(double));
-    cudaMemset(bias, 0, num_out_neurons*sizeof(double));
+    const long int pad[2] = {pad_top, pad_left};
 
     cudaMemcpy(current_layer->filter_weights, filter_weights, size*sizeof(double), cudaMemcpyHostToDevice);
 
@@ -1570,17 +1584,11 @@ void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights,
         cudaMemcpy(current_layer->filter_bias, filter_bias, output_size[2]*sizeof(double), cudaMemcpyHostToDevice);
     }
 
-    cudaMemcpy(current_layer->input_size, input_size, 3*sizeof(size_t), cudaMemcpyHostToDevice);
-    cudaMemcpy(current_layer->output_size, output_size, 3*sizeof(size_t), cudaMemcpyHostToDevice);
-    cudaMemcpy(current_layer->filter_size, filter_size, 2*sizeof(size_t), cudaMemcpyHostToDevice);
-    cudaMemcpy(current_layer->strides, strides, 2*sizeof(size_t), cudaMemcpyHostToDevice);
-
-    device_layer_create_sparse_exprs<<<dim3(output_size[0], output_size[1], output_size[2]), 1>>>(dense_coeff, bias, current_layer->filter_weights, current_layer->filter_bias, current_layer->input_size, current_layer->output_size, current_layer->filter_size, current_layer->strides, pad_top, pad_left, num_pixels);
-
-    device_layer_create_dense_expr<<<num_out_neurons, 1>>>(inf_coeff, sup_coeff, inf_cst, sup_cst, dense_coeff, bias, num_out_neurons, num_pixels);
-
-    cudaFree(dense_coeff);
-    cudaFree(bias);
+    cudaMemcpy(current_layer->input_size, input_size, 3*sizeof(size_t), cudaMemcpyHostToHost);
+    cudaMemcpy(current_layer->output_size, output_size, 3*sizeof(size_t), cudaMemcpyHostToHost);
+    cudaMemcpy(current_layer->filter_size, filter_size, 2*sizeof(size_t), cudaMemcpyHostToHost);
+    cudaMemcpy(current_layer->strides, strides, 2*sizeof(size_t), cudaMemcpyHostToHost);
+    cudaMemcpy(current_layer->pad, pad, 2*sizeof(long int), cudaMemcpyHostToHost);
 }
 
 
@@ -1598,6 +1606,8 @@ void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element, c
 
     float_type* inf_cst = fp->layers[0]->inf_cst;
     float_type* sup_cst = fp->layers[0]->sup_cst;
+
+    sparse_to_dense(fp->layers[0]);
 
     layer_compute_bounds_from_exprs(inf_coeff, sup_coeff, inf_cst, sup_cst, fp->layers[0]->lb_array, fp->layers[0]->ub_array, fp->input_inf, fp->input_sup, fp->layers[0]->num_out_neurons, fp->layers[0]->num_in_neurons);
 }
@@ -1641,15 +1651,17 @@ void free_layer(layer_t* layer)
         layer->filter_weights = nullptr;
         layer->filter_bias = nullptr;
 
-        cudaFree(layer->input_size);
-        cudaFree(layer->output_size);
-        cudaFree(layer->filter_size);
-        cudaFree(layer->strides);
+        free(layer->input_size);
+        free(layer->output_size);
+        free(layer->filter_size);
+        free(layer->strides);
+        free(layer->pad);
 
         layer->input_size = nullptr;
         layer->output_size = nullptr;
         layer->filter_size = nullptr;
         layer->strides = nullptr;
+        layer->pad = nullptr;
     }
 
     free(layer);
