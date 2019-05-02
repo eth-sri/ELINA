@@ -1123,6 +1123,8 @@ expr_t *lexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
     res->inf_coeff[i] = res->inf_coeff[i] / scaling_factor;
     res->sup_coeff[i] = res->sup_coeff[i] / scaling_factor;
   }
+  res->inf_cst = res->inf_cst / scaling_factor;
+  res->sup_cst = res->sup_cst / scaling_factor;
   if (expr->type == SPARSE) {
     res->dim = (size_t *)malloc(num_neurons * sizeof(size_t));
     for (i = 0; i < num_neurons; i++) {
@@ -1206,7 +1208,8 @@ expr_t *uexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
     res->inf_coeff[i] = res->inf_coeff[i] / scaling_factor;
     res->sup_coeff[i] = res->sup_coeff[i] / scaling_factor;
   }
-
+  res->inf_cst = res->inf_cst / scaling_factor;
+  res->sup_cst = res->sup_cst / scaling_factor;
   if (expr->type == SPARSE) {
     res->dim = (size_t *)malloc(num_neurons * sizeof(size_t));
     for (i = 0; i < num_neurons; i++) {
@@ -2584,11 +2587,11 @@ void *update_state_using_previous_layers(void *args) {
           uexpr = uexpr_replace_log_bounds(pr, uexpr, aux_neurons);
         }
         // else if(fp->layers[k]->activation==MULT){
-        //}
-        free_expr(tmp_l);
+        if (fp->layers[k]->activation != NONE) {
+          free_expr(tmp_l);
 
-        free_expr(tmp_u);
-
+          free_expr(tmp_u);
+        }
         // if(i==0 && layerno==1){
         //    printf("after relu %zu\n",lexpr->size);
         //    expr_print(lexpr);
