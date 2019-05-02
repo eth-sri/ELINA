@@ -2656,6 +2656,9 @@ void ffn_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* elem
     return;
 }
 
+void ffn_handle_intermediate_affine_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons){
+    ffn_handle_intermediate_layer(man, element, weights, bias, 1, num_out_neurons, num_in_neurons, NONE);
+}
 
 void ffn_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons){
     ffn_handle_intermediate_layer(man, element, weights, bias, 1, num_out_neurons, num_in_neurons, RELU);
