@@ -174,6 +174,12 @@ void ffn_handle_first_log_layer(elina_manager_t *man, elina_abstract0_t *abs,
                                 double **weights, double *bias, size_t size,
                                 size_t num_pixels);
 
+void ffn_handle_intermediate_affine_layer(elina_manager_t *man,
+                                          elina_abstract0_t *element,
+                                          double **weights, double *bias,
+                                          size_t num_out_neurons,
+                                          size_t num_in_neurons);
+
 void ffn_handle_intermediate_relu_layer(elina_manager_t *man,
                                         elina_abstract0_t *element,
                                         double **weights, double *bias,

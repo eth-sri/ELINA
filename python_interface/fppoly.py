@@ -320,6 +320,41 @@ def ffn_handle_first_log_layer(man, element,weights, bias,  size, num_pixels):
     return
 
 
+def ffn_handle_intermediate_affine_layer(man, element, weights, bias, num_out_neurons, num_in_neurons):
+    """
+    handle the intermediate FFN ReLU layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the abstract element
+    weights: POINTER(POINTER(c_double))
+        The weight matrix.
+    bias: POINTER(c_size_t)
+        The bias vector
+    num_out_neurons: c_size_t
+        number of output neurons
+    num_in_neurons: c_size_t
+	number of input neurons
+    
+    Returns
+    -------
+    None
+
+    """
+
+    try:
+        ffn_handle_intermediate_affine_layer_c = fppoly_api.ffn_handle_intermediate_affine_layer
+        ffn_handle_intermediate_affine_layer_c.restype = None
+        ffn_handle_intermediate_affine_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t]
+        ffn_handle_intermediate_affine_layer_c(man,element,weights,bias, num_out_neurons, num_in_neurons)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_intermediate_affine_layer" from "libfppoly.so"')
+        print(inst)
+
+
 
 def ffn_handle_intermediate_relu_layer(man, element, weights, bias, num_out_neurons, num_in_neurons):
     """
@@ -989,7 +1024,7 @@ def get_uexpr_for_output_neuron(man,element,i):
 
 
 def create_lstm_layer(man, element,h):
-    """"
+    """
     creates an lstm layer for the neural network, this should be called only once per each lstm layer
 
     Parameters
@@ -1004,7 +1039,7 @@ def create_lstm_layer(man, element,h):
     Returns
     --------
     None
-    """"
+    """
     try:
         create_lstm_layer_c = fppoly_api.create_lstm_layer
         create_lstm_layer_c.restype = None
@@ -1018,7 +1053,7 @@ def create_lstm_layer(man, element,h):
    
 
 def handle_lstm_layer(man, element, weights, bias, d, h):
-    """"
+    """
     computes the hidden states and output vectors of the lstm unit, to be called at each time step after creating an LSTM unit
 
     Parameters
@@ -1040,7 +1075,7 @@ def handle_lstm_layer(man, element, weights, bias, d, h):
     Returns
     --------
     None
-    """"
+    """
     try:
         handle_lstm_layer_c = fppoly_api.handle_lstm_layer
         handle_lstm_layer_c.restype = None
