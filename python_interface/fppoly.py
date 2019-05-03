@@ -995,7 +995,7 @@ def update_bounds_for_neuron(man, element,layerno, neuron_no, lb, ub):
 
 def get_bounds_for_linexpr0(man,element,linexpr0,layerno):
     """
-    returns bounds for a linexpr over neurons in "layerno"
+    returns bounds for a linexpr0 over neurons in "layerno"
     
     Parameters
     ----------
@@ -1009,7 +1009,7 @@ def get_bounds_for_linexpr0(man,element,linexpr0,layerno):
         the layer number
     Returns
     -------
-    interval_array : ElinaIntervalPtr
+    interval : ElinaIntervalPtr
         Poiner to the Elinainterval
 
     """
