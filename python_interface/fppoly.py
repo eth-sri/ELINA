@@ -991,6 +991,40 @@ def update_bounds_for_neuron(man, element,layerno, neuron_no, lb, ub):
         print('Problem with loading/calling "update_bounds_for_neuron" from "fppoly.so"')
         print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, c_double, c_double to the function')
 
+
+
+def get_bounds_for_linexpr0(man,element,linexpr0,layerno):
+    """
+    returns bounds for a linexpr over neurons in "layerno"
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    linexpr0 : ElinaLinexpr0Ptr
+        Pointer to the Elinalinexpr0
+    layerno: c_size_t
+        the layer number
+    Returns
+    -------
+    interval_array : ElinaIntervalPtr
+        Poiner to the Elinainterval
+
+    """
+
+    interval = None
+    try:
+        get_bounds_for_linexpr0_c = fppoly_api.get_bounds_for_linexpr0
+        get_bounds_for_linexpr0_c.restype = ElinaIntervalPtr
+        get_bounds_for_linexpr0_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaLinexpr0Ptr, c_size_t]
+        interval = get_bounds_for_linexpr0_c(man, element, linexpr0, layerno)
+    except:
+        print('Problem with loading/calling "get_bounds_for_linexpr0" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, ElinaLinexpr0Ptr, c_size_t to the function')
+
+    return interval
     
 
 def get_lexpr_for_output_neuron(man,element,i):

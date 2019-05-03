@@ -281,6 +281,11 @@ void free_neuron(neuron_t *neuron);
 
 void update_bounds_for_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno, size_t neuron_no, double lb, double ub);
 
+elina_interval_t *get_bounds_for_linexpr(elina_manager_t *man,
+                                         elina_abstract0_t *element,
+                                         elina_linexpr0_t *linexpr0,
+                                         size_t layerno);
+
 #ifdef __cplusplus
  }
 #endif
