@@ -218,6 +218,8 @@ size_t get_num_neurons_in_layer(elina_manager_t* man, elina_abstract0_t * abs, s
 
 void free_neuron(neuron_t *neuron);
 
+void update_bounds_for_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno, size_t neuron_no, double lb, double ub);
+
 #ifdef __cplusplus
  }
 #endif

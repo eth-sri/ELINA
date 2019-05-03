@@ -957,6 +957,42 @@ def get_num_neurons_in_layer(man, element,layerno):
     return res
 
 
+def update_bounds_for_neuron(man, element,layerno, neuron_no, lb, ub):
+    """
+    returns bounds for a neuron in a layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    layerno: c_size_t
+        the layer number
+    neuron_no: c_size_t
+        the neuron number in the layer
+    lb: c_double
+        the updated lower bound
+    ub: c_double
+        the updated upper bound
+    Returns
+    -------
+    None
+
+    """
+
+    
+    try:
+        update_bounds_for_neuron_c = fppoly_api.update_bounds_for_neuron
+        update_bounds_for_neuron_c.restype = None
+        update_bounds_for_neuron_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, c_double, c_double]
+        update_bounds_for_neuron_c(man, element,layerno, neuron_no, lb, ub)
+    except:
+        print('Problem with loading/calling "update_bounds_for_neuron" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, c_double, c_double to the function')
+
+    
+
 def get_lexpr_for_output_neuron(man,element,i):
     """
     returns lower polyhedra constraint for the i-th output neuron in terms of the input neurons
