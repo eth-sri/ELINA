@@ -4260,3 +4260,15 @@ elina_linexpr0_t * get_lexpr_for_output_neuron(elina_manager_t *man,elina_abstra
 elina_linexpr0_t * get_uexpr_for_output_neuron(elina_manager_t *man,elina_abstract0_t *abs, size_t i){
 	return get_expr_for_output_neuron(man,abs,i, false);
 }
+
+void update_bounds_for_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno, size_t neuron_no, double lb, double ub){
+	fppoly_t *fp = fppoly_of_abstract0(abs);
+	if(layerno >= fp->numlayers){
+		fprintf(stdout,"the layer does not exist\n");
+		return;
+	}
+	layer_t * layer = fp->layers[layerno];
+	neuron_t * neuron = layer->neurons[neuron_no];
+	neuron->lb = -lb;
+	neuron->ub = ub;
+}
