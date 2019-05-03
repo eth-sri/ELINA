@@ -3136,6 +3136,7 @@ expr_t * elina_linexpr0_to_expr(elina_linexpr0_t *linexpr0){
 	expr_t *res = (expr_t*)malloc(sizeof(expr_t));
 	res->inf_coeff = (double*)malloc(size*sizeof(double));
 	res->sup_coeff = (double*)malloc(size*sizeof(double));
+	res->size = size;
 	if(linexpr0->discr==ELINA_LINEXPR_SPARSE){
 		res->type = SPARSE;
 		res->dim = (size_t *)malloc(size*sizeof(size_t));
@@ -3151,12 +3152,14 @@ expr_t * elina_linexpr0_to_expr(elina_linexpr0_t *linexpr0){
 			k = linexpr0->p.linterm[i].dim;
 			res->dim[i] = k;
 			coeff = &linexpr0->p.linterm[i].coeff;
+			coeff_to_interval(coeff,&res->inf_coeff[i],&res->sup_coeff[i]);
 		}
 		else{
 		 	k = i;
 			coeff = &linexpr0->p.coeff[k];	
+			coeff_to_interval(coeff,&res->inf_coeff[k],&res->sup_coeff[k]);
 		}
-		coeff_to_interval(coeff,&res->inf_coeff[k],&res->sup_coeff[k]);
+		
 	}
 	elina_coeff_t *cst = &linexpr0->cst;
 	coeff_to_interval(cst,&res->inf_cst,&res->sup_cst);
@@ -3165,13 +3168,20 @@ expr_t * elina_linexpr0_to_expr(elina_linexpr0_t *linexpr0){
 
 
 elina_interval_t * get_bounds_for_linexpr0(elina_manager_t *man, elina_abstract0_t *element, elina_linexpr0_t *linexpr0, size_t layerno){
+	
 	elina_interval_t * res = elina_interval_alloc();
 	fppoly_t *fp = fppoly_of_abstract0(element);
 	expr_t * expr = elina_linexpr0_to_expr(linexpr0);
+	expr_t * expr2 = copy_expr(expr);
+	
 	double lb = get_lb_using_previous_layers(man,fp,expr,layerno);
-	double ub = get_ub_using_previous_layers(man,fp,expr,layerno);
+	
+	double ub = get_ub_using_previous_layers(man,fp,expr2,layerno);
+	
 	elina_interval_set_double(res,-lb,ub);
 	free_expr(expr);
+	free_expr(expr2);
+        
 	return res;
 }
      
