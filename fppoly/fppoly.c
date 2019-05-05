@@ -1079,11 +1079,11 @@ expr_t * lexpr_replace_parabola_bounds(fppoly_internal_t * pr, expr_t * expr, ne
 			//u_plus_l_sq_sup = u_plus_l_sup/2;
                         //elina_double_interval_mul_cst_coeff(pr,&u_plus_l_sq_inf,&u_plus_l_sq_sup,u_plus_l_inf/2,u_plus_l_sup/2,u_plus_l_inf/2,u_plus_l_sup/2);
 			//elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],u_plus_l_inf,u_plus_l_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
-			//double tmp1, tmp2;
-			//elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,-u_plus_l_sq_inf,-u_plus_l_sq_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
-			double tmp = lb*lb;
-			res->inf_cst = res->inf_cst - tmp + pr->min_denormal;
-			res->sup_cst = res->sup_cst + tmp + pr->min_denormal;
+			double tmp1, tmp2;
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,-lb*lb,lb*lb,expr->inf_coeff[i],expr->sup_coeff[i]);
+			//double tmp = lb*lb;
+			res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+			res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
 		}
 		else{
 			
@@ -1160,11 +1160,11 @@ expr_t * uexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t * expr, neu
 			//u_plus_l_sq_sup = u_plus_l_sup/2;
                         //elina_double_interval_mul_cst_coeff(pr,&u_plus_l_sq_inf,&u_plus_l_sq_sup,u_plus_l_inf/2,u_plus_l_sup/2,u_plus_l_inf/2,u_plus_l_sup/2);
 			//elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],u_plus_l_inf,u_plus_l_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
-			//double tmp1, tmp2;
-			//elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,-u_plus_l_sq_inf,-u_plus_l_sq_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
-			double tmp =lb*lb;
-			res->inf_cst = res->inf_cst - tmp + pr->min_denormal;
-			res->sup_cst = res->sup_cst + tmp + pr->min_denormal;
+			double tmp1, tmp2;
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,-lb*lb,lb*lb,expr->inf_coeff[i],expr->sup_coeff[i]);
+			//double tmp =lb*lb;
+			res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+			res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
 		}
 		else{
 			
