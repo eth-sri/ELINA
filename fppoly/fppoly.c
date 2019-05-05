@@ -2958,12 +2958,11 @@ double apply_s_curve_lexpr(fppoly_internal_t *pr, expr_t **lexpr_p,
           pr, &lexpr->inf_coeff[i], &lexpr->sup_coeff[i], slope_inf, slope_sup,
           lexpr->inf_coeff[i], lexpr->sup_coeff[i]);
     }
-    elina_double_interval_mul_cst_coeff(pr, &mul_inf, &mul_sup, intercept_inf,
-                                        intercept_sup, lexpr->inf_coeff[i],
-                                        lexpr->sup_coeff[i]);
+    // elina_double_interval_mul_cst_coeff(pr, &mul_inf, &mul_sup,
+    // intercept_inf, intercept_sup, lexpr->inf_coeff[i], lexpr->sup_coeff[i] );
     elina_double_interval_add_cst_coeff(pr, &lexpr->inf_cst, &lexpr->sup_cst,
-                                        mul_inf, mul_sup, lexpr->inf_cst,
-                                        lexpr->sup_cst);
+                                        intercept_inf, intercept_sup,
+                                        lexpr->inf_cst, lexpr->sup_cst);
   }
   return f_inf_l;
 }
@@ -3012,12 +3011,11 @@ double apply_s_curve_uexpr(fppoly_internal_t *pr, expr_t **uexpr_p,
           pr, &uexpr->inf_coeff[i], &uexpr->sup_coeff[i], slope_inf, slope_sup,
           uexpr->inf_coeff[i], uexpr->sup_coeff[i]);
     }
-    elina_double_interval_mul_cst_coeff(pr, &mul_inf, &mul_sup, intercept_inf,
-                                        intercept_sup, uexpr->inf_coeff[i],
-                                        uexpr->sup_coeff[i]);
+    // elina_double_interval_mul_cst_coeff(pr, &mul_inf, &mul_sup,
+    // intercept_inf, intercept_sup, uexpr->inf_coeff[i], uexpr->sup_coeff[i] );
     elina_double_interval_add_cst_coeff(pr, &uexpr->inf_cst, &uexpr->sup_cst,
-                                        mul_inf, mul_sup, uexpr->inf_cst,
-                                        uexpr->sup_cst);
+                                        intercept_inf, intercept_sup,
+                                        uexpr->inf_cst, uexpr->sup_cst);
   }
   return f_sup_u;
 }
@@ -3034,7 +3032,7 @@ double apply_tanh_lexpr(fppoly_internal_t *pr, expr_t **lexpr_p,
 
 double apply_sigmoid_uexpr(fppoly_internal_t *pr, expr_t **uexpr_p,
                            neuron_t *neuron) {
-  return apply_s_curve_lexpr(pr, uexpr_p, neuron, true);
+  return apply_s_curve_uexpr(pr, uexpr_p, neuron, true);
 }
 
 double apply_tanh_uexpr(fppoly_internal_t *pr, expr_t **uexpr_p,
