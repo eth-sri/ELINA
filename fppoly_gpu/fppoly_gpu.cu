@@ -710,6 +710,59 @@ void copy_expr_array(float_type* __restrict__ target_inf_coeff, float_type* __re
 
 
 __global__
+void layer_compute_bounds_from_exprs_conv(const float_type* __restrict__ coeffs, const float_type* __restrict__ csts, float_type* __restrict__ lb_array, float_type* __restrict__ ub_array, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const long int pad_x, const long int pad_y)
+{
+    for(size_t out_x = 0; out_x < output_size_x; out_x++)
+    {
+        for(size_t out_y = 0; out_y < output_size_y; out_y++)
+        {
+            for(size_t out_z = 0; out_z < output_size_z; out_z++)
+            {
+                const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
+
+                float_type res_inf = -csts[out_z];
+                float_type res_sup = csts[out_z];
+
+                float_type tmp1, tmp2;
+
+                for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
+                {
+                    for(size_t y_shift = 0; y_shift < filter_size_y; y_shift++)
+                    {
+                        for(size_t inp_z = 0; inp_z < input_size_z; inp_z++)
+                        {
+                            const long int x_val = out_x*stride_x + x_shift - pad_x;
+                            const long int y_val = out_y*stride_y + y_shift - pad_y;
+
+                            if((y_val < 0) || (y_val >= (long int)input_size_y))
+                            {
+                                continue;
+                            }
+
+                            if((x_val < 0) || (x_val >= (long int)input_size_x))
+                            {
+                                continue;
+                            }
+
+                            const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
+
+                            const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+                            elina_double_interval_mul(&tmp1, &tmp2, -coeffs[filter_index], coeffs[filter_index], input_inf[mat_in], input_sup[mat_in]);
+                            res_inf = res_inf + tmp1;
+                            res_sup = res_sup + tmp2;
+                        }
+                    }
+                }
+
+                lb_array[mat_out] = res_inf;
+                ub_array[mat_out] = res_sup;
+            }
+        }
+    }
+}
+
+
+__global__
 void layer_compute_bounds_from_exprs(const float_type* __restrict__ coeffs, const float_type* __restrict__ csts, float_type* lb_array, float_type* ub_array, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t num_out_neurons, const size_t num_in_neurons)
 {
     const size_t n = blockIdx.x;
@@ -1757,18 +1810,7 @@ void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element, c
 
     layer_create_sparse_exprs(fp, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding, has_bias);
 
-    float_type* coeffs_tmp;
-    float_type* csts_tmp;
-
-    cudaMalloc((void**) &coeffs_tmp, fp->layers[0]->num_out_neurons*fp->layers[0]->num_in_neurons*sizeof(float_type));
-    cudaMalloc((void**) &csts_tmp, fp->layers[0]->num_out_neurons*sizeof(float_type));
-
-    sparse_to_dense(fp->layers[0], coeffs_tmp, csts_tmp);
-
-    layer_compute_bounds_from_exprs<<<fp->layers[0]->num_out_neurons, 1>>>(coeffs_tmp, csts_tmp, fp->layers[0]->lb_array, fp->layers[0]->ub_array, fp->input_inf, fp->input_sup, fp->layers[0]->num_out_neurons, fp->layers[0]->num_in_neurons);
-
-    cudaFree(coeffs_tmp);
-    cudaFree(csts_tmp);
+    layer_compute_bounds_from_exprs_conv<<<1, 1>>>(fp->layers[0]->filter_weights, fp->layers[0]->filter_bias, fp->layers[0]->lb_array, fp->layers[0]->ub_array, fp->input_inf, fp->input_sup, fp->layers[0]->output_size[0], fp->layers[0]->output_size[1], fp->layers[0]->output_size[2], fp->layers[0]->input_size[0], fp->layers[0]->input_size[1], fp->layers[0]->input_size[2], fp->layers[0]->filter_size[0], fp->layers[0]->filter_size[1], fp->layers[0]->strides[0], fp->layers[0]->strides[1], fp->layers[0]->pad[0], fp->layers[0]->pad[1]);
 }
 
 
