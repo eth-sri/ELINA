@@ -2110,7 +2110,7 @@ expr_t *lexpr_replace_s_curve_bounds(fppoly_internal_t *pr, expr_t *expr,
       res->inf_coeff[i] = 0.0;
       res->sup_coeff[i] = 0.0;
       res->inf_cst = res->inf_cst + intercept_inf;
-      res->sup_cst = res->sup_cst - intercept_sup;
+      res->sup_cst = res->sup_cst - intercept_inf;
     } else {
       elina_double_interval_mul_expr_coeff(
           pr, &res->inf_coeff[i], &res->sup_coeff[i], slope_inf, slope_sup,
@@ -2163,8 +2163,8 @@ expr_t *uexpr_replace_s_curve_bounds(fppoly_internal_t *pr, expr_t *expr,
     if (boxify) {
       res->inf_coeff[i] = 0.0;
       res->sup_coeff[i] = 0.0;
-      res->inf_cst = res->inf_cst + intercept_inf;
-      res->sup_cst = res->sup_cst - intercept_sup;
+      res->inf_cst = res->inf_cst - intercept_sup;
+      res->sup_cst = res->sup_cst + intercept_sup;
     } else {
       elina_double_interval_mul_expr_coeff(
           pr, &res->inf_coeff[i], &res->sup_coeff[i], slope_inf, slope_sup,
