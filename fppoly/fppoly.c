@@ -3000,7 +3000,7 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	size_t i;
 	int k;
 	//size_t numlayers = fp->numlayers;
-	expr_t * lexpr = expr;
+	expr_t * lexpr = copy_expr(expr);
         fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	for(k=layerno - 1; k >=0; k--){
 	//	printf("k: %zu\n",k);
@@ -3062,7 +3062,7 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	size_t i;
 	int k;
 	//size_t numlayers = fp->numlayers;
-	expr_t * uexpr = expr;
+	expr_t * uexpr = copy_expr(expr);
         fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	for(k=layerno - 1; k >=0; k--){
 		neuron_t ** aux_neurons = fp->layers[k]->neurons;
@@ -3171,7 +3171,9 @@ elina_interval_t * get_bounds_for_linexpr0(elina_manager_t *man, elina_abstract0
 	
 	elina_interval_t * res = elina_interval_alloc();
 	fppoly_t *fp = fppoly_of_abstract0(element);
-	expr_t * expr = elina_linexpr0_to_expr(linexpr0);
+    fppoly_internal_t *pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
+	expr_t * tmp = elina_linexpr0_to_expr(linexpr0);
+    expr_t *expr = expr_from_previous_layer(pr,tmp, fp->layers[layerno]);
 	expr_t * expr2 = copy_expr(expr);
 	
 	double lb = get_lb_using_previous_layers(man,fp,expr,layerno);
@@ -3181,7 +3183,7 @@ elina_interval_t * get_bounds_for_linexpr0(elina_manager_t *man, elina_abstract0
 	elina_interval_set_double(res,-lb,ub);
 	free_expr(expr);
 	free_expr(expr2);
-        
+    free_expr(tmp);
 	return res;
 }
      
