@@ -248,7 +248,7 @@ def ffn_handle_first_tanh_layer(man, element,weights, bias,  size, num_pixels):
     
     return
 
-def ffn_handle_first_parabola_layer(man, element,weights, bias, scaling_factor,  size, num_pixels):
+def ffn_handle_first_parabola_layer(man, element,weights, bias,  size, num_pixels):
     """
     handle the first FFN Parabolic layer
     
@@ -260,8 +260,6 @@ def ffn_handle_first_parabola_layer(man, element,weights, bias, scaling_factor, 
         The weight matrix
     bias : POINTER(c_double)
         The bias vector
-    scaling_factor: c_double
-        The scaling factor for the parabola layer
     size: c_size_t
 	Number of neurons in the first layer
     num_pixels:
@@ -276,8 +274,8 @@ def ffn_handle_first_parabola_layer(man, element,weights, bias, scaling_factor, 
     try:
         ffn_handle_first_parabola_layer_c = fppoly_api.ffn_handle_first_parabola_layer
         ffn_handle_first_parabola_layer_c.restype = None
-        ffn_handle_first_parabola_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_double, c_size_t, c_size_t]
-        ffn_handle_first_parabola_layer_c(man,element,weights, bias, scaling_factor, size, num_pixels)
+        ffn_handle_first_parabola_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t]
+        ffn_handle_first_parabola_layer_c(man,element,weights, bias, size, num_pixels)
     except Exception as inst:
         print('Problem with loading/calling "ffn_handle_first_parabola_layer" from "libfppoly.so"')
         print(inst)	
@@ -462,7 +460,7 @@ def ffn_handle_intermediate_tanh_layer(man, element, weights, bias, num_out_neur
         print('Problem with loading/calling "ffn_handle_intermediate_tanh_layer" from "libfppoly.so"')
         print(inst)
 
-def ffn_handle_intermediate_parabola_layer(man, element, weights, bias, scaling_factor, num_out_neurons, num_in_neurons):
+def ffn_handle_intermediate_parabola_layer(man, element, weights, bias, num_out_neurons, num_in_neurons):
     """
     handle the intermediate FFN Parabolic layer
     
@@ -476,8 +474,6 @@ def ffn_handle_intermediate_parabola_layer(man, element, weights, bias, scaling_
         The weight matrix.
     bias: POINTER(c_size_t)
         The bias vector
-    scaling_factor: c_double
-        The scaling factor for the parabola layer
     num_out_neurons: c_size_t
         number of output neurons
     num_in_neurons: c_size_t
@@ -492,8 +488,8 @@ def ffn_handle_intermediate_parabola_layer(man, element, weights, bias, scaling_
     try:
         ffn_handle_intermediate_parabola_layer_c = fppoly_api.ffn_handle_intermediate_parabola_layer
         ffn_handle_intermediate_parabola_layer_c.restype = None
-        ffn_handle_intermediate_parabola_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_double, c_size_t, c_size_t]
-        ffn_handle_intermediate_parabola_layer_c(man,element,weights,bias, scaling_factor, num_out_neurons, num_in_neurons)
+        ffn_handle_intermediate_parabola_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t]
+        ffn_handle_intermediate_parabola_layer_c(man,element,weights,bias, num_out_neurons, num_in_neurons)
     except Exception as inst:
         print('Problem with loading/calling "ffn_handle_intermediate_parabola_layer" from "libfppoly.so"')
         print(inst)
@@ -642,7 +638,7 @@ def ffn_handle_last_tanh_layer(man, element, weights, bias, num_out_neurons, num
         print(inst)
 
 
-def ffn_handle_last_parabola_layer(man, element, weights, bias, scaling_factor, num_out_neurons, num_in_neurons, has_parabola):
+def ffn_handle_last_parabola_layer(man, element, weights, bias, num_out_neurons, num_in_neurons, has_parabola):
     """
     handle the last FFN Parabolic layer
     
@@ -656,8 +652,6 @@ def ffn_handle_last_parabola_layer(man, element, weights, bias, scaling_factor, 
         The weight matrix 
     bias : POINTER(c_size_t)
         The bias vector
-    scaling_factor: c_double
-        The scaling factor for the parabola layer
     num_out_neurons: c_size_t
         The number of output neurons
     num_in_neurons: c_size_t
@@ -673,8 +667,8 @@ def ffn_handle_last_parabola_layer(man, element, weights, bias, scaling_factor, 
     try:
         ffn_handle_last_parabola_layer_c = fppoly_api.ffn_handle_last_parabola_layer
         ffn_handle_last_parabola_layer_c.restype = None
-        ffn_handle_last_parabola_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_double, c_size_t, c_size_t, c_bool]
-        ffn_handle_last_parabola_layer_c(man,element,weights,bias, scaling_factor, num_out_neurons, num_in_neurons, has_parabola)
+        ffn_handle_last_parabola_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t, c_bool]
+        ffn_handle_last_parabola_layer_c(man,element,weights,bias, num_out_neurons, num_in_neurons, has_parabola)
     except Exception as inst:
         print('Problem with loading/calling "ffn_handle_last_parabola_layer" from "libfppoly.so"')
         print(inst)
