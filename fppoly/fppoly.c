@@ -2455,7 +2455,7 @@ expr_t *expr_from_previous_layer(fppoly_internal_t *pr, expr_t *expr,
     k = expr->dim[0];
   }
 
-  // printf("start\n");
+  // printf("start2 %p %lu %p\n",expr->dim,k,prev_neurons[k]->expr);
   // fflush(stdout);
   // if(prev_layer->type==MAXPOOL){
   // printf("i: %zu k: %zu\n",i,k);
@@ -2472,7 +2472,8 @@ expr_t *expr_from_previous_layer(fppoly_internal_t *pr, expr_t *expr,
     res = multiply_expr(pr, prev_neurons[k]->expr, expr->inf_coeff[0],
                         expr->sup_coeff[0]);
   }
-
+  // printf("debug\n");
+  // fflush(stdout);
   for (i = 1; i < in_num_neurons; i++) {
     if (expr->type == DENSE) {
       k = i;
@@ -3339,8 +3340,14 @@ elina_interval_t *get_bounds_for_linexpr0(elina_manager_t *man,
   fppoly_t *fp = fppoly_of_abstract0(element);
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
+  // printf("start %p %lu\n",fp->layers[layerno],layerno);
+  // fflush(stdout);
   expr_t *tmp = elina_linexpr0_to_expr(linexpr0);
+  // printf("coming here\n");
+  // fflush(stdout);
   expr_t *expr = expr_from_previous_layer(pr, tmp, fp->layers[layerno]);
+  // printf("end\n");
+  // fflush(stdout);
   expr_t *expr2 = copy_expr(expr);
 
   double lb = get_lb_using_previous_layers(man, fp, expr, layerno);
