@@ -106,7 +106,6 @@ typedef struct layer_t{
 	size_t dims;
 	layertype_t type;
         activation_type_t activation;
-	double scaling_factor;
 	neuron_t **neurons;
 	double * h_t_inf;
 	double * h_t_sup;
@@ -158,7 +157,7 @@ void ffn_handle_first_sigmoid_layer(elina_manager_t* man, elina_abstract0_t * ab
         
 void ffn_handle_first_tanh_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels);
 
-void ffn_handle_first_parabola_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias, double scaling_factor, size_t size, size_t num_pixels);
+void ffn_handle_first_parabola_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias, size_t size, size_t num_pixels);
 
 void ffn_handle_first_log_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels);
 
@@ -170,7 +169,7 @@ void ffn_handle_intermediate_sigmoid_layer(elina_manager_t* man, elina_abstract0
     
 void ffn_handle_intermediate_tanh_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons);
 
-void ffn_handle_intermediate_parabola_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, double scaling_factor, size_t num_out_neurons, size_t num_in_neurons);
+void ffn_handle_intermediate_parabola_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons);
 
 void ffn_handle_intermediate_log_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons);
 
@@ -182,8 +181,7 @@ void ffn_handle_last_sigmoid_layer(elina_manager_t* man, elina_abstract0_t* elem
     
 void ffn_handle_last_tanh_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons, bool has_tanh);
 
-void ffn_handle_last_parabola_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, 
-				    double scaling_factor, size_t num_out_neurons, size_t num_in_neurons, bool has_parabola);
+void ffn_handle_last_parabola_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons, bool has_parabola);
 
 void ffn_handle_last_log_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias,  size_t num_out_neurons, size_t num_in_neurons, bool has_log);
 
