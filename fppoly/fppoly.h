@@ -145,6 +145,8 @@ elina_manager_t* fppoly_manager_alloc(void);
 
 elina_abstract0_t* fppoly_from_network_input(elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array, double *sup_array);
 
+void fppoly_set_network_input_box(elina_manager_t *man, elina_abstract0_t* element, size_t intdim, size_t realdim, double *inf_array, double * sup_array);
+
 elina_abstract0_t *fppoly_from_network_input_poly(
     elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array,
     double *sup_array, double *lexpr_weights, double *lexpr_cst,
@@ -172,6 +174,31 @@ void ffn_handle_first_parabola_layer(elina_manager_t *man,
 void ffn_handle_first_log_layer(elina_manager_t *man, elina_abstract0_t *abs,
                                 double **weights, double *bias, size_t size,
                                 size_t num_pixels);
+
+void ffn_handle_first_relu_layer_no_alloc(elina_manager_t *man,
+                                          elina_abstract0_t *abs,
+                                          double **weights, double *bias,
+                                          size_t size, size_t num_pixels);
+
+void ffn_handle_first_sigmoid_layer_no_alloc(elina_manager_t *man,
+                                             elina_abstract0_t *abs,
+                                             double **weights, double *bias,
+                                             size_t size, size_t num_pixels);
+
+void ffn_handle_first_tanh_layer_no_alloc(elina_manager_t *man,
+                                          elina_abstract0_t *abs,
+                                          double **weights, double *bias,
+                                          size_t size, size_t num_pixels);
+
+void ffn_handle_first_parabola_layer_no_alloc(elina_manager_t *man,
+                                              elina_abstract0_t *abs,
+                                              double **weights, double *bias,
+                                              size_t size, size_t num_pixels);
+
+void ffn_handle_first_log_layer_no_alloc(elina_manager_t *man,
+                                         elina_abstract0_t *abs,
+                                         double **weights, double *bias,
+                                         size_t size, size_t num_pixels);
 
 void ffn_handle_intermediate_affine_layer(elina_manager_t *man,
                                           elina_abstract0_t *element,
@@ -209,6 +236,36 @@ void ffn_handle_intermediate_log_layer(elina_manager_t *man,
                                        size_t num_out_neurons,
                                        size_t num_in_neurons);
 
+void ffn_handle_intermediate_affine_layer_no_alloc(
+    elina_manager_t *man, elina_abstract0_t *element, double **weights,
+    double *bias, size_t num_out_neurons, size_t num_in_neurons);
+
+void ffn_handle_intermediate_relu_layer_no_alloc(elina_manager_t *man,
+                                                 elina_abstract0_t *element,
+                                                 double **weights, double *bias,
+                                                 size_t num_out_neurons,
+                                                 size_t num_in_neurons);
+
+void ffn_handle_intermediate_sigmoid_layer_no_alloc(
+    elina_manager_t *man, elina_abstract0_t *element, double **weights,
+    double *bias, size_t num_out_neurons, size_t num_in_neurons);
+
+void ffn_handle_intermediate_tanh_layer_no_alloc(elina_manager_t *man,
+                                                 elina_abstract0_t *element,
+                                                 double **weights, double *bias,
+                                                 size_t num_out_neurons,
+                                                 size_t num_in_neurons);
+
+void ffn_handle_intermediate_parabola_layer_no_alloc(
+    elina_manager_t *man, elina_abstract0_t *element, double **weights,
+    double *bias, size_t num_out_neurons, size_t num_in_neurons);
+
+void ffn_handle_intermediate_log_layer_no_alloc(elina_manager_t *man,
+                                                elina_abstract0_t *element,
+                                                double **weights, double *bias,
+                                                size_t num_out_neurons,
+                                                size_t num_in_neurons);
+
 void fppoly_fprint(FILE *stream, elina_manager_t *man, fppoly_t *fp,
                    char **name_of_dim);
 
@@ -237,6 +294,38 @@ void ffn_handle_last_log_layer(elina_manager_t *man, elina_abstract0_t *element,
                                double **weights, double *bias,
                                size_t num_out_neurons, size_t num_in_neurons,
                                bool has_log);
+
+void ffn_handle_last_relu_layer_no_alloc(elina_manager_t *man,
+                                         elina_abstract0_t *element,
+                                         double **weights, double *bias,
+                                         size_t num_out_neurons,
+                                         size_t num_in_neurons, bool has_relu);
+
+void ffn_handle_last_sigmoid_layer_no_alloc(elina_manager_t *man,
+                                            elina_abstract0_t *element,
+                                            double **weights, double *bias,
+                                            size_t num_out_neurons,
+                                            size_t num_in_neurons,
+                                            bool has_sigmoid);
+
+void ffn_handle_last_tanh_layer_no_alloc(elina_manager_t *man,
+                                         elina_abstract0_t *element,
+                                         double **weights, double *bias,
+                                         size_t num_out_neurons,
+                                         size_t num_in_neurons, bool has_tanh);
+
+void ffn_handle_last_parabola_layer_no_alloc(elina_manager_t *man,
+                                             elina_abstract0_t *element,
+                                             double **weights, double *bias,
+                                             size_t num_out_neurons,
+                                             size_t num_in_neurons,
+                                             bool has_parabola);
+
+void ffn_handle_last_log_layer_no_alloc(elina_manager_t *man,
+                                        elina_abstract0_t *element,
+                                        double **weights, double *bias,
+                                        size_t num_out_neurons,
+                                        size_t num_in_neurons, bool has_log);
 
 void fppoly_free(elina_manager_t *man, fppoly_t *fp);
 
