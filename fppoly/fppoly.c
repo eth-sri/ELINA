@@ -2681,7 +2681,7 @@ void *update_state_using_previous_layers(void *args) {
 void update_state_using_previous_layers_parallel(elina_manager_t *man,
                                                  fppoly_t *fp, size_t layerno) {
   // size_t NUM_THREADS = get_nprocs();
-  size_t NUM_THREADS = 1; // sysconf(_SC_NPROCESSORS_ONLN);
+  size_t NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
   nn_thread_t args[NUM_THREADS];
   pthread_t threads[NUM_THREADS];
   size_t num_out_neurons = fp->layers[layerno]->dims;
@@ -3380,7 +3380,7 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
 
   // TODO: Fix, debug: 	for(i=0; i< h; i++){
   for (i = 0; i < 1; i++) {
-    printf("i = %d\n", (int)i);
+    // printf("i = %d\n",(int)i);
     expr_t *f_t_lexpr, *i_t_lexpr, *o_t_lexpr, *c_t_lexpr;
     if (first_time_step) {
       i_t_lexpr = create_dense_expr(weights[i], bias[i], d);
@@ -3410,7 +3410,7 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
 
     expr_print(f_t_lexpr);
 
-    printf("computing forget...\n");
+    // printf("computing forget...\n");
     expr_t *f_t_uexpr = copy_expr(f_t_lexpr);
     expr_t *tmp_f_t_lexpr = copy_expr(f_t_lexpr);
     expr_t *tmp_f_t_uexpr = copy_expr(f_t_uexpr);
@@ -3423,19 +3423,15 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
 
     neuron->lb = lb_f_t;
     neuron->ub = ub_f_t;
-    printf("forget gate before sigmoid: lb = %lf, ub = %lf\n", neuron->lb,
-           neuron->ub);
-    expr_print(f_t_lexpr);
-    expr_print(f_t_uexpr);
+    // printf("forget gate before sigmoid: lb = %lf, ub = %lf\n",neuron->lb,
+    // neuron->ub); expr_print(f_t_lexpr); expr_print(f_t_uexpr);
     lb_f_t = apply_sigmoid_lexpr(pr, &f_t_lexpr, neuron);
     ub_f_t = apply_sigmoid_uexpr(pr, &f_t_uexpr, neuron);
-    printf("forget gate after sigmoid: lb_f_t = %lf, ub_f_t = %lf\n", lb_f_t,
-           ub_f_t);
-    expr_print(f_t_lexpr);
-    expr_print(f_t_uexpr);
-    printf("forget gate done\n\n");
+    // printf("forget gate after sigmoid: lb_f_t = %lf, ub_f_t =
+    // %lf\n",lb_f_t,ub_f_t); expr_print(f_t_lexpr); expr_print(f_t_uexpr);
+    // printf("forget gate done\n\n");
 
-    printf("computing input...\n");
+    // printf("computing input...\n");
     expr_t *i_t_uexpr = copy_expr(i_t_lexpr);
     expr_t *tmp_i_t_lexpr = copy_expr(i_t_lexpr);
     expr_t *tmp_i_t_uexpr = copy_expr(i_t_uexpr);
@@ -3447,17 +3443,15 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
     /* free_expr(tmp_i_t_uexpr); */
     neuron->lb = lb_i_t;
     neuron->ub = ub_i_t;
-    printf("input gate before sigmoid: lb = %lf, ub = %lf\n", neuron->lb,
-           neuron->ub);
-    expr_print(i_t_uexpr);
+    // printf("input gate before sigmoid: lb = %lf, ub = %lf\n",neuron->lb,
+    // neuron->ub); expr_print(i_t_uexpr);
     lb_i_t = apply_sigmoid_lexpr(pr, &i_t_lexpr, neuron);
     ub_i_t = apply_sigmoid_uexpr(pr, &i_t_uexpr, neuron);
-    expr_print(i_t_uexpr);
-    printf("input gate after sigmoid: lb_i_t = %lf, ub_i_t = %lf\n", lb_i_t,
-           ub_i_t);
-    printf("input gate done\n\n");
+    // expr_print(i_t_uexpr);
+    // printf("input gate after sigmoid: lb_i_t = %lf, ub_i_t =
+    // %lf\n",lb_i_t,ub_i_t); printf("input gate done\n\n");
 
-    printf("computing output...\n");
+    // printf("computing output...\n");
     expr_t *o_t_uexpr = copy_expr(o_t_lexpr);
     expr_t *tmp_o_t_lexpr = copy_expr(o_t_lexpr);
     expr_t *tmp_o_t_uexpr = copy_expr(o_t_uexpr);
@@ -3470,21 +3464,21 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
 
     neuron->lb = lb_o_t;
     neuron->ub = ub_o_t;
-    printf("output gate before sigmoid: lb = %lf, ub = %lf\n", neuron->lb,
-           neuron->ub);
+    // printf("output gate before sigmoid: lb = %lf, ub = %lf\n",neuron->lb,
+    // neuron->ub);
     lb_o_t = apply_sigmoid_lexpr(pr, &o_t_lexpr, neuron);
     ub_o_t = apply_sigmoid_uexpr(pr, &o_t_uexpr, neuron);
-    printf("output gate after sigmoid: lb = %lf, ub = %lf\n", lb_o_t, ub_o_t);
+    // printf("output gate after sigmoid: lb = %lf, ub = %lf\n",lb_o_t,ub_o_t);
     out_neurons[i]->lb = lb_o_t;
     out_neurons[i]->ub = ub_o_t;
     out_neurons[i]->lexpr = o_t_lexpr;
     out_neurons[i]->uexpr = o_t_uexpr;
-    printf("output gate done\n\n");
+    // printf("output gate done\n\n");
 
-    printf("computing control state...\n");
-    printf("control expression:\n");
-    expr_print(c_t_lexpr);
-    printf("...\n");
+    // printf("computing control state...\n");
+    // printf("control expression:\n");
+    // expr_print(c_t_lexpr);
+    // printf("...\n");
     expr_t *c_t_uexpr = copy_expr(c_t_lexpr);
     expr_t *tmp_c_t_lexpr = copy_expr(c_t_lexpr);
     expr_t *tmp_c_t_uexpr = copy_expr(c_t_uexpr);
@@ -3494,48 +3488,47 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
         get_ub_using_previous_layers(man, fp, tmp_c_t_uexpr, lstm_index);
     neuron->lb = lb_c_t;
     neuron->ub = ub_c_t;
-    expr_print(c_t_lexpr);
-    expr_print(c_t_uexpr);
-    printf("control before tanh: lb = %lf, ub = %lf\n", neuron->lb, neuron->ub);
+    // expr_print(c_t_lexpr);
+    // expr_print(c_t_uexpr);
+    // printf("control before tanh: lb = %lf, ub =
+    // %lf\n",neuron->lb,neuron->ub);
     lb_c_t = apply_tanh_lexpr(pr, &c_t_lexpr, neuron);
     ub_c_t = apply_tanh_uexpr(pr, &c_t_uexpr, neuron);
-    printf("control after tanh: lb = %lf, ub = %lf\n", lb_c_t, ub_c_t);
-    printf("control expression:\n");
-    expr_print(c_t_lexpr);
-    expr_print(c_t_uexpr);
+    // printf("control after tanh: lb = %lf, ub = %lf\n",lb_c_t,ub_c_t);
+    // printf("control expression:\n");
+    // expr_print(c_t_lexpr);
+    // expr_print(c_t_uexpr);
 
-    printf("=======================\n");
+    // printf("=======================\n");
 
-    printf("multiplying control by input:\n");
+    // printf("multiplying control by input:\n");
     expr_t *tmp_l, *tmp_u;
     double width1 = ub_i_t + lb_i_t;
     double width2 = ub_c_t + lb_c_t;
     tmp_l = c_t_lexpr;
     tmp_u = c_t_uexpr;
-    printf("control: [%lf %lf], input: [%lf %lf]\n", lb_c_t, ub_c_t, lb_i_t,
-           ub_i_t);
-    printf("control before multiplying by input:\n");
-    expr_print(c_t_lexpr);
-    expr_print(c_t_uexpr);
+    // printf("control: [%lf %lf], input: [%lf
+    // %lf]\n",lb_c_t,ub_c_t,lb_i_t,ub_i_t); printf("control before multiplying
+    // by input:\n"); expr_print(c_t_lexpr); expr_print(c_t_uexpr);
     if (width1 < width2) {
-      printf("concretize input\n");
+      // printf("concretize input\n");
       c_t_lexpr = multiply_expr(pr, c_t_lexpr, lb_i_t, ub_i_t);
       c_t_uexpr = multiply_expr(pr, c_t_uexpr, lb_i_t, ub_i_t);
     } else {
-      printf("concretize control\n");
+      // printf("concretize control\n");
       c_t_lexpr = multiply_expr(pr, i_t_lexpr, lb_c_t, ub_c_t);
       c_t_uexpr = multiply_expr(pr, i_t_uexpr, lb_c_t, ub_c_t);
     }
 
-    printf("control after multiplying by input:\n");
-    expr_print(c_t_lexpr);
-    expr_print(c_t_uexpr);
+    // printf("control after multiplying by input:\n");
+    // expr_print(c_t_lexpr);
+    // expr_print(c_t_uexpr);
 
     free_expr(tmp_l);
     free_expr(tmp_u);
 
-    printf("here\n\n\n");
-    printf("====================================\n");
+    // printf("here\n\n\n");
+    // printf("====================================\n");
 
     if (!first_time_step) {
       tmp_l =
@@ -3555,7 +3548,7 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
     neuron->lb = layer->c_t_inf[i];
     neuron->ub = layer->c_t_sup[i];
 
-    printf("c_t ---> lb = %lf, ub = %lf\n", neuron->lb, neuron->ub);
+    // printf("c_t ---> lb = %lf, ub = %lf\n", neuron->lb, neuron->ub);
 
     lb_c_t = apply_tanh_lexpr(pr, &c_t_lexpr, neuron);
     ub_c_t = apply_tanh_uexpr(pr, &c_t_uexpr, neuron);
