@@ -1144,7 +1144,7 @@ def handle_lstm_layer(man, element, weights, bias, d, h):
         handle_lstm_layer_c = fppoly_api.handle_lstm_layer
         handle_lstm_layer_c.restype = None
         handle_lstm_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t]
-        handle_lstm_layer_c(man,element,h)
+        handle_lstm_layer_c(man,element,weights,bias,d,h)
     except:
         print('Problem with loading/calling "handle_lstm_layer" from "fppoly.so"')
         print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t to the function')
