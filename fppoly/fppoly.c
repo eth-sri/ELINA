@@ -3672,8 +3672,23 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
       c_t_uexpr = multiply_expr(pr, c_t_uexpr, lb_i_t, ub_i_t);
     } else {
       // printf("concretize control\n");
-      c_t_lexpr = multiply_expr(pr, i_t_lexpr, lb_c_t, ub_c_t);
-      c_t_uexpr = multiply_expr(pr, i_t_uexpr, lb_c_t, ub_c_t);
+      if (lb_c_t < 0) {
+        c_t_lexpr = multiply_expr(pr, i_t_lexpr, lb_c_t, ub_c_t);
+        c_t_uexpr = multiply_expr(pr, i_t_uexpr, lb_c_t, ub_c_t);
+      } else if (ub_c_t < 0) {
+        c_t_lexpr = multiply_expr(pr, i_t_uexpr, lb_c_t, ub_c_t);
+        c_t_uexpr = multiply_expr(pr, i_t_lexpr, lb_c_t, ub_c_t);
+      } else {
+        c_t_lexpr = multiply_expr(pr, i_t_lexpr, 0, 0);
+        c_t_uexpr = multiply_expr(pr, i_t_uexpr, 0, 0);
+        double tmp1, tmp2;
+        elina_double_interval_mul_expr_coeff(pr, &tmp1, &tmp2, lb_i_t, ub_i_t,
+                                             lb_c_t, ub_c_t);
+        c_t_lexpr->inf_cst += tmp1;
+        c_t_lexpr->sup_cst += tmp2;
+        c_t_uexpr->inf_cst += tmp1;
+        c_t_uexpr->sup_cst += tmp2;
+      }
     }
 
     // printf("control after multiplying by input:\n");
