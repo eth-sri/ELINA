@@ -1162,9 +1162,15 @@ expr_t *lexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
     } else {
       res->inf_coeff[i] = 0.0;
       res->sup_coeff[i] = 0.0;
+
       double tmp1, tmp2;
-      elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                expr->sup_coeff[i], -lb * lb, ub * ub);
+      if (lb * lb < ub * ub) {
+        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                  expr->sup_coeff[i], -lb * lb, ub * ub);
+      } else {
+        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                  expr->sup_coeff[i], -ub * ub, lb * lb);
+      }
       res->inf_cst = res->inf_cst + tmp1;
       res->sup_cst = res->sup_cst + tmp2;
     }
@@ -1242,8 +1248,13 @@ expr_t *uexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
       res->inf_coeff[i] = 0.0;
       res->sup_coeff[i] = 0.0;
       double tmp1, tmp2;
-      elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                expr->sup_coeff[i], -lb * lb, ub * ub);
+      if (lb * lb < ub * ub) {
+        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                  expr->sup_coeff[i], -lb * lb, ub * ub);
+      } else {
+        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                  expr->sup_coeff[i], -ub * ub, lb * lb);
+      }
       res->inf_cst = res->inf_cst + tmp2;
       res->sup_cst = res->sup_cst + tmp2;
     }
