@@ -1090,8 +1090,9 @@ expr_t * lexpr_replace_parabola_bounds(fppoly_internal_t * pr, expr_t * expr, ne
                 //= (u_plus_l)*(u_plus_l)
 		if(expr->sup_coeff[i]<0){
 			
-			double lu_sup = lb*ub;
-			double lu_inf = -lb*ub;
+            double lu_sup;
+            double lu_inf;
+            elina_double_interval_mul_cst_coeff(pr,&lu_inf,&lu_sup,lb,-lb,-ub,ub);
 			//res->coeff[i] = lambda*expr->coeff[i];
 			//res->cst = res->cst + expr->coeff[i]*mu;
 			elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],u_plus_l_inf,u_plus_l_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
@@ -1171,8 +1172,9 @@ expr_t * uexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t * expr, neu
                 //= (u_plus_l)*(u_plus_l)
 		if(expr->inf_coeff[i]<0){
 			
-			double lu_sup = lb*ub;
-			double lu_inf = -lb*ub;
+            double lu_sup;
+            double lu_inf;
+            elina_double_interval_mul_cst_coeff(pr,&lu_inf,&lu_sup,lb,-lb,-ub,ub);
 			//res->coeff[i] = lambda*expr->coeff[i];
 			//res->cst = res->cst + expr->coeff[i]*mu;
 			elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],u_plus_l_inf,u_plus_l_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
