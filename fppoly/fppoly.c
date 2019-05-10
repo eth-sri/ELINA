@@ -4379,6 +4379,29 @@ void free_neuron(neuron_t *neuron){
         free(neuron);
 }
 
+void free_non_lstm_layer_expr(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno){
+    fppoly_t *fp = fppoly_of_abstract0(abs);
+    if(layerno >= fp->numlayers){
+        fprintf(stdout,"the layer does not exist\n");
+        return;
+    }
+    layer_t * layer = fp->layers[layerno];
+    size_t dims = layer->dims;
+    size_t i;
+    for(i=0; i < dims; i++){
+        neuron_t *neuron = layer->neurons[i];
+        if (neuron->expr) {
+          free_expr(neuron->expr);
+        }
+        if(neuron->lexpr){
+            free_expr(neuron->lexpr);
+        }
+        if (neuron->uexpr) {
+          free_expr(neuron->uexpr);
+        }
+    }
+}
+
 void layer_free(layer_t * layer){
 	size_t dims = layer->dims;
 	size_t i;
