@@ -3078,8 +3078,9 @@ double apply_s_curve_lexpr(fppoly_internal_t *pr, expr_t **lexpr_p,
           pr, &lexpr->inf_coeff[i], &lexpr->sup_coeff[i], slope_inf, slope_sup,
           lexpr->inf_coeff[i], lexpr->sup_coeff[i]);
     }
-    // elina_double_interval_mul_cst_coeff(pr, &mul_inf, &mul_sup,
-    // intercept_inf, intercept_sup, lexpr->inf_coeff[i], lexpr->sup_coeff[i] );
+    elina_double_interval_mul_cst_coeff(pr, &lexpr->inf_cst, &lexpr->sup_cst,
+                                        intercept_inf, intercept_sup,
+                                        lexpr->inf_cst, lexpr->sup_cst);
     elina_double_interval_add_cst_coeff(pr, &lexpr->inf_cst, &lexpr->sup_cst,
                                         intercept_inf, intercept_sup,
                                         lexpr->inf_cst, lexpr->sup_cst);
@@ -3131,8 +3132,9 @@ double apply_s_curve_uexpr(fppoly_internal_t *pr, expr_t **uexpr_p,
           pr, &uexpr->inf_coeff[i], &uexpr->sup_coeff[i], slope_inf, slope_sup,
           uexpr->inf_coeff[i], uexpr->sup_coeff[i]);
     }
-    // elina_double_interval_mul_cst_coeff(pr, &mul_inf, &mul_sup,
-    // intercept_inf, intercept_sup, uexpr->inf_coeff[i], uexpr->sup_coeff[i] );
+    elina_double_interval_mul_cst_coeff(pr, &uexpr->inf_cst, &uexpr->sup_cst,
+                                        intercept_inf, intercept_sup,
+                                        uexpr->inf_cst, uexpr->sup_cst);
     elina_double_interval_add_cst_coeff(pr, &uexpr->inf_cst, &uexpr->sup_cst,
                                         intercept_inf, intercept_sup,
                                         uexpr->inf_cst, uexpr->sup_cst);
