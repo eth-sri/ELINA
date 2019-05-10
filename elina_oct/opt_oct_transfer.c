@@ -450,7 +450,9 @@ opt_oct_t* opt_oct_substitute_linexpr(elina_manager_t* man,
   if (oo2) {
     size_t i;
      //TODO: online decomposition
-    convert_to_dense_mat(oo2,o->dim,false);
+      if(!oo2->is_dense){
+          convert_to_dense_mat(oo2,o->dim,false);
+      }
     double * m = oo->mat;
     double * m2 = oo2->mat;
     for (i=0;i<opt_matsize(o->dim);i++){
