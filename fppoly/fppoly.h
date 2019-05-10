@@ -252,6 +252,8 @@ size_t get_num_neurons_in_layer(elina_manager_t* man, elina_abstract0_t * abs, s
 
 void free_neuron(neuron_t *neuron);
 
+void free_non_lstm_layer_expr(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno);
+    
 void update_bounds_for_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno, size_t neuron_no, double lb, double ub);
 
 elina_interval_t * get_bounds_for_linexpr(elina_manager_t *man, elina_abstract0_t *element, elina_linexpr0_t *linexpr0, size_t layerno);

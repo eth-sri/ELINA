@@ -1741,3 +1741,31 @@ def handle_lstm_layer(man, element, weights, bias, d, h):
 
     return
 
+
+def free_non_lstm_layer_expr(man,element,layerno):
+    """
+        returns bounds for a linexpr0 over neurons in "layerno"
+        
+        Parameters
+        ----------
+        man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+        element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+        layerno: c_size_t
+        the layer number
+        Returns
+        -------
+        None
+        
+        """
+    
+    try:
+        free_non_lstm_layer_expr_c = fppoly_api.free_non_lstm_layer_expr
+        free_non_lstm_layer_expr_c.restype = None
+        free_non_lstm_layer_expr_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t]
+        free_non_lstm_layer_expr_c(man, element, layerno)
+    except:
+        print('Problem with loading/calling "free_non_lstm_layer_expr" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t to the function')
+

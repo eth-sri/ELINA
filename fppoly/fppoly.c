@@ -1012,6 +1012,7 @@ void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t * abs, doubl
 	return;	
 }
 
+
 void ffn_handle_first_relu_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,   size_t size, size_t num_pixels){
         ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, RELU, true);
 }
@@ -4120,6 +4121,29 @@ void free_neuron(neuron_t *neuron){
 		free_expr(neuron->uexpr);
 	}
 	free(neuron);
+}
+
+void free_non_lstm_layer_expr(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno){
+    fppoly_t *fp = fppoly_of_abstract0(abs);
+    if(layerno >= fp->numlayers){
+        fprintf(stdout,"the layer does not exist\n");
+        return;
+    }
+    layer_t * layer = fp->layers[layerno];
+    size_t dims = layer->dims;
+    size_t i;
+    for(i=0; i < dims; i++){
+        neuron_t *neuron = layer->neurons[i];
+        if(neuron->expr){
+            free_expr(neuron->expr);
+        }
+        if(neuron->lexpr){
+            free_expr(neuron->lexpr);
+        }
+        if(neuron->uexpr){
+            free_expr(neuron->uexpr);
+        }
+    }
 }
 
 void layer_free(layer_t * layer){
