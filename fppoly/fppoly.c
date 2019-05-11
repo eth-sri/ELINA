@@ -1326,9 +1326,12 @@ expr_t * lexpr_replace_log_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_
 			
 			res->inf_coeff[i] = 0.0;
 			res->sup_coeff[i] = 0.0;
-			
-			res->inf_cst = INFINITY;
-			res->sup_cst = -INFINITY;
+            double log_lb = -log(-lb);
+            double log_ub = log(ub);
+            double tmp1, tmp2;
+            elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],log_lb,log_ub);
+            res->inf_cst = res->inf_cst + tmp1;
+            res->sup_cst = res->sup_cst + tmp2;
 		}
 	}
 	
@@ -1438,9 +1441,14 @@ expr_t * uexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t * expr, neuron_t
 			
 			res->inf_coeff[i] = 0.0;
 			res->sup_coeff[i] = 0.0;
-			
-			res->inf_cst = -INFINITY;
-			res->sup_cst = INFINITY;
+            double log_lb = -log(-lb);
+            double log_ub = log(ub);
+            double tmp1, tmp2;
+            elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],log_lb,log_ub);
+            res->inf_cst = res->inf_cst + tmp1;
+            res->sup_cst = res->sup_cst + tmp2;
+			//res->inf_cst = -INFINITY;
+			//res->sup_cst = INFINITY;
 		}
 		
 	}
