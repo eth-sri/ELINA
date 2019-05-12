@@ -3746,10 +3746,10 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
         elina_double_interval_mul_expr_coeff(pr, &tmp1, &tmp2, lb_f_t, ub_f_t,
                                              layer->c_t_inf[i],
                                              layer->c_t_sup[i]);
-        c_t_lexpr->inf_cst += tmp1;
-        c_t_lexpr->sup_cst += tmp2;
-        c_t_uexpr->inf_cst += tmp1;
-        c_t_uexpr->sup_cst += tmp2;
+        tmp_l->inf_cst += tmp1;
+        tmp_l->sup_cst += tmp2;
+        tmp_u->inf_cst += tmp1;
+        tmp_u->sup_cst += tmp2;
       }
       add_expr(pr, c_t_lexpr, tmp_l);
       add_expr(pr, c_t_uexpr, tmp_u);
