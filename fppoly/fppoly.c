@@ -3729,10 +3729,28 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
     // printf("====================================\n");
 
     if (!first_time_step) {
-      tmp_l =
-          multiply_expr(pr, f_t_lexpr, layer->c_t_inf[i], layer->c_t_sup[i]);
-      tmp_u =
-          multiply_expr(pr, f_t_uexpr, layer->c_t_inf[i], layer->c_t_sup[i]);
+      if (layer->c_t_inf[i] < 0) {
+        tmp_l =
+            multiply_expr(pr, f_t_lexpr, layer->c_t_inf[i], layer->c_t_sup[i]);
+        tmp_u =
+            multiply_expr(pr, f_t_uexpr, layer->c_t_inf[i], layer->c_t_sup[i]);
+      } else if (layer->c_t_sup[i] < 0) {
+        tmp_l =
+            multiply_expr(pr, f_t_uexpr, layer->c_t_inf[i], layer->c_t_sup[i]);
+        tmp_u =
+            multiply_expr(pr, f_t_lexpr, layer->c_t_inf[i], layer->c_t_sup[i]);
+      } else {
+        tmp_l = multiply_expr(pr, f_t_lexpr, 0, 0);
+        tmp_u = multiply_expr(pr, f_t_uexpr, 0, 0);
+        double tmp1, tmp2;
+        elina_double_interval_mul_expr_coeff(pr, &tmp1, &tmp2, lb_f_t, ub_f_t,
+                                             layer->c_t_inf[i],
+                                             layer->c_t_sup[i]);
+        c_t_lexpr->inf_cst += tmp1;
+        c_t_lexpr->sup_cst += tmp2;
+        c_t_uexpr->inf_cst += tmp1;
+        c_t_uexpr->sup_cst += tmp2;
+      }
       add_expr(pr, c_t_lexpr, tmp_l);
       add_expr(pr, c_t_uexpr, tmp_u);
       free_expr(tmp_l);
