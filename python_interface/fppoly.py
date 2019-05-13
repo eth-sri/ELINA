@@ -127,7 +127,7 @@ def fppoly_set_network_input_box(man, element, intdim, realdim, inf_array, sup_a
         print('Problem with loading/calling "fppoly_set_network_input_box" from "libfppoly.so"')
         print(inst)
 
-return res
+    return res
 
 def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array, lexpr_weights, lexpr_cst, lexpr_dim,  uexpr_weights, uexpr_cst, uexpr_dim, expr_size):
     """
