@@ -1520,20 +1520,25 @@ expr_t * lexpr_replace_relu_bounds(fppoly_internal_t * pr, expr_t * expr, neuron
 			double area1 = lb*ub;
 			double area2 = 0.5*ub*width;
 			double area3 = 0.5*lb*width;
-			if((area1 < area2) && (area1 < area3)){
+			//if((area1 < area2) && (area1 < area3)){
 			//if(1){
 				//res->coeff[i] = lambda*expr->coeff[i];
-				elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],lambda_inf,lambda_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			//	elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],lambda_inf,lambda_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
 				
-			}
-			else if((area2 < area1) && (area2 < area3)){
-				res->inf_coeff[i] = 0.0;
-				res->sup_coeff[i] = 0.0;
-			}
-			else{
-				res->inf_coeff[i] = expr->inf_coeff[i];
-				res->sup_coeff[i] = expr->sup_coeff[i];
-			}
+			//}
+			#if defined(USE_AREA_HEURISTIC)
+				if((area2 < area1) && (area2 < area3)){
+					res->inf_coeff[i] = 0.0;
+					res->sup_coeff[i] = 0.0;
+				}
+				else{
+					res->inf_coeff[i] = expr->inf_coeff[i];
+					res->sup_coeff[i] = expr->sup_coeff[i];
+				}
+			#else
+					res->inf_coeff[i] = 0.0;
+					res->sup_coeff[i] = 0.0;
+			#endif
 		}
 		else{
 			
@@ -1608,19 +1613,24 @@ expr_t * uexpr_replace_relu_bounds(fppoly_internal_t *pr, expr_t * expr, neuron_
 			double area1 = lb*ub;
 			double area2 = 0.5*ub*width;
 			double area3 = 0.5*lb*width;
-			if((area1 < area2) && (area1 < area3)){
+			//if((area1 < area2) && (area1 < area3)){
 			//if(1){
 				//res->coeff[i] = lambda*expr->coeff[i];
-				elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],lambda_inf,lambda_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
-			}
-			else if((area2 < area1) && (area2 < area3)){
-				res->inf_coeff[i] = 0.0;
-				res->sup_coeff[i] = 0.0;
-			}
-			else{
-				res->inf_coeff[i] = expr->inf_coeff[i];
-				res->sup_coeff[i] = expr->sup_coeff[i];
-			}
+			//	elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],lambda_inf,lambda_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			//}
+			#if defined(USE_AREA_HEURISTIC)
+				if((area2 < area1) && (area2 < area3)){
+					res->inf_coeff[i] = 0.0;
+					res->sup_coeff[i] = 0.0;
+				}
+				else{
+					res->inf_coeff[i] = expr->inf_coeff[i];
+					res->sup_coeff[i] = expr->sup_coeff[i];
+				}
+			#else
+					res->inf_coeff[i] = 0.0;
+					res->sup_coeff[i] = 0.0;
+			#endif
 			//
 		}
 		else{

@@ -23,6 +23,7 @@ where options include:
   -mpfr-prefix dir     where to find the MPFR library
   -java-prefix dir     where to find Java
   -use-vector          use vector instructions for the Octagon library
+  -use-area-heuristic  use area heuristic for the DeepPoly library
   -use-ocaml           enable OCaml support (only available with APRON)
   -use-ocamlfind       enable OCamlfind support
   -use-java            enable Java support (only available with APRON)
@@ -55,6 +56,7 @@ has_java=0
 use_opam=0
 has_apron=0
 has_vector=0
+use_area_heuristic=0
 force_absolute_dylib_install_names=0;
 while : ; do
     case "$1" in
@@ -89,6 +91,8 @@ while : ; do
          has_apron=1;;
         -use-vector|--use-vector)
          has_vector=1;;
+        -use-area-heuristic|--use-area-heuristic)
+         use_area_heuristic=1;;
         -use-opam|--use-opam)
             has_ocaml=1
             has_ocamlfind=1
@@ -474,7 +478,8 @@ EOF
 if test "$has_ocaml" -eq 0; then has_ocaml=; fi
 if test "$has_java" -eq 0; then has_java=; fi
 if test "$has_apron" -eq 0; then has_apron=; else has_apron=-DHAS_APRON; fi
-if test "$has_vector" -eq 0; then IS_VECTOR=; else IS_VECTOR=-DVECTOR; fi
+if test "$has_vector" -eq 0; then is_vector=; else is_vector=-DVECTOR; fi
+if test "$use_area_heuristic" -eq 0; then use_area_heuristic=; else use_area_heuristic=-DUSE_AREA_HEURISTIC; fi
 if test "$use_opam" -eq 0; then use_opam=; fi
 
 cat > Makefile.config <<EOF
@@ -491,6 +496,12 @@ HAS_JAVA = $has_java
 
 # If defined to HAS_APRON, uses the apron interface
 IS_APRON = $has_apron
+
+# if defined to VECTOR, uses SIMD instructions for the Octagon library
+IS_VECTOR = $is_vector
+
+# if define to USE_AREA_HEURISTIC, uses the Area heuristic for the DeeppOly Relu transformer
+USE_AREA_HEURISTIC= $use_area_heuristic
 
 ELINA_PREFIX = $elina_prefix
 APRON_PREFIX = $apron_prefix
@@ -568,7 +579,7 @@ CFLAGS = $cflags
 
 # Architecture specific flags
 AFLAGS = -D_GNU_SOURCE -pthread -fno-tree-vectorize -m64 -march=native 
-DFLAGS = -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING \$(AFLAGS) \$(IS_APRON) \$(IS_VECTOR)
+DFLAGS = -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING \$(AFLAGS) \$(IS_APRON) \$(IS_VECTOR) \$(USE_AREA_HEURISTIC)
 
 # ocamlc compilation flags
 OCAMLFLAGS = -g
