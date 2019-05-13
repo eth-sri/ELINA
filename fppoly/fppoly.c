@@ -1531,7 +1531,7 @@ expr_t *uexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t *expr,
 }
 
 expr_t *lexpr_replace_relu_bounds(fppoly_internal_t *pr, expr_t *expr,
-                                  neuron_t **neurons) {
+                                  neuron_t **neurons, bool use_area_heuristic) {
   size_t num_neurons = expr->size;
   size_t i, k;
   expr_t *res = alloc_expr();
@@ -1585,24 +1585,24 @@ expr_t *lexpr_replace_relu_bounds(fppoly_internal_t *pr, expr_t *expr,
       double area1 = lb * ub;
       double area2 = 0.5 * ub * width;
       double area3 = 0.5 * lb * width;
-// if((area1 < area2) && (area1 < area3)){
-// if(1){
-// res->coeff[i] = lambda*expr->coeff[i];
-//	elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],lambda_inf,lambda_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+      // if((area1 < area2) && (area1 < area3)){
+      // if(1){
+      // res->coeff[i] = lambda*expr->coeff[i];
+      //	elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],lambda_inf,lambda_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
 
-//}
-#if defined(USE_AREA_HEURISTIC)
-      if ((area2 < area1) && (area2 < area3)) {
+      //}
+      if (use_area_heuristic) {
+        if ((area2 < area1) && (area2 < area3)) {
+          res->inf_coeff[i] = 0.0;
+          res->sup_coeff[i] = 0.0;
+        } else {
+          res->inf_coeff[i] = expr->inf_coeff[i];
+          res->sup_coeff[i] = expr->sup_coeff[i];
+        }
+      } else {
         res->inf_coeff[i] = 0.0;
         res->sup_coeff[i] = 0.0;
-      } else {
-        res->inf_coeff[i] = expr->inf_coeff[i];
-        res->sup_coeff[i] = expr->sup_coeff[i];
       }
-#else
-      res->inf_coeff[i] = 0.0;
-      res->sup_coeff[i] = 0.0;
-#endif
     } else {
 
       res->inf_coeff[i] = 0.0;
@@ -1624,7 +1624,7 @@ expr_t *lexpr_replace_relu_bounds(fppoly_internal_t *pr, expr_t *expr,
 }
 
 expr_t *uexpr_replace_relu_bounds(fppoly_internal_t *pr, expr_t *expr,
-                                  neuron_t **neurons) {
+                                  neuron_t **neurons, bool use_area_heuristic) {
   size_t num_neurons = expr->size;
   size_t i, k;
   expr_t *res = alloc_expr();
@@ -1677,23 +1677,23 @@ expr_t *uexpr_replace_relu_bounds(fppoly_internal_t *pr, expr_t *expr,
       double area1 = lb * ub;
       double area2 = 0.5 * ub * width;
       double area3 = 0.5 * lb * width;
-// if((area1 < area2) && (area1 < area3)){
-// if(1){
-// res->coeff[i] = lambda*expr->coeff[i];
-//	elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],lambda_inf,lambda_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
-//}
-#if defined(USE_AREA_HEURISTIC)
-      if ((area2 < area1) && (area2 < area3)) {
+      // if((area1 < area2) && (area1 < area3)){
+      // if(1){
+      // res->coeff[i] = lambda*expr->coeff[i];
+      //	elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],lambda_inf,lambda_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+      //}
+      if (use_area_heuristic) {
+        if ((area2 < area1) && (area2 < area3)) {
+          res->inf_coeff[i] = 0.0;
+          res->sup_coeff[i] = 0.0;
+        } else {
+          res->inf_coeff[i] = expr->inf_coeff[i];
+          res->sup_coeff[i] = expr->sup_coeff[i];
+        }
+      } else {
         res->inf_coeff[i] = 0.0;
         res->sup_coeff[i] = 0.0;
-      } else {
-        res->inf_coeff[i] = expr->inf_coeff[i];
-        res->sup_coeff[i] = expr->sup_coeff[i];
       }
-#else
-      res->inf_coeff[i] = 0.0;
-      res->sup_coeff[i] = 0.0;
-#endif
       //
     } else {
 
@@ -2629,6 +2629,7 @@ void *update_state_using_previous_layers(void *args) {
   size_t layerno = data->layerno;
   size_t idx_start = data->start;
   size_t idx_end = data->end;
+  bool use_area_heuristic = data->use_area_heuristic;
   size_t i;
   int k;
 
@@ -2656,11 +2657,13 @@ void *update_state_using_previous_layers(void *args) {
         //	fflush(stdout);
         //}
         if (fp->layers[k]->activation == RELU) {
-          lexpr = lexpr_replace_relu_bounds(pr, lexpr, aux_neurons);
+          lexpr = lexpr_replace_relu_bounds(pr, lexpr, aux_neurons,
+                                            use_area_heuristic);
           // printf("doesnt return\n");
 
           // fflush(stdout);
-          uexpr = uexpr_replace_relu_bounds(pr, uexpr, aux_neurons);
+          uexpr = uexpr_replace_relu_bounds(pr, uexpr, aux_neurons,
+                                            use_area_heuristic);
         } else if (fp->layers[k]->activation == SIGMOID) {
           // printf("start\n");
           // fflush(stdout);
@@ -2767,7 +2770,8 @@ void *update_state_using_previous_layers(void *args) {
 }
 
 void update_state_using_previous_layers_parallel(elina_manager_t *man,
-                                                 fppoly_t *fp, size_t layerno) {
+                                                 fppoly_t *fp, size_t layerno,
+                                                 bool use_area_heuristic) {
   // size_t NUM_THREADS = get_nprocs();
   size_t NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
   nn_thread_t args[NUM_THREADS];
@@ -2783,6 +2787,7 @@ void update_state_using_previous_layers_parallel(elina_manager_t *man,
       args[i].man = man;
       args[i].fp = fp;
       args[i].layerno = layerno;
+      args[i].use_area_heuristic = use_area_heuristic;
       pthread_create(&threads[i], NULL, update_state_using_previous_layers,
                      (void *)&args[i]);
     }
@@ -2800,6 +2805,7 @@ void update_state_using_previous_layers_parallel(elina_manager_t *man,
       args[i].man = man;
       args[i].fp = fp;
       args[i].layerno = layerno;
+      args[i].use_area_heuristic = use_area_heuristic;
       pthread_create(&threads[i], NULL, update_state_using_previous_layers,
                      (void *)&args[i]);
       idx_start = idx_end;
@@ -2832,7 +2838,8 @@ void ffn_handle_intermediate_layer(elina_manager_t *man,
                                    elina_abstract0_t *element, double **weights,
                                    double *bias, size_t num_out_neurons,
                                    size_t num_in_neurons,
-                                   activation_type_t activation, bool alloc) {
+                                   activation_type_t activation, bool alloc,
+                                   bool use_area_heuristic) {
   // printf("ReLU start here %zu %zu\n",num_in_neurons,num_out_neurons);
   // fflush(stdout);
   fppoly_t *fp = fppoly_of_abstract0(element);
@@ -2848,7 +2855,8 @@ void ffn_handle_intermediate_layer(elina_manager_t *man,
 
     out_neurons[i]->expr = create_dense_expr(weight_i, bias_i, num_in_neurons);
   }
-  update_state_using_previous_layers_parallel(man, fp, numlayers);
+  update_state_using_previous_layers_parallel(man, fp, numlayers,
+                                              use_area_heuristic);
 
   // printf("return here2\n");
   // fppoly_fprint(stdout,man,fp,NULL);
@@ -2860,104 +2868,123 @@ void ffn_handle_intermediate_affine_layer(elina_manager_t *man,
                                           elina_abstract0_t *element,
                                           double **weights, double *bias,
                                           size_t num_out_neurons,
-                                          size_t num_in_neurons) {
+                                          size_t num_in_neurons,
+                                          bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
-                                num_in_neurons, NONE, true);
+                                num_in_neurons, NONE, true, use_area_heuristic);
 }
 
 void ffn_handle_intermediate_relu_layer(elina_manager_t *man,
                                         elina_abstract0_t *element,
                                         double **weights, double *bias,
                                         size_t num_out_neurons,
-                                        size_t num_in_neurons) {
+                                        size_t num_in_neurons,
+                                        bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
-                                num_in_neurons, RELU, true);
+                                num_in_neurons, RELU, true, use_area_heuristic);
 }
 
 void ffn_handle_intermediate_sigmoid_layer(elina_manager_t *man,
                                            elina_abstract0_t *element,
                                            double **weights, double *bias,
                                            size_t num_out_neurons,
-                                           size_t num_in_neurons) {
+                                           size_t num_in_neurons,
+                                           bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
-                                num_in_neurons, SIGMOID, true);
+                                num_in_neurons, SIGMOID, true,
+                                use_area_heuristic);
 }
 
 void ffn_handle_intermediate_tanh_layer(elina_manager_t *man,
                                         elina_abstract0_t *element,
                                         double **weights, double *bias,
                                         size_t num_out_neurons,
-                                        size_t num_in_neurons) {
+                                        size_t num_in_neurons,
+                                        bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
-                                num_in_neurons, TANH, true);
+                                num_in_neurons, TANH, true, use_area_heuristic);
 }
 
 void ffn_handle_intermediate_parabola_layer(elina_manager_t *man,
                                             elina_abstract0_t *element,
                                             double **weights, double *bias,
                                             size_t num_out_neurons,
-                                            size_t num_in_neurons) {
+                                            size_t num_in_neurons,
+                                            bool use_area_heuristic) {
 
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
-                                num_in_neurons, PARABOLA, true);
+                                num_in_neurons, PARABOLA, true,
+                                use_area_heuristic);
 }
 
 void ffn_handle_intermediate_log_layer(elina_manager_t *man,
                                        elina_abstract0_t *element,
                                        double **weights, double *bias,
                                        size_t num_out_neurons,
-                                       size_t num_in_neurons) {
+                                       size_t num_in_neurons,
+                                       bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
-                                num_in_neurons, LOG, true);
+                                num_in_neurons, LOG, true, use_area_heuristic);
 }
 
 void ffn_handle_intermediate_affine_layer_no_alloc(
     elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons) {
+    double *bias, size_t num_out_neurons, size_t num_in_neurons,
+    bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
-                                num_in_neurons, NONE, false);
+                                num_in_neurons, NONE, false,
+                                use_area_heuristic);
 }
 
 void ffn_handle_intermediate_relu_layer_no_alloc(elina_manager_t *man,
                                                  elina_abstract0_t *element,
                                                  double **weights, double *bias,
                                                  size_t num_out_neurons,
-                                                 size_t num_in_neurons) {
+                                                 size_t num_in_neurons,
+                                                 bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
-                                num_in_neurons, RELU, false);
+                                num_in_neurons, RELU, false,
+                                use_area_heuristic);
 }
 
 void ffn_handle_intermediate_sigmoid_layer_no_alloc(
     elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons) {
+    double *bias, size_t num_out_neurons, size_t num_in_neurons,
+    bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
-                                num_in_neurons, SIGMOID, false);
+                                num_in_neurons, SIGMOID, false,
+                                use_area_heuristic);
 }
 
 void ffn_handle_intermediate_tanh_layer_no_alloc(elina_manager_t *man,
                                                  elina_abstract0_t *element,
                                                  double **weights, double *bias,
                                                  size_t num_out_neurons,
-                                                 size_t num_in_neurons) {
+                                                 size_t num_in_neurons,
+                                                 bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
-                                num_in_neurons, TANH, false);
+                                num_in_neurons, TANH, false,
+                                use_area_heuristic);
 }
 
 void ffn_handle_intermediate_parabola_layer_no_alloc(
     elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons) {
+    double *bias, size_t num_out_neurons, size_t num_in_neurons,
+    bool use_area_heuristic) {
 
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
-                                num_in_neurons, PARABOLA, false);
+                                num_in_neurons, PARABOLA, false,
+                                use_area_heuristic);
 }
 
 void ffn_handle_intermediate_log_layer_no_alloc(elina_manager_t *man,
                                                 elina_abstract0_t *element,
                                                 double **weights, double *bias,
                                                 size_t num_out_neurons,
-                                                size_t num_in_neurons) {
+                                                size_t num_in_neurons,
+                                                bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
-                                num_in_neurons, LOG, false);
+                                num_in_neurons, LOG, false, use_area_heuristic);
 }
 
 double apply_relu_lexpr(fppoly_internal_t *pr, expr_t **lexpr_p,
@@ -3217,7 +3244,7 @@ void ffn_handle_last_layer(elina_manager_t *man, elina_abstract0_t *element,
                            double **weights, double *bias,
                            size_t num_out_neurons, size_t num_in_neurons,
                            bool has_activation, activation_type_t activation,
-                           bool alloc) {
+                           bool alloc, bool use_area_heuristic) {
   // printf("last\n");
   // fflush(stdout);
   fppoly_t *fp = fppoly_of_abstract0(element);
@@ -3245,7 +3272,8 @@ void ffn_handle_last_layer(elina_manager_t *man, elina_abstract0_t *element,
     double bias_i = bias[i];
     out_neurons[i]->expr = create_dense_expr(weight_i, bias_i, num_in_neurons);
   }
-  update_state_using_previous_layers_parallel(man, fp, numlayers);
+  update_state_using_previous_layers_parallel(man, fp, numlayers,
+                                              use_area_heuristic);
   if (activation == RELU) {
     handle_final_relu_layer(pr, fp->out, out_neurons, num_out_neurons,
                             has_activation);
@@ -3272,93 +3300,106 @@ void ffn_handle_last_layer(elina_manager_t *man, elina_abstract0_t *element,
 void ffn_handle_last_relu_layer(elina_manager_t *man,
                                 elina_abstract0_t *element, double **weights,
                                 double *bias, size_t num_out_neurons,
-                                size_t num_in_neurons, bool has_relu) {
+                                size_t num_in_neurons, bool has_relu,
+                                bool use_area_heuristic) {
   ffn_handle_last_layer(man, element, weights, bias, num_out_neurons,
-                        num_in_neurons, has_relu, RELU, true);
+                        num_in_neurons, has_relu, RELU, true,
+                        use_area_heuristic);
 }
 
 void ffn_handle_last_sigmoid_layer(elina_manager_t *man,
                                    elina_abstract0_t *element, double **weights,
                                    double *bias, size_t num_out_neurons,
-                                   size_t num_in_neurons, bool has_sigmoid) {
+                                   size_t num_in_neurons, bool has_sigmoid,
+                                   bool use_area_heuristic) {
   ffn_handle_last_layer(man, element, weights, bias, num_out_neurons,
-                        num_in_neurons, has_sigmoid, SIGMOID, true);
+                        num_in_neurons, has_sigmoid, SIGMOID, true,
+                        use_area_heuristic);
 }
 
 void ffn_handle_last_tanh_layer(elina_manager_t *man,
                                 elina_abstract0_t *element, double **weights,
                                 double *bias, size_t num_out_neurons,
-                                size_t num_in_neurons, bool has_tanh) {
+                                size_t num_in_neurons, bool has_tanh,
+                                bool use_area_heuristic) {
   ffn_handle_last_layer(man, element, weights, bias, num_out_neurons,
-                        num_in_neurons, has_tanh, TANH, true);
+                        num_in_neurons, has_tanh, TANH, true,
+                        use_area_heuristic);
 }
 
 void ffn_handle_last_parabola_layer(elina_manager_t *man,
                                     elina_abstract0_t *element,
                                     double **weights, double *bias,
                                     size_t num_out_neurons,
-                                    size_t num_in_neurons, bool has_parabola) {
+                                    size_t num_in_neurons, bool has_parabola,
+                                    bool use_area_heuristic) {
   ffn_handle_last_layer(man, element, weights, bias, num_out_neurons,
-                        num_in_neurons, has_parabola, PARABOLA, true);
+                        num_in_neurons, has_parabola, PARABOLA, true,
+                        use_area_heuristic);
 }
 
 void ffn_handle_last_log_layer(elina_manager_t *man, elina_abstract0_t *element,
                                double **weights, double *bias,
                                size_t num_out_neurons, size_t num_in_neurons,
-                               bool has_log) {
+                               bool has_log, bool use_area_heuristic) {
   ffn_handle_last_layer(man, element, weights, bias, num_out_neurons,
-                        num_in_neurons, has_log, LOG, true);
+                        num_in_neurons, has_log, LOG, true, use_area_heuristic);
 }
 
 void ffn_handle_last_relu_layer_no_alloc(elina_manager_t *man,
                                          elina_abstract0_t *element,
                                          double **weights, double *bias,
                                          size_t num_out_neurons,
-                                         size_t num_in_neurons, bool has_relu) {
+                                         size_t num_in_neurons, bool has_relu,
+                                         bool use_area_heuristic) {
   ffn_handle_last_layer(man, element, weights, bias, num_out_neurons,
-                        num_in_neurons, has_relu, RELU, false);
+                        num_in_neurons, has_relu, RELU, false,
+                        use_area_heuristic);
 }
 
-void ffn_handle_last_sigmoid_layer_no_alloc(elina_manager_t *man,
-                                            elina_abstract0_t *element,
-                                            double **weights, double *bias,
-                                            size_t num_out_neurons,
-                                            size_t num_in_neurons,
-                                            bool has_sigmoid) {
+void ffn_handle_last_sigmoid_layer_no_alloc(
+    elina_manager_t *man, elina_abstract0_t *element, double **weights,
+    double *bias, size_t num_out_neurons, size_t num_in_neurons,
+    bool has_sigmoid, bool use_area_heuristic) {
   ffn_handle_last_layer(man, element, weights, bias, num_out_neurons,
-                        num_in_neurons, has_sigmoid, SIGMOID, false);
+                        num_in_neurons, has_sigmoid, SIGMOID, false,
+                        use_area_heuristic);
 }
 
 void ffn_handle_last_tanh_layer_no_alloc(elina_manager_t *man,
                                          elina_abstract0_t *element,
                                          double **weights, double *bias,
                                          size_t num_out_neurons,
-                                         size_t num_in_neurons, bool has_tanh) {
+                                         size_t num_in_neurons, bool has_tanh,
+                                         bool use_area_heuristic) {
   ffn_handle_last_layer(man, element, weights, bias, num_out_neurons,
-                        num_in_neurons, has_tanh, TANH, false);
+                        num_in_neurons, has_tanh, TANH, false,
+                        use_area_heuristic);
 }
 
-void ffn_handle_last_parabola_layer_no_alloc(elina_manager_t *man,
-                                             elina_abstract0_t *element,
-                                             double **weights, double *bias,
-                                             size_t num_out_neurons,
-                                             size_t num_in_neurons,
-                                             bool has_parabola) {
+void ffn_handle_last_parabola_layer_no_alloc(
+    elina_manager_t *man, elina_abstract0_t *element, double **weights,
+    double *bias, size_t num_out_neurons, size_t num_in_neurons,
+    bool has_parabola, bool use_area_heuristic) {
   ffn_handle_last_layer(man, element, weights, bias, num_out_neurons,
-                        num_in_neurons, has_parabola, PARABOLA, false);
+                        num_in_neurons, has_parabola, PARABOLA, false,
+                        use_area_heuristic);
 }
 
 void ffn_handle_last_log_layer_no_alloc(elina_manager_t *man,
                                         elina_abstract0_t *element,
                                         double **weights, double *bias,
                                         size_t num_out_neurons,
-                                        size_t num_in_neurons, bool has_log) {
+                                        size_t num_in_neurons, bool has_log,
+                                        bool use_area_heuristic) {
   ffn_handle_last_layer(man, element, weights, bias, num_out_neurons,
-                        num_in_neurons, has_log, LOG, false);
+                        num_in_neurons, has_log, LOG, false,
+                        use_area_heuristic);
 }
 
 double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
-                                    expr_t *expr, size_t layerno) {
+                                    expr_t *expr, size_t layerno,
+                                    bool use_area_heuristic) {
   size_t i;
   int k;
   // size_t numlayers = fp->numlayers;
@@ -3375,7 +3416,8 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
 
       if (fp->layers[k]->activation == RELU) {
         tmp_l = lexpr;
-        lexpr = lexpr_replace_relu_bounds(pr, lexpr, aux_neurons);
+        lexpr = lexpr_replace_relu_bounds(pr, lexpr, aux_neurons,
+                                          use_area_heuristic);
         free_expr(tmp_l);
       } else if (fp->layers[k]->activation == SIGMOID) {
         tmp_l = lexpr;
@@ -3415,7 +3457,8 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
 }
 
 double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
-                                    expr_t *expr, size_t layerno) {
+                                    expr_t *expr, size_t layerno,
+                                    bool use_area_heuristic) {
   size_t i;
   int k;
   // size_t numlayers = fp->numlayers;
@@ -3429,7 +3472,8 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
 
       if (fp->layers[k]->activation == RELU) {
         tmp_u = uexpr;
-        uexpr = uexpr_replace_relu_bounds(pr, uexpr, aux_neurons);
+        uexpr = uexpr_replace_relu_bounds(pr, uexpr, aux_neurons,
+                                          use_area_heuristic);
         free_expr(tmp_u);
       } else if (fp->layers[k]->activation == SIGMOID) {
         tmp_u = uexpr;
@@ -3532,9 +3576,9 @@ elina_interval_t *get_bounds_for_linexpr0(elina_manager_t *man,
   // fflush(stdout);
   expr_t *expr2 = copy_expr(expr);
 
-  double lb = get_lb_using_previous_layers(man, fp, expr, layerno);
+  double lb = get_lb_using_previous_layers(man, fp, expr, layerno, true);
 
-  double ub = get_ub_using_previous_layers(man, fp, expr2, layerno);
+  double ub = get_ub_using_previous_layers(man, fp, expr2, layerno, true);
 
   elina_interval_set_double(res, -lb, ub);
   free_expr(expr);
@@ -3551,7 +3595,8 @@ void create_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, size_t h) {
 }
 
 void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                       double **weights, double *bias, size_t d, size_t h) {
+                       double **weights, double *bias, size_t d, size_t h,
+                       bool use_area_heuristic) {
   fppoly_t *fp = fppoly_of_abstract0(abs);
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
@@ -3605,10 +3650,10 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
     expr_t *f_t_uexpr = copy_expr(f_t_lexpr);
     expr_t *tmp_f_t_lexpr = copy_expr(f_t_lexpr);
     expr_t *tmp_f_t_uexpr = copy_expr(f_t_uexpr);
-    double lb_f_t =
-        get_lb_using_previous_layers(man, fp, tmp_f_t_lexpr, lstm_index);
-    double ub_f_t =
-        get_ub_using_previous_layers(man, fp, tmp_f_t_uexpr, lstm_index);
+    double lb_f_t = get_lb_using_previous_layers(
+        man, fp, tmp_f_t_lexpr, lstm_index, use_area_heuristic);
+    double ub_f_t = get_ub_using_previous_layers(
+        man, fp, tmp_f_t_uexpr, lstm_index, use_area_heuristic);
     /* free_expr(tmp_f_t_lexpr); */
     /* free_expr(tmp_f_t_uexpr); */
 
@@ -3626,10 +3671,10 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
     expr_t *i_t_uexpr = copy_expr(i_t_lexpr);
     expr_t *tmp_i_t_lexpr = copy_expr(i_t_lexpr);
     expr_t *tmp_i_t_uexpr = copy_expr(i_t_uexpr);
-    double lb_i_t =
-        get_lb_using_previous_layers(man, fp, tmp_i_t_lexpr, lstm_index);
-    double ub_i_t =
-        get_ub_using_previous_layers(man, fp, tmp_i_t_uexpr, lstm_index);
+    double lb_i_t = get_lb_using_previous_layers(
+        man, fp, tmp_i_t_lexpr, lstm_index, use_area_heuristic);
+    double ub_i_t = get_ub_using_previous_layers(
+        man, fp, tmp_i_t_uexpr, lstm_index, use_area_heuristic);
     /* free_expr(tmp_i_t_lexpr); */
     /* free_expr(tmp_i_t_uexpr); */
     neuron->lb = lb_i_t;
@@ -3646,10 +3691,10 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
     expr_t *o_t_uexpr = copy_expr(o_t_lexpr);
     expr_t *tmp_o_t_lexpr = copy_expr(o_t_lexpr);
     expr_t *tmp_o_t_uexpr = copy_expr(o_t_uexpr);
-    double lb_o_t =
-        get_lb_using_previous_layers(man, fp, tmp_o_t_lexpr, lstm_index);
-    double ub_o_t =
-        get_ub_using_previous_layers(man, fp, tmp_o_t_uexpr, lstm_index);
+    double lb_o_t = get_lb_using_previous_layers(
+        man, fp, tmp_o_t_lexpr, lstm_index, use_area_heuristic);
+    double ub_o_t = get_ub_using_previous_layers(
+        man, fp, tmp_o_t_uexpr, lstm_index, use_area_heuristic);
     /* free_expr(tmp_o_t_lexpr); */
     /* free_expr(tmp_o_t_uexpr); */
 
@@ -3673,10 +3718,10 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
     expr_t *c_t_uexpr = copy_expr(c_t_lexpr);
     expr_t *tmp_c_t_lexpr = copy_expr(c_t_lexpr);
     expr_t *tmp_c_t_uexpr = copy_expr(c_t_uexpr);
-    double lb_c_t =
-        get_lb_using_previous_layers(man, fp, tmp_c_t_lexpr, lstm_index);
-    double ub_c_t =
-        get_ub_using_previous_layers(man, fp, tmp_c_t_uexpr, lstm_index);
+    double lb_c_t = get_lb_using_previous_layers(
+        man, fp, tmp_c_t_lexpr, lstm_index, use_area_heuristic);
+    double ub_c_t = get_ub_using_previous_layers(
+        man, fp, tmp_c_t_uexpr, lstm_index, use_area_heuristic);
     neuron->lb = lb_c_t;
     neuron->ub = ub_c_t;
     // expr_print(c_t_lexpr);
@@ -3764,10 +3809,10 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
       free_expr(tmp_l);
       free_expr(tmp_u);
     }
-    layer->c_t_inf[i] =
-        get_lb_using_previous_layers(man, fp, c_t_lexpr, lstm_index);
-    layer->c_t_sup[i] =
-        get_ub_using_previous_layers(man, fp, c_t_uexpr, lstm_index);
+    layer->c_t_inf[i] = get_lb_using_previous_layers(
+        man, fp, c_t_lexpr, lstm_index, use_area_heuristic);
+    layer->c_t_sup[i] = get_ub_using_previous_layers(
+        man, fp, c_t_uexpr, lstm_index, use_area_heuristic);
 
     neuron->lb = layer->c_t_inf[i];
     neuron->ub = layer->c_t_sup[i];
@@ -3789,10 +3834,10 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
       h_t_uexpr = multiply_expr(pr, o_t_uexpr, lb_c_t, ub_c_t);
     }
 
-    layer->h_t_inf[i] =
-        get_lb_using_previous_layers(man, fp, h_t_lexpr, lstm_index);
-    layer->h_t_sup[i] =
-        get_ub_using_previous_layers(man, fp, h_t_uexpr, lstm_index);
+    layer->h_t_inf[i] = get_lb_using_previous_layers(
+        man, fp, h_t_lexpr, lstm_index, use_area_heuristic);
+    layer->h_t_sup[i] = get_ub_using_previous_layers(
+        man, fp, h_t_uexpr, lstm_index, use_area_heuristic);
 
     free_expr(f_t_lexpr);
     free_expr(f_t_uexpr);
@@ -3808,188 +3853,182 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
   return;
 }
 
-bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y, elina_dim_t x){
-	fppoly_t *fp = fppoly_of_abstract0(element);
-	fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
-        if (1) {
+bool is_greater(elina_manager_t *man, elina_abstract0_t *element, elina_dim_t y,
+                elina_dim_t x, bool use_area_heuristic) {
+  fppoly_t *fp = fppoly_of_abstract0(element);
+  fppoly_internal_t *pr =
+      fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
+  if (1) {
 
-          expr_t *sub = (expr_t *)malloc(sizeof(expr_t));
-          // sub->size = size;
-          sub->inf_cst = 0;
-          sub->sup_cst = 0;
-          sub->inf_coeff = (double *)malloc(2 * sizeof(double));
-          sub->sup_coeff = (double *)malloc(2 * sizeof(double));
-          sub->dim = (size_t *)malloc(2 * sizeof(size_t));
-          sub->size = 2;
-          sub->type = SPARSE;
-          sub->inf_coeff[0] = -1;
-          sub->sup_coeff[0] = 1;
-          sub->dim[0] = y;
-          sub->inf_coeff[1] = 1;
-          sub->sup_coeff[1] = -1;
-          sub->dim[1] = x;
+    expr_t *sub = (expr_t *)malloc(sizeof(expr_t));
+    // sub->size = size;
+    sub->inf_cst = 0;
+    sub->sup_cst = 0;
+    sub->inf_coeff = (double *)malloc(2 * sizeof(double));
+    sub->sup_coeff = (double *)malloc(2 * sizeof(double));
+    sub->dim = (size_t *)malloc(2 * sizeof(size_t));
+    sub->size = 2;
+    sub->type = SPARSE;
+    sub->inf_coeff[0] = -1;
+    sub->sup_coeff[0] = 1;
+    sub->dim[0] = y;
+    sub->inf_coeff[1] = 1;
+    sub->sup_coeff[1] = -1;
+    sub->dim[1] = x;
 
-          double lb = get_lb_using_previous_layers(man, fp, sub, fp->numlayers);
+    double lb = get_lb_using_previous_layers(man, fp, sub, fp->numlayers,
+                                             use_area_heuristic);
 
-          // free_expr(sub);
+    // free_expr(sub);
 
-          if (lb < 0) {
-            return true;
-          } else {
-            return false;
+    if (lb < 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  output_abstract_t *out = fp->out;
+  expr_t *exprA = out->lexpr[y];
+  expr_t *exprB = out->uexpr[x];
+  if (exprA == NULL) {
+    return false;
+  } else {
+    if (exprB == NULL) {
+      if (out->output_inf[y] < 0) {
+        return true;
+      } else {
+        return false;
+      }
+
+    } else {
+      // printf("before access %zu %zu\n", exprA->size,exprB->size);
+      // fflush(stdout);
+      size_t sizeA = exprA->size;
+      size_t sizeB = exprB->size;
+      // printf("after access\n");
+      // fflush(stdout);
+      size_t i, k;
+      expr_t *sub = (expr_t *)malloc(sizeof(expr_t));
+      //
+      // sub->size = size;
+      sub->inf_cst = exprA->inf_cst + exprB->sup_cst;
+      sub->sup_cst = exprA->sup_cst + exprB->inf_cst;
+      // printf("getting here\n");
+      // expr_print(exprA);
+      // expr_print(exprB);
+      // fflush(stdout);
+      if (exprA->type == DENSE) {
+        sub->inf_coeff = (double *)malloc(sizeA * sizeof(double));
+        sub->sup_coeff = (double *)malloc(sizeA * sizeof(double));
+        sub->dim = NULL;
+        sub->size = sizeA;
+        sub->type = DENSE;
+        if (exprB->type == DENSE) {
+          for (i = 0; i < sizeA; i++) {
+            sub->inf_coeff[i] = exprA->inf_coeff[i] + exprB->sup_coeff[i];
+            sub->sup_coeff[i] = exprA->sup_coeff[i] + exprB->inf_coeff[i];
           }
-        }
-        output_abstract_t *out = fp->out;
-        expr_t *exprA = out->lexpr[y];
-        expr_t *exprB = out->uexpr[x];
-        if (exprA == NULL) {
-          return false;
         } else {
-          if (exprB == NULL) {
-            if (out->output_inf[y] < 0) {
-              return true;
+          k = 0;
+          for (i = 0; i < sizeA; i++) {
+            if (k < sizeB && exprB->dim[k] == i) {
+              sub->inf_coeff[i] = exprA->inf_coeff[i] + exprB->sup_coeff[k];
+              sub->sup_coeff[i] = exprA->sup_coeff[i] + exprB->inf_coeff[k];
+              k++;
             } else {
-              return false;
-            }
-
-          } else {
-            // printf("before access %zu %zu\n", exprA->size,exprB->size);
-            // fflush(stdout);
-            size_t sizeA = exprA->size;
-            size_t sizeB = exprB->size;
-            // printf("after access\n");
-            // fflush(stdout);
-            size_t i, k;
-            expr_t *sub = (expr_t *)malloc(sizeof(expr_t));
-            //
-            // sub->size = size;
-            sub->inf_cst = exprA->inf_cst + exprB->sup_cst;
-            sub->sup_cst = exprA->sup_cst + exprB->inf_cst;
-            // printf("getting here\n");
-            // expr_print(exprA);
-            // expr_print(exprB);
-            // fflush(stdout);
-            if (exprA->type == DENSE) {
-              sub->inf_coeff = (double *)malloc(sizeA * sizeof(double));
-              sub->sup_coeff = (double *)malloc(sizeA * sizeof(double));
-              sub->dim = NULL;
-              sub->size = sizeA;
-              sub->type = DENSE;
-              if (exprB->type == DENSE) {
-                for (i = 0; i < sizeA; i++) {
-                  sub->inf_coeff[i] = exprA->inf_coeff[i] + exprB->sup_coeff[i];
-                  sub->sup_coeff[i] = exprA->sup_coeff[i] + exprB->inf_coeff[i];
-                }
-              } else {
-                k = 0;
-                for (i = 0; i < sizeA; i++) {
-                  if (k < sizeB && exprB->dim[k] == i) {
-                    sub->inf_coeff[i] =
-                        exprA->inf_coeff[i] + exprB->sup_coeff[k];
-                    sub->sup_coeff[i] =
-                        exprA->sup_coeff[i] + exprB->inf_coeff[k];
-                    k++;
-                  } else {
-                    sub->inf_coeff[i] = exprA->inf_coeff[i];
-                    sub->sup_coeff[i] = exprA->sup_coeff[i];
-                  }
-                }
-              }
-
-            } else {
-              if (exprB->type == DENSE) {
-                sub->inf_coeff = (double *)malloc(sizeB * sizeof(double));
-                sub->sup_coeff = (double *)malloc(sizeB * sizeof(double));
-                sub->dim = NULL;
-                sub->size = sizeB;
-                sub->type = DENSE;
-                i = 0;
-                for (k = 0; k < sizeB; k++) {
-                  if (i < sizeA && exprA->dim[i] == k) {
-                    sub->inf_coeff[k] =
-                        exprA->inf_coeff[i] + exprB->sup_coeff[k];
-                    sub->sup_coeff[k] =
-                        exprA->sup_coeff[i] + exprB->inf_coeff[k];
-                    i++;
-                  } else {
-                    sub->inf_coeff[i] = exprB->sup_coeff[k];
-                    sub->sup_coeff[i] = exprB->inf_coeff[k];
-                  }
-                }
-              } else {
-                sub->inf_coeff =
-                    (double *)malloc((sizeA + sizeB) * sizeof(double));
-                sub->sup_coeff =
-                    (double *)malloc((sizeA + sizeB) * sizeof(double));
-                sub->dim = NULL;
-
-                sub->type = SPARSE;
-                size_t l = 0;
-                i = 0;
-                k = 0;
-                sub->dim = (size_t *)malloc((sizeA + sizeB) * sizeof(size_t));
-                while (i < sizeA && k < sizeB) {
-                  if (exprA->dim[i] < exprB->dim[k]) {
-                    sub->inf_coeff[l] = exprA->inf_coeff[i];
-                    sub->sup_coeff[l] = exprA->sup_coeff[i];
-                    sub->dim[l] = exprA->dim[i];
-                    i++;
-
-                  } else if (exprB->dim[k] < exprA->dim[i]) {
-                    sub->inf_coeff[l] = exprB->sup_coeff[k];
-                    sub->sup_coeff[l] = exprB->inf_coeff[k];
-                    sub->dim[l] = exprB->dim[k];
-                    k++;
-                  } else {
-                    sub->inf_coeff[l] =
-                        exprA->inf_coeff[i] + exprB->sup_coeff[k];
-                    sub->sup_coeff[l] =
-                        exprA->sup_coeff[i] + exprB->inf_coeff[k];
-                    sub->dim[l] = exprA->dim[i];
-                    i++;
-                    k++;
-                  }
-                  l++;
-                }
-                while (i < sizeA) {
-                  sub->inf_coeff[l] = exprA->inf_coeff[i];
-                  sub->sup_coeff[l] = exprA->sup_coeff[i];
-                  sub->dim[l] = exprA->dim[i];
-                  i++;
-                  l++;
-                }
-                while (k < sizeB) {
-                  sub->inf_coeff[l] = exprB->inf_coeff[k];
-                  sub->sup_coeff[l] = exprB->sup_coeff[k];
-                  sub->dim[l] = exprB->dim[k];
-                  k++;
-                  l++;
-                }
-                sub->size = l;
-                sub->inf_coeff =
-                    (double *)realloc(sub->inf_coeff, l * sizeof(double));
-                sub->sup_coeff =
-                    (double *)realloc(sub->sup_coeff, l * sizeof(double));
-                sub->dim = (size_t *)realloc(sub->dim, l * sizeof(size_t));
-              }
-            }
-
-            // expr_print(sub);
-            // fflush(stdout);
-            double lb = compute_lb_from_expr(pr, sub, fp);
-            // printf("y: %zu x: %zu lb: %g\n",y,x,lb);
-            // fflush(stdout);
-            free_expr(sub);
-            // double lb = -out->output_inf[y] - out->output_sup[x];
-            if (lb < 0) {
-              return true;
-            } else {
-              return false;
+              sub->inf_coeff[i] = exprA->inf_coeff[i];
+              sub->sup_coeff[i] = exprA->sup_coeff[i];
             }
           }
         }
-}
 
+      } else {
+        if (exprB->type == DENSE) {
+          sub->inf_coeff = (double *)malloc(sizeB * sizeof(double));
+          sub->sup_coeff = (double *)malloc(sizeB * sizeof(double));
+          sub->dim = NULL;
+          sub->size = sizeB;
+          sub->type = DENSE;
+          i = 0;
+          for (k = 0; k < sizeB; k++) {
+            if (i < sizeA && exprA->dim[i] == k) {
+              sub->inf_coeff[k] = exprA->inf_coeff[i] + exprB->sup_coeff[k];
+              sub->sup_coeff[k] = exprA->sup_coeff[i] + exprB->inf_coeff[k];
+              i++;
+            } else {
+              sub->inf_coeff[i] = exprB->sup_coeff[k];
+              sub->sup_coeff[i] = exprB->inf_coeff[k];
+            }
+          }
+        } else {
+          sub->inf_coeff = (double *)malloc((sizeA + sizeB) * sizeof(double));
+          sub->sup_coeff = (double *)malloc((sizeA + sizeB) * sizeof(double));
+          sub->dim = NULL;
+
+          sub->type = SPARSE;
+          size_t l = 0;
+          i = 0;
+          k = 0;
+          sub->dim = (size_t *)malloc((sizeA + sizeB) * sizeof(size_t));
+          while (i < sizeA && k < sizeB) {
+            if (exprA->dim[i] < exprB->dim[k]) {
+              sub->inf_coeff[l] = exprA->inf_coeff[i];
+              sub->sup_coeff[l] = exprA->sup_coeff[i];
+              sub->dim[l] = exprA->dim[i];
+              i++;
+
+            } else if (exprB->dim[k] < exprA->dim[i]) {
+              sub->inf_coeff[l] = exprB->sup_coeff[k];
+              sub->sup_coeff[l] = exprB->inf_coeff[k];
+              sub->dim[l] = exprB->dim[k];
+              k++;
+            } else {
+              sub->inf_coeff[l] = exprA->inf_coeff[i] + exprB->sup_coeff[k];
+              sub->sup_coeff[l] = exprA->sup_coeff[i] + exprB->inf_coeff[k];
+              sub->dim[l] = exprA->dim[i];
+              i++;
+              k++;
+            }
+            l++;
+          }
+          while (i < sizeA) {
+            sub->inf_coeff[l] = exprA->inf_coeff[i];
+            sub->sup_coeff[l] = exprA->sup_coeff[i];
+            sub->dim[l] = exprA->dim[i];
+            i++;
+            l++;
+          }
+          while (k < sizeB) {
+            sub->inf_coeff[l] = exprB->inf_coeff[k];
+            sub->sup_coeff[l] = exprB->sup_coeff[k];
+            sub->dim[l] = exprB->dim[k];
+            k++;
+            l++;
+          }
+          sub->size = l;
+          sub->inf_coeff =
+              (double *)realloc(sub->inf_coeff, l * sizeof(double));
+          sub->sup_coeff =
+              (double *)realloc(sub->sup_coeff, l * sizeof(double));
+          sub->dim = (size_t *)realloc(sub->dim, l * sizeof(size_t));
+        }
+      }
+
+      // expr_print(sub);
+      // fflush(stdout);
+      double lb = compute_lb_from_expr(pr, sub, fp);
+      // printf("y: %zu x: %zu lb: %g\n",y,x,lb);
+      // fflush(stdout);
+      free_expr(sub);
+      // double lb = -out->output_inf[y] - out->output_sup[x];
+      if (lb < 0) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+}
 
 long int max(long int a, long int b){
 	return a> b? a : b;
@@ -4113,7 +4152,8 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
 void conv_handle_intermediate_relu_layer(
     elina_manager_t *man, elina_abstract0_t *element, double *filter_weights,
     double *filter_bias, size_t *input_size, size_t *filter_size,
-    size_t num_filters, size_t *strides, bool is_valid_padding, bool has_bias) {
+    size_t num_filters, size_t *strides, bool is_valid_padding, bool has_bias,
+    bool use_area_heuristic) {
   // printf("conv intermediate starts here\n");
   // fflush(stdout);
   fppoly_t *fp = fppoly_of_abstract0(element);
@@ -4211,7 +4251,8 @@ void conv_handle_intermediate_relu_layer(
     }
   }
 
-  update_state_using_previous_layers_parallel(man, fp, numlayers);
+  update_state_using_previous_layers_parallel(man, fp, numlayers,
+                                              use_area_heuristic);
 
   // printf("return here2\n");
   // fppoly_fprint(stdout,man,fp,NULL);
