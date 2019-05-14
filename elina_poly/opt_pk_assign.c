@@ -220,6 +220,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 	if(res_a==res){
 		disjoint_map[k] = 1;
 		unsigned short int *ca_a = to_sorted_array(cla,maxcols);
+		
 		if(flag1){
 			num_vertex_a[k] = opt_generator_rearrange(oak->F,oak->satF);
 			if(!nbvertex){
@@ -286,6 +287,11 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 		matC = opt_matrix_alloc(nbcons+1, poly[res]->intdim+2,false);
 	}
 	else if(flag2){
+		for(k=0; k < comp_size; k++){
+			if(!line_map[k]){
+				nbline++;
+			}
+		}
 		matF =  opt_matrix_alloc(nbvertex+nbline+1, poly[res]->intdim+2,false);
 	}
 	else{
