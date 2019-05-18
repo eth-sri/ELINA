@@ -1038,9 +1038,6 @@ __global__ void coeffs_from_previous_layer_conv_sparse(
   const long int min_out_x = offset_x + last_x * shift_x;
   const long int min_out_y = offset_y + last_y * shift_y;
 
-  const long int max_out_x = min_out_x + length_x;
-  const long int max_out_y = min_out_y + length_y;
-
   const size_t inp_z = threadIdx.x;
   const size_t y_shift = threadIdx.y;
   const size_t x_shift = threadIdx.z;
@@ -1050,23 +1047,29 @@ __global__ void coeffs_from_previous_layer_conv_sparse(
 
   if (x_shift * filter_size_y * input_size_z + y_shift * input_size_z + inp_z <
       filter_size_x * filter_size_y * input_size_z) {
-    for (long int out_x = min_out_x; out_x < max_out_x; out_x++) {
-      if ((out_x < 0) || (out_x >= output_size_x)) {
+    for (long int out_x = 0; out_x < length_x; out_x++) {
+      if ((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x)) {
         continue;
       }
 
-      for (long int out_y = min_out_y; out_y < max_out_y; out_y++) {
-        if ((out_y < 0 || out_y >= output_size_y)) {
+      for (long int out_y = 0; out_y < length_y; out_y++) {
+        if ((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y)) {
           continue;
         }
 
-        const long int x_val = out_x * stride_x + x_shift - pad_x;
-        const long int y_val = out_y * stride_y + y_shift - pad_y;
+        const long int x_val =
+            out_x * stride_x + min_out_x * stride_x + x_shift - pad_x;
+        const long int y_val =
+            out_y * stride_y + min_out_y * stride_y + y_shift - pad_y;
 
-        if (!((y_val < 0) || (y_val >= (long int)input_size_y))) {
-          if (!((x_val < 0) || (x_val >= (long int)input_size_x))) {
-            const size_t mat_in = x_val * input_size_y * input_size_z +
-                                  y_val * input_size_z + inp_z;
+        if (!((x_val < 0) || (x_val >= (long int)input_size_x))) {
+          if (!((y_val < 0) || (y_val >= (long int)input_size_y))) {
+            const size_t mat_in =
+                (out_x * stride_x + x_shift + min_out_x * stride_x - pad_x) *
+                    input_size_y * input_size_z +
+                (out_y * stride_y + y_shift + min_out_y * stride_y - pad_y) *
+                    input_size_z +
+                inp_z;
             const size_t b =
                 n * input_size_x * input_size_y * input_size_z + mat_in;
 
@@ -1074,8 +1077,9 @@ __global__ void coeffs_from_previous_layer_conv_sparse(
             float_type sup_coeff = res_sup_coeff[b];
 
             for (size_t out_z = 0; out_z < output_size_z; out_z++) {
-              const size_t mat_out = out_x * output_size_y * output_size_z +
-                                     out_y * output_size_z + out_z;
+              const size_t mat_out =
+                  (out_x + min_out_x) * output_size_y * output_size_z +
+                  (out_y + min_out_y) * output_size_z + out_z;
               const size_t a =
                   n * output_size_x * output_size_y * output_size_z + mat_out;
 
@@ -1221,29 +1225,26 @@ __global__ void csts_from_previous_layer_conv_sparse(
   const long int min_out_x = offset_x + last_x * shift_x;
   const long int min_out_y = offset_y + last_y * shift_y;
 
-  const long int max_out_x = min_out_x + length_x;
-  const long int max_out_y = min_out_y + length_y;
-
   float_type inf_cst = 0;
   float_type sup_cst = 0;
 
   float_type tmp1, tmp2;
   float_type maxRes, maxMul;
 
-  for (long int out_x = min_out_x; out_x < max_out_x; out_x++) {
-    if ((out_x < 0) || (out_x >= output_size_x)) {
+  for (long int out_x = 0; out_x < length_x; out_x++) {
+    if ((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x)) {
       continue;
     }
 
-    for (long int out_y = min_out_y; out_y < max_out_y; out_y++) {
-      if ((out_y < 0 || out_y >= output_size_y)) {
+    for (long int out_y = 0; out_y < length_y; out_y++) {
+      if ((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y)) {
         continue;
       }
 
       for (size_t out_z = 0; out_z < output_size_z; out_z++) {
         size_t mat_out = n * output_size_x * output_size_y * output_size_z +
-                         out_x * output_size_y * output_size_z +
-                         out_y * output_size_z + out_z;
+                         (out_x + min_out_x) * output_size_y * output_size_z +
+                         (out_y + min_out_y) * output_size_z + out_z;
 
         const float_type prev_inf_coeff = expr_inf_coeff[mat_out];
         const float_type prev_sup_coeff = expr_sup_coeff[mat_out];
@@ -1298,7 +1299,8 @@ __global__ void device_layer_create_sparse_exprs(
         }
 
         const size_t mat_y =
-            x_val * input_size_y * input_size_z + y_val * input_size_z + inp_z;
+            (out_x * stride_x - pad_x + x_shift) * input_size_y * input_size_z +
+            (out_y * stride_y - pad_y + y_shift) * input_size_z + inp_z;
 
         // if(out_x == 0 && out_y == 0 && out_z == 0)
         // printf("%lu ", mat_y);
