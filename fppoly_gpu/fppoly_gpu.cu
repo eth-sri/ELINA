@@ -556,6 +556,104 @@ __global__ void compute_ub_from_expr(float_type *__restrict__ ub_array,
   ub_array[n] = res_sup;
 }
 
+__global__ void compute_lb_from_expr_conv_sparse(
+    float_type *__restrict__ lb_array, const float_type *__restrict__ inf_coeff,
+    const float_type *__restrict__ sup_coeff,
+    const float_type *__restrict__ inf_cst,
+    const float_type *__restrict__ input_inf,
+    const float_type *__restrict__ input_sup,
+    const size_t num_out_neurons_last_layer, const size_t output_size_x,
+    const size_t output_size_y, const size_t output_size_z, long int offset_x,
+    long int offset_y, long int length_x, long int length_y, long int shift_x,
+    long int shift_y) {
+  const size_t last_x = blockIdx.x;
+  const size_t last_y = blockIdx.y;
+  const size_t last_z = blockIdx.z;
+
+  const size_t n = last_x * gridDim.y * gridDim.z + last_y * gridDim.z + last_z;
+
+  const long int min_out_x = offset_x + last_x * shift_x;
+  const long int min_out_y = offset_y + last_y * shift_y;
+
+  float_type res_inf = inf_cst[n];
+
+  float_type tmp1, tmp2;
+
+  for (long int out_x = 0; out_x < length_x; out_x++) {
+    if ((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x)) {
+      continue;
+    }
+
+    for (long int out_y = 0; out_y < length_y; out_y++) {
+      if ((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y)) {
+        continue;
+      }
+
+      for (size_t out_z = 0; out_z < output_size_z; out_z++) {
+        size_t i = (out_x + min_out_x) * output_size_y * output_size_z +
+                   (out_y + min_out_y) * output_size_z + out_z;
+        size_t mat_out = n * output_size_x * output_size_y * output_size_z + i;
+
+        elina_double_interval_mul(&tmp1, &tmp2, inf_coeff[mat_out],
+                                  sup_coeff[mat_out], input_inf[i],
+                                  input_sup[i]);
+        res_inf = res_inf + tmp1;
+      }
+    }
+  }
+
+  lb_array[n] = res_inf;
+}
+
+__global__ void compute_ub_from_expr_conv_sparse(
+    float_type *__restrict__ ub_array, const float_type *__restrict__ inf_coeff,
+    const float_type *__restrict__ sup_coeff,
+    const float_type *__restrict__ sup_cst,
+    const float_type *__restrict__ input_inf,
+    const float_type *__restrict__ input_sup,
+    const size_t num_out_neurons_last_layer, const size_t output_size_x,
+    const size_t output_size_y, const size_t output_size_z, long int offset_x,
+    long int offset_y, long int length_x, long int length_y, long int shift_x,
+    long int shift_y) {
+  const size_t last_x = blockIdx.x;
+  const size_t last_y = blockIdx.y;
+  const size_t last_z = blockIdx.z;
+
+  const size_t n = last_x * gridDim.y * gridDim.z + last_y * gridDim.z + last_z;
+
+  const long int min_out_x = offset_x + last_x * shift_x;
+  const long int min_out_y = offset_y + last_y * shift_y;
+
+  float_type res_sup = sup_cst[n];
+
+  float_type tmp1, tmp2;
+
+  for (long int out_x = 0; out_x < length_x; out_x++) {
+    if ((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x)) {
+      continue;
+    }
+
+    for (long int out_y = 0; out_y < length_y; out_y++) {
+      if ((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y)) {
+        continue;
+      }
+
+      for (size_t out_z = 0; out_z < output_size_z; out_z++) {
+        size_t i = (out_x + min_out_x) * output_size_y * output_size_z +
+                   (out_y + min_out_y) * output_size_z + out_z;
+        size_t mat_out = n * output_size_x * output_size_y * output_size_z + i;
+
+        elina_double_interval_mul(&tmp1, &tmp2, inf_coeff[mat_out],
+                                  sup_coeff[mat_out], input_inf[i],
+                                  input_sup[i]);
+        res_sup = res_sup + tmp2;
+      }
+    }
+  }
+
+  ub_array[n] = res_sup;
+}
+
 template <typename FloatType>
 __global__ void device_layer_create_dense_expr(
     float_type *__restrict__ coeffs, float_type *__restrict__ csts,
@@ -890,6 +988,212 @@ __global__ void uexpr_replace_relu_bounds(
 
       atomicAdd(&inf_cst[n], -tmp2);
       atomicAdd(&sup_cst[n], tmp2);
+    }
+  }
+}
+
+// TODO: Assess if non-determinism introduced by atomics is problematic for
+// analyzer.
+__global__ void lexpr_replace_relu_bounds_conv_sparse(
+    float_type *__restrict__ inf_coeff, float_type *__restrict__ sup_coeff,
+    float_type *__restrict__ inf_cst, float_type *__restrict__ sup_cst,
+    const float_type *__restrict__ lb_array,
+    const float_type *__restrict__ ub_array,
+    const size_t num_out_neurons_last_layer, const size_t output_size_x,
+    const size_t output_size_y, const size_t output_size_z, long int offset_x,
+    long int offset_y, long int length_x, long int length_y, long int shift_x,
+    long int shift_y) {
+  const size_t last_x = blockIdx.x;
+  const size_t last_y = blockIdx.y;
+  const size_t last_z = blockIdx.z;
+
+  const size_t n = last_x * gridDim.y * gridDim.z + last_y * gridDim.z + last_z;
+
+  const long int min_out_x = offset_x + last_x * shift_x;
+  const long int min_out_y = offset_y + last_y * shift_y;
+
+  for (long int out_x = 0; out_x < length_x; out_x++) {
+    if ((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x)) {
+      continue;
+    }
+
+    for (long int out_y = 0; out_y < length_y; out_y++) {
+      if ((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y)) {
+        continue;
+      }
+
+      for (size_t out_z = 0; out_z < output_size_z; out_z++) {
+        size_t i = (out_x + min_out_x) * output_size_y * output_size_z +
+                   (out_y + min_out_y) * output_size_z + out_z;
+
+        size_t a = n * output_size_x * output_size_y * output_size_z + i;
+
+        const float_type lb = lb_array[i];
+        const float_type ub = ub_array[i];
+        const float_type width = ub + lb;
+        const float_type lambda_inf = -ub / width;
+        const float_type lambda_sup = ub / width;
+
+        const float_type old_inf_coeff = inf_coeff[a];
+        const float_type old_sup_coeff = sup_coeff[a];
+
+        if ((old_sup_coeff == 0) && (old_inf_coeff == 0)) {
+          inf_coeff[a] = 0.0;
+          sup_coeff[a] = 0.0;
+
+          continue;
+        } else if (ub <= 0) {
+          inf_coeff[a] = 0.0;
+          sup_coeff[a] = 0.0;
+
+          continue;
+        } else if (lb < 0) {
+          inf_coeff[a] = old_inf_coeff;
+          sup_coeff[a] = old_sup_coeff;
+        } else if (old_sup_coeff < 0) {
+          const float_type mu_inf = lambda_inf * lb;
+          const float_type mu_sup = lambda_sup * lb;
+          elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a],
+                                               lambda_inf, lambda_sup,
+                                               old_inf_coeff, old_sup_coeff);
+          float_type tmp1, tmp2;
+          elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup,
+                                              old_inf_coeff, old_sup_coeff);
+
+          atomicAdd(&inf_cst[n], tmp1 + min_denormal);
+          atomicAdd(&sup_cst[n], tmp2 + min_denormal);
+        } else if (old_inf_coeff < 0) {
+          const float_type area1 = lb * ub;
+          const float_type area2 = 0.5 * ub * width;
+          const float_type area3 = 0.5 * lb * width;
+
+          if ((area1 < area2) && (area1 < area3)) {
+            elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a],
+                                                 lambda_inf, lambda_sup,
+                                                 old_inf_coeff, old_sup_coeff);
+          } else if ((area2 < area1) && (area2 < area3)) {
+            inf_coeff[a] = 0.0;
+            sup_coeff[a] = 0.0;
+          } else {
+            inf_coeff[a] = old_inf_coeff;
+            sup_coeff[a] = old_sup_coeff;
+          }
+        } else {
+          inf_coeff[a] = 0.0;
+          sup_coeff[a] = 0.0;
+          float_type tmp1, tmp2;
+          elina_double_interval_mul(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff,
+                                    0, ub);
+
+          inf_cst[n] += tmp1;
+          sup_cst[n] -= tmp1;
+
+          // atomicAdd(&inf_cst[n], tmp1);
+          // atomicAdd(&sup_cst[n], -tmp1);
+        }
+      }
+    }
+  }
+}
+
+__global__ void uexpr_replace_relu_bounds_conv_sparse(
+    float_type *__restrict__ inf_coeff, float_type *__restrict__ sup_coeff,
+    float_type *__restrict__ inf_cst, float_type *__restrict__ sup_cst,
+    const float_type *__restrict__ lb_array,
+    const float_type *__restrict__ ub_array,
+    const size_t num_out_neurons_last_layer, const size_t output_size_x,
+    const size_t output_size_y, const size_t output_size_z, long int offset_x,
+    long int offset_y, long int length_x, long int length_y, long int shift_x,
+    long int shift_y) {
+  const size_t last_x = blockIdx.x;
+  const size_t last_y = blockIdx.y;
+  const size_t last_z = blockIdx.z;
+
+  const size_t n = last_x * gridDim.y * gridDim.z + last_y * gridDim.z + last_z;
+
+  const long int min_out_x = offset_x + last_x * shift_x;
+  const long int min_out_y = offset_y + last_y * shift_y;
+
+  for (long int out_x = 0; out_x < length_x; out_x++) {
+    if ((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x)) {
+      continue;
+    }
+
+    for (long int out_y = 0; out_y < length_y; out_y++) {
+      if ((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y)) {
+        continue;
+      }
+
+      for (size_t out_z = 0; out_z < output_size_z; out_z++) {
+        size_t i = (out_x + min_out_x) * output_size_y * output_size_z +
+                   (out_y + min_out_y) * output_size_z + out_z;
+
+        size_t a = n * output_size_x * output_size_y * output_size_z + i;
+
+        const float_type lb = lb_array[i];
+        const float_type ub = ub_array[i];
+        const float_type width = ub + lb;
+        const float_type lambda_inf = -ub / width;
+        const float_type lambda_sup = ub / width;
+
+        const float_type old_inf_coeff = inf_coeff[a];
+        const float_type old_sup_coeff = sup_coeff[a];
+
+        if ((old_sup_coeff == 0) && (old_inf_coeff == 0)) {
+          inf_coeff[a] = 0.0;
+          sup_coeff[a] = 0.0;
+
+          continue;
+        } else if (ub <= 0) {
+          inf_coeff[a] = 0.0;
+          sup_coeff[a] = 0.0;
+
+          continue;
+        } else if (lb < 0) {
+          inf_coeff[a] = old_inf_coeff;
+          sup_coeff[a] = old_sup_coeff;
+        } else if (old_inf_coeff < 0) {
+          const float_type mu_inf = lambda_inf * lb;
+          const float_type mu_sup = lambda_sup * lb;
+          elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a],
+                                               lambda_inf, lambda_sup,
+                                               old_inf_coeff, old_sup_coeff);
+          float_type tmp1, tmp2;
+          elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup,
+                                              old_inf_coeff, old_sup_coeff);
+
+          atomicAdd(&inf_cst[n], tmp1 + min_denormal);
+          atomicAdd(&sup_cst[n], tmp2 + min_denormal);
+        } else if (old_sup_coeff < 0) {
+          const float_type area1 = lb * ub;
+          const float_type area2 = 0.5 * ub * width;
+          const float_type area3 = 0.5 * lb * width;
+
+          if ((area1 < area2) && (area1 < area3)) {
+            elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a],
+                                                 lambda_inf, lambda_sup,
+                                                 old_inf_coeff, old_sup_coeff);
+          } else if ((area2 < area1) && (area2 < area3)) {
+            inf_coeff[a] = 0.0;
+            sup_coeff[a] = 0.0;
+          } else {
+            inf_coeff[a] = old_inf_coeff;
+            sup_coeff[a] = old_sup_coeff;
+          }
+        } else {
+          inf_coeff[a] = 0.0;
+          sup_coeff[a] = 0.0;
+          float_type tmp1, tmp2;
+          elina_double_interval_mul(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff,
+                                    0, ub);
+
+          inf_cst[n] -= tmp2;
+          sup_cst[n] += tmp2;
+
+          // atomicAdd(&inf_cst[n], -tmp2);
+          // atomicAdd(&sup_cst[n], tmp2);
+        }
+      }
     }
   }
 }
@@ -1356,6 +1660,11 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
                                      sizeof(float_type));
     cudaMalloc((void **)&csts, num_out_neurons_last_layer * sizeof(float_type));
 
+    cudaMemset(coeffs, 0,
+               num_out_neurons_last_layer * num_in_neurons_last_layer *
+                   sizeof(float_type));
+    cudaMemset(csts, 0, num_out_neurons_last_layer * sizeof(float_type));
+
     sparse_to_dense(fp->layers[layerno], coeffs, csts);
 
     std::cout << "INITIAL" << std::endl;
@@ -1569,14 +1878,35 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
     float_type *aux_ub_array = fp->layers[k]->ub_array;
 
     if (fp->layers[k]->activation == RELU) {
-      lexpr_replace_relu_bounds<<<num_blocks_relu, num_threads>>>(
-          linf_coeff, lsup_coeff, linf_cst, lsup_cst, aux_lb_array,
-          aux_ub_array, num_out_neurons_last_layer,
-          num_out_neurons_current_layer);
-      uexpr_replace_relu_bounds<<<num_blocks_relu, num_threads>>>(
-          uinf_coeff, usup_coeff, uinf_cst, usup_cst, aux_lb_array,
-          aux_ub_array, num_out_neurons_last_layer,
-          num_out_neurons_current_layer);
+      if (fp->layers[layerno]->type == CONV) {
+        lexpr_replace_relu_bounds_conv_sparse<<<
+            dim3(fp->layers[layerno]->output_size[0],
+                 fp->layers[layerno]->output_size[1],
+                 fp->layers[layerno]->output_size[2]),
+            1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, aux_lb_array,
+                 aux_ub_array, num_out_neurons_last_layer,
+                 fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+                 fp->layers[k]->output_size[2], offset_x, offset_y, length_x,
+                 length_y, shift_x, shift_y);
+        uexpr_replace_relu_bounds_conv_sparse<<<
+            dim3(fp->layers[layerno]->output_size[0],
+                 fp->layers[layerno]->output_size[1],
+                 fp->layers[layerno]->output_size[2]),
+            1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, aux_lb_array,
+                 aux_ub_array, num_out_neurons_last_layer,
+                 fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+                 fp->layers[k]->output_size[2], offset_x, offset_y, length_x,
+                 length_y, shift_x, shift_y);
+      } else {
+        lexpr_replace_relu_bounds<<<num_blocks_relu, num_threads>>>(
+            linf_coeff, lsup_coeff, linf_cst, lsup_cst, aux_lb_array,
+            aux_ub_array, num_out_neurons_last_layer,
+            num_out_neurons_current_layer);
+        uexpr_replace_relu_bounds<<<num_blocks_relu, num_threads>>>(
+            uinf_coeff, usup_coeff, uinf_cst, usup_cst, aux_lb_array,
+            aux_ub_array, num_out_neurons_last_layer,
+            num_out_neurons_current_layer);
+      }
     }
 
     cudaMalloc((void **)&linf_coeff_tmp, num_out_neurons_last_layer *
@@ -1834,12 +2164,33 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
     cudaFree(usup_coeff_tmp);
   }
 
-  compute_lb_from_expr<<<num_out_neurons_last_layer, 1>>>(
-      lb_array, linf_coeff, lsup_coeff, linf_cst, fp->input_inf, fp->input_sup,
-      num_out_neurons_last_layer, num_in_neurons_first_layer);
-  compute_ub_from_expr<<<num_out_neurons_last_layer, 1>>>(
-      ub_array, uinf_coeff, usup_coeff, usup_cst, fp->input_inf, fp->input_sup,
-      num_out_neurons_last_layer, num_in_neurons_first_layer);
+  if (fp->layers[layerno]->type == CONV) {
+    compute_lb_from_expr_conv_sparse<<<dim3(
+                                           fp->layers[layerno]->output_size[0],
+                                           fp->layers[layerno]->output_size[1],
+                                           fp->layers[layerno]->output_size[2]),
+                                       1>>>(
+        lb_array, linf_coeff, lsup_coeff, linf_cst, fp->input_inf,
+        fp->input_sup, num_out_neurons_last_layer, fp->layers[0]->input_size[0],
+        fp->layers[0]->input_size[1], fp->layers[0]->input_size[2], offset_x,
+        offset_y, length_x, length_y, shift_x, shift_y);
+    compute_ub_from_expr_conv_sparse<<<dim3(
+                                           fp->layers[layerno]->output_size[0],
+                                           fp->layers[layerno]->output_size[1],
+                                           fp->layers[layerno]->output_size[2]),
+                                       1>>>(
+        ub_array, uinf_coeff, usup_coeff, usup_cst, fp->input_inf,
+        fp->input_sup, num_out_neurons_last_layer, fp->layers[0]->input_size[0],
+        fp->layers[0]->input_size[1], fp->layers[0]->input_size[2], offset_x,
+        offset_y, length_x, length_y, shift_x, shift_y);
+  } else {
+    compute_lb_from_expr<<<num_out_neurons_last_layer, 1>>>(
+        lb_array, linf_coeff, lsup_coeff, linf_cst, fp->input_inf,
+        fp->input_sup, num_out_neurons_last_layer, num_in_neurons_first_layer);
+    compute_ub_from_expr<<<num_out_neurons_last_layer, 1>>>(
+        ub_array, uinf_coeff, usup_coeff, usup_cst, fp->input_inf,
+        fp->input_sup, num_out_neurons_last_layer, num_in_neurons_first_layer);
+  }
 
   cudaFree(linf_coeff);
   cudaFree(lsup_coeff);
