@@ -235,15 +235,15 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 				dis_map2[j]++;
 			}
 			else{
-				unsigned short int res = calculate_common_comp(cl1,cl2,n);
-				if(res==cl1->size){
+				unsigned short int common_comp = calculate_common_comp(cl1,cl2,n);
+				if(common_comp==cl1->size){
 					dis_map2[j]++;
 					flag = 1;
 				}
-				else if(res==cl2->size){
+				else if(common_comp==cl2->size){
 					dis_map1[i]++;
 				}
-				else if(!res){
+				else if(!common_comp){
 					dis_map1[i]++;
 					dis_map2[j]++;
 				}
