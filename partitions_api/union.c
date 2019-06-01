@@ -204,11 +204,15 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 	}
     char * singleton_map = (char *)calloc(n,sizeof(char));
     comp_list_t *cl2 = acl2->head;
+    unsigned short int index2 = 0;
+    unsigned short int * singleton_index2 = (unsigned short int*)calloc(n,sizeof(unsigned short int));
     while(cl2!=NULL){
         if(cl2->size==1){
             unsigned short int num = cl2->head->num;
             singleton_map[num] = 1;
+            singleton_index2[num] = index2;
         }
+        index2++;
         cl2 = cl2->next;
     }
 	unsigned short int * dis_map1 = (unsigned short int *)calloc(s1,sizeof(unsigned short int));
@@ -216,15 +220,21 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 	unsigned short int tnc = s1+s2;
    
 	char *overlap_map = (char *)calloc(tnc*tnc,sizeof(char));
+        char * is_common_singleton1 = (char *)calloc(s1,sizeof(char));
 	comp_list_t * cl1 = acl1->head;
     array_comp_list_t *res = create_array_comp_list();
-    unsigned short int num_singleton = 0;
 	for(unsigned short int i = 0; i < s1; i++){
         if(cl1->size==1){
             unsigned short int num = cl1->head->num;
             if(singleton_map[num]==1){
                 insert_comp_list(res,copy_comp_list(cl1));
-                num_singleton++;
+                is_common_singleton1[i] = 1;
+                unsigned short int index2 = singleton_index2[num];
+                for(unsigned short int j=0; j < s2; j++){
+                      if(j!=index2){
+                         dis_map2[j]++;
+                      }
+                }
                 cl1 = cl1->next;
                 continue;
             }
@@ -239,7 +249,7 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 			}
 			else{
 				unsigned short int common_comp = calculate_common_comp(cl1,cl2,n);
-               
+                                
 				if(common_comp==cl1->size){
 					dis_map2[j]++;
 					flag = 1;
@@ -282,8 +292,7 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 	
 	cl1 = acl1->head;
 	for(unsigned short int i = 0; i < s1; i++){
-
-		if(dis_map1[i]==(s2-num_singleton)){
+		if(!is_common_singleton1[i] && (dis_map1[i]==s2)){
 			//comp_list_t *dst = create_comp_list();
 			comp_list_t *dst = copy_comp_list(cl1);
 			insert_comp_list(res,dst);
@@ -293,8 +302,8 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 	
 	cl2 = acl2->head;
 	for(unsigned short int i = 0; i < s2; i++){
-
-		if(dis_map2[i]==s1){
+                
+		if( (dis_map2[i]==s1)){
 			//comp_list_t *dst = create_comp_list();
 			comp_list_t *dst = copy_comp_list(cl2);
 			insert_comp_list(res,dst);
@@ -302,8 +311,7 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 		cl2 = cl2->next;
 	}
 	
-	array_comp_list_t * acl = extract_comps(overlap_map,tnc);
-   
+	array_comp_list_t * acl = extract_comps(overlap_map,tnc); 
 	comp_list_t *cl = acl->head;
 	for(unsigned short int i = 0; i < acl->size; i++){
 		comp_t *c = cl->head; 
@@ -332,9 +340,9 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 	free(overlap_map);
 	free(dis_map1);
 	free(dis_map2);
-	
+	free(is_common_singleton1);
 	free_array_comp_list(acl);
     free(singleton_map);
-    
+        free(singleton_index2); 
 	return res;
 }
