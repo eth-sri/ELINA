@@ -202,64 +202,76 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 	if(!s2){
 		return copy_array_comp_list(acl1);
 	}
-	unsigned short int * dis_map1 = (unsigned short int *)calloc(s1,sizeof(unsigned short int));
+        char *singleton_map = (char *)calloc(n, sizeof(char));
+        comp_list_t *cl2 = acl2->head;
+        while (cl2 != NULL) {
+          if (cl2->size == 1) {
+            unsigned short int num = cl2->head->num;
+            singleton_map[num] = 1;
+          }
+          cl2 = cl2->next;
+        }
+        unsigned short int * dis_map1 = (unsigned short int *)calloc(s1,sizeof(unsigned short int));
 	unsigned short int * dis_map2 = (unsigned short int *)calloc(s2,sizeof(unsigned short int));
 	unsigned short int tnc = s1+s2;
 	
 	char *overlap_map = (char *)calloc(tnc*tnc,sizeof(char));
 	comp_list_t * cl1 = acl1->head;
-
+        array_comp_list_t *res = create_array_comp_list();
         for(unsigned short int i = 0; i < s1; i++){
-		comp_list_t *cl2 = acl2->head;
-		char flag = 0;
-		for(unsigned short int j = 0; j < s2; j++){
-			if(flag){
-				dis_map1[i]++;
-				dis_map2[j]++;
-			}
-			else{
-				unsigned short int res = calculate_common_comp(cl1,cl2,n);
-				if(res==cl1->size){
-					dis_map2[j]++;
-					flag = 1;
-				}
-				else if(res==cl2->size){
-					dis_map1[i]++;
-				}
-				else if(!res){
-					dis_map1[i]++;
-					dis_map2[j]++;
-				}
-				else{
-					overlap_map[tnc*i + (s1+j)] = 1;
-					overlap_map[tnc*(s1+j) + i] = 1;
-				}
-			}
-			/*else if(is_included(cl1,cl2,n)){
-				dis_map2[j]++;
-				flag = 1;
-				//continue;
-			}
-			else if(is_included(cl2,cl1,n)){
-				dis_map1[i]++;
-				//continue;
-			}
-			else if(is_disjoint(cl1,cl2,n)){
-				dis_map1[i]++;
-				dis_map2[j]++;
-				//continue;
-			}
-			else{
-				overlap_map[tnc*i + (s1+j)] = 1;
-				overlap_map[tnc*(s1+j) + i] = 1;
-			}*/
-			cl2 = cl2->next;
+          if (cl1->size == 1) {
+            unsigned short int num = cl1->head->num;
+            if (singleton_map[num] == 1) {
+              insert_comp_list(res, copy_comp_list(cl1));
+            }
+            cl1 = cl1->next;
+            continue;
+          }
+          cl2 = acl2->head;
+          char flag = 0;
+          for (unsigned short int j = 0; j < s2; j++) {
+            if (flag) {
+              dis_map1[i]++;
+              dis_map2[j]++;
+            } else {
+              unsigned short int res = calculate_common_comp(cl1, cl2, n);
+              if (res == cl1->size) {
+                dis_map2[j]++;
+                flag = 1;
+              } else if (res == cl2->size) {
+                dis_map1[i]++;
+              } else if (!res) {
+                dis_map1[i]++;
+                dis_map2[j]++;
+              } else {
+                overlap_map[tnc * i + (s1 + j)] = 1;
+                overlap_map[tnc * (s1 + j) + i] = 1;
+              }
+            }
+            /*else if(is_included(cl1,cl2,n)){
+                    dis_map2[j]++;
+                    flag = 1;
+                    //continue;
+            }
+            else if(is_included(cl2,cl1,n)){
+                    dis_map1[i]++;
+                    //continue;
+            }
+            else if(is_disjoint(cl1,cl2,n)){
+                    dis_map1[i]++;
+                    dis_map2[j]++;
+                    //continue;
+            }
+            else{
+                    overlap_map[tnc*i + (s1+j)] = 1;
+                    overlap_map[tnc*(s1+j) + i] = 1;
+            }*/
+            cl2 = cl2->next;
 		}
 		cl1 = cl1->next;
 	}
-	
-	array_comp_list_t *res = create_array_comp_list();
-	cl1 = acl1->head;
+
+        cl1 = acl1->head;
 	for(unsigned short int i = 0; i < s1; i++){
 		if(dis_map1[i]==s2){
 			//comp_list_t *dst = create_comp_list();
@@ -268,9 +280,9 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 		}
 		cl1 = cl1->next;
 	}
-	
-	comp_list_t *cl2 = acl2->head;
-	for(unsigned short int i = 0; i < s2; i++){
+
+        cl2 = acl2->head;
+        for(unsigned short int i = 0; i < s2; i++){
 		if(dis_map2[i]==s1){
 			//comp_list_t *dst = create_comp_list();
 			comp_list_t *dst = copy_comp_list(cl2);
@@ -311,5 +323,6 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 	free(dis_map2);
 	
 	free_array_comp_list(acl);
-	return res;
+        free(singleton_map);
+        return res;
 }
