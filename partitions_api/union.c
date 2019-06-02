@@ -224,6 +224,7 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
         char *is_common_singleton1 = (char *)calloc(s1, sizeof(char));
         comp_list_t * cl1 = acl1->head;
         array_comp_list_t *res = create_array_comp_list();
+        char does_overlap = 0;
         for(unsigned short int i = 0; i < s1; i++){
           if (cl1->size == 1) {
             unsigned short int num = cl1->head->num;
@@ -261,6 +262,7 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
               } else {
                 overlap_map[tnc * i + (s1 + j)] = 1;
                 overlap_map[tnc * (s1 + j) + i] = 1;
+                does_overlap = 1;
               }
             }
             /*else if(is_included(cl1,cl2,n)){
@@ -306,38 +308,42 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
           }
                 cl2 = cl2->next;
 	}
+        if (does_overlap) {
+          array_comp_list_t *acl = extract_comps(overlap_map, tnc);
+          comp_list_t *cl = acl->head;
+          for (unsigned short int i = 0; i < acl->size; i++) {
+            comp_t *c = cl->head;
+            unsigned short int s = cl->size;
+            unsigned short int *om1 =
+                (unsigned short int *)calloc(s1, sizeof(unsigned short int));
+            unsigned short int *om2 =
+                (unsigned short int *)calloc(s2, sizeof(unsigned short int));
+            for (unsigned short int j = 0; j < s; j++) {
+              unsigned short int num = c->num;
+              if (num >= s1) {
+                om2[num - s1] = 1;
+              } else {
+                om1[num] = 1;
+              }
+              c = c->next;
+            }
+            comp_list_t *res1 =
+                comp_array_union_direct(acl1, acl2, om1, om2, n);
 
-        array_comp_list_t *acl = extract_comps(overlap_map, tnc);
-        comp_list_t *cl = acl->head;
-	for(unsigned short int i = 0; i < acl->size; i++){
-		comp_t *c = cl->head; 
-		unsigned short int s = cl->size;
-		unsigned short int * om1 = (unsigned short int *)calloc(s1,sizeof(unsigned short int));
-		unsigned short int * om2 = (unsigned short int *)calloc(s2,sizeof(unsigned short int));
-		for(unsigned short int j = 0; j < s; j++){
-			unsigned short int num = c->num;
-			if(num>=s1){
-				om2[num-s1] = 1;
-			}
-			else{
-				om1[num] = 1;
-			}
-			c = c->next;
-		}
-		comp_list_t * res1 = comp_array_union_direct(acl1,acl2,om1,om2,n);
-		
-		//comp_list_t *dst = create_comp_list();
-		//comp_list_t * dst = copy_comp_list(res1);
-		free(om1);
-		free(om2);
-		insert_comp_list(res,res1);
-		cl = cl->next;	
-	}
-	free(overlap_map);
+            // comp_list_t *dst = create_comp_list();
+            // comp_list_t * dst = copy_comp_list(res1);
+            free(om1);
+            free(om2);
+            insert_comp_list(res, res1);
+            cl = cl->next;
+          }
+          free_array_comp_list(acl);
+        }
+        free(overlap_map);
 	free(dis_map1);
 	free(dis_map2);
         free(is_common_singleton1);
-        free_array_comp_list(acl);
+
         free(singleton_map);
         free(singleton_index2);
         return res;
