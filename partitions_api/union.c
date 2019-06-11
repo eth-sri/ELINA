@@ -254,7 +254,7 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 			return singleton_union_array_comp_list(acl1,acl2,n);
 		}
 	}
-	
+	cl1 = acl1->head;
 	for(unsigned short int i = 0; i < s1; i++){
 		comp_list_t *cl2 = acl2->head;
 		char flag = 0;
