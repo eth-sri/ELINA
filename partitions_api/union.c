@@ -203,11 +203,11 @@ array_comp_list_t * singleton_union_array_comp_list(array_comp_list_t *acl1, arr
 	}
 
 	comp_list_t * cl2 = acl2->head;
-        while (cl1 != NULL) {
-          map[cl2->head->num] = 1;
-          cl2 = cl2->next;
-        }
-        array_comp_list_t *res = create_array_comp_list();
+	while(cl2!=NULL){
+		map[cl2->head->num] = 1;
+		cl2 = cl2->next;
+	}
+	array_comp_list_t *res = create_array_comp_list();
 	for(i=0; i < n;i++){
 		if(map[i]){
 			comp_list_t * cl = create_comp_list();
