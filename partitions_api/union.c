@@ -203,7 +203,7 @@ array_comp_list_t * singleton_union_array_comp_list(array_comp_list_t *acl1, arr
 	}
 
 	comp_list_t * cl2 = acl2->head;
-	while(cl1!=NULL){
+	while(cl2!=NULL){
 		map[cl2->head->num] = 1;
 		cl2 = cl2->next;
 	}
