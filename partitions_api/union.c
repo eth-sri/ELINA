@@ -193,6 +193,32 @@ unsigned short int calculate_common_comp(comp_list_t *cl1, comp_list_t *cl2, uns
 	return res;
 }
 
+array_comp_list_t * singleton_union_array_comp_list(array_comp_list_t *acl1, array_comp_list_t *acl2, unsigned short int n){
+	char * map = (char *)calloc(n,sizeof(char));
+	unsigned short int i;
+	comp_list_t * cl1 = acl1->head;
+	while(cl1!=NULL){
+		map[cl1->head->num] = 1;
+		cl1 = cl1->next;
+	}
+
+	comp_list_t * cl2 = acl2->head;
+	while(cl1!=NULL){
+		map[cl2->head->num] = 1;
+		cl2 = cl2->next;
+	}
+	array_comp_list_t *res = create_array_comp_list();
+	for(i=0; i < n;i++){
+		if(map[i]){
+			comp_list_t * cl = create_comp_list();
+			insert_comp(cl,i);
+			insert_comp_list(res,cl);
+		}
+	}
+	free(map);
+	return res;
+}
+
 array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_list_t *acl2, unsigned short int n){
 	unsigned short int s1 = acl1->size;
 	if(!s1){
@@ -202,46 +228,35 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 	if(!s2){
 		return copy_array_comp_list(acl1);
 	}
-    char * singleton_map = (char *)calloc(n,sizeof(char));
-    comp_list_t *cl2 = acl2->head;
-    unsigned short int index2 = 0;
-    unsigned short int * singleton_index2 = (unsigned short int*)calloc(n,sizeof(unsigned short int));
-    while(cl2!=NULL){
-        if(cl2->size==1){
-            unsigned short int num = cl2->head->num;
-            singleton_map[num] = 1;
-            singleton_index2[num] = index2;
-        }
-        index2++;
-        cl2 = cl2->next;
-    }
 	unsigned short int * dis_map1 = (unsigned short int *)calloc(s1,sizeof(unsigned short int));
 	unsigned short int * dis_map2 = (unsigned short int *)calloc(s2,sizeof(unsigned short int));
 	unsigned short int tnc = s1+s2;
-   
+	
 	char *overlap_map = (char *)calloc(tnc*tnc,sizeof(char));
-        char * is_common_singleton1 = (char *)calloc(s1,sizeof(char));
 	comp_list_t * cl1 = acl1->head;
-    array_comp_list_t *res = create_array_comp_list();
-    char does_overlap = 0;
+       	char is_singleton1 = 1;
+	char is_singleton2 = 1;
+	while(cl1!=NULL){
+		if(cl1->size>1){
+			is_singleton1 = 0;
+		}
+		cl1 = cl1->next;
+	}
+	if(is_singleton1){
+		comp_list_t * cl2 = acl2->head;
+		while(cl2!=NULL){
+			if(cl2->size>1){
+				is_singleton2 = 0;
+			}
+			cl2 = cl2->next;
+		}
+		if(is_singleton2){
+			return singleton_union_array_comp_list(acl1,acl2,n);
+		}
+	}
+	
 	for(unsigned short int i = 0; i < s1; i++){
-        if(cl1->size==1){
-            unsigned short int num = cl1->head->num;
-            if(singleton_map[num]==1){
-                insert_comp_list(res,copy_comp_list(cl1));
-                is_common_singleton1[i] = 1;
-                unsigned short int index2 = singleton_index2[num];
-                for(unsigned short int j=0; j < s2; j++){
-                      if(j!=index2){
-                         dis_map2[j]++;
-                      }
-                }
-                cl1 = cl1->next;
-                continue;
-            }
-           
-        }
-		cl2 = acl2->head;
+		comp_list_t *cl2 = acl2->head;
 		char flag = 0;
 		for(unsigned short int j = 0; j < s2; j++){
 			if(flag){
@@ -249,23 +264,21 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 				dis_map2[j]++;
 			}
 			else{
-				unsigned short int common_comp = calculate_common_comp(cl1,cl2,n);
-                                
-				if(common_comp==cl1->size){
+				unsigned short int res = calculate_common_comp(cl1,cl2,n);
+				if(res==cl1->size){
 					dis_map2[j]++;
 					flag = 1;
 				}
-				else if(common_comp==cl2->size){
+				else if(res==cl2->size){
 					dis_map1[i]++;
 				}
-				else if(!common_comp){
+				else if(!res){
 					dis_map1[i]++;
 					dis_map2[j]++;
 				}
 				else{
 					overlap_map[tnc*i + (s1+j)] = 1;
 					overlap_map[tnc*(s1+j) + i] = 1;
-                    does_overlap = 1;
 				}
 			}
 			/*else if(is_included(cl1,cl2,n)){
@@ -291,10 +304,10 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 		cl1 = cl1->next;
 	}
 	
-	
+	array_comp_list_t *res = create_array_comp_list();
 	cl1 = acl1->head;
 	for(unsigned short int i = 0; i < s1; i++){
-		if(!is_common_singleton1[i] && (dis_map1[i]==s2)){
+		if(dis_map1[i]==s2){
 			//comp_list_t *dst = create_comp_list();
 			comp_list_t *dst = copy_comp_list(cl1);
 			insert_comp_list(res,dst);
@@ -302,51 +315,47 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 		cl1 = cl1->next;
 	}
 	
-	cl2 = acl2->head;
+	comp_list_t *cl2 = acl2->head;
 	for(unsigned short int i = 0; i < s2; i++){
-                
-		if( (dis_map2[i]==s1)){
+		if(dis_map2[i]==s1){
 			//comp_list_t *dst = create_comp_list();
 			comp_list_t *dst = copy_comp_list(cl2);
 			insert_comp_list(res,dst);
 		}
 		cl2 = cl2->next;
 	}
-    if(does_overlap){
-        array_comp_list_t * acl = extract_comps(overlap_map,tnc);
-        comp_list_t *cl = acl->head;
-        for(unsigned short int i = 0; i < acl->size; i++){
-            comp_t *c = cl->head;
-            unsigned short int s = cl->size;
-            unsigned short int * om1 = (unsigned short int *)calloc(s1,sizeof(unsigned short int));
-            unsigned short int * om2 = (unsigned short int *)calloc(s2,sizeof(unsigned short int));
-            for(unsigned short int j = 0; j < s; j++){
-                unsigned short int num = c->num;
-                if(num>=s1){
-                    om2[num-s1] = 1;
-                }
-                else{
-                    om1[num] = 1;
-                }
-                c = c->next;
-            }
-            comp_list_t * res1 = comp_array_union_direct(acl1,acl2,om1,om2,n);
+	
+	array_comp_list_t * acl = extract_comps(overlap_map,tnc);
+	
+	comp_list_t *cl = acl->head;
+	for(unsigned short int i = 0; i < acl->size; i++){
+		comp_t *c = cl->head; 
+		unsigned short int s = cl->size;
+		unsigned short int * om1 = (unsigned short int *)calloc(s1,sizeof(unsigned short int));
+		unsigned short int * om2 = (unsigned short int *)calloc(s2,sizeof(unsigned short int));
+		for(unsigned short int j = 0; j < s; j++){
+			unsigned short int num = c->num;
+			if(num>=s1){
+				om2[num-s1] = 1;
+			}
+			else{
+				om1[num] = 1;
+			}
+			c = c->next;
+		}
+		comp_list_t * res1 = comp_array_union_direct(acl1,acl2,om1,om2,n);
 		
-            //comp_list_t *dst = create_comp_list();
-            //comp_list_t * dst = copy_comp_list(res1);
-            free(om1);
-            free(om2);
-            insert_comp_list(res,res1);
-            cl = cl->next;
-        }
-        free_array_comp_list(acl);
-    }
+		//comp_list_t *dst = create_comp_list();
+		//comp_list_t * dst = copy_comp_list(res1);
+		free(om1);
+		free(om2);
+		insert_comp_list(res,res1);
+		cl = cl->next;	
+	}
 	free(overlap_map);
 	free(dis_map1);
 	free(dis_map2);
-	free(is_common_singleton1);
 	
-    free(singleton_map);
-        free(singleton_index2); 
+	free_array_comp_list(acl);
 	return res;
 }
