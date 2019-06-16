@@ -557,7 +557,15 @@ void opt_poly_widening_gen(elina_manager_t *man, opt_pk_array_t **out, opt_pk_ar
                   poly[k1]->C->nbrows = counter[k1];
                   opt_poly_chernikova(man, poly[k1], "widening result");
                   if (opk->exn) {
-                    opt_poly_set_top(opk, poly[k1]);
+                    comp_list_t *tmp = cl;
+                    cl = cl->next;
+                    remove_comp_list(acl, tmp);
+                    unsigned short int k2;
+                    for (k2 = k1; k2 < bound - 1; k2++) {
+                      poly[k2] = poly[k2 + 1];
+                    }
+                    opt_poly_clear(oak);
+                    bound--;
                     opk->exn = ELINA_EXC_NONE;
 			}
 			else{
