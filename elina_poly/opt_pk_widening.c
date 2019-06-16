@@ -566,6 +566,7 @@ void opt_poly_widening_gen(elina_manager_t *man, opt_pk_array_t **out, opt_pk_ar
 				}
 				opt_poly_clear(oak);
 				bound--;
+				opk->exn = ELINA_EXC_NONE;
 			}
 			else{
 				k1++;
