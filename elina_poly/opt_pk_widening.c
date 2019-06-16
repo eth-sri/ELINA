@@ -539,6 +539,7 @@ void opt_poly_widening_gen(elina_manager_t *man, opt_pk_array_t **out, opt_pk_ar
 		opt_poly_clear(tmp[k]);
 	}
 	unsigned short int k1=0;
+
 	unsigned short int bound = num_comp;
 	for(k=0; k < num_comp; k++){
 		opt_pk_t *oak = poly[k1];
@@ -554,7 +555,7 @@ void opt_poly_widening_gen(elina_manager_t *man, opt_pk_array_t **out, opt_pk_ar
 			bound--;
 		}
 		else{
-			poly[k1]->C->nbrows = counter[k1];
+			poly[k1]->C->nbrows = counter[k];
 			opt_poly_chernikova(man,poly[k1],"widening result");
 			if(opk->exn){
 				comp_list_t * tmp = cl;
