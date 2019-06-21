@@ -1435,8 +1435,8 @@ static inline zonotope_aff_t * zonotope_aff_join_constrained6(zonotope_internal_
 
         elina_scalar_sub(c0,dmax,dmin, ELINA_SCALAR_DOUBLE);
 	elina_scalar_div_2(c0, c0);
-        res->c_inf = c0->val.dbl;
-        res->c_sup = c0->val.dbl; 
+	res->c_inf = -c0->val.dbl;
+	res->c_sup = c0->val.dbl; 
 
 	if (elina_scalar_cmp(c1->inf,c2->inf) < 0) {
 	    elina_scalar_set(min, c1->inf);
