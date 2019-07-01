@@ -127,7 +127,7 @@ elina_manager_t* zonotope_manager_alloc(void)
 	funptr[ELINA_FUNID_MEET_LINCONS_ARRAY] = &zonotope_meet_lincons_array; /*  */
 	//funptr[ELINA_FUNID_MEET_TCONS_ARRAY] = &zonotope_meet_tcons_array; /*  */
 	/* 2.Join */
-	//funptr[ELINA_FUNID_JOIN] = &zonotope_join;
+	funptr[ELINA_FUNID_JOIN] = &zonotope_join;
 	//funptr[ELINA_FUNID_JOIN_ARRAY] = &zonotope_join_array;
 
 	//funptr[ELINA_FUNID_ADD_RAY_ARRAY] = &zonotope_add_ray_array;
