@@ -211,8 +211,8 @@ static zonotope_aff_t* zonotope_aff_alloc_init(zonotope_internal_t *pr)
     a->end = NULL;
     a->l = 0;
     a->pby = 0;
-    a->itv_inf = INFINITY;
-    a->itv_sup = INFINITY;
+    a->itv_inf = 0;
+    a->itv_sup = 0;
     return a;
 }
 
