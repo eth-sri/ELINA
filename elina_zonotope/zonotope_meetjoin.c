@@ -290,6 +290,8 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
 			res->paf[i] = zonotope_aff_alloc_init(pr);
 			res->paf[i]->c_inf = res->box_inf[i];
 			res->paf[i]->c_sup = res->box_sup[i];
+			res->paf[i]->itv_inf = INFINITY;
+			res->paf[i]->itv_sup = INFINITY;
 		    } else {
 			/* join two affine form expressions */
 			z1->paf[i]->itv_inf = z1->box_inf[i];
@@ -371,6 +373,7 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
 		    res->paf[i] = pr->top;
 		}
 		else if (zonotope_aff_is_eq(pr, z1->paf[i], z2->paf[i])){
+			
 		    res->paf[i] = z1->paf[i];
 		}
 		else {
@@ -380,6 +383,8 @@ zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1
 			res->paf[i] = zonotope_aff_alloc_init(pr);
 			res->paf[i]->c_inf = res->box_inf[i];
 			res->paf[i]->c_sup = res->box_sup[i];
+			res->paf[i]->itv_inf = INFINITY;
+			res->paf[i]->itv_sup = INFINITY;
 			
 		    } else {
 			/* join two affine form expressions */
