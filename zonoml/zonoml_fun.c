@@ -226,6 +226,8 @@ elina_abstract0_t* ffn_matmult_zono(elina_manager_t * man, bool destructive, eli
    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
    zonotope_t *z = zonotope_of_abstract0(element);
    zonotope_t* res = zonotope_copy(man, z);
+   //printf("input\n");
+   //zonotope_fprint(stdout,man,res,NULL);
    size_t i = 0;
    for (i=0; i<res->dims; i++) {
 	res->paf[i]->itv_inf = res->box_inf[i];
@@ -235,6 +237,8 @@ elina_abstract0_t* ffn_matmult_zono(elina_manager_t * man, bool destructive, eli
     man->result.flag_best = false;
     man->result.flag_exact = false;
     record_timing(zonoml_ffn_matmult_time);
+    //printf("Output\n");
+    //zonotope_fprint(stdout,man,res,NULL);
     return abstract0_of_zonotope(man,res);
 }
 
