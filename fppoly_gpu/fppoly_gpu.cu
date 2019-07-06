@@ -1421,6 +1421,75 @@ void coeffs_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coe
 
 
 __global__
+void coeffs_from_previous_layer_conv_filter_serial(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
+{
+    const size_t n = blockIdx.x;
+
+    const size_t inp_z = threadIdx.x;
+
+    float_type tmp1, tmp2;
+    float_type maxRes, maxMul;
+
+    if(inp_z < input_size_z)
+    {
+        for(size_t out_x = 0; out_x < output_size_x; out_x++)
+        {
+            for(size_t out_y = 0; out_y < output_size_y; out_y++)
+            {
+                for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
+                {
+                    for(size_t y_shift = 0; y_shift < filter_size_y; y_shift++)
+                    {
+                        const long int x_val = out_x*stride_x + x_shift - pad_x;
+                        const long int y_val = out_y*stride_y + y_shift - pad_y;
+
+                        if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
+                        {
+                            if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
+                            {
+                                const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
+                                const size_t b = n*input_size_x*input_size_y*input_size_z + mat_in;
+
+                                float_type inf_coeff = res_inf_coeff[b];
+                                float_type sup_coeff = res_sup_coeff[b];
+
+                                for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                                {
+                                    const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
+
+                                    const size_t a = n*output_size_x*output_size_y*output_size_z + mat_out;
+
+                                    const float_type prev_inf_coeff = expr_inf_coeff[a];
+                                    const float_type prev_sup_coeff = expr_sup_coeff[a];
+
+                                    if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
+                                    {
+                                        const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+
+                                        const float_type aux_coeff = aux_coeffs[filter_index];
+                                        elina_double_interval_mul_expr_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, -aux_coeff, aux_coeff);
+
+                                        maxRes = fmax(fabs(inf_coeff), fabs(sup_coeff));
+                                        maxMul = fmax(fabs(tmp1), fabs(tmp2));
+
+                                        inf_coeff = inf_coeff + tmp1 + (maxRes + maxMul)*ulp;
+                                        sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
+                                    }
+                                }
+
+                                res_inf_coeff[b] = inf_coeff;
+                                res_sup_coeff[b] = sup_coeff;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+__global__
 void coeffs_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, long int offset_x, long int offset_y, long int length_x, long int length_y, long int shift_x, long int shift_y, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
 {
     const size_t last_x = blockIdx.x;
@@ -1497,6 +1566,91 @@ void coeffs_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_
                 }
 
                 __syncthreads();
+            }
+        }
+    }
+}
+
+
+__global__
+void coeffs_from_previous_layer_conv_sparse_filter_serial(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, long int offset_x, long int offset_y, long int length_x, long int length_y, long int shift_x, long int shift_y, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
+{
+    const size_t last_x = blockIdx.x;
+    const size_t last_y = blockIdx.y;
+    const size_t last_z = blockIdx.z;
+
+    const size_t n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
+
+    const long int min_out_x = offset_x + last_x*shift_x;
+    const long int min_out_y = offset_y + last_y*shift_y;
+
+    const size_t inp_z = threadIdx.x;
+
+    float_type tmp1, tmp2;
+    float_type maxRes, maxMul;
+
+    if(inp_z < input_size_z)
+    {
+        for(long int out_x = 0; out_x < length_x; out_x++)
+        {
+            if((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x))
+            {
+                continue;
+            }
+
+            for(long int out_y = 0; out_y < length_y; out_y++)
+            {
+                if((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y))
+                {
+                    continue;
+                }
+
+                for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
+                {
+                    for(size_t y_shift = 0; y_shift < filter_size_y; y_shift++)
+                    {
+                        const long int x_val = out_x*stride_x + min_out_x*stride_x + x_shift - pad_x;
+                        const long int y_val = out_y*stride_y + min_out_y*stride_y + y_shift - pad_y;
+
+                        if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
+                        {
+                            if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
+                            {
+                                const size_t mat_in = (out_x*stride_x + x_shift)*((length_y - 1)*stride_y + filter_size_y)*input_size_z + (out_y*stride_y + y_shift)*input_size_z + inp_z;
+                                const size_t b = n*((length_x - 1)*stride_x + filter_size_x)*((length_y - 1)*stride_y + filter_size_y)*input_size_z + mat_in;
+
+                                float_type inf_coeff = res_inf_coeff[b];
+                                float_type sup_coeff = res_sup_coeff[b];
+
+                                for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                                {
+                                    const size_t mat_out = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                                    const size_t a = n*length_x*length_y*output_size_z + mat_out;
+
+                                    const float_type prev_inf_coeff = expr_inf_coeff[a];
+                                    const float_type prev_sup_coeff = expr_sup_coeff[a];
+
+                                    if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
+                                    {
+                                        const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+
+                                        const float_type aux_coeff = aux_coeffs[filter_index];
+                                        elina_double_interval_mul_expr_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, -aux_coeff, aux_coeff);
+
+                                        maxRes = fmax(fabs(inf_coeff), fabs(sup_coeff));
+                                        maxMul = fmax(fabs(tmp1), fabs(tmp2));
+
+                                        inf_coeff = inf_coeff + tmp1 + (maxRes + maxMul)*ulp;
+                                        sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
+                                    }
+                                }
+
+                                res_inf_coeff[b] = inf_coeff;
+                                res_sup_coeff[b] = sup_coeff;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -1936,8 +2090,17 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
         {
             if(fp->layers[layerno]->type == CONV)
             {
-                coeffs_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]), dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, fp->layers[k]->filter_weights, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-                coeffs_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]), dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(uinf_coeff, usup_coeff, uinf_coeff_tmp, usup_coeff_tmp, fp->layers[k]->filter_weights, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+                if(fp->layers[k]->input_size[0]*fp->layers[k]->filter_size[1]*fp->layers[k]->filter_size[2] > 1024)
+                {
+                    coeffs_from_previous_layer_conv_sparse_filter_serial<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]), fp->layers[k]->input_size[2]>>>(linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, fp->layers[k]->filter_weights, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+                    coeffs_from_previous_layer_conv_sparse_filter_serial<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]), fp->layers[k]->input_size[2]>>>(uinf_coeff, usup_coeff, uinf_coeff_tmp, usup_coeff_tmp, fp->layers[k]->filter_weights, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+                }
+                else
+                {
+                    coeffs_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]), dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, fp->layers[k]->filter_weights, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+                    coeffs_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]), dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(uinf_coeff, usup_coeff, uinf_coeff_tmp, usup_coeff_tmp, fp->layers[k]->filter_weights, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+                }
+
 
                 csts_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]), 1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp, lsup_cst_tmp, fp->layers[k]->filter_bias, num_out_neurons_last_layer, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y);
                 csts_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]), 1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, uinf_cst_tmp, usup_cst_tmp, fp->layers[k]->filter_bias, num_out_neurons_last_layer, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y);
@@ -2015,8 +2178,16 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
             }
             else
             {
-                coeffs_from_previous_layer_conv<<<num_out_neurons_last_layer, dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, fp->layers[k]->filter_weights, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-                coeffs_from_previous_layer_conv<<<num_out_neurons_last_layer, dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(uinf_coeff, usup_coeff, uinf_coeff_tmp, usup_coeff_tmp, fp->layers[k]->filter_weights, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+                if(fp->layers[k]->input_size[0]*fp->layers[k]->filter_size[1]*fp->layers[k]->filter_size[2] > 1024)
+                {
+                    coeffs_from_previous_layer_conv_filter_serial<<<num_out_neurons_last_layer, fp->layers[k]->input_size[2]>>>(linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, fp->layers[k]->filter_weights, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+                    coeffs_from_previous_layer_conv_filter_serial<<<num_out_neurons_last_layer, fp->layers[k]->input_size[2]>>>(uinf_coeff, usup_coeff, uinf_coeff_tmp, usup_coeff_tmp, fp->layers[k]->filter_weights, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+                }
+                else
+                {
+                    coeffs_from_previous_layer_conv<<<num_out_neurons_last_layer, dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, fp->layers[k]->filter_weights, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+                    coeffs_from_previous_layer_conv<<<num_out_neurons_last_layer, dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(uinf_coeff, usup_coeff, uinf_coeff_tmp, usup_coeff_tmp, fp->layers[k]->filter_weights, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+                }
 
                 csts_from_previous_layer_conv<<<num_out_neurons_last_layer, 1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp, lsup_cst_tmp, fp->layers[k]->filter_bias, num_out_neurons_last_layer, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2]);
                 csts_from_previous_layer_conv<<<num_out_neurons_last_layer, 1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, uinf_cst_tmp, usup_cst_tmp, fp->layers[k]->filter_bias, num_out_neurons_last_layer, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2]);
