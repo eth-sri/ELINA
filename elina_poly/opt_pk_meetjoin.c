@@ -1618,7 +1618,7 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
 	/************************
 			More Refinement here
 	*************************/
-	if(!opk->exn){
+	if(false){
 		array_comp_list_t * acl_finest = compute_finest_poly(op,op->maxcols);
 		unsigned short int max = clp->size;
 		
