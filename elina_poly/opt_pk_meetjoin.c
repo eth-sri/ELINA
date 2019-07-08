@@ -1618,118 +1618,109 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
 	/************************
 			More Refinement here
 	*************************/
-        if (!opk->exn) {
-          array_comp_list_t *acl_finest = compute_finest_poly(op, op->maxcols);
-          unsigned short int max = clp->size;
-
-          unsigned short int max_finest = 0;
-          comp_list_t *max_finest_cl = NULL;
-          cl = acl_finest->head;
-
-          while (cl != NULL) {
-            if ((max_finest < cl->size) && is_included(cl, clp, maxcols)) {
-              max_finest = cl->size;
-              max_finest_cl = cl;
-            }
-            cl = cl->next;
-          }
-
-          if ((max > 0) && (max_finest_cl == NULL)) {
-            opt_pk_t *tmp = poly[0];
-            for (k1 = 0; k1 < num_comp_res - 1; k1++) {
-              poly[k1] = poly[k1 + 1];
-            }
-            remove_comp_list(op->acl, clp);
-            opt_poly_clear(tmp);
-
-          } else if ((max > 0) && (max_finest > 0) && (max_finest < max)) {
-
-            unsigned short int *ca = to_sorted_array(clp, maxcols);
-            comp_t *c = clp->head;
-            char *map = create_map(max_finest_cl, maxcols);
-            comp_list_t *rem_cl = create_comp_list();
-            while (c != NULL) {
-              unsigned short int num = c->num;
-              if (!map[num] && find(acl_finest, num) != NULL) {
-                insert_comp(rem_cl, num);
-              }
-              c = c->next;
-            }
-
-            remove_comp_list(op->acl, clp);
-            insert_comp_list(op->acl, max_finest_cl);
-            free(map);
-
-            unsigned short int *ca1 = to_sorted_array(max_finest_cl, maxcols);
-            unsigned short int *ind_map1 = map_index(ca1, ca, max_finest);
-            opt_pk_t *old_poly = poly[0];
-            opt_matrix_t *F = poly[0]->F;
-            opt_matrix_t *C = poly[0]->C;
-            bool is_pos = false;
-            poly[0] = opt_poly_alloc(max_finest, 0);
-            poly[0]->C = opt_matrix_alloc(
-                C->nbrows + 1, max_finest_cl->size + opk->dec, false);
-            poly[0]->F = opt_matrix_alloc(
-                F->nbrows, max_finest_cl->size + opk->dec, false);
-            poly[0]->nbeq = split_matrix(opk, poly[0]->C, C, ind_map1,
-                                         max_finest_cl->size, &is_pos);
-            // size_t nbrows = poly[0]->C->nbrows;
-            bool is_pos1 = false;
-            poly[0]->nbline = split_matrix(opk, poly[0]->F, F, ind_map1,
-                                           max_finest_cl->size, &is_pos1);
-            size_t lines_removed = remove_common_gen(opk, poly[0]->F, 0);
-            // remove_positivity_constraint(opk,poly[0]->C);
-            poly[0]->nbline = poly[0]->nbline - lines_removed;
-            // opt_matrix_sort_rows(opk,poly[0]->F);
-            poly[0]->satC = opt_satmat_alloc(
-                poly[0]->F->nbrows, opt_bitindex_size(poly[0]->C->nbrows));
-            combine_satmat(opk, poly[0], max_finest, poly[0]->C->nbrows, true);
-            unsigned short int rem_size = rem_cl->size;
-            if (rem_size) {
-              poly = (opt_pk_t **)realloc(poly, (num_comp_res + 1) *
-                                                    sizeof(opt_pk_t *));
-              unsigned short int *ca2 = to_sorted_array(rem_cl, maxcols);
-              unsigned short int *ind_map2 = map_index(ca2, ca, rem_size);
-              is_pos = false;
-              poly[num_comp_res] = opt_poly_alloc(rem_size, 0);
-              poly[num_comp_res]->C =
-                  opt_matrix_alloc(C->nbrows + 1, rem_size + opk->dec, false);
-              poly[num_comp_res]->nbeq = split_matrix(
-                  opk, poly[num_comp_res]->C, C, ind_map2, rem_size, &is_pos);
-              // nbrows = poly[num_comp_res]->C->nbrows;
-
-              poly[num_comp_res]->F =
-                  opt_matrix_alloc(F->nbrows, rem_size + opk->dec, false);
-              bool is_pos1 = false;
-              poly[num_comp_res]->nbline = split_matrix(
-                  opk, poly[num_comp_res]->F, F, ind_map2, rem_size, &is_pos1);
-              lines_removed = remove_common_gen(opk, poly[num_comp_res]->F, 0);
-              poly[num_comp_res]->nbline =
-                  poly[num_comp_res]->nbline - lines_removed;
-              // remove_positivity_constraint(opk,poly[num_comp_res]->C);
-              // opt_matrix_sort_rows(opk,poly[num_comp_res]->F);
-              poly[num_comp_res]->satC = opt_satmat_alloc(
-                  poly[num_comp_res]->F->nbrows,
-                  opt_bitindex_size(poly[num_comp_res]->C->nbrows));
-              combine_satmat(opk, poly[num_comp_res], rem_size,
-                             poly[num_comp_res]->C->nbrows, true);
-              insert_comp_list_tail(op->acl, rem_cl);
-              // printf("F: %p C:
-              // %p\n",poly[num_comp_res]->F,poly[num_comp_res]->C);
-              // fflush(stdout);
-              op->poly = poly;
-              free(ca2);
-              free(ind_map2);
-            }
-            opt_poly_clear(old_poly);
-            free(ca);
-            free(ca1);
-
-            free(ind_map1);
-          }
-        }
-
-        //printf("After JOIN OUTPUT\n");
+	if(false){
+		array_comp_list_t * acl_finest = compute_finest_poly(op,op->maxcols);
+		unsigned short int max = clp->size;
+		
+		unsigned short int max_finest = 0;
+		comp_list_t * max_finest_cl = NULL;
+		cl = acl_finest->head;
+	
+		while(cl!=NULL){
+		      if((max_finest < cl->size) && is_included(cl,clp,maxcols)){
+			 max_finest = cl->size;
+			 max_finest_cl = cl;
+		      }
+		  cl = cl->next;
+		}
+		
+		if((max > 0) && (max_finest_cl==NULL)){
+			opt_pk_t * tmp = poly[0];
+			for(k1=0; k1 < num_comp_res-1; k1++){
+				poly[k1] = poly[k1+1];
+			}
+			remove_comp_list(op->acl,clp);
+			opt_poly_clear(tmp);
+			
+		}
+		else if( (max>0) && (max_finest > 0) && (max_finest < max) ){
+		
+		
+			unsigned short int *ca = to_sorted_array(clp,maxcols);
+			comp_t * c = clp->head;
+			char * map = create_map(max_finest_cl,maxcols);
+			comp_list_t * rem_cl = create_comp_list();
+			while(c!=NULL){
+				unsigned short int num = c->num;
+				if(!map[num] && find(acl_finest,num)!=NULL){
+					insert_comp(rem_cl,num);
+				}
+					c = c->next;
+			}
+			
+			remove_comp_list(op->acl,clp);
+			insert_comp_list(op->acl,max_finest_cl);
+			free(map);
+		
+		
+			unsigned short int *ca1 = to_sorted_array(max_finest_cl,maxcols);
+			unsigned short int * ind_map1 = map_index(ca1,ca,max_finest);
+			opt_pk_t * old_poly = poly[0];
+			opt_matrix_t *F = poly[0]->F;
+			opt_matrix_t *C = poly[0]->C;
+			bool is_pos = false;
+			poly[0] = opt_poly_alloc(max_finest,0);
+			poly[0]->C = opt_matrix_alloc(C->nbrows+1,max_finest_cl->size+opk->dec,false);
+			//poly[0]->F = opt_matrix_alloc(F->nbrows,max_finest_cl->size+opk->dec,false);
+			poly[0]->nbeq = split_matrix(opk,poly[0]->C,C,ind_map1,max_finest_cl->size, &is_pos);
+			opt_poly_chernikova(man,poly[0],"refine1");
+			//size_t nbrows = poly[0]->C->nbrows;
+			//bool is_pos1 = false;
+			//poly[0]->nbline = split_matrix(opk,poly[0]->F,F,ind_map1,max_finest_cl->size, &is_pos1); 
+			//size_t lines_removed = remove_common_gen(opk,poly[0]->F,0); 
+			//remove_positivity_constraint(opk,poly[0]->C);
+			//poly[0]->nbline = poly[0]->nbline - lines_removed;
+			//opt_matrix_sort_rows(opk,poly[0]->F);
+			//poly[0]->satC = opt_satmat_alloc(poly[0]->F->nbrows,opt_bitindex_size(poly[0]->C->nbrows));
+			//combine_satmat(opk,poly[0],max_finest,poly[0]->C->nbrows,true);
+			unsigned short int rem_size = rem_cl->size;
+			if(rem_size){
+				poly = (opt_pk_t **)realloc(poly,(num_comp_res+1)*sizeof(opt_pk_t*));	
+				unsigned short int *ca2 = to_sorted_array(rem_cl,maxcols);
+				unsigned short int * ind_map2 = map_index(ca2,ca,rem_size);
+				is_pos = false;	
+				poly[num_comp_res] = opt_poly_alloc(rem_size,0);
+				poly[num_comp_res]->C = opt_matrix_alloc(C->nbrows+1,rem_size+opk->dec,false);
+				poly[num_comp_res]->nbeq = split_matrix(opk,poly[num_comp_res]->C,C,ind_map2,rem_size, &is_pos);
+				opt_poly_chernikova(man,poly[num_comp_res],"refine2");
+				//nbrows = poly[num_comp_res]->C->nbrows;
+			
+				//poly[num_comp_res]->F = opt_matrix_alloc(F->nbrows,rem_size+opk->dec,false); 
+				//bool is_pos1 = false;
+				//poly[num_comp_res]->nbline = split_matrix(opk,poly[num_comp_res]->F,F,ind_map2,rem_size, &is_pos1);
+				//lines_removed = remove_common_gen(opk,poly[num_comp_res]->F,0);
+				//poly[num_comp_res]->nbline = poly[num_comp_res]->nbline - lines_removed; 
+				//remove_positivity_constraint(opk,poly[num_comp_res]->C);
+				//opt_matrix_sort_rows(opk,poly[num_comp_res]->F);
+				//poly[num_comp_res]->satC = opt_satmat_alloc(poly[num_comp_res]->F->nbrows,opt_bitindex_size(poly[num_comp_res]->C->nbrows));
+				//combine_satmat(opk,poly[num_comp_res],rem_size,poly[num_comp_res]->C->nbrows,true);
+				insert_comp_list_tail(op->acl,rem_cl);
+				//printf("F: %p C: %p\n",poly[num_comp_res]->F,poly[num_comp_res]->C);
+				//fflush(stdout);	
+				op->poly=poly;
+				free(ca2);
+				free(ind_map2);
+			}
+			opt_poly_clear(old_poly);
+			free(ca);
+			free(ca1);
+		
+			free(ind_map1);
+		}
+	}
+  
+	
+	//printf("After JOIN OUTPUT\n");
 	//print_array_comp_list(op->acl,op->maxcols);
 	//elina_lincons0_array_t arr3 = opt_pk_to_lincons_array(man,op);
         //elina_lincons0_array_fprint(stdout,&arr3,NULL);
