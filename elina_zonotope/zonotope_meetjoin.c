@@ -224,5 +224,193 @@ zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man, bool destructive, 
 }
 
 
+/************************************************/
+/* 2. Join					*/
+/************************************************/
+
+zonotope_t* zonotope_join(elina_manager_t* man, bool destructive, zonotope_t* z1, zonotope_t* z2)
+    /* TODO destructive not used  */
+{
+    start_timing();
+    size_t i = 0;
+    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_JOIN);
+    if((z1->dims!=z2->dims) || (z1->intdim!=z2->intdim)){
+	return NULL;
+    }
+    zonotope_t* res;
+    size_t intdim = z1->intdim;
+    size_t realdim = z1->dims - z1->intdim;
+    if (zonotope_is_eq(man, z1, z2)) {
+	if (destructive) res = z1;
+	else res = zonotope_copy(man, z1);
+    }
+    else if (zonotope_is_top(man, z1) ||  zonotope_is_top(man, z2)) {
+	if (destructive) {
+	    zonotope_free(man, z1);
+	    res = z1 = zonotope_top(man,intdim,realdim);
+	} else {
+	    res = zonotope_top(man,intdim,realdim);
+	}
+    } else if (zonotope_is_bottom(man, z1)) {
+	if (destructive) {
+	    zonotope_free(man, z1);
+	    res = z1 = zonotope_copy(man,z2);
+	} else {
+	    res = zonotope_copy(man,z2);
+	}
+    } else if (zonotope_is_bottom(man, z2)) {
+	if (destructive) res = z1;
+	else res = zonotope_copy(man,z1);
+    } else {
+	/* TODO: destructive not yet supported */
+	elina_interval_t *tmp = elina_interval_alloc();
+	res = zonotope_alloc(man, intdim, realdim);
+	/* update res->box */
+	for (i=0; i<(intdim+realdim); i++){
+	     res->box_inf[i] = fmax(z1->box_inf[i],z2->box_inf[i]);
+	     res->box_sup[i] = fmax(z1->box_sup[i],z2->box_sup[i]);
+	}
+	
+	if ((z1->hypercube && z2->hypercube)) {
+	    for (i=0; i<(intdim+realdim); i++) {
+		//printf("%d: ",i);
+		if (zonotope_aff_is_bottom(pr, z1->paf[i])){
+		    res->paf[i] = z2->paf[i];
+		}
+		else if (zonotope_aff_is_bottom(pr, z2->paf[i])){
+		    res->paf[i] = z1->paf[i];
+		}
+		else if (zonotope_aff_is_top(pr, z1->paf[i]) || zonotope_aff_is_top(pr, z2->paf[i])){
+			 res->paf[i] = pr->top;
+		}		
+		else {
+		    if (!isfinite(z1->box_inf[i]) || !isfinite(z1->box_sup[i]) 
+			|| !isfinite(z2->box_inf[i]) || !isfinite(z2->box_sup[i])) {
+			/* Do nothing, the join of concretisations is already done and stored in res->box */
+			res->paf[i] = zonotope_aff_alloc_init(pr);
+			res->paf[i]->c_inf = res->box_inf[i];
+			res->paf[i]->c_sup = res->box_sup[i];
+			res->paf[i]->itv_inf = INFINITY;
+			res->paf[i]->itv_sup = INFINITY;
+		    } else {
+			/* join two affine form expressions */
+			z1->paf[i]->itv_inf = z1->box_inf[i];
+			z1->paf[i]->itv_sup = z1->box_sup[i];
+			z2->paf[i]->itv_inf = z2->box_inf[i];
+			z2->paf[i]->itv_sup = z2->box_sup[i];
+			res->paf[i] = zonotope_aff_join_constrained6(pr, z1->paf[i], z2->paf[i], z1, z2, res);
+		    }
+		}
+		res->paf[i]->pby++;
+	    }
+
+	} else {
+	    size_t k = 0;
+	    elina_dim_t j = 0;
+	    size_t dims1 = zonotope_noise_symbol_cons_get_dimension(pr, z1);
+	    size_t dims2 = zonotope_noise_symbol_cons_get_dimension(pr, z2);
+	 
+	    if (dims1 && dims2) {
+		
+		size_t dim2 = 0;
+		elina_dimchange_t* dimchange2 = elina_dimchange_alloc(0, dims1);
+		//elina_dimchange_t* dimchange1 = elina_dimchange_alloc(0, dims2);
+		if ((dims1+dims2) > res->size) {
+		    res->nsymcons = (elina_dim_t*)realloc(res->nsymcons, (dims1+dims2)*sizeof(elina_dim_t));
+		    res->gamma = (elina_interval_t**)realloc(res->gamma, (dims1+dims2)*sizeof(elina_interval_t*));
+		    for (k=res->size;k<(dims1+dims2);k++) res->gamma[k] = NULL;
+		    res->size = dims1+dims2;
+		}
+		res->nsymcons = memcpy((void *)res->nsymcons, (const void *)z1->nsymcons, dims1*sizeof(elina_dim_t));
+		elina_abstract0_free(pr->manNS, res->abs);
+		
+		res->abs = elina_abstract0_copy(pr->manNS, z1->abs);
+		for (k=0; k<dims2; k++) zonotope_insert_constrained_noise_symbol(pr, &j, z2->nsymcons[k], res);
+		for (k=0; k<dims1; k++) {
+		    if (!zonotope_noise_symbol_cons_get_dimpos(pr, &j, z1->nsymcons[k], z2)) {
+			dimchange2->dim[dim2] = j;
+			dim2++;
+		    }
+		}
+		dimchange2->realdim = dim2;
+		
+		/* destructive, without projection (new dimension set to top) */
+		elina_abstract0_t * tmp_z2 = elina_abstract0_add_dimensions(pr->manNS, false, z2->abs, dimchange2, false);
+		//elina_abstract0_add_dimensions(pr->manNS, true, res->abs, dimchange1, false);
+		elina_dimchange_add_invert(dimchange2);
+		for (k=0; k<dim2; k++) {
+		    zonotope_set_lincons_dim(pr, dimchange2->dim[k]);
+		    elina_abstract0_meet_lincons_array(pr->manNS, true, tmp_z2, &pr->moo);
+		}
+
+			
+       	        elina_abstract0_join(pr->manNS, true, res->abs, tmp_z2);
+		
+		
+		/* update res->gamma */
+		
+		zonotope_update_noise_symbol_cons_gamma(pr, res);
+		
+		elina_abstract0_free(pr->manNS,tmp_z2);
+		//elina_abstract0_remove_dimensions(pr->manNS, true, z2->abs, dimchange2);
+		//dimchange2->realdim = dims2; 
+		elina_dimchange_free(dimchange2);
+		//elina_dimchange_free(dimchange1);
+		size_t nsymcons_size = zonotope_noise_symbol_cons_get_dimension(pr, res);
+		pr->dimtoremove = (elina_dim_t*)realloc(pr->dimtoremove, (nsymcons_size)*sizeof(elina_dim_t));
+		memset((void *)pr->dimtoremove, (int)0, nsymcons_size*sizeof(int));
+	    } else {
+		/* res->abs is a hypercube */
+	    }
+	    for (i=0; i<(intdim+realdim); i++) {
+		if (zonotope_aff_is_bottom(pr, z1->paf[i])){
+		    res->paf[i] = z2->paf[i];
+		}
+		else if (zonotope_aff_is_bottom(pr, z2->paf[i])){
+		    res->paf[i] = z1->paf[i];
+	        }
+		else if (zonotope_aff_is_top(pr, z1->paf[i]) || zonotope_aff_is_top(pr, z2->paf[i])){
+		    res->paf[i] = pr->top;
+		}
+		else if (zonotope_aff_is_eq(pr, z1->paf[i], z2->paf[i])){
+			
+		    res->paf[i] = z1->paf[i];
+		}
+		else {
+		    if (!isfinite(z1->box_inf[i]) || !isfinite(z1->box_sup[i])
+			 || !isfinite(z2->box_inf[i]) || !isfinite(z2->box_sup[i])) {
+			/* Do nothing, the join of concretisations is already done and stored in res->box */
+			res->paf[i] = zonotope_aff_alloc_init(pr);
+			res->paf[i]->c_inf = res->box_inf[i];
+			res->paf[i]->c_sup = res->box_sup[i];
+			res->paf[i]->itv_inf = INFINITY;
+			res->paf[i]->itv_sup = INFINITY;
+			
+		    } else {
+			/* join two affine form expressions */
+			z1->paf[i]->itv_inf = z1->box_inf[i];
+			z1->paf[i]->itv_sup = z1->box_sup[i];
+			z2->paf[i]->itv_inf = z2->box_inf[i];
+			z2->paf[i]->itv_sup = z2->box_sup[i];
+			res->paf[i] = zonotope_aff_join_constrained6(pr, z1->paf[i], z2->paf[i], z1, z2, res);
+		    }
+		}
+		res->paf[i]->pby++;
+	    }
+
+	    man->result.flag_best = false;
+	    man->result.flag_exact = false;
+	}
+	
+	man->result.flag_best = true;
+	man->result.flag_exact = false;
+	elina_interval_free(tmp);
+    }
+    man->result.flag_best = true;
+    man->result.flag_exact = true;
+   
+    record_timing(zonotope_join_time);
+    return res;
+}
 
 

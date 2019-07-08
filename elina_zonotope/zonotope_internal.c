@@ -127,7 +127,7 @@ elina_manager_t* zonotope_manager_alloc(void)
 	funptr[ELINA_FUNID_MEET_LINCONS_ARRAY] = &zonotope_meet_lincons_array; /*  */
 	//funptr[ELINA_FUNID_MEET_TCONS_ARRAY] = &zonotope_meet_tcons_array; /*  */
 	/* 2.Join */
-	//funptr[ELINA_FUNID_JOIN] = &zonotope_join;
+	funptr[ELINA_FUNID_JOIN] = &zonotope_join;
 	//funptr[ELINA_FUNID_JOIN_ARRAY] = &zonotope_join_array;
 
 	//funptr[ELINA_FUNID_ADD_RAY_ARRAY] = &zonotope_add_ray_array;
@@ -292,18 +292,43 @@ zonotope_aff_t * zonotope_aff_from_linexpr0(zonotope_internal_t* pr, elina_linex
     elina_coeff_t *coeff;
     zonotope_aff_t *res = zonotope_aff_alloc_init(pr);
     elina_coeff_t * cst = &(expr->cst);
-    if(cst->discr==ELINA_COEFF_SCALAR){
-	res->c_inf = -cst->val.scalar->val.dbl;
-	res->c_sup = cst->val.scalar->val.dbl;
-	res->itv_inf = -cst->val.scalar->val.dbl;
-	res->itv_sup = cst->val.scalar->val.dbl;
+
+    if(cst->discr==ELINA_COEFF_SCALAR) {
+        if (cst->val.scalar->discr == ELINA_SCALAR_DOUBLE) {
+            res->c_inf = -cst->val.scalar->val.dbl;
+            res->c_sup = cst->val.scalar->val.dbl;
+            res->itv_inf = -cst->val.scalar->val.dbl;
+            res->itv_sup = cst->val.scalar->val.dbl;
+        } else {
+            double inf,sup;
+            elina_double_set_scalar(&inf,cst->val.scalar,GMP_RNDD);
+            elina_double_set_scalar(&sup,cst->val.scalar,GMP_RNDU);
+            res->c_inf = -inf;
+            res->c_sup = sup;
+            res->itv_inf = -inf;
+            res->itv_sup = sup;
+        }
+    } else {
+        if (cst->val.interval->inf->discr == ELINA_SCALAR_DOUBLE) {
+            res->c_inf = -cst->val.interval->inf->val.dbl;
+            res->itv_inf = -cst->val.interval->inf->val.dbl;
+        } else {
+            double inf;
+            elina_double_set_scalar(&inf,cst->val.scalar,GMP_RNDD);
+            res->c_inf = -inf;
+            res->itv_inf = -inf;
+        }
+        if (cst->val.interval->sup->discr == ELINA_SCALAR_DOUBLE) {
+            res->c_sup = cst->val.interval->sup->val.dbl;
+            res->itv_sup = cst->val.interval->sup->val.dbl;
+        } else {
+            double sup;
+            elina_double_set_scalar(&sup,cst->val.scalar,GMP_RNDU);
+            res->c_sup = sup;
+            res->itv_sup = sup;
+        }
     }
-    else{
-	res->c_inf = -cst->val.interval->inf->val.dbl;
-	res->c_sup = cst->val.interval->sup->val.dbl;
-	res->itv_inf = -cst->val.interval->inf->val.dbl;
-	res->itv_sup = cst->val.interval->sup->val.dbl;
-    }
+
 	//printf("size: %zu\n",expr->size);
 	//fflush(stdout);
     elina_linexpr0_ForeachLinterm(expr,i,dim,coeff) {
