@@ -80,6 +80,8 @@ zonotope_t* zonotope_of_box(elina_manager_t* man, size_t intdim, size_t realdim,
 	res->box_inf[i] = -tinterval[i]->inf->val.dbl;
 	res->box_sup[i] = tinterval[i]->sup->val.dbl;
 	res->paf[i] = zonotope_aff_alloc_init(pr);
+	res->paf[i]->itv_inf = INFINITY;
+	res->paf[i]->itv_sup = INFINITY;
 	if (elina_interval_is_bottom(tinterval[i])){
 		 res->paf[i] = pr->bot;
 	}
@@ -104,9 +106,7 @@ zonotope_t* zonotope_of_box(elina_manager_t* man, size_t intdim, size_t realdim,
     man->result.flag_best = true;
     man->result.flag_exact = true;
 	//fflush(stdout);
-    // printf("of box output\n");
-    // zonotope_fprint(stdout,man,res,NULL);
-    // fflush(stdout);
+    
     record_timing(zonotope_of_box_time);
     return res;
 }
