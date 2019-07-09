@@ -2736,7 +2736,7 @@ void *update_state_using_previous_layers(void *args) {
         expr_t *uexpr_copy = copy_expr(uexpr);
         size_t predecessor1 = fp->layers[k]->predecessors[0];
         size_t predecessor2 = fp->layers[k]->predecessors[1];
-        printf("Residual %zu %zu\n", predecessor1, predecessor2);
+
         char *predecessor_map = (char *)calloc(k, sizeof(char));
         // Assume no nested residual layers
         int iter = fp->layers[predecessor1]->predecessors[0] - 1;
@@ -2753,7 +2753,7 @@ void *update_state_using_previous_layers(void *args) {
           }
           iter = fp->layers[iter]->predecessors[0] - 1;
         }
-        printf("common %d\n", common_predecessor);
+
         iter = fp->layers[predecessor1]->predecessors[0] - 1;
         while (iter != common_predecessor) {
           update_state_using_predecessor_layer(pr, fp, &lexpr, &uexpr, iter,
@@ -3415,6 +3415,52 @@ void ffn_handle_last_log_layer_no_alloc(
                         use_area_heuristic);
 }
 
+void get_lb_using_predecessor_layer(fppoly_internal_t *pr, fppoly_t *fp,
+                                    expr_t **lexpr_ptr, size_t k,
+                                    bool use_area_heuristic) {
+  expr_t *tmp_l;
+  neuron_t **aux_neurons = fp->layers[k]->neurons;
+  expr_t *lexpr = *lexpr_ptr;
+  if (fp->layers[k]->type == FFN || fp->layers[k]->type == CONV) {
+
+    if (fp->layers[k]->activation == RELU) {
+      tmp_l = lexpr;
+      lexpr =
+          lexpr_replace_relu_bounds(pr, lexpr, aux_neurons, use_area_heuristic);
+      free_expr(tmp_l);
+    } else if (fp->layers[k]->activation == SIGMOID) {
+      tmp_l = lexpr;
+      // printf("start\n");
+      // fflush(stdout);
+      lexpr = lexpr_replace_sigmoid_bounds(pr, lexpr, aux_neurons);
+      // printf("finish\n");
+      // fflush(stdout);
+      free_expr(tmp_l);
+    } else if (fp->layers[k]->activation == TANH) {
+      tmp_l = lexpr;
+      lexpr = lexpr_replace_tanh_bounds(pr, lexpr, aux_neurons);
+      free_expr(tmp_l);
+    }
+
+    else if (fp->layers[k]->activation == PARABOLA) {
+      tmp_l = lexpr;
+      lexpr = lexpr_replace_parabola_bounds(pr, lexpr, aux_neurons);
+      free_expr(tmp_l);
+    } else if (fp->layers[k]->activation == LOG) {
+      tmp_l = lexpr;
+      lexpr = lexpr_replace_log_bounds(pr, lexpr, aux_neurons);
+      free_expr(tmp_l);
+    }
+    tmp_l = lexpr;
+    *lexpr_ptr = expr_from_previous_layer(pr, lexpr, fp->layers[k]);
+    free_expr(tmp_l);
+  } else {
+    expr_t *tmp_l = lexpr;
+    *lexpr_ptr = lexpr_replace_maxpool_or_lstm_bounds(pr, lexpr, aux_neurons);
+    free_expr(tmp_l);
+  }
+}
+
 double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
                                     expr_t *expr, size_t layerno,
                                     bool use_area_heuristic) {
@@ -3424,49 +3470,57 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   expr_t *lexpr = copy_expr(expr);
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
-  for (k = layerno - 1; k >= 0; k--) {
-    //	printf("k: %zu\n",k);
-    //	fflush(stdout);
-    neuron_t **aux_neurons = fp->layers[k]->neurons;
-    expr_t *tmp_l;
+  k = layerno - 1;
+  while (k >= 0) {
 
-    if (fp->layers[k]->type == FFN || fp->layers[k]->type == CONV) {
+    if (fp->layers[k]->type == RESIDUAL) {
 
-      if (fp->layers[k]->activation == RELU) {
-        tmp_l = lexpr;
-        lexpr = lexpr_replace_relu_bounds(pr, lexpr, aux_neurons,
-                                          use_area_heuristic);
-        free_expr(tmp_l);
-      } else if (fp->layers[k]->activation == SIGMOID) {
-        tmp_l = lexpr;
-        // printf("start\n");
-        // fflush(stdout);
-        lexpr = lexpr_replace_sigmoid_bounds(pr, lexpr, aux_neurons);
-        // printf("finish\n");
-        // fflush(stdout);
-        free_expr(tmp_l);
-      } else if (fp->layers[k]->activation == TANH) {
-        tmp_l = lexpr;
-        lexpr = lexpr_replace_tanh_bounds(pr, lexpr, aux_neurons);
-        free_expr(tmp_l);
+      expr_t *lexpr_copy = copy_expr(lexpr);
+
+      size_t predecessor1 = fp->layers[k]->predecessors[0];
+      size_t predecessor2 = fp->layers[k]->predecessors[1];
+
+      char *predecessor_map = (char *)calloc(k, sizeof(char));
+      // Assume no nested residual layers
+      int iter = fp->layers[predecessor1]->predecessors[0] - 1;
+      while (iter >= 0) {
+        predecessor_map[iter] = 1;
+        iter = fp->layers[iter]->predecessors[0] - 1;
+      }
+      iter = fp->layers[predecessor2]->predecessors[1] - 1;
+      int common_predecessor = 0;
+      while (iter >= 0) {
+        if (predecessor_map[iter] == 1) {
+          common_predecessor = iter;
+          break;
+        }
+        iter = fp->layers[iter]->predecessors[0] - 1;
       }
 
-      else if (fp->layers[k]->activation == PARABOLA) {
-        tmp_l = lexpr;
-        lexpr = lexpr_replace_parabola_bounds(pr, lexpr, aux_neurons);
-        free_expr(tmp_l);
-      } else if (fp->layers[k]->activation == LOG) {
-        tmp_l = lexpr;
-        lexpr = lexpr_replace_log_bounds(pr, lexpr, aux_neurons);
-        free_expr(tmp_l);
+      iter = fp->layers[predecessor1]->predecessors[0] - 1;
+      while (iter != common_predecessor) {
+        get_lb_using_predecessor_layer(pr, fp, &lexpr, iter,
+                                       use_area_heuristic);
+        iter = fp->layers[iter]->predecessors[0] - 1;
       }
-      tmp_l = lexpr;
-      lexpr = expr_from_previous_layer(pr, lexpr, fp->layers[k]);
-      free_expr(tmp_l);
+      iter = fp->layers[predecessor2]->predecessors[1] - 1;
+      while (iter != common_predecessor) {
+        get_lb_using_predecessor_layer(pr, fp, &lexpr_copy, iter,
+                                       use_area_heuristic);
+        iter = fp->layers[iter]->predecessors[0] - 1;
+      }
+      free(predecessor_map);
+      add_expr(pr, lexpr, lexpr_copy);
+
+      free_expr(lexpr_copy);
+
+      // Assume at least one non-residual layer between two residual layers
+      k = fp->layers[common_predecessor]->predecessors[0] - 1;
+
+      continue;
     } else {
-      expr_t *tmp_l = lexpr;
-      lexpr = lexpr_replace_maxpool_or_lstm_bounds(pr, lexpr, aux_neurons);
-      free_expr(tmp_l);
+      get_lb_using_predecessor_layer(pr, fp, &lexpr, k, use_area_heuristic);
+      k = fp->layers[k]->predecessors[0] - 1;
     }
   }
 
