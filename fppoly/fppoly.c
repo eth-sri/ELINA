@@ -136,7 +136,7 @@ void elina_double_interval_mul_cst_coeff(fppoly_internal_t *pr, double *res_inf,
                                          double sup_expr) {
   elina_double_interval_mul_expr_coeff(pr, res_inf, res_sup, inf, sup, inf_expr,
                                        sup_expr);
-  *res_inf += pr->min_denormal;
+  *res_inf -= pr->min_denormal;
   *res_sup += pr->min_denormal;
 }
 
@@ -520,7 +520,7 @@ void elina_double_interval_add_cst_coeff(fppoly_internal_t *pr, double *res_inf,
                                          double sup_expr) {
   elina_double_interval_add_expr_coeff(pr, res_inf, res_sup, inf, sup, inf_expr,
                                        sup_expr);
-  *res_inf += pr->min_denormal;
+  *res_inf -= pr->min_denormal;
   *res_sup += pr->min_denormal;
 }
 
@@ -578,7 +578,7 @@ expr_t *multiply_cst_expr(fppoly_internal_t *pr, expr_t *expr, double mul_inf,
 void add_cst_expr(fppoly_internal_t *pr, expr_t *exprA, expr_t *exprB) {
   double maxA = fmax(fabs(exprA->inf_cst), fabs(exprA->sup_cst));
   double maxB = fmax(fabs(exprB->inf_cst), fabs(exprB->sup_cst));
-  exprA->inf_cst = exprA->inf_cst + exprB->inf_cst + (maxA + maxB) * pr->ulp +
+  exprA->inf_cst = exprA->inf_cst + exprB->inf_cst + (maxA + maxB) * pr->ulp -
                    pr->min_denormal;
   exprA->sup_cst = exprA->sup_cst + exprB->sup_cst + (maxA + maxB) * pr->ulp +
                    pr->min_denormal;
@@ -592,7 +592,7 @@ void add_expr(fppoly_internal_t *pr, expr_t *exprA, expr_t *exprB) {
   if (sizeB == 0) {
     double maxA = fmax(fabs(exprA->inf_cst), fabs(exprA->sup_cst));
     double maxB = fmax(fabs(exprB->inf_cst), fabs(exprB->sup_cst));
-    exprA->inf_cst = exprA->inf_cst + exprB->inf_cst + (maxA + maxB) * pr->ulp +
+    exprA->inf_cst = exprA->inf_cst + exprB->inf_cst + (maxA + maxB) * pr->ulp -
                      pr->min_denormal;
     exprA->sup_cst = exprA->sup_cst + exprB->sup_cst + (maxA + maxB) * pr->ulp +
                      pr->min_denormal;
@@ -605,7 +605,7 @@ void add_expr(fppoly_internal_t *pr, expr_t *exprA, expr_t *exprB) {
     double maxA = fmax(fabs(exprA->inf_cst), fabs(exprA->sup_cst));
     double maxB = fmax(fabs(exprB->inf_cst), fabs(exprB->sup_cst));
     exprA->inf_cst +=
-        exprB->inf_cst + (maxA + maxB) * pr->ulp + pr->min_denormal;
+        exprB->inf_cst + (maxA + maxB) * pr->ulp - pr->min_denormal;
     exprA->sup_cst +=
         exprB->sup_cst + (maxA + maxB) * pr->ulp + pr->min_denormal;
     exprA->inf_coeff = (double *)malloc(sizeB * sizeof(double));
@@ -629,7 +629,7 @@ void add_expr(fppoly_internal_t *pr, expr_t *exprA, expr_t *exprB) {
     double maxA = fmax(fabs(exprA->inf_cst), fabs(exprA->sup_cst));
     double maxB = fmax(fabs(exprB->inf_cst), fabs(exprB->sup_cst));
     exprA->inf_cst +=
-        exprB->inf_cst + (maxA + maxB) * pr->ulp + pr->min_denormal;
+        exprB->inf_cst + (maxA + maxB) * pr->ulp - pr->min_denormal;
     exprA->sup_cst +=
         exprB->sup_cst + (maxA + maxB) * pr->ulp + pr->min_denormal;
     if (exprA->type == DENSE) {
@@ -1155,7 +1155,7 @@ expr_t *lexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
       elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, lu_inf, lu_sup,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else if (expr->inf_coeff[i] < 0) {
       res->inf_coeff[i] = 0;
@@ -1170,7 +1170,7 @@ expr_t *lexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
       double tmp1, tmp2;
       elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
                                 expr->sup_coeff[i], -lb * lb, lb * lb);
-      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else {
       res->inf_coeff[i] = 0.0;
@@ -1241,7 +1241,7 @@ expr_t *uexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
       elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, lu_inf, lu_sup,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else if (expr->sup_coeff[i] < 0) {
       res->inf_coeff[i] = 0;
@@ -1257,7 +1257,7 @@ expr_t *uexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
       // double tmp =lb*lb;
-      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else {
       res->inf_coeff[i] = 0.0;
@@ -1336,7 +1336,7 @@ expr_t *lexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t *expr,
       elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, mu_inf, mu_sup,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else if (expr->inf_coeff[i] < 0) {
       double u_minus_l_sup = ub + lb;
@@ -1351,7 +1351,7 @@ expr_t *lexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t *expr,
         }
         elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
                                   expr->sup_coeff[i], -log(-lb), log(-lb));
-        res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+        res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
         res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
       } else {
         double inv_u_by_l_sup = -1 / u_minus_l_inf;
@@ -1386,7 +1386,7 @@ expr_t *lexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t *expr,
         elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, mu_inf, mu_sup,
                                             expr->inf_coeff[i],
                                             expr->sup_coeff[i]);
-        res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+        res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
         res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
       }
     } else {
@@ -1463,7 +1463,7 @@ expr_t *uexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t *expr,
       elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, mu_inf, mu_sup,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else if (expr->sup_coeff[i] < 0) {
       double u_minus_l_sup = ub + lb;
@@ -1478,7 +1478,7 @@ expr_t *uexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t *expr,
         }
         elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
                                   expr->sup_coeff[i], -log(-lb), log(-lb));
-        res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+        res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
         res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
       } else {
         double inv_u_by_l_sup = -1 / u_minus_l_inf;
@@ -1513,7 +1513,7 @@ expr_t *uexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t *expr,
         elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, mu_inf, mu_sup,
                                             expr->inf_coeff[i],
                                             expr->sup_coeff[i]);
-        res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+        res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
         res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
       }
     } else {
@@ -1589,7 +1589,7 @@ expr_t *lexpr_replace_relu_bounds(fppoly_internal_t *pr, expr_t *expr,
       elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, mu_inf, mu_sup,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else if (expr->inf_coeff[i] < 0) {
 
@@ -1681,7 +1681,7 @@ expr_t *uexpr_replace_relu_bounds(fppoly_internal_t *pr, expr_t *expr,
       elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, mu_inf, mu_sup,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else if (expr->sup_coeff[i] < 0) {
 
