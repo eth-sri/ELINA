@@ -2592,9 +2592,7 @@ void * update_state_using_previous_layers(void *args){
 		//for(k=fp->layers[layerno]->predecessors[0]-1; k >=0; k = fp->layers[k]->predecessors[0]-1){	
 			neuron_t ** aux_neurons = fp->layers[k]->neurons;
 			
-			if(layerno==17){
-				
-			}
+			
 			if(fp->layers[k]->type==RESIDUAL){
 				
 				expr_t * lexpr_copy = copy_expr(lexpr);
@@ -2650,9 +2648,9 @@ void * update_state_using_previous_layers(void *args){
 			
 		}
 		
-		if(layerno==17){
-					printf("here k: %zu %d %zu\n",layerno, lexpr->type==DENSE ,lexpr->size);
-				}
+		//if(layerno==17){
+					//printf("here k: %zu %d %zu\n",layerno, lexpr->type==DENSE ,lexpr->size);
+				//}
 		out_neurons[i]->lb = compute_lb_from_expr(pr, lexpr,fp); 
 		//- bias_i;
 		out_neurons[i]->ub = compute_ub_from_expr(pr, uexpr,fp); //+ bias_i;
@@ -3680,7 +3678,7 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y,
 		sub->inf_coeff[1] = 1;
 		sub->sup_coeff[1] = -1;
 		sub->dim[1] = x;
-		layer_fprint(stdout,fp->layers[17],NULL);
+		//layer_fprint(stdout,fp->layers[17],NULL);
 		double lb = get_lb_using_previous_layers(man, fp, sub, fp->numlayers, use_area_heuristic);
 		
 		//free_expr(sub);
