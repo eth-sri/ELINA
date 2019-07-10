@@ -136,7 +136,7 @@ void elina_double_interval_mul_cst_coeff(fppoly_internal_t *pr, double *res_inf,
                                          double sup_expr) {
   elina_double_interval_mul_expr_coeff(pr, res_inf, res_sup, inf, sup, inf_expr,
                                        sup_expr);
-  *res_inf -= pr->min_denormal;
+  *res_inf += pr->min_denormal;
   *res_sup += pr->min_denormal;
 }
 
@@ -520,7 +520,7 @@ void elina_double_interval_add_cst_coeff(fppoly_internal_t *pr, double *res_inf,
                                          double sup_expr) {
   elina_double_interval_add_expr_coeff(pr, res_inf, res_sup, inf, sup, inf_expr,
                                        sup_expr);
-  *res_inf -= pr->min_denormal;
+  *res_inf += pr->min_denormal;
   *res_sup += pr->min_denormal;
 }
 
@@ -578,7 +578,7 @@ expr_t *multiply_cst_expr(fppoly_internal_t *pr, expr_t *expr, double mul_inf,
 void add_cst_expr(fppoly_internal_t *pr, expr_t *exprA, expr_t *exprB) {
   double maxA = fmax(fabs(exprA->inf_cst), fabs(exprA->sup_cst));
   double maxB = fmax(fabs(exprB->inf_cst), fabs(exprB->sup_cst));
-  exprA->inf_cst = exprA->inf_cst + exprB->inf_cst + (maxA + maxB) * pr->ulp -
+  exprA->inf_cst = exprA->inf_cst + exprB->inf_cst + (maxA + maxB) * pr->ulp +
                    pr->min_denormal;
   exprA->sup_cst = exprA->sup_cst + exprB->sup_cst + (maxA + maxB) * pr->ulp +
                    pr->min_denormal;
@@ -592,7 +592,7 @@ void add_expr(fppoly_internal_t *pr, expr_t *exprA, expr_t *exprB) {
   if (sizeB == 0) {
     double maxA = fmax(fabs(exprA->inf_cst), fabs(exprA->sup_cst));
     double maxB = fmax(fabs(exprB->inf_cst), fabs(exprB->sup_cst));
-    exprA->inf_cst = exprA->inf_cst + exprB->inf_cst + (maxA + maxB) * pr->ulp -
+    exprA->inf_cst = exprA->inf_cst + exprB->inf_cst + (maxA + maxB) * pr->ulp +
                      pr->min_denormal;
     exprA->sup_cst = exprA->sup_cst + exprB->sup_cst + (maxA + maxB) * pr->ulp +
                      pr->min_denormal;
@@ -605,7 +605,7 @@ void add_expr(fppoly_internal_t *pr, expr_t *exprA, expr_t *exprB) {
     double maxA = fmax(fabs(exprA->inf_cst), fabs(exprA->sup_cst));
     double maxB = fmax(fabs(exprB->inf_cst), fabs(exprB->sup_cst));
     exprA->inf_cst +=
-        exprB->inf_cst + (maxA + maxB) * pr->ulp - pr->min_denormal;
+        exprB->inf_cst + (maxA + maxB) * pr->ulp + pr->min_denormal;
     exprA->sup_cst +=
         exprB->sup_cst + (maxA + maxB) * pr->ulp + pr->min_denormal;
     exprA->inf_coeff = (double *)malloc(sizeB * sizeof(double));
@@ -629,7 +629,7 @@ void add_expr(fppoly_internal_t *pr, expr_t *exprA, expr_t *exprB) {
     double maxA = fmax(fabs(exprA->inf_cst), fabs(exprA->sup_cst));
     double maxB = fmax(fabs(exprB->inf_cst), fabs(exprB->sup_cst));
     exprA->inf_cst +=
-        exprB->inf_cst + (maxA + maxB) * pr->ulp - pr->min_denormal;
+        exprB->inf_cst + (maxA + maxB) * pr->ulp + pr->min_denormal;
     exprA->sup_cst +=
         exprB->sup_cst + (maxA + maxB) * pr->ulp + pr->min_denormal;
     if (exprA->type == DENSE) {
@@ -1155,7 +1155,7 @@ expr_t *lexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
       elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, lu_inf, lu_sup,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else if (expr->inf_coeff[i] < 0) {
       res->inf_coeff[i] = 0;
@@ -1170,7 +1170,7 @@ expr_t *lexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
       double tmp1, tmp2;
       elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
                                 expr->sup_coeff[i], -lb * lb, lb * lb);
-      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else {
       res->inf_coeff[i] = 0.0;
@@ -1241,7 +1241,7 @@ expr_t *uexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
       elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, lu_inf, lu_sup,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else if (expr->sup_coeff[i] < 0) {
       res->inf_coeff[i] = 0;
@@ -1257,7 +1257,7 @@ expr_t *uexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
       // double tmp =lb*lb;
-      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else {
       res->inf_coeff[i] = 0.0;
@@ -1336,7 +1336,7 @@ expr_t *lexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t *expr,
       elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, mu_inf, mu_sup,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else if (expr->inf_coeff[i] < 0) {
       double u_minus_l_sup = ub + lb;
@@ -1351,7 +1351,7 @@ expr_t *lexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t *expr,
         }
         elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
                                   expr->sup_coeff[i], -log(-lb), log(-lb));
-        res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
+        res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
         res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
       } else {
         double inv_u_by_l_sup = -1 / u_minus_l_inf;
@@ -1386,7 +1386,7 @@ expr_t *lexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t *expr,
         elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, mu_inf, mu_sup,
                                             expr->inf_coeff[i],
                                             expr->sup_coeff[i]);
-        res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
+        res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
         res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
       }
     } else {
@@ -1463,7 +1463,7 @@ expr_t *uexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t *expr,
       elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, mu_inf, mu_sup,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else if (expr->sup_coeff[i] < 0) {
       double u_minus_l_sup = ub + lb;
@@ -1478,7 +1478,7 @@ expr_t *uexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t *expr,
         }
         elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
                                   expr->sup_coeff[i], -log(-lb), log(-lb));
-        res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
+        res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
         res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
       } else {
         double inv_u_by_l_sup = -1 / u_minus_l_inf;
@@ -1513,7 +1513,7 @@ expr_t *uexpr_replace_log_bounds(fppoly_internal_t *pr, expr_t *expr,
         elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, mu_inf, mu_sup,
                                             expr->inf_coeff[i],
                                             expr->sup_coeff[i]);
-        res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
+        res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
         res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
       }
     } else {
@@ -1589,7 +1589,7 @@ expr_t *lexpr_replace_relu_bounds(fppoly_internal_t *pr, expr_t *expr,
       elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, mu_inf, mu_sup,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else if (expr->inf_coeff[i] < 0) {
 
@@ -1681,7 +1681,7 @@ expr_t *uexpr_replace_relu_bounds(fppoly_internal_t *pr, expr_t *expr,
       elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, mu_inf, mu_sup,
                                           expr->inf_coeff[i],
                                           expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 - pr->min_denormal;
+      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
       res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
     } else if (expr->sup_coeff[i] < 0) {
 
@@ -2725,17 +2725,20 @@ void *update_state_using_previous_layers(void *args) {
     expr_t *lexpr = copy_expr(out_neurons[i]->expr);
     expr_t *uexpr = copy_expr(out_neurons[i]->expr);
     k = fp->layers[layerno]->predecessors[0] - 1;
+    // printf("k: %d layerno: %zu\n",k,layerno);
     while (k >= 0) {
       // for(k=fp->layers[layerno]->predecessors[0]-1; k >=0; k =
       // fp->layers[k]->predecessors[0]-1){
       neuron_t **aux_neurons = fp->layers[k]->neurons;
 
+      if (layerno == 17) {
+      }
       if (fp->layers[k]->type == RESIDUAL) {
 
         expr_t *lexpr_copy = copy_expr(lexpr);
         expr_t *uexpr_copy = copy_expr(uexpr);
-        size_t predecessor1 = fp->layers[k]->predecessors[0];
-        size_t predecessor2 = fp->layers[k]->predecessors[1];
+        size_t predecessor1 = fp->layers[k]->predecessors[0] - 1;
+        size_t predecessor2 = fp->layers[k]->predecessors[1] - 1;
 
         char *predecessor_map = (char *)calloc(k, sizeof(char));
         // Assume no nested residual layers
@@ -2744,7 +2747,7 @@ void *update_state_using_previous_layers(void *args) {
           predecessor_map[iter] = 1;
           iter = fp->layers[iter]->predecessors[0] - 1;
         }
-        iter = fp->layers[predecessor2]->predecessors[1] - 1;
+        iter = fp->layers[predecessor2]->predecessors[0] - 1;
         int common_predecessor = 0;
         while (iter >= 0) {
           if (predecessor_map[iter] == 1) {
@@ -2754,25 +2757,27 @@ void *update_state_using_previous_layers(void *args) {
           iter = fp->layers[iter]->predecessors[0] - 1;
         }
 
-        iter = fp->layers[predecessor1]->predecessors[0] - 1;
+        iter = predecessor1;
         while (iter != common_predecessor) {
           update_state_using_predecessor_layer(pr, fp, &lexpr, &uexpr, iter,
                                                use_area_heuristic);
           iter = fp->layers[iter]->predecessors[0] - 1;
         }
-        iter = fp->layers[predecessor2]->predecessors[1] - 1;
+        iter = predecessor2;
         while (iter != common_predecessor) {
           update_state_using_predecessor_layer(pr, fp, &lexpr_copy, &uexpr_copy,
                                                iter, use_area_heuristic);
           iter = fp->layers[iter]->predecessors[0] - 1;
         }
         free(predecessor_map);
+
         add_expr(pr, lexpr, lexpr_copy);
         add_expr(pr, uexpr, uexpr_copy);
         free_expr(lexpr_copy);
         free_expr(uexpr_copy);
         // Assume at least one non-residual layer between two residual layers
-        k = fp->layers[common_predecessor]->predecessors[0] - 1;
+
+        k = common_predecessor;
 
         continue;
       } else {
@@ -2784,6 +2789,10 @@ void *update_state_using_previous_layers(void *args) {
       // printf("k %d\n",k);
     }
 
+    if (layerno == 17) {
+      printf("here k: %zu %d %zu\n", layerno, lexpr->type == DENSE,
+             lexpr->size);
+    }
     out_neurons[i]->lb = compute_lb_from_expr(pr, lexpr, fp);
     //- bias_i;
     out_neurons[i]->ub = compute_ub_from_expr(pr, uexpr, fp); //+ bias_i;
@@ -2811,8 +2820,9 @@ void update_state_using_previous_layers_parallel(elina_manager_t *man,
   pthread_t threads[NUM_THREADS];
   size_t num_out_neurons = fp->layers[layerno]->dims;
   size_t i;
-  // printf("start %zu\n",num_out_neurons);
-  // fflush(stdout);
+  printf("layerno %zu %zu\n", layerno,
+         fp->layers[layerno]->predecessors[0] - 1);
+  fflush(stdout);
   if (num_out_neurons < NUM_THREADS) {
     for (i = 0; i < num_out_neurons; i++) {
       args[i].start = i;
@@ -3471,14 +3481,15 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
   k = layerno - 1;
+
   while (k >= 0) {
 
     if (fp->layers[k]->type == RESIDUAL) {
 
       expr_t *lexpr_copy = copy_expr(lexpr);
 
-      size_t predecessor1 = fp->layers[k]->predecessors[0];
-      size_t predecessor2 = fp->layers[k]->predecessors[1];
+      size_t predecessor1 = fp->layers[k]->predecessors[0] - 1;
+      size_t predecessor2 = fp->layers[k]->predecessors[1] - 1;
 
       char *predecessor_map = (char *)calloc(k, sizeof(char));
       // Assume no nested residual layers
@@ -3487,7 +3498,7 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
         predecessor_map[iter] = 1;
         iter = fp->layers[iter]->predecessors[0] - 1;
       }
-      iter = fp->layers[predecessor2]->predecessors[1] - 1;
+      iter = fp->layers[predecessor2]->predecessors[0] - 1;
       int common_predecessor = 0;
       while (iter >= 0) {
         if (predecessor_map[iter] == 1) {
@@ -3497,13 +3508,13 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
         iter = fp->layers[iter]->predecessors[0] - 1;
       }
 
-      iter = fp->layers[predecessor1]->predecessors[0] - 1;
+      iter = predecessor1;
       while (iter != common_predecessor) {
         get_lb_using_predecessor_layer(pr, fp, &lexpr, iter,
                                        use_area_heuristic);
         iter = fp->layers[iter]->predecessors[0] - 1;
       }
-      iter = fp->layers[predecessor2]->predecessors[1] - 1;
+      iter = predecessor2;
       while (iter != common_predecessor) {
         get_lb_using_predecessor_layer(pr, fp, &lexpr_copy, iter,
                                        use_area_heuristic);
@@ -3515,7 +3526,7 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
       free_expr(lexpr_copy);
 
       // Assume at least one non-residual layer between two residual layers
-      k = fp->layers[common_predecessor]->predecessors[0] - 1;
+      k = common_predecessor;
 
       continue;
     } else {
@@ -3927,6 +3938,20 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
   return;
 }
 
+void neuron_fprint(FILE *stream, neuron_t *neuron, char **name_of_dim) {
+  // expr_fprint(stream,neuron->expr);
+  fprintf(stream, "[%g, %g]\n", -neuron->lb, neuron->ub);
+}
+
+void layer_fprint(FILE *stream, layer_t *layer, char **name_of_dim) {
+  size_t dims = layer->dims;
+  size_t i;
+  for (i = 0; i < dims; i++) {
+    fprintf(stream, "neuron: %zu ", i);
+    neuron_fprint(stream, layer->neurons[i], name_of_dim);
+  }
+}
+
 bool is_greater(elina_manager_t *man, elina_abstract0_t *element, elina_dim_t y,
                 elina_dim_t x, bool use_area_heuristic) {
   fppoly_t *fp = fppoly_of_abstract0(element);
@@ -3949,7 +3974,7 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element, elina_dim_t y,
     sub->inf_coeff[1] = 1;
     sub->sup_coeff[1] = -1;
     sub->dim[1] = x;
-
+    layer_fprint(stdout, fp->layers[17], NULL);
     double lb = get_lb_using_previous_layers(man, fp, sub, fp->numlayers,
                                              use_area_heuristic);
 
@@ -4649,19 +4674,10 @@ void fppoly_free(elina_manager_t *man, fppoly_t *fp){
 	fp = NULL;
 }
 
-void neuron_fprint(FILE *stream, neuron_t *neuron, char **name_of_dim) {
-  // expr_fprint(stream,neuron->expr);
-  fprintf(stream, "[%g, %g]\n", -neuron->lb, neuron->ub);
-}
 
-void layer_fprint(FILE *stream, layer_t *layer, char **name_of_dim) {
-  size_t dims = layer->dims;
-  size_t i;
-  for (i = 0; i < dims; i++) {
-    fprintf(stream, "neuron: %zu ", i);
-    neuron_fprint(stream, layer->neurons[i], name_of_dim);
-  }
-}
+
+
+
 
 void fppoly_fprint(FILE* stream, elina_manager_t* man, fppoly_t* fp, char** name_of_dim){
 	size_t i;
