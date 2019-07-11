@@ -514,7 +514,6 @@ __global__ void compute_lb_from_expr(float_type *__restrict__ lb_array,
                                      const float_type *__restrict__ inf_cst,
                                      const float_type *__restrict__ input_inf,
                                      const float_type *__restrict__ input_sup,
-                                     const size_t num_exprs,
                                      const size_t expr_size) {
   const size_t n = blockIdx.x;
 
@@ -538,7 +537,6 @@ __global__ void compute_ub_from_expr(float_type *__restrict__ ub_array,
                                      const float_type *__restrict__ sup_cst,
                                      const float_type *__restrict__ input_inf,
                                      const float_type *__restrict__ input_sup,
-                                     const size_t num_exprs,
                                      const size_t expr_size) {
   const size_t n = blockIdx.x;
 
@@ -561,8 +559,7 @@ __global__ void compute_lb_from_expr_conv_sparse(
     const float_type *__restrict__ sup_coeff,
     const float_type *__restrict__ inf_cst,
     const float_type *__restrict__ input_inf,
-    const float_type *__restrict__ input_sup,
-    const size_t num_out_neurons_last_layer, const size_t output_size_x,
+    const float_type *__restrict__ input_sup, const size_t output_size_x,
     const size_t output_size_y, const size_t output_size_z, long int offset_x,
     long int offset_y, long int length_x, long int length_y, long int shift_x,
     long int shift_y) {
@@ -585,7 +582,7 @@ __global__ void compute_lb_from_expr_conv_sparse(
     }
 
     for (long int out_y = 0; out_y < length_y; out_y++) {
-      if ((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y)) {
+      if ((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y)) {
         continue;
       }
 
@@ -613,8 +610,7 @@ __global__ void compute_ub_from_expr_conv_sparse(
     const float_type *__restrict__ sup_coeff,
     const float_type *__restrict__ sup_cst,
     const float_type *__restrict__ input_inf,
-    const float_type *__restrict__ input_sup,
-    const size_t num_out_neurons_last_layer, const size_t output_size_x,
+    const float_type *__restrict__ input_sup, const size_t output_size_x,
     const size_t output_size_y, const size_t output_size_z, long int offset_x,
     long int offset_y, long int length_x, long int length_y, long int shift_x,
     long int shift_y) {
@@ -637,7 +633,7 @@ __global__ void compute_ub_from_expr_conv_sparse(
     }
 
     for (long int out_y = 0; out_y < length_y; out_y++) {
-      if ((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y)) {
+      if ((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y)) {
         continue;
       }
 
@@ -851,7 +847,6 @@ __global__ void lexpr_replace_relu_bounds(
     float_type *__restrict__ inf_cst, float_type *__restrict__ sup_cst,
     const float_type *__restrict__ lb_array,
     const float_type *__restrict__ ub_array,
-    const size_t num_out_neurons_last_layer,
     const size_t num_out_neurons_current_layer) {
   const size_t n = blockIdx.x;
   const size_t i = blockIdx.y * blockDim.x + threadIdx.x;
@@ -927,7 +922,6 @@ __global__ void uexpr_replace_relu_bounds(
     float_type *__restrict__ inf_cst, float_type *__restrict__ sup_cst,
     const float_type *__restrict__ lb_array,
     const float_type *__restrict__ ub_array,
-    const size_t num_out_neurons_last_layer,
     const size_t num_out_neurons_current_layer) {
   const size_t n = blockIdx.x;
   const size_t i = blockIdx.y * blockDim.x + threadIdx.x;
@@ -1004,8 +998,7 @@ __global__ void lexpr_replace_relu_bounds_conv_sparse(
     float_type *__restrict__ inf_coeff, float_type *__restrict__ sup_coeff,
     float_type *__restrict__ inf_cst, float_type *__restrict__ sup_cst,
     const float_type *__restrict__ lb_array,
-    const float_type *__restrict__ ub_array,
-    const size_t num_out_neurons_last_layer, const size_t output_size_x,
+    const float_type *__restrict__ ub_array, const size_t output_size_x,
     const size_t output_size_y, const size_t output_size_z, long int offset_x,
     long int offset_y, long int length_x, long int length_y, long int shift_x,
     long int shift_y) {
@@ -1024,7 +1017,7 @@ __global__ void lexpr_replace_relu_bounds_conv_sparse(
     }
 
     for (long int out_y = 0; out_y < length_y; out_y++) {
-      if ((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y)) {
+      if ((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y)) {
         continue;
       }
 
@@ -1108,8 +1101,7 @@ __global__ void uexpr_replace_relu_bounds_conv_sparse(
     float_type *__restrict__ inf_coeff, float_type *__restrict__ sup_coeff,
     float_type *__restrict__ inf_cst, float_type *__restrict__ sup_cst,
     const float_type *__restrict__ lb_array,
-    const float_type *__restrict__ ub_array,
-    const size_t num_out_neurons_last_layer, const size_t output_size_x,
+    const float_type *__restrict__ ub_array, const size_t output_size_x,
     const size_t output_size_y, const size_t output_size_z, long int offset_x,
     long int offset_y, long int length_x, long int length_y, long int shift_x,
     long int shift_y) {
@@ -1128,7 +1120,7 @@ __global__ void uexpr_replace_relu_bounds_conv_sparse(
     }
 
     for (long int out_y = 0; out_y < length_y; out_y++) {
-      if ((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y)) {
+      if ((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y)) {
         continue;
       }
 
@@ -1444,7 +1436,7 @@ __global__ void coeffs_from_previous_layer_conv_sparse(
       }
 
       for (long int out_y = 0; out_y < length_y; out_y++) {
-        if ((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y)) {
+        if ((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y)) {
           continue;
         }
 
@@ -1540,7 +1532,7 @@ __global__ void coeffs_from_previous_layer_conv_sparse_filter_serial(
       }
 
       for (long int out_y = 0; out_y < length_y; out_y++) {
-        if ((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y)) {
+        if ((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y)) {
           continue;
         }
 
@@ -1614,12 +1606,11 @@ csts_from_previous_layer(const float_type *__restrict__ expr_inf_coeff,
                          float_type *__restrict__ res_inf_cst,
                          float_type *__restrict__ res_sup_cst,
                          const float_type *__restrict__ aux_csts,
-                         const size_t num_out_neurons_last_layer,
                          const size_t num_out_neurons_current_layer) {
   const size_t n = blockIdx.x;
 
-  float_type inf_cst = 0;
-  float_type sup_cst = 0;
+  float_type inf_cst = expr_inf_cst[n];
+  float_type sup_cst = expr_sup_cst[n];
 
   float_type tmp1, tmp2;
   float_type maxRes, maxMul;
@@ -1643,8 +1634,8 @@ csts_from_previous_layer(const float_type *__restrict__ expr_inf_coeff,
     }
   }
 
-  res_inf_cst[n] = inf_cst + expr_inf_cst[n];
-  res_sup_cst[n] = sup_cst + expr_sup_cst[n];
+  res_inf_cst[n] = inf_cst;
+  res_sup_cst[n] = sup_cst;
 }
 
 __global__ void
@@ -1655,14 +1646,13 @@ csts_from_previous_layer_conv(const float_type *__restrict__ expr_inf_coeff,
                               float_type *__restrict__ res_inf_cst,
                               float_type *__restrict__ res_sup_cst,
                               const float_type *__restrict__ aux_csts,
-                              const size_t num_out_neurons_last_layer,
                               const size_t current_layer_out_size_x,
                               const size_t current_layer_out_size_y,
                               const size_t current_layer_out_size_z) {
   const size_t n = blockIdx.x;
 
-  float_type inf_cst = 0;
-  float_type sup_cst = 0;
+  float_type inf_cst = expr_inf_cst[n];
+  float_type sup_cst = expr_sup_cst[n];
 
   float_type tmp1, tmp2;
   float_type maxRes, maxMul;
@@ -1691,8 +1681,8 @@ csts_from_previous_layer_conv(const float_type *__restrict__ expr_inf_coeff,
     }
   }
 
-  res_inf_cst[n] = inf_cst + expr_inf_cst[n];
-  res_sup_cst[n] = sup_cst + expr_sup_cst[n];
+  res_inf_cst[n] = inf_cst;
+  res_sup_cst[n] = sup_cst;
 }
 
 __global__ void csts_from_previous_layer_conv_sparse(
@@ -1701,8 +1691,7 @@ __global__ void csts_from_previous_layer_conv_sparse(
     const float_type *__restrict__ expr_inf_cst,
     const float_type *__restrict__ expr_sup_cst,
     float_type *__restrict__ res_inf_cst, float_type *__restrict__ res_sup_cst,
-    const float_type *__restrict__ aux_csts,
-    const size_t num_out_neurons_last_layer, const size_t output_size_x,
+    const float_type *__restrict__ aux_csts, const size_t output_size_x,
     const size_t output_size_y, const size_t output_size_z, long int offset_x,
     long int offset_y, long int length_x, long int length_y, long int shift_x,
     long int shift_y) {
@@ -1715,8 +1704,8 @@ __global__ void csts_from_previous_layer_conv_sparse(
   const long int min_out_x = offset_x + last_x * shift_x;
   const long int min_out_y = offset_y + last_y * shift_y;
 
-  float_type inf_cst = 0;
-  float_type sup_cst = 0;
+  float_type inf_cst = expr_inf_cst[n];
+  float_type sup_cst = expr_sup_cst[n];
 
   float_type tmp1, tmp2;
   float_type maxRes, maxMul;
@@ -1727,7 +1716,7 @@ __global__ void csts_from_previous_layer_conv_sparse(
     }
 
     for (long int out_y = 0; out_y < length_y; out_y++) {
-      if ((out_y + min_out_y < 0 || out_y + min_out_y >= output_size_y)) {
+      if ((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y)) {
         continue;
       }
 
@@ -1755,24 +1744,23 @@ __global__ void csts_from_previous_layer_conv_sparse(
     }
   }
 
-  res_inf_cst[n] = inf_cst + expr_inf_cst[n];
-  res_sup_cst[n] = sup_cst + expr_sup_cst[n];
+  res_inf_cst[n] = inf_cst;
+  res_sup_cst[n] = sup_cst;
 }
 
 __global__ void device_layer_create_sparse_exprs(
     float_type *dense_coeff, float_type *bias, const float_type *filter_weights,
     const float_type *filter_bias, const size_t input_size_x,
     const size_t input_size_y, const size_t input_size_z,
-    const size_t output_size_x, const size_t output_size_y,
-    const size_t output_size_z, const size_t filter_size_x,
-    const size_t filter_size_y, const size_t stride_x, const size_t stride_y,
-    const long int pad_x, const long int pad_y, const size_t num_pixels) {
+    const size_t filter_size_x, const size_t filter_size_y,
+    const size_t stride_x, const size_t stride_y, const long int pad_x,
+    const long int pad_y, const size_t num_pixels) {
   size_t out_x = blockIdx.x;
   size_t out_y = blockIdx.y;
   size_t out_z = blockIdx.z;
 
   const size_t mat_x =
-      out_x * output_size_y * output_size_z + out_y * output_size_z + out_z;
+      out_x * gridDim.y * gridDim.z + out_y * gridDim.z + out_z;
 
   for (size_t x_shift = 0; x_shift < filter_size_x; x_shift++) {
     for (size_t y_shift = 0; y_shift < filter_size_y; y_shift++) {
@@ -1790,17 +1778,11 @@ __global__ void device_layer_create_sparse_exprs(
 
         const size_t mat_y = x_shift * filter_size_y * input_size_z +
                              y_shift * input_size_z + inp_z;
-
-        // if(out_x == 0 && out_y == 0 && out_z == 0)
-        // printf("%lu ", mat_y);
-
-        // if(out_x == 1 && out_y == 1 && out_z == 0)
-        // printf("%lu ", mat_y);
-
         const size_t filter_index =
             out_z * filter_size_x * filter_size_y * input_size_z +
             x_shift * filter_size_y * input_size_z + y_shift * input_size_z +
             inp_z;
+
         dense_coeff[mat_x * filter_size_x * filter_size_y * input_size_z +
                     mat_y] = filter_weights[filter_index];
       }
@@ -1808,17 +1790,6 @@ __global__ void device_layer_create_sparse_exprs(
   }
 
   bias[mat_x] = filter_bias[out_z];
-}
-
-void sparse_to_dense(layer_t *layer, float_type *coeffs, float_type *csts) {
-  device_layer_create_sparse_exprs<<<
-      dim3(layer->output_size[0], layer->output_size[1], layer->output_size[2]),
-      1>>>(coeffs, csts, layer->filter_weights, layer->filter_bias,
-           layer->input_size[0], layer->input_size[1], layer->input_size[2],
-           layer->output_size[0], layer->output_size[1], layer->output_size[2],
-           layer->filter_size[0], layer->filter_size[1], layer->strides[0],
-           layer->strides[1], layer->pad[0], layer->pad[1],
-           layer->num_in_neurons);
 }
 
 void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
@@ -1938,12 +1909,10 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
     if (fp->layers[k]->activation == RELU) {
       lexpr_replace_relu_bounds<<<num_blocks_relu, num_threads>>>(
           linf_coeff, lsup_coeff, linf_cst, lsup_cst, aux_lb_array,
-          aux_ub_array, num_out_neurons_last_layer,
-          num_out_neurons_current_layer);
+          aux_ub_array, num_out_neurons_current_layer);
       uexpr_replace_relu_bounds<<<num_blocks_relu, num_threads>>>(
           uinf_coeff, usup_coeff, uinf_cst, usup_cst, aux_lb_array,
-          aux_ub_array, num_out_neurons_last_layer,
-          num_out_neurons_current_layer);
+          aux_ub_array, num_out_neurons_current_layer);
     }
 
     cudaMalloc((void **)&linf_coeff_tmp, num_out_neurons_last_layer *
@@ -2021,14 +1990,12 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
 
       csts_from_previous_layer_conv<<<num_out_neurons_last_layer, 1>>>(
           linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp,
-          lsup_cst_tmp, aux_csts, num_out_neurons_last_layer,
-          fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
-          fp->layers[k]->output_size[2]);
+          lsup_cst_tmp, aux_csts, fp->layers[k]->output_size[0],
+          fp->layers[k]->output_size[1], fp->layers[k]->output_size[2]);
       csts_from_previous_layer_conv<<<num_out_neurons_last_layer, 1>>>(
           uinf_coeff, usup_coeff, uinf_cst, usup_cst, uinf_cst_tmp,
-          usup_cst_tmp, aux_csts, num_out_neurons_last_layer,
-          fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
-          fp->layers[k]->output_size[2]);
+          usup_cst_tmp, aux_csts, fp->layers[k]->output_size[0],
+          fp->layers[k]->output_size[1], fp->layers[k]->output_size[2]);
 
     } else {
       coeffs_from_previous_layer<<<num_blocks_linear, num_threads>>>(
@@ -2040,12 +2007,10 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
 
       csts_from_previous_layer<<<num_out_neurons_last_layer, 1>>>(
           linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp,
-          lsup_cst_tmp, aux_csts, num_out_neurons_last_layer,
-          num_out_neurons_current_layer);
+          lsup_cst_tmp, aux_csts, num_out_neurons_current_layer);
       csts_from_previous_layer<<<num_out_neurons_last_layer, 1>>>(
           uinf_coeff, usup_coeff, uinf_cst, usup_cst, uinf_cst_tmp,
-          usup_cst_tmp, aux_csts, num_out_neurons_last_layer,
-          num_out_neurons_current_layer);
+          usup_cst_tmp, aux_csts, num_out_neurons_current_layer);
     }
 
     std::swap(linf_coeff, linf_coeff_tmp);
@@ -2066,10 +2031,10 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
 
   compute_lb_from_expr<<<num_out_neurons_last_layer, 1>>>(
       lb_array, linf_coeff, lsup_coeff, linf_cst, fp->input_inf, fp->input_sup,
-      num_out_neurons_last_layer, num_in_neurons_first_layer);
+      num_in_neurons_first_layer);
   compute_ub_from_expr<<<num_out_neurons_last_layer, 1>>>(
       ub_array, uinf_coeff, usup_coeff, usup_cst, fp->input_inf, fp->input_sup,
-      num_out_neurons_last_layer, num_in_neurons_first_layer);
+      num_in_neurons_first_layer);
 
   cudaFree(linf_coeff);
   cudaFree(lsup_coeff);
@@ -2182,11 +2147,12 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
-  const size_t num_out_neurons_last_layer =
-      fp->layers[layerno]->num_out_neurons;
+  const size_t x_y_size_last_layer =
+      fp->layers[layerno]->output_size[0] * fp->layers[layerno]->output_size[1];
+  const size_t num_filters_last_layer = fp->layers[layerno]->output_size[2];
 
-  std::cout << "num_out_neurons_last " << num_out_neurons_last_layer
-            << std::endl;
+  std::cout << "num_out_neurons_last "
+            << x_y_size_last_layer * num_filters_last_layer << std::endl;
 
   offset_x = -fp->layers[layerno]->pad[0];
   offset_y = -fp->layers[layerno]->pad[1];
@@ -2200,17 +2166,31 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
   float_type *coeffs;
   float_type *csts;
 
-  cudaMalloc((void **)&coeffs,
-             num_out_neurons_last_layer * length_x * length_y *
-                 fp->layers[layerno]->input_size[2] * sizeof(float_type));
-  cudaMalloc((void **)&csts, num_out_neurons_last_layer * sizeof(float_type));
+  cudaMalloc((void **)&coeffs, x_y_size_last_layer * num_filters_last_layer *
+                                   length_x * length_y *
+                                   fp->layers[layerno]->input_size[2] *
+                                   sizeof(float_type));
+  cudaMalloc((void **)&csts,
+             x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
 
   cudaMemset(coeffs, 0,
-             num_out_neurons_last_layer * length_x * length_y *
-                 fp->layers[layerno]->input_size[2] * sizeof(float_type));
-  cudaMemset(csts, 0, num_out_neurons_last_layer * sizeof(float_type));
+             x_y_size_last_layer * num_filters_last_layer * length_x *
+                 length_y * fp->layers[layerno]->input_size[2] *
+                 sizeof(float_type));
+  cudaMemset(csts, 0,
+             x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
 
-  sparse_to_dense(fp->layers[layerno], coeffs, csts);
+  device_layer_create_sparse_exprs<<<dim3(fp->layers[layerno]->output_size[0],
+                                          fp->layers[layerno]->output_size[1],
+                                          fp->layers[layerno]->output_size[2]),
+                                     1>>>(
+      coeffs, csts, fp->layers[layerno]->filter_weights,
+      fp->layers[layerno]->filter_bias, fp->layers[layerno]->input_size[0],
+      fp->layers[layerno]->input_size[1], fp->layers[layerno]->input_size[2],
+      fp->layers[layerno]->filter_size[0], fp->layers[layerno]->filter_size[1],
+      fp->layers[layerno]->strides[0], fp->layers[layerno]->strides[1],
+      fp->layers[layerno]->pad[0], fp->layers[layerno]->pad[1],
+      fp->layers[layerno]->num_in_neurons);
 
   float_type *lb_array = fp->layers[layerno]->lb_array;
   float_type *ub_array = fp->layers[layerno]->ub_array;
@@ -2221,16 +2201,18 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
   float_type *lsup_cst;
 
   cudaMalloc((void **)&linf_coeff,
-             num_out_neurons_last_layer * length_x * length_y *
-                 fp->layers[layerno]->input_size[2] * sizeof(float_type));
+             x_y_size_last_layer * num_filters_last_layer * length_x *
+                 length_y * fp->layers[layerno]->input_size[2] *
+                 sizeof(float_type));
   cudaMalloc((void **)&lsup_coeff,
-             num_out_neurons_last_layer * length_x * length_y *
-                 fp->layers[layerno]->input_size[2] * sizeof(float_type));
+             x_y_size_last_layer * num_filters_last_layer * length_x *
+                 length_y * fp->layers[layerno]->input_size[2] *
+                 sizeof(float_type));
 
   cudaMalloc((void **)&linf_cst,
-             num_out_neurons_last_layer * sizeof(float_type));
+             x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
   cudaMalloc((void **)&lsup_cst,
-             num_out_neurons_last_layer * sizeof(float_type));
+             x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
 
   float_type *uinf_coeff;
   float_type *usup_coeff;
@@ -2238,24 +2220,26 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
   float_type *usup_cst;
 
   cudaMalloc((void **)&uinf_coeff,
-             num_out_neurons_last_layer * length_x * length_y *
-                 fp->layers[layerno]->input_size[2] * sizeof(float_type));
+             x_y_size_last_layer * num_filters_last_layer * length_x *
+                 length_y * fp->layers[layerno]->input_size[2] *
+                 sizeof(float_type));
   cudaMalloc((void **)&usup_coeff,
-             num_out_neurons_last_layer * length_x * length_y *
-                 fp->layers[layerno]->input_size[2] * sizeof(float_type));
+             x_y_size_last_layer * num_filters_last_layer * length_x *
+                 length_y * fp->layers[layerno]->input_size[2] *
+                 sizeof(float_type));
 
   cudaMalloc((void **)&uinf_cst,
-             num_out_neurons_last_layer * sizeof(float_type));
+             x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
   cudaMalloc((void **)&usup_cst,
-             num_out_neurons_last_layer * sizeof(float_type));
+             x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
 
-  copy_expr_array<<<num_out_neurons_last_layer, 1>>>(
+  copy_expr_array<<<x_y_size_last_layer * num_filters_last_layer, 1>>>(
       linf_coeff, lsup_coeff, linf_cst, lsup_cst, coeffs, csts,
-      num_out_neurons_last_layer,
+      x_y_size_last_layer * num_filters_last_layer,
       length_x * length_y * fp->layers[layerno]->input_size[2]);
-  copy_expr_array<<<num_out_neurons_last_layer, 1>>>(
+  copy_expr_array<<<x_y_size_last_layer * num_filters_last_layer, 1>>>(
       uinf_coeff, usup_coeff, uinf_cst, usup_cst, coeffs, csts,
-      num_out_neurons_last_layer,
+      x_y_size_last_layer * num_filters_last_layer,
       length_x * length_y * fp->layers[layerno]->input_size[2]);
 
   cudaFree(coeffs);
@@ -2272,13 +2256,13 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
   float_type *usup_cst_tmp;
 
   cudaMalloc((void **)&linf_cst_tmp,
-             num_out_neurons_last_layer * sizeof(float_type));
+             x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
   cudaMalloc((void **)&lsup_cst_tmp,
-             num_out_neurons_last_layer * sizeof(float_type));
+             x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
   cudaMalloc((void **)&uinf_cst_tmp,
-             num_out_neurons_last_layer * sizeof(float_type));
+             x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
   cudaMalloc((void **)&usup_cst_tmp,
-             num_out_neurons_last_layer * sizeof(float_type));
+             x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
 
   for (int k = layerno - 1; k >= 0; k--) {
     const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
@@ -2286,17 +2270,6 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
     std::cout << "num_out_neurons_current " << num_out_neurons_current_layer
               << " num_in_neurons_current " << num_in_neurons_current_layer
               << std::endl;
-
-    const dim3 num_blocks_relu(num_out_neurons_last_layer,
-                               num_out_neurons_current_layer / num_threads + 1,
-                               1);
-    const dim3 num_blocks_linear(num_out_neurons_last_layer,
-                                 num_in_neurons_current_layer / num_threads + 1,
-                                 1);
-
-    std::cout << "num_threads" << num_threads << " num_blocks_relu "
-              << num_blocks_relu.y << " num_blocks_linear "
-              << num_blocks_linear.y << std::endl;
 
     float_type *aux_coeffs;
     float_type *aux_csts;
@@ -2318,19 +2291,17 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
                fp->layers[layerno]->output_size[1],
                fp->layers[layerno]->output_size[2]),
           1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, aux_lb_array,
-               aux_ub_array, num_out_neurons_last_layer,
-               fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
-               fp->layers[k]->output_size[2], offset_x, offset_y, length_x,
-               length_y, shift_x, shift_y);
+               aux_ub_array, fp->layers[k]->output_size[0],
+               fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
+               offset_x, offset_y, length_x, length_y, shift_x, shift_y);
       uexpr_replace_relu_bounds_conv_sparse<<<
           dim3(fp->layers[layerno]->output_size[0],
                fp->layers[layerno]->output_size[1],
                fp->layers[layerno]->output_size[2]),
           1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, aux_lb_array,
-               aux_ub_array, num_out_neurons_last_layer,
-               fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
-               fp->layers[k]->output_size[2], offset_x, offset_y, length_x,
-               length_y, shift_x, shift_y);
+               aux_ub_array, fp->layers[k]->output_size[0],
+               fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
+               offset_x, offset_y, length_x, length_y, shift_x, shift_y);
     }
 
     size_t missing_length = ((length_x - 1) * fp->layers[k]->strides[0] +
@@ -2339,30 +2310,30 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
                              fp->layers[k]->filter_size[1]) *
                             fp->layers[k]->input_size[2];
 
-    cudaMalloc((void **)&linf_coeff_tmp, num_out_neurons_last_layer *
-                                             missing_length *
-                                             sizeof(float_type));
-    cudaMalloc((void **)&lsup_coeff_tmp, num_out_neurons_last_layer *
-                                             missing_length *
-                                             sizeof(float_type));
-    cudaMalloc((void **)&uinf_coeff_tmp, num_out_neurons_last_layer *
-                                             missing_length *
-                                             sizeof(float_type));
-    cudaMalloc((void **)&usup_coeff_tmp, num_out_neurons_last_layer *
-                                             missing_length *
-                                             sizeof(float_type));
+    cudaMalloc((void **)&linf_coeff_tmp,
+               x_y_size_last_layer * num_filters_last_layer * missing_length *
+                   sizeof(float_type));
+    cudaMalloc((void **)&lsup_coeff_tmp,
+               x_y_size_last_layer * num_filters_last_layer * missing_length *
+                   sizeof(float_type));
+    cudaMalloc((void **)&uinf_coeff_tmp,
+               x_y_size_last_layer * num_filters_last_layer * missing_length *
+                   sizeof(float_type));
+    cudaMalloc((void **)&usup_coeff_tmp,
+               x_y_size_last_layer * num_filters_last_layer * missing_length *
+                   sizeof(float_type));
 
     cudaMemset(linf_coeff_tmp, 0,
-               num_out_neurons_last_layer * missing_length *
+               x_y_size_last_layer * num_filters_last_layer * missing_length *
                    sizeof(float_type));
     cudaMemset(lsup_coeff_tmp, 0,
-               num_out_neurons_last_layer * missing_length *
+               x_y_size_last_layer * num_filters_last_layer * missing_length *
                    sizeof(float_type));
     cudaMemset(uinf_coeff_tmp, 0,
-               num_out_neurons_last_layer * missing_length *
+               x_y_size_last_layer * num_filters_last_layer * missing_length *
                    sizeof(float_type));
     cudaMemset(usup_coeff_tmp, 0,
-               num_out_neurons_last_layer * missing_length *
+               x_y_size_last_layer * num_filters_last_layer * missing_length *
                    sizeof(float_type));
 
     // if(fp->layers[k]->filter_size[0]*fp->layers[k]->filter_size[1]*fp->layers[k]->filter_size[2]
@@ -2426,19 +2397,17 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
              fp->layers[layerno]->output_size[1],
              fp->layers[layerno]->output_size[2]),
         1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp,
-             lsup_cst_tmp, aux_csts, num_out_neurons_last_layer,
-             fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
-             fp->layers[k]->output_size[2], offset_x, offset_y, length_x,
-             length_y, shift_x, shift_y);
+             lsup_cst_tmp, aux_csts, fp->layers[k]->output_size[0],
+             fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
+             offset_x, offset_y, length_x, length_y, shift_x, shift_y);
     csts_from_previous_layer_conv_sparse<<<
         dim3(fp->layers[layerno]->output_size[0],
              fp->layers[layerno]->output_size[1],
              fp->layers[layerno]->output_size[2]),
         1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, uinf_cst_tmp,
-             usup_cst_tmp, aux_csts, num_out_neurons_last_layer,
-             fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
-             fp->layers[k]->output_size[2], offset_x, offset_y, length_x,
-             length_y, shift_x, shift_y);
+             usup_cst_tmp, aux_csts, fp->layers[k]->output_size[0],
+             fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
+             offset_x, offset_y, length_x, length_y, shift_x, shift_y);
 
     offset_x = fp->layers[k]->strides[0] * offset_x - fp->layers[k]->pad[0];
     offset_y = fp->layers[k]->strides[1] * offset_y - fp->layers[k]->pad[1];
@@ -2472,17 +2441,17 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
                                           fp->layers[layerno]->output_size[2]),
                                      1>>>(
       lb_array, linf_coeff, lsup_coeff, linf_cst, fp->input_inf, fp->input_sup,
-      num_out_neurons_last_layer, fp->layers[0]->input_size[0],
-      fp->layers[0]->input_size[1], fp->layers[0]->input_size[2], offset_x,
-      offset_y, length_x, length_y, shift_x, shift_y);
+      fp->layers[0]->input_size[0], fp->layers[0]->input_size[1],
+      fp->layers[0]->input_size[2], offset_x, offset_y, length_x, length_y,
+      shift_x, shift_y);
   compute_ub_from_expr_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0],
                                           fp->layers[layerno]->output_size[1],
                                           fp->layers[layerno]->output_size[2]),
                                      1>>>(
       ub_array, uinf_coeff, usup_coeff, usup_cst, fp->input_inf, fp->input_sup,
-      num_out_neurons_last_layer, fp->layers[0]->input_size[0],
-      fp->layers[0]->input_size[1], fp->layers[0]->input_size[2], offset_x,
-      offset_y, length_x, length_y, shift_x, shift_y);
+      fp->layers[0]->input_size[0], fp->layers[0]->input_size[1],
+      fp->layers[0]->input_size[2], offset_x, offset_y, length_x, length_y,
+      shift_x, shift_y);
 
   cudaFree(linf_coeff);
   cudaFree(lsup_coeff);
@@ -2716,13 +2685,8 @@ void get_lb_using_previous_layers(elina_manager_t *man,
     float_type *aux_csts;
 
     if (fp->layers[k]->type == CONV) {
-      cudaMalloc((void **)&aux_coeffs, fp->layers[k]->num_out_neurons *
-                                           fp->layers[k]->num_in_neurons *
-                                           sizeof(float_type));
-      cudaMalloc((void **)&aux_csts,
-                 fp->layers[k]->num_out_neurons * sizeof(float_type));
-
-      sparse_to_dense(fp->layers[k], aux_coeffs, aux_csts);
+      aux_coeffs = fp->layers[k]->filter_weights;
+      aux_csts = fp->layers[k]->filter_bias;
     } else {
       aux_coeffs = fp->layers[k]->coeffs;
       aux_csts = fp->layers[k]->csts;
@@ -2734,8 +2698,7 @@ void get_lb_using_previous_layers(elina_manager_t *man,
     if (fp->layers[k]->activation == RELU) {
       lexpr_replace_relu_bounds<<<num_blocks_relu, num_threads>>>(
           linf_coeff, lsup_coeff, linf_cst, lsup_cst, aux_lb_array,
-          aux_ub_array, num_out_neurons_last_layer,
-          num_out_neurons_current_layer);
+          aux_ub_array, num_out_neurons_current_layer);
     }
 
     cudaMalloc((void **)&linf_coeff_tmp, num_out_neurons_last_layer *
@@ -2757,20 +2720,18 @@ void get_lb_using_previous_layers(elina_manager_t *man,
                                         dim3(fp->layers[k]->input_size[2],
                                              fp->layers[k]->filter_size[1],
                                              fp->layers[k]->filter_size[0])>>>(
-          linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp,
-          fp->layers[k]->filter_weights, fp->layers[k]->output_size[0],
-          fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
-          fp->layers[k]->input_size[0], fp->layers[k]->input_size[1],
-          fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0],
-          fp->layers[k]->filter_size[1], fp->layers[k]->strides[0],
-          fp->layers[k]->strides[1], fp->layers[k]->pad[0],
-          fp->layers[k]->pad[1]);
+          linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, aux_coeffs,
+          fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+          fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
+          fp->layers[k]->input_size[1], fp->layers[k]->input_size[2],
+          fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
+          fp->layers[k]->strides[0], fp->layers[k]->strides[1],
+          fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
 
       csts_from_previous_layer_conv<<<num_out_neurons_last_layer, 1>>>(
           linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp,
-          lsup_cst_tmp, fp->layers[k]->filter_bias, num_out_neurons_last_layer,
-          fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
-          fp->layers[k]->output_size[2]);
+          lsup_cst_tmp, aux_csts, fp->layers[k]->output_size[0],
+          fp->layers[k]->output_size[1], fp->layers[k]->output_size[2]);
     } else {
       coeffs_from_previous_layer<<<num_blocks_linear, num_threads>>>(
           linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, aux_coeffs,
@@ -2778,8 +2739,7 @@ void get_lb_using_previous_layers(elina_manager_t *man,
 
       csts_from_previous_layer<<<num_out_neurons_last_layer, 1>>>(
           linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp,
-          lsup_cst_tmp, aux_csts, num_out_neurons_last_layer,
-          num_out_neurons_current_layer);
+          lsup_cst_tmp, aux_csts, num_out_neurons_current_layer);
     }
 
     std::swap(linf_coeff, linf_coeff_tmp);
@@ -2798,7 +2758,7 @@ void get_lb_using_previous_layers(elina_manager_t *man,
 
   compute_lb_from_expr<<<num_out_neurons_last_layer, 1>>>(
       lb_dev, linf_coeff, lsup_coeff, linf_cst, fp->input_inf, fp->input_sup,
-      num_out_neurons_last_layer, num_in_neurons_first_layer);
+      num_in_neurons_first_layer);
 
   cudaFree(linf_coeff);
   cudaFree(lsup_coeff);
