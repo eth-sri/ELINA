@@ -559,7 +559,8 @@ __global__ void compute_lb_from_expr_conv_sparse(
     const float_type *__restrict__ sup_coeff,
     const float_type *__restrict__ inf_cst,
     const float_type *__restrict__ input_inf,
-    const float_type *__restrict__ input_sup, const size_t output_size_x,
+    const float_type *__restrict__ input_sup, const size_t num_chunks,
+    const size_t chunk_counter, const size_t output_size_x,
     const size_t output_size_y, const size_t output_size_z, long int offset_x,
     long int offset_y, long int length_x, long int length_y, long int shift_x,
     long int shift_y) {
@@ -567,12 +568,16 @@ __global__ void compute_lb_from_expr_conv_sparse(
   const size_t last_y = blockIdx.y;
   const size_t last_z = blockIdx.z;
 
-  const size_t n = last_x * gridDim.y * gridDim.z + last_y * gridDim.z + last_z;
+  const size_t local_n =
+      last_x * gridDim.y * gridDim.z + last_y * gridDim.z + last_z;
+  const size_t global_n = last_x * gridDim.y * num_chunks * gridDim.z +
+                          last_y * num_chunks * gridDim.z +
+                          chunk_counter * gridDim.z + last_z;
 
   const long int min_out_x = offset_x + last_x * shift_x;
   const long int min_out_y = offset_y + last_y * shift_y;
 
-  float_type res_inf = inf_cst[n];
+  float_type res_inf = inf_cst[local_n];
 
   float_type tmp1, tmp2;
 
@@ -592,7 +597,7 @@ __global__ void compute_lb_from_expr_conv_sparse(
         size_t j =
             out_x * length_y * output_size_z + out_y * output_size_z + out_z;
 
-        size_t mat_out = n * length_x * length_y * output_size_z + j;
+        size_t mat_out = local_n * length_x * length_y * output_size_z + j;
 
         elina_double_interval_mul(&tmp1, &tmp2, inf_coeff[mat_out],
                                   sup_coeff[mat_out], input_inf[i],
@@ -602,7 +607,7 @@ __global__ void compute_lb_from_expr_conv_sparse(
     }
   }
 
-  lb_array[n] = res_inf;
+  lb_array[global_n] = res_inf;
 }
 
 __global__ void compute_ub_from_expr_conv_sparse(
@@ -610,7 +615,8 @@ __global__ void compute_ub_from_expr_conv_sparse(
     const float_type *__restrict__ sup_coeff,
     const float_type *__restrict__ sup_cst,
     const float_type *__restrict__ input_inf,
-    const float_type *__restrict__ input_sup, const size_t output_size_x,
+    const float_type *__restrict__ input_sup, const size_t num_chunks,
+    const size_t chunk_counter, const size_t output_size_x,
     const size_t output_size_y, const size_t output_size_z, long int offset_x,
     long int offset_y, long int length_x, long int length_y, long int shift_x,
     long int shift_y) {
@@ -618,12 +624,15 @@ __global__ void compute_ub_from_expr_conv_sparse(
   const size_t last_y = blockIdx.y;
   const size_t last_z = blockIdx.z;
 
-  const size_t n = last_x * gridDim.y * gridDim.z + last_y * gridDim.z + last_z;
-
+  const size_t local_n =
+      last_x * gridDim.y * gridDim.z + last_y * gridDim.z + last_z;
+  const size_t global_n = last_x * gridDim.y * num_chunks * gridDim.z +
+                          last_y * num_chunks * gridDim.z +
+                          chunk_counter * gridDim.z + last_z;
   const long int min_out_x = offset_x + last_x * shift_x;
   const long int min_out_y = offset_y + last_y * shift_y;
 
-  float_type res_sup = sup_cst[n];
+  float_type res_sup = sup_cst[local_n];
 
   float_type tmp1, tmp2;
 
@@ -643,7 +652,7 @@ __global__ void compute_ub_from_expr_conv_sparse(
         size_t j =
             out_x * length_y * output_size_z + out_y * output_size_z + out_z;
 
-        size_t mat_out = n * length_x * length_y * output_size_z + j;
+        size_t mat_out = local_n * length_x * length_y * output_size_z + j;
 
         elina_double_interval_mul(&tmp1, &tmp2, inf_coeff[mat_out],
                                   sup_coeff[mat_out], input_inf[i],
@@ -653,7 +662,7 @@ __global__ void compute_ub_from_expr_conv_sparse(
     }
   }
 
-  ub_array[n] = res_sup;
+  ub_array[global_n] = res_sup;
 }
 
 template <typename FloatType>
@@ -1750,16 +1759,16 @@ __global__ void csts_from_previous_layer_conv_sparse(
 
 __global__ void device_layer_create_sparse_exprs(
     float_type *dense_coeff, float_type *bias, const float_type *filter_weights,
-    const float_type *filter_bias, const size_t input_size_x,
-    const size_t input_size_y, const size_t input_size_z,
-    const size_t filter_size_x, const size_t filter_size_y,
-    const size_t stride_x, const size_t stride_y, const long int pad_x,
-    const long int pad_y, const size_t num_pixels) {
+    const float_type *filter_bias, const size_t chunk_counter,
+    const size_t input_size_x, const size_t input_size_y,
+    const size_t input_size_z, const size_t filter_size_x,
+    const size_t filter_size_y, const size_t stride_x, const size_t stride_y,
+    const long int pad_x, const long int pad_y, const size_t num_pixels) {
   size_t out_x = blockIdx.x;
   size_t out_y = blockIdx.y;
   size_t out_z = blockIdx.z;
 
-  const size_t mat_x =
+  const size_t local_mat_x =
       out_x * gridDim.y * gridDim.z + out_y * gridDim.z + out_z;
 
   for (size_t x_shift = 0; x_shift < filter_size_x; x_shift++) {
@@ -1778,18 +1787,19 @@ __global__ void device_layer_create_sparse_exprs(
 
         const size_t mat_y = x_shift * filter_size_y * input_size_z +
                              y_shift * input_size_z + inp_z;
-        const size_t filter_index =
-            out_z * filter_size_x * filter_size_y * input_size_z +
-            x_shift * filter_size_y * input_size_z + y_shift * input_size_z +
-            inp_z;
+        const size_t filter_index = (chunk_counter * gridDim.z + out_z) *
+                                        filter_size_x * filter_size_y *
+                                        input_size_z +
+                                    x_shift * filter_size_y * input_size_z +
+                                    y_shift * input_size_z + inp_z;
 
-        dense_coeff[mat_x * filter_size_x * filter_size_y * input_size_z +
+        dense_coeff[local_mat_x * filter_size_x * filter_size_y * input_size_z +
                     mat_y] = filter_weights[filter_index];
       }
     }
   }
 
-  bias[mat_x] = filter_bias[out_z];
+  bias[local_mat_x] = filter_bias[chunk_counter * gridDim.z + out_z];
 }
 
 void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
@@ -1942,51 +1952,49 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
                    sizeof(float_type));
 
     if (fp->layers[k]->type == CONV) {
-      // if(fp->layers[k]->filter_size[0]*fp->layers[k]->filter_size[1]*fp->layers[k]->filter_size[2]
-      // > 1024)
-      //{
-      coeffs_from_previous_layer_conv_filter_serial<<<
-          num_out_neurons_last_layer, fp->layers[k]->input_size[2]>>>(
-          linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, aux_coeffs,
-          fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
-          fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
-          fp->layers[k]->input_size[1], fp->layers[k]->input_size[2],
-          fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
-          fp->layers[k]->strides[0], fp->layers[k]->strides[1],
-          fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-      coeffs_from_previous_layer_conv_filter_serial<<<
-          num_out_neurons_last_layer, fp->layers[k]->input_size[2]>>>(
-          uinf_coeff, usup_coeff, uinf_coeff_tmp, usup_coeff_tmp, aux_coeffs,
-          fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
-          fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
-          fp->layers[k]->input_size[1], fp->layers[k]->input_size[2],
-          fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
-          fp->layers[k]->strides[0], fp->layers[k]->strides[1],
-          fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-      //}
-      // else
-      //{
-      // coeffs_from_previous_layer_conv<<<num_out_neurons_last_layer,
-      // dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1],
-      // fp->layers[k]->filter_size[0])>>>(linf_coeff, lsup_coeff,
-      // linf_coeff_tmp, lsup_coeff_tmp, aux_coeffs,
-      // fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
-      // fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
-      // fp->layers[k]->input_size[1], fp->layers[k]->input_size[2],
-      // fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
-      // fp->layers[k]->strides[0], fp->layers[k]->strides[1],
-      // fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-      // coeffs_from_previous_layer_conv<<<num_out_neurons_last_layer,
-      // dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1],
-      // fp->layers[k]->filter_size[0])>>>(uinf_coeff, usup_coeff,
-      // uinf_coeff_tmp, usup_coeff_tmp, aux_coeffs,
-      // fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
-      // fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
-      // fp->layers[k]->input_size[1], fp->layers[k]->input_size[2],
-      // fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
-      // fp->layers[k]->strides[0], fp->layers[k]->strides[1],
-      // fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-      //}
+      if (fp->layers[k]->input_size[2] >= 128) {
+        coeffs_from_previous_layer_conv_filter_serial<<<
+            num_out_neurons_last_layer, fp->layers[k]->input_size[2]>>>(
+            linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, aux_coeffs,
+            fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+            fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
+            fp->layers[k]->input_size[1], fp->layers[k]->input_size[2],
+            fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
+            fp->layers[k]->strides[0], fp->layers[k]->strides[1],
+            fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+        coeffs_from_previous_layer_conv_filter_serial<<<
+            num_out_neurons_last_layer, fp->layers[k]->input_size[2]>>>(
+            uinf_coeff, usup_coeff, uinf_coeff_tmp, usup_coeff_tmp, aux_coeffs,
+            fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+            fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
+            fp->layers[k]->input_size[1], fp->layers[k]->input_size[2],
+            fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
+            fp->layers[k]->strides[0], fp->layers[k]->strides[1],
+            fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+      } else {
+        coeffs_from_previous_layer_conv<<<
+            num_out_neurons_last_layer,
+            dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1],
+                 fp->layers[k]->filter_size[0])>>>(
+            linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, aux_coeffs,
+            fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+            fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
+            fp->layers[k]->input_size[1], fp->layers[k]->input_size[2],
+            fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
+            fp->layers[k]->strides[0], fp->layers[k]->strides[1],
+            fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+        coeffs_from_previous_layer_conv<<<
+            num_out_neurons_last_layer,
+            dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1],
+                 fp->layers[k]->filter_size[0])>>>(
+            uinf_coeff, usup_coeff, uinf_coeff_tmp, usup_coeff_tmp, aux_coeffs,
+            fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+            fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
+            fp->layers[k]->input_size[1], fp->layers[k]->input_size[2],
+            fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
+            fp->layers[k]->strides[0], fp->layers[k]->strides[1],
+            fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+      }
 
       csts_from_previous_layer_conv<<<num_out_neurons_last_layer, 1>>>(
           linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp,
@@ -2061,7 +2069,7 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
             << std::endl;
 }
 
-void print_sizes(fppoly_t *fp, const size_t layerno) {
+size_t predict_size(fppoly_t *fp, const size_t layerno) {
   size_t free;
   size_t total;
 
@@ -2090,6 +2098,8 @@ void print_sizes(fppoly_t *fp, const size_t layerno) {
   size_t current_size = num_out_neurons_last_layer * length_x * length_y *
                         fp->layers[layerno]->input_size[2] * sizeof(float_type);
   size_t last_size;
+
+  size_t maximum_size = 0;
 
   std::cout << "Starting size: " << current_size << " bytes" << std::endl;
 
@@ -2131,17 +2141,30 @@ void print_sizes(fppoly_t *fp, const size_t layerno) {
 
     std::cout << "Size: " << current_size << " bytes" << std::endl;
 
-    if (last_size * 4 + current_size * 4 > free) {
-      std::cout << "ALAAAAAAAAAAARM ==========================================="
-                << std::endl;
+    if (4 * (last_size + current_size) > maximum_size) {
+      maximum_size = 4 * (last_size + current_size);
     }
   }
+
+  size_t num_chunks = 1;
+
+  while (maximum_size > free) {
+    maximum_size /= 2;
+    num_chunks *= 2;
+  }
+
+  if (num_chunks > 1) {
+    std::cout << "Number of chunks " << num_chunks << std::endl;
+  }
+
+  return num_chunks;
 }
 
-void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
-                                             const size_t layerno) {
-  print_sizes(fp, layerno);
-
+void update_state_using_previous_layers_conv_chunk(elina_manager_t *man,
+                                                   fppoly_t *fp,
+                                                   const size_t layerno,
+                                                   const size_t num_chunks,
+                                                   const size_t chunk_counter) {
   auto start = std::chrono::system_clock::now();
 
   fppoly_internal_t *pr =
@@ -2149,7 +2172,8 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
 
   const size_t x_y_size_last_layer =
       fp->layers[layerno]->output_size[0] * fp->layers[layerno]->output_size[1];
-  const size_t num_filters_last_layer = fp->layers[layerno]->output_size[2];
+  const size_t num_filters_last_layer =
+      fp->layers[layerno]->output_size[2] / num_chunks;
 
   std::cout << "num_out_neurons_last "
             << x_y_size_last_layer * num_filters_last_layer << std::endl;
@@ -2182,15 +2206,16 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
 
   device_layer_create_sparse_exprs<<<dim3(fp->layers[layerno]->output_size[0],
                                           fp->layers[layerno]->output_size[1],
-                                          fp->layers[layerno]->output_size[2]),
+                                          fp->layers[layerno]->output_size[2] /
+                                              num_chunks),
                                      1>>>(
       coeffs, csts, fp->layers[layerno]->filter_weights,
-      fp->layers[layerno]->filter_bias, fp->layers[layerno]->input_size[0],
-      fp->layers[layerno]->input_size[1], fp->layers[layerno]->input_size[2],
-      fp->layers[layerno]->filter_size[0], fp->layers[layerno]->filter_size[1],
-      fp->layers[layerno]->strides[0], fp->layers[layerno]->strides[1],
-      fp->layers[layerno]->pad[0], fp->layers[layerno]->pad[1],
-      fp->layers[layerno]->num_in_neurons);
+      fp->layers[layerno]->filter_bias, chunk_counter,
+      fp->layers[layerno]->input_size[0], fp->layers[layerno]->input_size[1],
+      fp->layers[layerno]->input_size[2], fp->layers[layerno]->filter_size[0],
+      fp->layers[layerno]->filter_size[1], fp->layers[layerno]->strides[0],
+      fp->layers[layerno]->strides[1], fp->layers[layerno]->pad[0],
+      fp->layers[layerno]->pad[1], fp->layers[layerno]->num_in_neurons);
 
   float_type *lb_array = fp->layers[layerno]->lb_array;
   float_type *ub_array = fp->layers[layerno]->ub_array;
@@ -2289,7 +2314,7 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
       lexpr_replace_relu_bounds_conv_sparse<<<
           dim3(fp->layers[layerno]->output_size[0],
                fp->layers[layerno]->output_size[1],
-               fp->layers[layerno]->output_size[2]),
+               fp->layers[layerno]->output_size[2] / num_chunks),
           1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, aux_lb_array,
                aux_ub_array, fp->layers[k]->output_size[0],
                fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
@@ -2297,7 +2322,7 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
       uexpr_replace_relu_bounds_conv_sparse<<<
           dim3(fp->layers[layerno]->output_size[0],
                fp->layers[layerno]->output_size[1],
-               fp->layers[layerno]->output_size[2]),
+               fp->layers[layerno]->output_size[2] / num_chunks),
           1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, aux_lb_array,
                aux_ub_array, fp->layers[k]->output_size[0],
                fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
@@ -2336,66 +2361,68 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
                x_y_size_last_layer * num_filters_last_layer * missing_length *
                    sizeof(float_type));
 
-    // if(fp->layers[k]->filter_size[0]*fp->layers[k]->filter_size[1]*fp->layers[k]->filter_size[2]
-    // > 1024)
-    //{
-    coeffs_from_previous_layer_conv_sparse_filter_serial<<<
-        dim3(fp->layers[layerno]->output_size[0],
-             fp->layers[layerno]->output_size[1],
-             fp->layers[layerno]->output_size[2]),
-        fp->layers[k]->input_size[2]>>>(
-        linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, aux_coeffs,
-        fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
-        fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
-        fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x,
-        offset_y, length_x, length_y, shift_x, shift_y,
-        fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
-        fp->layers[k]->strides[0], fp->layers[k]->strides[1],
-        fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-    coeffs_from_previous_layer_conv_sparse_filter_serial<<<
-        dim3(fp->layers[layerno]->output_size[0],
-             fp->layers[layerno]->output_size[1],
-             fp->layers[layerno]->output_size[2]),
-        fp->layers[k]->input_size[2]>>>(
-        uinf_coeff, usup_coeff, uinf_coeff_tmp, usup_coeff_tmp, aux_coeffs,
-        fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
-        fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
-        fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x,
-        offset_y, length_x, length_y, shift_x, shift_y,
-        fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
-        fp->layers[k]->strides[0], fp->layers[k]->strides[1],
-        fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-    //}
-    // else
-    //{
-    // coeffs_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0],
-    // fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]),
-    // dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1],
-    // fp->layers[k]->filter_size[0])>>>(linf_coeff, lsup_coeff, linf_coeff_tmp,
-    // lsup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0],
-    // fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
-    // fp->layers[k]->input_size[0], fp->layers[k]->input_size[1],
-    // fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y,
-    // shift_x, shift_y, fp->layers[k]->filter_size[0],
-    // fp->layers[k]->filter_size[1], fp->layers[k]->strides[0],
-    // fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-    // coeffs_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0],
-    // fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]),
-    // dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1],
-    // fp->layers[k]->filter_size[0])>>>(uinf_coeff, usup_coeff, uinf_coeff_tmp,
-    // usup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0],
-    // fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
-    // fp->layers[k]->input_size[0], fp->layers[k]->input_size[1],
-    // fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y,
-    // shift_x, shift_y, fp->layers[k]->filter_size[0],
-    // fp->layers[k]->filter_size[1], fp->layers[k]->strides[0],
-    // fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-    //}
+    if (fp->layers[k]->input_size[2] >= 128) {
+      coeffs_from_previous_layer_conv_sparse_filter_serial<<<
+          dim3(fp->layers[layerno]->output_size[0],
+               fp->layers[layerno]->output_size[1],
+               fp->layers[layerno]->output_size[2] / num_chunks),
+          fp->layers[k]->input_size[2]>>>(
+          linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, aux_coeffs,
+          fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+          fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
+          fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x,
+          offset_y, length_x, length_y, shift_x, shift_y,
+          fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
+          fp->layers[k]->strides[0], fp->layers[k]->strides[1],
+          fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+      coeffs_from_previous_layer_conv_sparse_filter_serial<<<
+          dim3(fp->layers[layerno]->output_size[0],
+               fp->layers[layerno]->output_size[1],
+               fp->layers[layerno]->output_size[2] / num_chunks),
+          fp->layers[k]->input_size[2]>>>(
+          uinf_coeff, usup_coeff, uinf_coeff_tmp, usup_coeff_tmp, aux_coeffs,
+          fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+          fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
+          fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x,
+          offset_y, length_x, length_y, shift_x, shift_y,
+          fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
+          fp->layers[k]->strides[0], fp->layers[k]->strides[1],
+          fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+    } else {
+      coeffs_from_previous_layer_conv_sparse<<<
+          dim3(fp->layers[layerno]->output_size[0],
+               fp->layers[layerno]->output_size[1],
+               fp->layers[layerno]->output_size[2] / num_chunks),
+          dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1],
+               fp->layers[k]->filter_size[0])>>>(
+          linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, aux_coeffs,
+          fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+          fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
+          fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x,
+          offset_y, length_x, length_y, shift_x, shift_y,
+          fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
+          fp->layers[k]->strides[0], fp->layers[k]->strides[1],
+          fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+      coeffs_from_previous_layer_conv_sparse<<<
+          dim3(fp->layers[layerno]->output_size[0],
+               fp->layers[layerno]->output_size[1],
+               fp->layers[layerno]->output_size[2] / num_chunks),
+          dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1],
+               fp->layers[k]->filter_size[0])>>>(
+          uinf_coeff, usup_coeff, uinf_coeff_tmp, usup_coeff_tmp, aux_coeffs,
+          fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+          fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
+          fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x,
+          offset_y, length_x, length_y, shift_x, shift_y,
+          fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
+          fp->layers[k]->strides[0], fp->layers[k]->strides[1],
+          fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+    }
 
     csts_from_previous_layer_conv_sparse<<<
         dim3(fp->layers[layerno]->output_size[0],
              fp->layers[layerno]->output_size[1],
-             fp->layers[layerno]->output_size[2]),
+             fp->layers[layerno]->output_size[2] / num_chunks),
         1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp,
              lsup_cst_tmp, aux_csts, fp->layers[k]->output_size[0],
              fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
@@ -2403,7 +2430,7 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
     csts_from_previous_layer_conv_sparse<<<
         dim3(fp->layers[layerno]->output_size[0],
              fp->layers[layerno]->output_size[1],
-             fp->layers[layerno]->output_size[2]),
+             fp->layers[layerno]->output_size[2] / num_chunks),
         1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, uinf_cst_tmp,
              usup_cst_tmp, aux_csts, fp->layers[k]->output_size[0],
              fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
@@ -2438,20 +2465,22 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
 
   compute_lb_from_expr_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0],
                                           fp->layers[layerno]->output_size[1],
-                                          fp->layers[layerno]->output_size[2]),
+                                          fp->layers[layerno]->output_size[2] /
+                                              num_chunks),
                                      1>>>(
       lb_array, linf_coeff, lsup_coeff, linf_cst, fp->input_inf, fp->input_sup,
-      fp->layers[0]->input_size[0], fp->layers[0]->input_size[1],
-      fp->layers[0]->input_size[2], offset_x, offset_y, length_x, length_y,
-      shift_x, shift_y);
+      num_chunks, chunk_counter, fp->layers[0]->input_size[0],
+      fp->layers[0]->input_size[1], fp->layers[0]->input_size[2], offset_x,
+      offset_y, length_x, length_y, shift_x, shift_y);
   compute_ub_from_expr_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0],
                                           fp->layers[layerno]->output_size[1],
-                                          fp->layers[layerno]->output_size[2]),
+                                          fp->layers[layerno]->output_size[2] /
+                                              num_chunks),
                                      1>>>(
       ub_array, uinf_coeff, usup_coeff, usup_cst, fp->input_inf, fp->input_sup,
-      fp->layers[0]->input_size[0], fp->layers[0]->input_size[1],
-      fp->layers[0]->input_size[2], offset_x, offset_y, length_x, length_y,
-      shift_x, shift_y);
+      num_chunks, chunk_counter, fp->layers[0]->input_size[0],
+      fp->layers[0]->input_size[1], fp->layers[0]->input_size[2], offset_x,
+      offset_y, length_x, length_y, shift_x, shift_y);
 
   cudaFree(linf_coeff);
   cudaFree(lsup_coeff);
@@ -2476,6 +2505,16 @@ void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
   std::chrono::duration<double> elapsed_seconds = end - start;
   std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl
             << std::endl;
+}
+
+void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
+                                             const size_t layerno) {
+  const size_t num_chunks = predict_size(fp, layerno);
+
+  for (size_t chunk_counter = 0; chunk_counter < num_chunks; chunk_counter++) {
+    update_state_using_previous_layers_conv_chunk(man, fp, fp->numlayers - 1,
+                                                  num_chunks, chunk_counter);
+  }
 }
 
 void ffn_handle_intermediate_layer(elina_manager_t *man,
