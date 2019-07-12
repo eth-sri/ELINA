@@ -571,7 +571,7 @@ JNIINC = -I$java_home/include/
 CFLAGS = $cflags
 
 # Architecture specific flags
-AFLAGS = -D_GNU_SOURCE -pthread -fno-tree-vectorize -m64 -march=native 
+AFLAGS = -D_GNU_SOURCE -pthread -fno-tree-vectorize -m64 -march=native -mno-fused-madd
 DFLAGS = -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING \$(AFLAGS) \$(IS_APRON) \$(IS_VECTOR) 
 
 # ocamlc compilation flags
