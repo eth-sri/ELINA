@@ -698,7 +698,7 @@ void add_expr(fppoly_internal_t *pr, expr_t *exprA, expr_t *exprB) {
         // printf("after sort\n");
         // expr_print(exprA);
         // fflush(stdout);
-        // sort_sparse_expr(exprB);
+
         new_inf_coeff = (double *)malloc((sizeA + sizeB) * sizeof(double));
         new_sup_coeff = (double *)malloc((sizeA + sizeB) * sizeof(double));
         size_t *new_dim = (size_t *)malloc((sizeA + sizeB) * sizeof(size_t));
@@ -2720,8 +2720,7 @@ void *update_state_using_previous_layers(void *args) {
   // printf("idx: %zu %zu\n",idx_start,idx_end);
   // fflush(stdout);
   for (i = idx_start; i < idx_end; i++) {
-    // printf("i %zu \n",i);
-    // fflush(stdout);
+
     expr_t *lexpr = copy_expr(out_neurons[i]->expr);
     expr_t *uexpr = copy_expr(out_neurons[i]->expr);
     k = fp->layers[layerno]->predecessors[0] - 1;
@@ -2734,18 +2733,22 @@ void *update_state_using_previous_layers(void *args) {
       if (fp->layers[k]->type == RESIDUAL) {
 
         expr_t *lexpr_copy = copy_expr(lexpr);
+        lexpr_copy->inf_cst = 0;
+        lexpr_copy->sup_cst = 0;
         expr_t *uexpr_copy = copy_expr(uexpr);
+        uexpr_copy->inf_cst = 0;
+        uexpr_copy->sup_cst = 0;
         size_t predecessor1 = fp->layers[k]->predecessors[0] - 1;
         size_t predecessor2 = fp->layers[k]->predecessors[1] - 1;
 
         char *predecessor_map = (char *)calloc(k, sizeof(char));
         // Assume no nested residual layers
-        int iter = fp->layers[predecessor1]->predecessors[0] - 1;
+        int iter = predecessor1;
         while (iter >= 0) {
           predecessor_map[iter] = 1;
           iter = fp->layers[iter]->predecessors[0] - 1;
         }
-        iter = fp->layers[predecessor2]->predecessors[0] - 1;
+        iter = predecessor2;
         int common_predecessor = 0;
         while (iter >= 0) {
           if (predecessor_map[iter] == 1) {
@@ -2757,18 +2760,21 @@ void *update_state_using_previous_layers(void *args) {
 
         iter = predecessor1;
         while (iter != common_predecessor) {
+
           update_state_using_predecessor_layer(pr, fp, &lexpr, &uexpr, iter,
                                                use_area_heuristic);
+
           iter = fp->layers[iter]->predecessors[0] - 1;
         }
         iter = predecessor2;
         while (iter != common_predecessor) {
+
           update_state_using_predecessor_layer(pr, fp, &lexpr_copy, &uexpr_copy,
                                                iter, use_area_heuristic);
+
           iter = fp->layers[iter]->predecessors[0] - 1;
         }
         free(predecessor_map);
-
         add_expr(pr, lexpr, lexpr_copy);
         add_expr(pr, uexpr, uexpr_copy);
         free_expr(lexpr_copy);
@@ -2779,8 +2785,10 @@ void *update_state_using_previous_layers(void *args) {
 
         continue;
       } else {
+
         update_state_using_predecessor_layer(pr, fp, &lexpr, &uexpr, k,
                                              use_area_heuristic);
+
         k = fp->layers[k]->predecessors[0] - 1;
       }
 
@@ -2817,9 +2825,8 @@ void update_state_using_previous_layers_parallel(elina_manager_t *man,
   pthread_t threads[NUM_THREADS];
   size_t num_out_neurons = fp->layers[layerno]->dims;
   size_t i;
-  printf("layerno %zu %zu\n", layerno,
-         fp->layers[layerno]->predecessors[0] - 1);
-  fflush(stdout);
+  // printf("layerno %zu %zu\n",layerno,fp->layers[layerno]->predecessors[0]-1);
+  // fflush(stdout);
   if (num_out_neurons < NUM_THREADS) {
     for (i = 0; i < num_out_neurons; i++) {
       args[i].start = i;
@@ -3269,6 +3276,20 @@ void handle_final_tanh_layer(fppoly_internal_t *pr, output_abstract_t *out,
   }
 }
 
+void neuron_fprint(FILE *stream, neuron_t *neuron, char **name_of_dim) {
+  // expr_fprint(stream,neuron->expr);
+  fprintf(stream, "[%g, %g]\n", -neuron->lb, neuron->ub);
+}
+
+void layer_fprint(FILE *stream, layer_t *layer, char **name_of_dim) {
+  size_t dims = layer->dims;
+  size_t i;
+  for (i = 0; i < dims; i++) {
+    fprintf(stream, "neuron: %zu ", i);
+    neuron_fprint(stream, layer->neurons[i], name_of_dim);
+  }
+}
+
 void ffn_handle_last_layer(elina_manager_t *man, elina_abstract0_t *element,
                            double **weights, double *bias,
                            size_t num_out_neurons, size_t num_in_neurons,
@@ -3325,6 +3346,8 @@ void ffn_handle_last_layer(elina_manager_t *man, elina_abstract0_t *element,
   // printf("finish\n");
   // fppoly_fprint(stdout,man,fp,NULL);
   // fflush(stdout);
+  // layer_fprint(stdout,fp->layers[1],NULL);
+  // layer_fprint(stdout,fp->layers[fp->numlayers-1],NULL);
   return;
 }
 
@@ -3484,7 +3507,8 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
     if (fp->layers[k]->type == RESIDUAL) {
 
       expr_t *lexpr_copy = copy_expr(lexpr);
-
+      lexpr_copy->inf_cst = 0;
+      lexpr_copy->sup_cst = 0;
       size_t predecessor1 = fp->layers[k]->predecessors[0] - 1;
       size_t predecessor2 = fp->layers[k]->predecessors[1] - 1;
 
@@ -3726,7 +3750,7 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
       free_expr(tmp4);
     }
 
-    expr_print(f_t_lexpr);
+    // expr_print(f_t_lexpr);
 
     // printf("computing forget...\n");
     expr_t *f_t_uexpr = copy_expr(f_t_lexpr);
@@ -3935,20 +3959,6 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
   return;
 }
 
-void neuron_fprint(FILE *stream, neuron_t *neuron, char **name_of_dim) {
-  // expr_fprint(stream,neuron->expr);
-  fprintf(stream, "[%g, %g]\n", -neuron->lb, neuron->ub);
-}
-
-void layer_fprint(FILE *stream, layer_t *layer, char **name_of_dim) {
-  size_t dims = layer->dims;
-  size_t i;
-  for (i = 0; i < dims; i++) {
-    fprintf(stream, "neuron: %zu ", i);
-    neuron_fprint(stream, layer->neurons[i], name_of_dim);
-  }
-}
-
 bool is_greater(elina_manager_t *man, elina_abstract0_t *element, elina_dim_t y,
                 elina_dim_t x, bool use_area_heuristic) {
   fppoly_t *fp = fppoly_of_abstract0(element);
@@ -3971,7 +3981,8 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element, elina_dim_t y,
     sub->inf_coeff[1] = 1;
     sub->sup_coeff[1] = -1;
     sub->dim[1] = x;
-    // layer_fprint(stdout,fp->layers[17],NULL);
+
+    // layer_fprint(stdout,fp->layers[3],NULL);
     double lb = get_lb_using_previous_layers(man, fp, sub, fp->numlayers,
                                              use_area_heuristic);
 
