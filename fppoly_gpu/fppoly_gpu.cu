@@ -133,6 +133,24 @@ void elina_double_interval_mul(float_type* const a_inf, float_type* const a_sup,
 }
 
 
+__device__
+void elina_double_interval_mul2(float_type* const a_inf, float_type* const a_sup, const float_type b_inf, const float_type b_sup, const float_type c_inf, const float_type c_sup)
+{
+   float_type tmp1 = b_inf*c_inf;
+   float_type tmp2 = b_inf*c_sup;
+   float_type tmp3 = b_sup*c_inf;
+   float_type tmp4 = b_sup*c_sup;
+
+   float_type tmp5 = min(tmp1,tmp2);
+   float_type tmp6 = min(tmp3,tmp4);
+   *a_inf = min(tmp5,tmp6);
+
+   float_type tmp7 = max(tmp1,tmp2);
+   float_type tmp8 = max(tmp3,tmp4);
+   *a_sup = max(tmp7,tmp8);   
+}
+
+
 fppoly_t* fppoly_of_abstract0(elina_abstract0_t* a)
 {
     return (fppoly_t*) a->value;
