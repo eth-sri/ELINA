@@ -253,7 +253,7 @@ void fppoly_from_network_input_box(fppoly_t* const res, const size_t intdim, con
 
     for(size_t i = 0; i < num_pixels; i++)
     {
-        tmp_input_inf[i] = -inf_array[i];
+        tmp_input_inf[i] = inf_array[i];
         tmp_input_sup[i] = sup_array[i];
     }
 
@@ -511,11 +511,11 @@ void copy_expr_array(float_type* __restrict__ target_inf_coeff, float_type* __re
 
     for(size_t j = 0; j < expr_size; j++)
     {
-        target_inf_coeff[i*expr_size + j] = -source_coeffs[i*expr_size + j];
+        target_inf_coeff[i*expr_size + j] = source_coeffs[i*expr_size + j];
         target_sup_coeff[i*expr_size + j] = source_coeffs[i*expr_size + j];
     }
 
-    target_inf_cst[i] = -source_csts[i];
+    target_inf_cst[i] = source_csts[i];
     target_sup_cst[i] = source_csts[i];
 }
 
@@ -529,7 +529,7 @@ void layer_compute_bounds_from_exprs_conv(const float_type* __restrict__ coeffs,
 
     const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
 
-    float_type res_inf = -csts[out_z];
+    float_type res_inf = csts[out_z];
     float_type res_sup = csts[out_z];
 
     float_type tmp1, tmp2;
@@ -556,7 +556,7 @@ void layer_compute_bounds_from_exprs_conv(const float_type* __restrict__ coeffs,
                 const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
 
                 const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
-                elina_double_interval_mul(&tmp1, &tmp2, -coeffs[filter_index], coeffs[filter_index], input_inf[mat_in], input_sup[mat_in]);
+                elina_double_interval_mul(&tmp1, &tmp2, coeffs[filter_index], coeffs[filter_index], input_inf[mat_in], input_sup[mat_in]);
                 res_inf = res_inf + tmp1;
                 res_sup = res_sup + tmp2;
             }
@@ -573,14 +573,14 @@ void layer_compute_bounds_from_exprs(const float_type* __restrict__ coeffs, cons
 {
     const size_t n = blockIdx.x;
 
-    float_type res_inf = -csts[n];
+    float_type res_inf = csts[n];
     float_type res_sup = csts[n];
 
     float_type tmp1, tmp2;
 
     for(size_t i = 0; i < num_in_neurons; i++)
     {
-        elina_double_interval_mul(&tmp1, &tmp2, -coeffs[n*num_in_neurons + i], coeffs[n*num_in_neurons + i], input_inf[i], input_sup[i]);
+        elina_double_interval_mul(&tmp1, &tmp2, coeffs[n*num_in_neurons + i], coeffs[n*num_in_neurons + i], input_inf[i], input_sup[i]);
         res_inf = res_inf + tmp1;
         res_sup = res_sup + tmp2;
     }
@@ -595,7 +595,7 @@ void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t* abs, const 
     fppoly_t* res = fppoly_of_abstract0(abs);
     fppoly_internal_t* pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
-    res->layers = (layer_t**) malloc(20*sizeof(layer_t*));
+    res->layers = (layer_t**) malloc(2000*sizeof(layer_t*));
     ffn_add_layer(res, size, num_pixels, FFN, activation);
 
     float_type* coeffs = res->layers[0]->coeffs;
@@ -637,8 +637,8 @@ void lexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* _
 
         const float_type lb = lb_array[i];
         const float_type ub = ub_array[i];
-        const float_type width = ub + lb;
-        const float_type lambda_inf = -ub/width;
+        const float_type width = ub - lb;
+        const float_type lambda_inf = ub/width;
         const float_type lambda_sup = ub/width;
 
         const float_type old_inf_coeff = inf_coeff[a];
@@ -658,15 +658,15 @@ void lexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* _
 
             return;
         }
-        else if(lb < 0)
+        else if(lb > 0)
         {
             inf_coeff[a] = old_inf_coeff;
             sup_coeff[a] = old_sup_coeff;
         }
         else if(old_sup_coeff < 0)
         {
-            const float_type mu_inf = lambda_inf*lb;
-            const float_type mu_sup = lambda_sup*lb;
+            const float_type mu_inf = -lambda_inf*lb;
+            const float_type mu_sup = -lambda_sup*lb;
             elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
             float_type tmp1, tmp2;
             elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
@@ -674,11 +674,11 @@ void lexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* _
             atomicAdd(&inf_cst[n], tmp1 + min_denormal);
             atomicAdd(&sup_cst[n], tmp2 + min_denormal);
         }
-        else if (old_inf_coeff < 0)
+        else if (old_inf_coeff > 0)
         {
-            const float_type area1 = lb*ub;
+            const float_type area1 = -lb*ub;
             const float_type area2 = 0.5*ub*width;
-            const float_type area3 = 0.5*lb*width;
+            const float_type area3 = -0.5*lb*width;
 
             if((area1 < area2) && (area1 < area3))
             {
@@ -703,7 +703,7 @@ void lexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* _
             elina_double_interval_mul(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
 
             atomicAdd(&inf_cst[n], tmp1);
-            atomicAdd(&sup_cst[n], -tmp1);
+            atomicAdd(&sup_cst[n], tmp1);
         }
     }
 }
@@ -721,8 +721,8 @@ void uexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* _
 
         const float_type lb = lb_array[i];
         const float_type ub = ub_array[i];
-        const float_type width = ub + lb;
-        const float_type lambda_inf = -ub/width;
+        const float_type width = ub - lb;
+        const float_type lambda_inf = ub/width;
         const float_type lambda_sup = ub/width;
 
         const float_type old_inf_coeff = inf_coeff[a];
@@ -742,15 +742,15 @@ void uexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* _
 
             return;
         }
-        else if(lb < 0)
+        else if(lb > 0)
         {
             inf_coeff[a] = old_inf_coeff;
             sup_coeff[a] = old_sup_coeff;
         }
-        else if(old_inf_coeff < 0)
+        else if(old_inf_coeff > 0)
         {
-            const float_type mu_inf = lambda_inf*lb;
-            const float_type mu_sup = lambda_sup*lb;
+            const float_type mu_inf = -lambda_inf*lb;
+            const float_type mu_sup = -lambda_sup*lb;
             elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
             float_type tmp1, tmp2;
             elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
@@ -760,9 +760,9 @@ void uexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* _
         }
         else if(old_sup_coeff < 0)
         {
-            const float_type area1 = lb*ub;
+            const float_type area1 = -lb*ub;
             const float_type area2 = 0.5*ub*width;
-            const float_type area3 = 0.5*lb*width;
+            const float_type area3 = -0.5*lb*width;
 
             if((area1 < area2) && (area1 < area3))
             {
@@ -786,7 +786,7 @@ void uexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* _
             float_type tmp1, tmp2;
             elina_double_interval_mul(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
 
-            atomicAdd(&inf_cst[n], -tmp2);
+            atomicAdd(&inf_cst[n], tmp2);
             atomicAdd(&sup_cst[n], tmp2);
         }
     }
@@ -829,8 +829,8 @@ void lexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
 
                 const float_type lb = lb_array[i];
                 const float_type ub = ub_array[i];
-                const float_type width = ub + lb;
-                const float_type lambda_inf = -ub/width;
+                const float_type width = ub - lb;
+                const float_type lambda_inf = ub/width;
                 const float_type lambda_sup = ub/width;
 
                 const float_type old_inf_coeff = inf_coeff[a];
@@ -850,15 +850,15 @@ void lexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
 
                     continue;
                 }
-                else if(lb < 0)
+                else if(lb > 0)
                 {
                     inf_coeff[a] = old_inf_coeff;
                     sup_coeff[a] = old_sup_coeff;
                 }
                 else if(old_sup_coeff < 0)
                 {
-                    const float_type mu_inf = lambda_inf*lb;
-                    const float_type mu_sup = lambda_sup*lb;
+                    const float_type mu_inf = -lambda_inf*lb;
+                    const float_type mu_sup = -lambda_sup*lb;
                     elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
                     float_type tmp1, tmp2;
                     elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
@@ -866,11 +866,11 @@ void lexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
                     atomicAdd(&inf_cst[n], tmp1 + min_denormal);
                     atomicAdd(&sup_cst[n], tmp2 + min_denormal);
                 }
-                else if (old_inf_coeff < 0)
+                else if (old_inf_coeff > 0)
                 {
-                    const float_type area1 = lb*ub;
+                    const float_type area1 = -lb*ub;
                     const float_type area2 = 0.5*ub*width;
-                    const float_type area3 = 0.5*lb*width;
+                    const float_type area3 = -0.5*lb*width;
 
                     if((area1 < area2) && (area1 < area3))
                     {
@@ -895,7 +895,7 @@ void lexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
                     elina_double_interval_mul(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
 
                     inf_cst[n] += tmp1;
-                    sup_cst[n] -= tmp1;
+                    sup_cst[n] += tmp1;
 
                     //atomicAdd(&inf_cst[n], tmp1);
                     //atomicAdd(&sup_cst[n], -tmp1);
@@ -941,8 +941,8 @@ void uexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
 
                 const float_type lb = lb_array[i];
                 const float_type ub = ub_array[i];
-                const float_type width = ub + lb;
-                const float_type lambda_inf = -ub/width;
+                const float_type width = ub - lb;
+                const float_type lambda_inf = ub/width;
                 const float_type lambda_sup = ub/width;
 
                 const float_type old_inf_coeff = inf_coeff[a];
@@ -962,15 +962,15 @@ void uexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
 
                     continue;
                 }
-                else if(lb < 0)
+                else if(lb > 0)
                 {
                     inf_coeff[a] = old_inf_coeff;
                     sup_coeff[a] = old_sup_coeff;
                 }
-                else if(old_inf_coeff < 0)
+                else if(old_inf_coeff > 0)
                 {
-                    const float_type mu_inf = lambda_inf*lb;
-                    const float_type mu_sup = lambda_sup*lb;
+                    const float_type mu_inf = -lambda_inf*lb;
+                    const float_type mu_sup = -lambda_sup*lb;
                     elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
                     float_type tmp1, tmp2;
                     elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
@@ -980,9 +980,9 @@ void uexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
                 }
                 else if(old_sup_coeff < 0)
                 {
-                    const float_type area1 = lb*ub;
+                    const float_type area1 = -lb*ub;
                     const float_type area2 = 0.5*ub*width;
-                    const float_type area3 = 0.5*lb*width;
+                    const float_type area3 = -0.5*lb*width;
 
                     if((area1 < area2) && (area1 < area3))
                     {
@@ -1006,7 +1006,7 @@ void uexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
                     float_type tmp1, tmp2;
                     elina_double_interval_mul(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
 
-                    inf_cst[n] -= tmp2;
+                    inf_cst[n] += tmp2;
                     sup_cst[n] += tmp2;
 
                     //atomicAdd(&inf_cst[n], -tmp2);
@@ -1044,7 +1044,7 @@ void coeffs_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, c
 
             if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
             {
-                elina_double_interval_mul_expr_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, -aux_coeffs[c], aux_coeffs[c]);
+                elina_double_interval_mul_expr_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeffs[c], aux_coeffs[c]);
 
                 maxRes = max(fabs(inf_coeff), fabs(sup_coeff));
                 maxMul = max(fabs(tmp1), fabs(tmp2));
@@ -1105,7 +1105,7 @@ void coeffs_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coe
                                 const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
 
                                 const float_type aux_coeff = aux_coeffs[filter_index];
-                                elina_double_interval_mul_expr_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, -aux_coeff, aux_coeff);
+                                elina_double_interval_mul_expr_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeff, aux_coeff);
 
                                 maxRes = max(fabs(inf_coeff), fabs(sup_coeff));
                                 maxMul = max(fabs(tmp1), fabs(tmp2));
@@ -1174,7 +1174,7 @@ void coeffs_from_previous_layer_conv_filter_serial(const float_type* __restrict_
                                         const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
 
                                         const float_type aux_coeff = aux_coeffs[filter_index];
-                                        elina_double_interval_mul_expr_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, -aux_coeff, aux_coeff);
+                                        elina_double_interval_mul_expr_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeff, aux_coeff);
 
                                         maxRes = max(fabs(inf_coeff), fabs(sup_coeff));
                                         maxMul = max(fabs(tmp1), fabs(tmp2));
@@ -1257,7 +1257,7 @@ void coeffs_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_
                                 const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
 
                                 const float_type aux_coeff = aux_coeffs[filter_index];
-                                elina_double_interval_mul_expr_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, -aux_coeff, aux_coeff);
+                                elina_double_interval_mul_expr_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeff, aux_coeff);
 
                                 maxRes = max(fabs(inf_coeff), fabs(sup_coeff));
                                 maxMul = max(fabs(tmp1), fabs(tmp2));
@@ -1342,7 +1342,7 @@ void coeffs_from_previous_layer_conv_sparse_filter_serial(const float_type* __re
                                         const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
 
                                         const float_type aux_coeff = aux_coeffs[filter_index];
-                                        elina_double_interval_mul_expr_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, -aux_coeff, aux_coeff);
+                                        elina_double_interval_mul_expr_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeff, aux_coeff);
 
                                         maxRes = max(fabs(inf_coeff), fabs(sup_coeff));
                                         maxMul = max(fabs(tmp1), fabs(tmp2));
@@ -1384,7 +1384,7 @@ void csts_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, con
 
         if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
         {
-            elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, -aux_csts[i], aux_csts[i]);
+            elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_csts[i], aux_csts[i]);
 
             maxRes = max(fabs(inf_cst), fabs(sup_cst));
             maxMul = max(fabs(tmp1), fabs(tmp2));
@@ -1421,7 +1421,7 @@ void csts_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff
 
             if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
             {
-                elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, -aux_csts[j], aux_csts[j]);
+                elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_csts[j], aux_csts[j]);
 
                 maxRes = max(fabs(inf_cst), fabs(sup_cst));
                 maxMul = max(fabs(tmp1), fabs(tmp2));
@@ -1480,7 +1480,7 @@ void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_in
                 {
                     float_type aux_cst = aux_csts[out_z];
 
-                    elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, -aux_cst, aux_cst);
+                    elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_cst, aux_cst);
 
                     maxRes = max(fabs(inf_cst), fabs(sup_cst));
                     maxMul = max(fabs(tmp1), fabs(tmp2));
@@ -2093,10 +2093,10 @@ void create_sub_expr(float_type* __restrict__ inf_coeff, float_type* __restrict_
         sup_coeff[index*10 + i] = 0.;
     }
 
-    inf_coeff[index*10 + y] = -1.;
+    inf_coeff[index*10 + y] = 1.;
     sup_coeff[index*10 + y] = 1.;
 
-    inf_coeff[index*10 + x] = 1.;
+    inf_coeff[index*10 + x] = -1.;
     sup_coeff[index*10 + x] = -1.;
 }
 
@@ -2232,7 +2232,7 @@ void get_lb_using_previous_layers(elina_manager_t* man, const fppoly_t* const fp
 
     for(size_t i = 0; i < num_out_neurons_last_layer; i++)
     {
-        if(lb[i] < 0)
+        if(lb[i] > 0)
         {
             results[i] = true;
         }
