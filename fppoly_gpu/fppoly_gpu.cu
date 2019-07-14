@@ -69,65 +69,20 @@ void elina_double_interval_mul(float_type* const a_inf, float_type* const a_sup,
         if(b_inf <= 0)
         {
             /*interval b is positive*/
-            if((b_inf == 0) || (c_inf == 0))
-            {
-                *a_inf = 0.0;
-            }
-            else
-            {
-                *a_inf = b_inf*-c_inf;
-            }
-
-            if((b_sup == 0) || (c_sup == 0))
-            {
-                *a_sup = 0.0;
-            }
-            else
-            {
-                *a_sup = b_sup*c_sup;
-            }
+            *a_inf = b_inf*-c_inf;
+            *a_sup = b_sup*c_sup;
         }
         else if(b_sup <= 0)
         {
             /* interval b is negative */
-            if((c_sup == 0) || (b_inf == 0))
-            {
-                *a_inf = 0.0;
-            }
-            else
-            {
-                *a_inf = c_sup*b_inf;
-            }
-
-            if((c_inf == 0) || (b_sup == 0))
-            {
-                *a_sup = 0.0;
-            }
-            else
-            {
-                *a_sup = -c_inf*b_sup;
-            }
+            *a_inf = c_sup*b_inf;
+            *a_sup = -c_inf*b_sup;
         }
         else
         {
             /* there is 0 in between for b */
-            if((c_sup == 0) || (b_inf == 0))
-            {
-                *a_inf = 0.0;
-            }
-            else
-            {
-                *a_inf = b_inf*c_sup;
-            }
-
-            if((c_sup == 0) || (b_sup == 0))
-            {
-                *a_sup = 0.0;
-            }
-            else
-            {
-                *a_sup = b_sup*c_sup;
-            }
+            *a_inf = b_inf*c_sup;
+            *a_sup = b_sup*c_sup;
         }
     }
     else if(c_sup <= 0)
@@ -136,200 +91,34 @@ void elina_double_interval_mul(float_type* const a_inf, float_type* const a_sup,
         if(b_inf <= 0)
         {
             /*interval b is positive*/
-            if((b_sup == 0) || (c_inf == 0))
-            {
-                *a_inf = 0.0;
-            }
-            else
-            {
-                *a_inf = b_sup*c_inf;
-            }
-
-            if((b_inf == 0) || (c_sup == 0))
-            {
-                *a_sup = 0.0;
-            }
-            else
-            {
-                *a_sup = -b_inf*c_sup;
-            }
+            *a_inf = b_sup*c_inf;
+            *a_sup = -b_inf*c_sup;
         }
         else if(b_sup <= 0)
         {
             /* interval b is negative */
-            if((b_sup == 0) || (c_sup == 0))
-            {
-                *a_inf = 0.0;
-            }
-            else
-            {
-                *a_inf = b_sup*-c_sup;
-            }
-
-            if((b_inf == 0) || (c_inf == 0))
-            {
-                *a_sup = 0.0;
-            }
-            else
-            {
-                *a_sup = b_inf*c_inf;
-            }
+            *a_inf = b_sup*-c_sup;
+            *a_sup = b_inf*c_inf;
         }
         else
         {
             /* there is 0 in between for b */
-            if((c_inf == 0) || (b_sup == 0))
-            {
-                *a_inf = 0.0;
-            }
-            else
-            {
-                *a_inf = b_sup*c_inf;
-            }
-
-            if((c_inf == 0) || (b_inf == 0))
-            {
-                *a_sup = 0.0;
-            }
-            else
-            {
-                *a_sup = b_inf*c_inf;
-            }
+            *a_inf = b_sup*c_inf;
+            *a_sup = b_inf*c_inf;
         }
     }
+    /* there is 0 in between for c */
     else if(b_inf <= 0)
     {
-        /* interval b is positive */
-        if(c_inf <= 0)
-        {
-            /*interval c is positive */
-            if((b_inf == 0) || (c_inf == 0))
-            {
-                *a_inf = 0.0;
-            }
-            else
-            {
-                *a_inf = -b_inf*c_inf;
-            }
-
-            if((b_sup == 0) || (c_sup == 0))
-            {
-                *a_sup = 0.0;
-            }
-            else
-            {
-                *a_sup = b_sup*c_sup;
-            }
-        }
-        else if(c_sup <= 0)
-        {
-            /* interval c is negative */
-            if((b_sup == 0) || (c_inf == 0))
-            {
-                *a_inf = 0.0;
-            }
-            else
-            {
-                *a_inf = b_sup*c_inf;
-            }
-
-            if((b_inf == 0) || (c_sup == 0))
-            {
-                *a_sup = 0.0;
-            }
-            else
-            {
-                *a_sup = -b_inf*c_sup;
-            }
-        }
-        else
-        {
-            /* there is 0 in between for c */
-            if((b_sup == 0) || (c_inf == 0))
-            {
-                *a_inf = 0.0;
-            }
-            else
-            {
-                *a_inf = b_sup*c_inf;
-            }
-
-            if((b_sup == 0) || (c_sup == 0))
-            {
-                *a_sup = 0.0;
-            }
-            else
-            {
-                *a_sup = b_sup*c_sup;
-            }
-        }
+        /*interval b is positive*/
+        *a_inf = b_sup*c_inf;
+        *a_sup = b_sup*c_sup;
     }
     else if(b_sup <= 0)
     {
         /* interval b is negative */
-        if(c_inf <= 0)
-        {
-            /* interval c is positive */
-            if((b_inf == 0) || (c_sup == 0))
-            {
-                *a_inf = 0.0;
-            }
-            else
-            {
-                *a_inf = b_inf*c_sup;
-            }
-
-            if((b_sup == 0) || (c_inf == 0))
-            {
-                *a_sup = 0.0;
-            }
-            else
-            {
-                *a_sup = b_sup*-c_inf;
-            }
-        }
-        else if(c_sup <= 0)
-        {
-            /* interval c is negative */
-            if((b_sup == 0) || (c_sup == 0))
-            {
-                *a_inf = 0.0;
-            }
-            else
-            {
-                *a_inf = -b_sup*c_sup;
-            }
-
-            if((b_inf == 0) || (c_inf == 0))
-            {
-                *a_sup = 0.0;
-            }
-            else
-            {
-                *a_sup = b_inf*c_inf;
-            }
-        }
-        else
-        {
-            /* there is 0 in between for c */
-            if((b_inf == 0) || (c_sup == 0))
-            {
-                *a_inf = 0.0;
-            }
-            else
-            {
-                *a_inf = b_inf*c_sup;
-            }
-
-            if((b_inf == 0) || (c_inf == 0))
-            {
-                *a_sup = 0.0;
-            }
-            else
-            {
-                *a_sup = b_inf*c_inf;
-            }
-        }
+        *a_inf = b_inf*c_sup;
+        *a_sup = b_inf*c_inf;
     }
     else
     {
@@ -340,67 +129,6 @@ void elina_double_interval_mul(float_type* const a_inf, float_type* const a_sup,
         float_type tmp_sup2 = b_sup*c_sup;
         *a_inf = fmax(tmp_inf1, tmp_inf2);
         *a_sup = fmax(tmp_sup1, tmp_sup2);
-    }
-}
-
-
-__device__
-void elina_double_interval_div(float_type* const a_inf, float_type* const a_sup, const float_type b_inf, const float_type b_sup, const float_type c_inf, const float_type c_sup)
-{
-    if (c_inf < 0)
-    {
-        /* c is positive */
-        if (b_inf <= 0)
-        {
-            /* b is positive */
-            *a_inf = b_inf/c_sup;
-            *a_sup = b_sup/-c_inf;
-        }
-        else if (b_sup <= 0)
-        {
-            /* b is negative */
-            *a_inf = -b_inf/c_inf;
-            *a_sup = b_sup/c_sup;
-        }
-        else
-        {
-            /* 0 is in the middle of b: one divides b by c->inf */
-            *a_inf = b_inf/-c_inf;
-            *a_sup = b_sup/-c_inf;
-        }
-    }
-    else if (c_sup < 0)
-    {
-        /* c is negative */
-        if (b_inf <= 0)
-        {
-            /* b is positive */
-            *a_sup = b_inf/c_inf;
-            *a_inf = -b_sup/c_sup;
-        }
-        else if (b_sup <= 0)
-        {
-            /* b is negative */
-            *a_inf = b_sup/c_inf;
-            *a_sup = -b_inf/c_sup;
-        }
-        else
-        {
-            /* 0 is in the middle of b: one cross-divide b by c->sup */
-            *a_inf = b_sup/c_sup;
-            *a_sup = b_inf/c_sup;
-        }
-    }
-    else if ((b_inf == 0) && (b_sup == 0))
-    {
-        /* b is [0,0] */
-        *a_inf = b_inf;
-        *a_sup = b_sup;
-    }
-    else
-    {
-        *a_inf = INFINITY;
-        *a_sup = INFINITY;
     }
 }
 
@@ -579,28 +307,6 @@ void ffn_add_layer(fppoly_t* const fp, const size_t num_out_neurons, const size_
     fp->layers[fp->numlayers] = layer;
 
     fp->numlayers++;
-}
-
-
-__device__
-void elina_double_interval_add_expr_coeff(float_type* const res_inf, float_type* const res_sup, const float_type inf, const float_type sup, const float_type inf_expr, const float_type sup_expr)
-{
-    *res_inf = inf + inf_expr;
-    *res_sup = sup + sup_expr;
-    const float_type maxA = fmax(fabs(inf_expr), fabs(sup_expr));
-    float_type tmp1, tmp2;
-    elina_double_interval_mul(&tmp1, &tmp2, inf, sup, maxA*ulp, maxA*ulp);
-    *res_inf += tmp1;
-    *res_sup += tmp2;
-}
-
-
-__device__
-void elina_double_interval_add_cst_coeff(float_type* const res_inf, float_type* const res_sup, const float_type inf, const float_type sup, const float_type inf_expr, const float_type sup_expr)
-{
-    elina_double_interval_add_expr_coeff(res_inf, res_sup, inf, sup, inf_expr, sup_expr);
-    *res_inf += min_denormal;
-    *res_sup += min_denormal;
 }
 
 
