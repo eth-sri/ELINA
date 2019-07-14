@@ -316,7 +316,7 @@ void elina_double_interval_mul_expr_coeff(float_type* const res_inf, float_type*
     elina_double_interval_mul(res_inf, res_sup, inf, sup, inf_expr, sup_expr);
     const float_type maxA = max(fabs(inf_expr), fabs(sup_expr));
     float_type tmp1, tmp2;
-    elina_double_interval_mul(&tmp1, &tmp2, inf, sup, maxA*ulp, maxA*ulp);
+    elina_double_interval_mul(&tmp1, &tmp2, inf, sup, -maxA*ulp, maxA*ulp);
     *res_inf += tmp1;
     *res_sup += tmp2;
 }
@@ -326,7 +326,7 @@ __device__
 void elina_double_interval_mul_cst_coeff(float_type* const res_inf, float_type* const res_sup, const float_type inf, const float_type sup, const float_type inf_expr, const float_type sup_expr)
 {
     elina_double_interval_mul_expr_coeff(res_inf, res_sup, inf, sup, inf_expr, sup_expr);
-    *res_inf += min_denormal;
+    *res_inf -= min_denormal;
     *res_sup += min_denormal;
 }
 
@@ -671,7 +671,7 @@ void lexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* _
             float_type tmp1, tmp2;
             elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
 
-            atomicAdd(&inf_cst[n], tmp1 + min_denormal);
+            atomicAdd(&inf_cst[n], tmp1 - min_denormal);
             atomicAdd(&sup_cst[n], tmp2 + min_denormal);
         }
         else if (old_inf_coeff > 0)
@@ -755,7 +755,7 @@ void uexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* _
             float_type tmp1, tmp2;
             elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
 
-            atomicAdd(&inf_cst[n], tmp1 + min_denormal);
+            atomicAdd(&inf_cst[n], tmp1 - min_denormal);
             atomicAdd(&sup_cst[n], tmp2 + min_denormal);
         }
         else if(old_sup_coeff < 0)
@@ -863,7 +863,7 @@ void lexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
                     float_type tmp1, tmp2;
                     elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
 
-                    atomicAdd(&inf_cst[n], tmp1 + min_denormal);
+                    atomicAdd(&inf_cst[n], tmp1 - min_denormal);
                     atomicAdd(&sup_cst[n], tmp2 + min_denormal);
                 }
                 else if (old_inf_coeff > 0)
@@ -975,7 +975,7 @@ void uexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
                     float_type tmp1, tmp2;
                     elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
 
-                    atomicAdd(&inf_cst[n], tmp1 + min_denormal);
+                    atomicAdd(&inf_cst[n], tmp1 - min_denormal);
                     atomicAdd(&sup_cst[n], tmp2 + min_denormal);
                 }
                 else if(old_sup_coeff < 0)
@@ -1049,7 +1049,7 @@ void coeffs_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, c
                 maxRes = max(fabs(inf_coeff), fabs(sup_coeff));
                 maxMul = max(fabs(tmp1), fabs(tmp2));
 
-                inf_coeff = inf_coeff + tmp1 + (maxRes + maxMul)*ulp;
+                inf_coeff = inf_coeff + tmp1 - (maxRes + maxMul)*ulp;
                 sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
             }
         }
@@ -1110,7 +1110,7 @@ void coeffs_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coe
                                 maxRes = max(fabs(inf_coeff), fabs(sup_coeff));
                                 maxMul = max(fabs(tmp1), fabs(tmp2));
 
-                                inf_coeff = inf_coeff + tmp1 + (maxRes + maxMul)*ulp;
+                                inf_coeff = inf_coeff + tmp1 - (maxRes + maxMul)*ulp;
                                 sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
                             }
                         }
@@ -1179,7 +1179,7 @@ void coeffs_from_previous_layer_conv_filter_serial(const float_type* __restrict_
                                         maxRes = max(fabs(inf_coeff), fabs(sup_coeff));
                                         maxMul = max(fabs(tmp1), fabs(tmp2));
 
-                                        inf_coeff = inf_coeff + tmp1 + (maxRes + maxMul)*ulp;
+                                        inf_coeff = inf_coeff + tmp1 - (maxRes + maxMul)*ulp;
                                         sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
                                     }
                                 }
@@ -1262,7 +1262,7 @@ void coeffs_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_
                                 maxRes = max(fabs(inf_coeff), fabs(sup_coeff));
                                 maxMul = max(fabs(tmp1), fabs(tmp2));
 
-                                inf_coeff = inf_coeff + tmp1 + (maxRes + maxMul)*ulp;
+                                inf_coeff = inf_coeff + tmp1 - (maxRes + maxMul)*ulp;
                                 sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
                             }
                         }
@@ -1347,7 +1347,7 @@ void coeffs_from_previous_layer_conv_sparse_filter_serial(const float_type* __re
                                         maxRes = max(fabs(inf_coeff), fabs(sup_coeff));
                                         maxMul = max(fabs(tmp1), fabs(tmp2));
 
-                                        inf_coeff = inf_coeff + tmp1 + (maxRes + maxMul)*ulp;
+                                        inf_coeff = inf_coeff + tmp1 - (maxRes + maxMul)*ulp;
                                         sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
                                     }
                                 }
@@ -1389,7 +1389,7 @@ void csts_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, con
             maxRes = max(fabs(inf_cst), fabs(sup_cst));
             maxMul = max(fabs(tmp1), fabs(tmp2));
 
-            inf_cst += tmp1 + (maxRes + maxMul)*ulp + min_denormal;
+            inf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
             sup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
         }
     }
@@ -1426,7 +1426,7 @@ void csts_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff
                 maxRes = max(fabs(inf_cst), fabs(sup_cst));
                 maxMul = max(fabs(tmp1), fabs(tmp2));
 
-                inf_cst += tmp1 + (maxRes + maxMul)*ulp + min_denormal;
+                inf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
                 sup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
             }
         }
@@ -1485,7 +1485,7 @@ void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_in
                     maxRes = max(fabs(inf_cst), fabs(sup_cst));
                     maxMul = max(fabs(tmp1), fabs(tmp2));
 
-                    inf_cst += tmp1 + (maxRes + maxMul)*ulp + min_denormal;
+                    inf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
                     sup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
                 }
             }
