@@ -236,31 +236,15 @@ void elina_double_interval_mul2(float_type* const a_inf, float_type* const a_sup
 __device__
 void elina_double_interval_mul_symmetric_c(float_type* const a_inf, float_type* const a_sup, const float_type b_inf, const float_type b_sup, const float_type c)
 {
-    if(b_inf >= 0)
+    if(-b_inf < b_sup)
     {
-        /*interval b is positive*/
         *a_inf = b_sup*-c;
         *a_sup = b_sup*c;
     }
-    else if(b_sup <= 0)
-    {
-        /* interval b is negative */
-        *a_inf = b_inf*c;
-        *a_sup = b_inf*-c;
-    }
     else
     {
-        /* there is 0 in between for b */
-        if(b_sup < -b_inf)
-        {
-            *a_inf = b_inf*c;
-            *a_sup = b_inf*-c;
-        }
-        else
-        {
-            *a_inf = b_sup*-c;
-            *a_sup = b_sup*c;
-        }
+        *a_inf = b_inf*c;
+        *a_sup = b_inf*-c;
     }
 }
 
