@@ -180,6 +180,31 @@ elina_double_interval_mul2(float_type *const a_inf, float_type *const a_sup,
   }
 }
 
+__device__ void elina_double_interval_mul_symmetric_c(float_type *const a_inf,
+                                                      float_type *const a_sup,
+                                                      const float_type b_inf,
+                                                      const float_type b_sup,
+                                                      const float_type c) {
+  if (b_inf >= 0) {
+    /*interval b is positive*/
+    *a_inf = b_sup * -c;
+    *a_sup = b_sup * c;
+  } else if (b_sup <= 0) {
+    /* interval b is negative */
+    *a_inf = b_inf * c;
+    *a_sup = b_inf * -c;
+  } else {
+    /* there is 0 in between for b */
+    if (b_sup < -b_inf) {
+      *a_inf = b_inf * c;
+      *a_sup = b_inf * -c;
+    } else {
+      *a_inf = b_sup * -c;
+      *a_sup = b_sup * c;
+    }
+  }
+}
+
 fppoly_t *fppoly_of_abstract0(elina_abstract0_t *a) {
   return (fppoly_t *)a->value;
 }
@@ -334,7 +359,7 @@ __device__ void elina_double_interval_mul_expr_coeff(
   const float_type maxA = max(fabs(inf_expr), fabs(sup_expr));
   float_type tmp1, tmp2;
 
-  elina_double_interval_mul2(&tmp1, &tmp2, inf, sup, -maxA * ulp, maxA * ulp);
+  elina_double_interval_mul_symmetric_c(&tmp1, &tmp2, inf, sup, maxA * ulp);
 
   *res_inf += tmp1;
   *res_sup += tmp2;
