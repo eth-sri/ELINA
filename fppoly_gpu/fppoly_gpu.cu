@@ -144,15 +144,92 @@ void elina_double_interval_mul2(float_type* const a_inf, float_type* const a_sup
    float_type sup_inf = b_sup*c_inf;
    float_type sup_sup = b_sup*c_sup;
 
-   float_type min1 = min(inf_inf, inf_sup);
-   float_type min2 = min(sup_inf, sup_sup);
+   if(inf_inf < inf_sup)
+   {
+       if(sup_inf < sup_sup)
+       {
+           if(inf_inf < sup_inf)
+           {
+               *a_inf = inf_inf;
+           }
+           else
+           {
+               *a_inf = sup_inf;
+           }
 
-   *a_inf = min(min1, min2);
+           if(inf_sup < sup_sup)
+           {
+               *a_sup = sup_sup;
+           }
+           else
+           {
+               *a_sup = inf_sup;
+           }
+       }
+       else
+       {
+           if(inf_inf < sup_sup)
+           {
+               *a_inf = inf_inf;
+           }
+           else
+           {
+               *a_inf = sup_sup;
+           }
 
-   float_type max1 = max(inf_inf, inf_sup);
-   float_type max2 = max(sup_inf, sup_sup);
+           if(inf_sup < sup_inf)
+           {
+               *a_sup = sup_inf;
+           }
+           else
+           {
+               *a_sup = inf_sup;
+           }
+       }
+   }
+   else
+   {
+       if(sup_inf < sup_sup)
+       {
+           if(inf_sup < sup_inf)
+           {
+               *a_inf = inf_sup;
+           }
+           else
+           {
+               *a_inf = sup_inf;
+           }
 
-   *a_sup = max(max1, max2);
+           if(inf_inf < sup_sup)
+           {
+               *a_sup = sup_sup;
+           }
+           else
+           {
+               *a_sup = inf_inf;
+           }
+       }
+       else
+       {
+           if(inf_sup < sup_sup)
+           {
+               *a_inf = inf_sup;
+           }
+           else
+           {
+               *a_inf = sup_sup;
+           }
+
+           if(inf_inf < sup_inf)
+           {
+               *a_sup = sup_inf;
+           }
+           else
+           {
+               *a_sup = inf_inf;
+           }
+       }
+   }
 }
 
 
@@ -308,12 +385,12 @@ void ffn_add_layer(fppoly_t* const fp, const size_t num_out_neurons, const size_
 __device__
 void elina_double_interval_mul_expr_coeff(float_type* const res_inf, float_type* const res_sup, const float_type inf, const float_type sup, const float_type inf_expr, const float_type sup_expr)
 {
-    elina_double_interval_mul(res_inf, res_sup, inf, sup, inf_expr, sup_expr);
+    elina_double_interval_mul2(res_inf, res_sup, inf, sup, inf_expr, sup_expr);
 
     const float_type maxA = max(fabs(inf_expr), fabs(sup_expr));
     float_type tmp1, tmp2;
 
-    elina_double_interval_mul(&tmp1, &tmp2, inf, sup, -maxA*ulp, maxA*ulp);
+    elina_double_interval_mul2(&tmp1, &tmp2, inf, sup, -maxA*ulp, maxA*ulp);
 
     *res_inf += tmp1;
     *res_sup += tmp2;
@@ -341,7 +418,7 @@ void compute_lb_from_expr(float_type* __restrict__ lb_array, const float_type* _
 
     for(size_t i = 0; i < expr_size; i++)
     {
-        elina_double_interval_mul(&tmp1, &tmp2, inf_coeff[n*expr_size + i], sup_coeff[n*expr_size + i], input_inf[i], input_sup[i]);
+        elina_double_interval_mul2(&tmp1, &tmp2, inf_coeff[n*expr_size + i], sup_coeff[n*expr_size + i], input_inf[i], input_sup[i]);
 
         res_inf = res_inf + tmp1;
     }
@@ -361,7 +438,7 @@ void compute_ub_from_expr(float_type* __restrict__ ub_array, const float_type* _
 
     for(size_t i = 0; i < expr_size; i++)
     {
-        elina_double_interval_mul(&tmp1, &tmp2, inf_coeff[n*expr_size + i], sup_coeff[n*expr_size + i], input_inf[i], input_sup[i]);
+        elina_double_interval_mul2(&tmp1, &tmp2, inf_coeff[n*expr_size + i], sup_coeff[n*expr_size + i], input_inf[i], input_sup[i]);
 
         res_sup = res_sup + tmp2;
     }
@@ -408,7 +485,7 @@ void compute_lb_from_expr_conv_sparse(float_type* __restrict__ lb_array, const f
 
                 size_t mat_out = local_n*length_x*length_y*output_size_z + j;
 
-                elina_double_interval_mul(&tmp1, &tmp2, inf_coeff[mat_out], sup_coeff[mat_out], input_inf[i], input_sup[i]);
+                elina_double_interval_mul2(&tmp1, &tmp2, inf_coeff[mat_out], sup_coeff[mat_out], input_inf[i], input_sup[i]);
 
                 res_inf = res_inf + tmp1;
            }
@@ -456,7 +533,7 @@ void compute_ub_from_expr_conv_sparse(float_type* __restrict__ ub_array, const f
 
                 size_t mat_out = local_n*length_x*length_y*output_size_z + j;
 
-                elina_double_interval_mul(&tmp1, &tmp2, inf_coeff[mat_out], sup_coeff[mat_out], input_inf[i], input_sup[i]);
+                elina_double_interval_mul2(&tmp1, &tmp2, inf_coeff[mat_out], sup_coeff[mat_out], input_inf[i], input_sup[i]);
 
                 res_sup = res_sup + tmp2;
             }
@@ -560,7 +637,7 @@ void layer_compute_bounds_from_exprs_conv(const float_type* __restrict__ coeffs,
 
                 const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
 
-                elina_double_interval_mul(&tmp1, &tmp2, coeffs[filter_index], coeffs[filter_index], input_inf[mat_in], input_sup[mat_in]);
+                elina_double_interval_mul2(&tmp1, &tmp2, coeffs[filter_index], coeffs[filter_index], input_inf[mat_in], input_sup[mat_in]);
 
                 res_inf = res_inf + tmp1;
                 res_sup = res_sup + tmp2;
@@ -585,7 +662,7 @@ void layer_compute_bounds_from_exprs(const float_type* __restrict__ coeffs, cons
 
     for(size_t i = 0; i < num_in_neurons; i++)
     {
-        elina_double_interval_mul(&tmp1, &tmp2, coeffs[n*num_in_neurons + i], coeffs[n*num_in_neurons + i], input_inf[i], input_sup[i]);
+        elina_double_interval_mul2(&tmp1, &tmp2, coeffs[n*num_in_neurons + i], coeffs[n*num_in_neurons + i], input_inf[i], input_sup[i]);
 
         res_inf = res_inf + tmp1;
         res_sup = res_sup + tmp2;
@@ -706,7 +783,7 @@ void lexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* _
             inf_coeff[a] = 0.0;
             sup_coeff[a] = 0.0;
             float_type tmp1, tmp2;
-            elina_double_interval_mul(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
+            elina_double_interval_mul2(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
 
             atomicAdd(&inf_cst[n], tmp1);
             atomicAdd(&sup_cst[n], tmp1);
@@ -790,7 +867,7 @@ void uexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* _
             inf_coeff[a] = 0.0;
             sup_coeff[a] = 0.0;
             float_type tmp1, tmp2;
-            elina_double_interval_mul(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
+            elina_double_interval_mul2(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
 
             atomicAdd(&inf_cst[n], tmp2);
             atomicAdd(&sup_cst[n], tmp2);
@@ -898,7 +975,7 @@ void lexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
                     inf_coeff[a] = 0.0;
                     sup_coeff[a] = 0.0;
                     float_type tmp1, tmp2;
-                    elina_double_interval_mul(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
+                    elina_double_interval_mul2(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
 
                     inf_cst[n] += tmp1;
                     sup_cst[n] += tmp1;
@@ -1007,7 +1084,7 @@ void uexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
                     inf_coeff[a] = 0.0;
                     sup_coeff[a] = 0.0;
                     float_type tmp1, tmp2;
-                    elina_double_interval_mul(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
+                    elina_double_interval_mul2(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
 
                     inf_cst[n] += tmp2;
                     sup_cst[n] += tmp2;
