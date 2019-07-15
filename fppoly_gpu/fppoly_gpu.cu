@@ -24,11 +24,14 @@
 #include <cuda.h>
 #include <chrono>
 
+
 const size_t num_threads = 128;
 
 bool results[90];
 bool results_calculated;
 size_t output_counter;
+
+constexpr int DIGS = DECIMAL_DIG;
 
 #ifdef single
 __constant__ const float_type min_denormal = 1.40129846e-45;
@@ -2025,10 +2028,6 @@ void ffn_handle_intermediate_tanh_layer(elina_manager_t* man, elina_abstract0_t*
 __global__
 void print_bounds(const float_type* __restrict__ bounds_array, const size_t num_out_neurons)
 {
-    for(size_t i = 0; i < num_out_neurons; i++)
-    {
-        printf("out inf number %i is: %g\n", i, bounds_array[i]);
-    }
 }
 
 
@@ -2056,10 +2055,26 @@ void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, con
     float_type* lb_array = fp->layers[fp->numlayers - 1]->lb_array;
     float_type* ub_array = fp->layers[fp->numlayers - 1]->ub_array;
 
-    print_bounds<<<1, 1>>>(lb_array, num_out_neurons);
-    print_bounds<<<1, 1>>>(ub_array, num_out_neurons);
+    float_type* lb_array_host = (float_type*) malloc(fp->layers[fp->numlayers - 1]->num_out_neurons*sizeof(float_type));
+    float_type* ub_array_host = (float_type*) malloc(fp->layers[fp->numlayers - 1]->num_out_neurons*sizeof(float_type));
+
+    cudaMemcpy(lb_array_host, lb_array, fp->layers[fp->numlayers - 1]->num_out_neurons*sizeof(float_type), cudaMemcpyDeviceToHost);
+    cudaMemcpy(ub_array_host, ub_array, fp->layers[fp->numlayers - 1]->num_out_neurons*sizeof(float_type), cudaMemcpyDeviceToHost);
+
+    for(size_t i = 0; i < num_out_neurons; i++)
+    {
+        printf("out inf number %lu is: %.*e\n", i, DIGS, lb_array_host[i]);
+    }
+
+    for(size_t i = 0; i < num_out_neurons; i++)
+    {
+        printf("out sup number %lu is: %.*e\n", i, DIGS, ub_array_host[i]);
+    }
 
     std::cout << std::endl;
+
+    free(lb_array_host);
+    free(ub_array_host);
 }
 
 void ffn_handle_last_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const double** weights, const double* bias, const size_t num_out_neurons, const size_t num_in_neurons, const bool has_relu)
