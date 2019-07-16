@@ -1,7 +1,7 @@
 /*
  *
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2018 Department of Computer Science, ETH Zurich
+ *  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
  *  This software is distributed under GNU Lesser General Public License Version 3.0.
  *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
@@ -450,7 +450,9 @@ opt_oct_t* opt_oct_substitute_linexpr(elina_manager_t* man,
   if (oo2) {
     size_t i;
      //TODO: online decomposition
-    convert_to_dense_mat(oo2,o->dim,false);
+      if(!oo2->is_dense){
+          convert_to_dense_mat(oo2,o->dim,false);
+      }
     double * m = oo->mat;
     double * m2 = oo2->mat;
     for (i=0;i<opt_matsize(o->dim);i++){

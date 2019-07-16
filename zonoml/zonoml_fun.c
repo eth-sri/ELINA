@@ -1,7 +1,7 @@
 /*
  *
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2018 Department of Computer Science, ETH Zurich
+ *  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
  *  This software is distributed under GNU Lesser General Public License Version 3.0.
  *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
@@ -34,6 +34,8 @@ elina_abstract0_t* zonotope_from_network_input(elina_manager_t* man, size_t intd
 	res->box_inf[i] = -inf_array[i];
 	res->box_sup[i] = sup_array[i];
 	res->paf[i] = zonotope_aff_alloc_init(pr);
+	res->paf[i]->itv_inf = INFINITY;
+	res->paf[i]->itv_sup = INFINITY;
 	if (inf_array[i] > sup_array[i]){
 		
 		 res->paf[i] = pr->bot;
@@ -68,7 +70,6 @@ zonotope_aff_t* zonotope_aff_mul_weight(zonotope_internal_t* pr, zonotope_aff_t*
 {
    
     if ((lambda==0)|| zonotope_aff_is_known_to_be_zero(pr, src)) {
-	
         return zonotope_aff_alloc_init(pr);
     } else if (zonotope_aff_is_bottom(pr, src)) {
 	
@@ -161,7 +162,6 @@ zonotope_aff_t * zonotope_aff_from_sparse_weights_bias(zonotope_internal_t* pr, 
     res->c_sup = bias;
     res->itv_inf = -bias;
     res->itv_sup = bias;
-   
     size_t i;
 	
     for(i=0; i < size; i++){
@@ -226,6 +226,8 @@ elina_abstract0_t* ffn_matmult_zono(elina_manager_t * man, bool destructive, eli
    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
    zonotope_t *z = zonotope_of_abstract0(element);
    zonotope_t* res = zonotope_copy(man, z);
+   //printf("input\n");
+   //zonotope_fprint(stdout,man,res,NULL);
    size_t i = 0;
    for (i=0; i<res->dims; i++) {
 	res->paf[i]->itv_inf = res->box_inf[i];
@@ -235,6 +237,8 @@ elina_abstract0_t* ffn_matmult_zono(elina_manager_t * man, bool destructive, eli
     man->result.flag_best = false;
     man->result.flag_exact = false;
     record_timing(zonoml_ffn_matmult_time);
+    //printf("Output\n");
+    //zonotope_fprint(stdout,man,res,NULL);
     return abstract0_of_zonotope(man,res);
 }
 

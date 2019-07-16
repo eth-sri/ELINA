@@ -1,7 +1,7 @@
 /*
  *
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2018 Department of Computer Science, ETH Zurich
+ *  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
  *  This software is distributed under GNU Lesser General Public License Version 3.0.
  *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
@@ -32,6 +32,7 @@ extern "C" {
 /* Meet and Join */
 /*****************/
 /* 1.Meet */
+
 zonotope_t* zonotope_meet(elina_manager_t* man, bool destructive, zonotope_t* z1, zonotope_t* z2);
 zonotope_t* zonotope_meet_array(elina_manager_t* man, zonotope_t** tab, size_t size);
 zonotope_t* zonotope_meet_lincons_array(elina_manager_t* man,
@@ -44,7 +45,7 @@ zonotope_t* zonotope_meet_tcons_array(elina_manager_t* man,
 		elina_tcons0_array_t* array);
 
 /* 2.Join */
-
+zonotope_t* zonotope_join(elina_manager_t *man, bool destructive, zonotope_t *z1, zonotope_t *z2);
 
 #ifdef __cplusplus
 }
