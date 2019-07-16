@@ -1,22 +1,23 @@
 /*
  *
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2018 Department of Computer Science, ETH Zurich
- *  This software is distributed under GNU Lesser General Public License
- * Version 3.0. For more information, see the ELINA project website at:
+ *  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
  *
  *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
  *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
  *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
  *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
- *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
  *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
  *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
  *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
  *  CONTRACT, TORT OR OTHERWISE).
  *
  */
+
 
 #include "zonotope.h"
 #include "zonotope_internal.h"
@@ -79,6 +80,8 @@ zonotope_t* zonotope_of_box(elina_manager_t* man, size_t intdim, size_t realdim,
 	res->box_inf[i] = -tinterval[i]->inf->val.dbl;
 	res->box_sup[i] = tinterval[i]->sup->val.dbl;
 	res->paf[i] = zonotope_aff_alloc_init(pr);
+	res->paf[i]->itv_inf = INFINITY;
+	res->paf[i]->itv_sup = INFINITY;
 	if (elina_interval_is_bottom(tinterval[i])){
 		 res->paf[i] = pr->bot;
 	}
@@ -103,9 +106,7 @@ zonotope_t* zonotope_of_box(elina_manager_t* man, size_t intdim, size_t realdim,
     man->result.flag_best = true;
     man->result.flag_exact = true;
 	//fflush(stdout);
-    // printf("of box output\n");
-    // zonotope_fprint(stdout,man,res,NULL);
-    // fflush(stdout);
+    
     record_timing(zonotope_of_box_time);
     return res;
 }

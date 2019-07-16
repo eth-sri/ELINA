@@ -1,16 +1,16 @@
 /*
  *
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2018 Department of Computer Science, ETH Zurich
- *  This software is distributed under GNU Lesser General Public License
- * Version 3.0. For more information, see the ELINA project website at:
+ *  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
  *
  *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
  *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
  *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
  *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
- *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
  *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
  *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
  *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
@@ -591,6 +591,8 @@ elina_abstract0_t *relu_zono_layerwise(elina_manager_t *man, bool destructive,
                                        elina_dim_t num_dim) {
   // elina_dim_t i;
   // elina_dim_t end = start_offset + num_dim;
+  elina_dimension_t dimension = elina_abstract0_dimension(man, abs);
+
   elina_abstract0_t *res = destructive ? abs : elina_abstract0_copy(man, abs);
 
   // for(i=start_offset; i < end; i++){
@@ -1157,8 +1159,11 @@ elina_abstract0_t * tanh_zono_layerwise(elina_manager_t* man, bool destructive, 
 }
 
 bool is_greater(elina_manager_t *man, elina_abstract0_t *elem, elina_dim_t y, elina_dim_t x){
-
-        zonotope_t * zo = zonotope_of_abstract0(elem);
+    
+	zonotope_t * zo = zonotope_of_abstract0(elem);
+    if(-zo->box_inf[y]>zo->box_sup[x]){
+        return true;
+    }
 	elina_dimension_t dims = zonotope_dimension(man,zo);
 	elina_dim_t num_dim = dims.intdim + dims.realdim;
 
