@@ -1,7 +1,7 @@
 /*
  *
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2018 Department of Computer Science, ETH Zurich
+ *  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
  *  This software is distributed under GNU Lesser General Public License Version 3.0.
  *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
@@ -126,6 +126,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
   //printf("\n");
   //elina_lincons0_array_clear(&arr);
   //fflush(stdout);
+  //print_array_comp_list(oa->acl,oa->maxcols);
   int sgn;
   opt_pk_array_t* op;
   opt_pk_internal_t* opk = (opt_pk_internal_t*)man->internal;
@@ -140,7 +141,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
   comp_list_t *clb = linexpr0_to_comp_list(opk,linexpr0);
   comp_list_t * cli = find(acla,var);
   bool need_refine = false; 
-  comp_list_t * clb_copy = NULL;
+  comp_list_t * cli_copy = NULL;
   if(!contains_comp(clb,var)){
 	
 	if(cli!=NULL && is_disjoint(cli,clb,maxcols) && (cli->size>1)){
@@ -148,7 +149,8 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 	}
 	insert_comp(clb,var);
 	if(need_refine){
-		clb_copy = copy_comp_list(clb);
+		cli_copy = copy_comp_list(cli);
+		remove_comp(cli_copy,var);
 	}
   }
   array_comp_list_t * aclb = create_array_comp_list();
@@ -218,6 +220,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 	if(res_a==res){
 		disjoint_map[k] = 1;
 		unsigned short int *ca_a = to_sorted_array(cla,maxcols);
+		
 		if(flag1){
 			num_vertex_a[k] = opt_generator_rearrange(oak->F,oak->satF);
 			if(!nbvertex){
@@ -284,6 +287,11 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 		matC = opt_matrix_alloc(nbcons+1, poly[res]->intdim+2,false);
 	}
 	else if(flag2){
+		for(k=0; k < comp_size; k++){
+			if(!line_map[k]){
+				nbline++;
+			}
+		}
 		matF =  opt_matrix_alloc(nbvertex+nbline+1, poly[res]->intdim+2,false);
 	}
 	else{
@@ -387,20 +395,20 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 				poly[res]->nbeq++;			
 				poly[res]->is_minimized = false;
 				if(!opk->exn){
-					/*if( need_refine){
-					
+					//if( need_refine){
+                    if(0){
 						comp_list_t * clv = find(acl,var);
 					
-					
-						comp_t * cb = clb_copy->head;
-						while(cb!=NULL){
-							remove_comp(clv,cb->num);
-							cb = cb->next;
+						
+						comp_t * ci = cli_copy->head;
+						while(ci!=NULL){
+							remove_comp(clv,ci->num);
+							ci = ci->next;
 						}
 						unsigned short int *ca1 = to_sorted_array(clv,maxcols);
-						unsigned short int *ca2 = to_sorted_array(clb_copy,maxcols);
+						unsigned short int *ca2 = to_sorted_array(cli_copy,maxcols);
 						unsigned short int * ind_map_a = map_index(ca1,ca,clv->size);
-						unsigned short int * ind_map_b = map_index(ca2,ca,clb_copy->size);
+						unsigned short int * ind_map_b = map_index(ca2,ca,cli_copy->size);
 						opt_pk_t * tmp = poly[res];
 						opt_matrix_t * F = tmp->F;
 						opt_matrix_t * C = tmp->C;
@@ -418,26 +426,26 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 						poly[res]->nbline = split_matrix(opk,poly[res]->F,F,ind_map_a,clv->size,&is_pos); 
 
 						is_pos = false;
-						poly[num_comp] = opt_poly_alloc(clb_copy->size,0);
-						poly[num_comp]->C = opt_matrix_alloc(C->nbrows+1,clb_copy->size+opk->dec,false);
-						poly[num_comp]->F = opt_matrix_alloc(F->nbrows,clb_copy->size+opk->dec,false); 
-						poly[num_comp]->nbeq = split_matrix(opk,poly[num_comp]->C,C,ind_map_b,clb_copy->size, &is_pos);
+						poly[num_comp] = opt_poly_alloc(cli_copy->size,0);
+						poly[num_comp]->C = opt_matrix_alloc(C->nbrows+1,cli_copy->size+opk->dec,false);
+						poly[num_comp]->F = opt_matrix_alloc(F->nbrows,cli_copy->size+opk->dec,false); 
+						poly[num_comp]->nbeq = split_matrix(opk,poly[num_comp]->C,C,ind_map_b,cli_copy->size, &is_pos);
 						//if(!is_pos){
 						//	size_t nbrows = poly[num_comp]->C->nbrows;
 						//	poly[num_comp]->C->p[nbrows][0] = 1;
 						//	poly[num_comp]->C->p[nbrows][1] = 1;
 						//	poly[num_comp]->C->nbrows++;
 						//}
-						poly[num_comp]->nbline = split_matrix(opk,poly[num_comp]->F,F,ind_map_b,clb_copy->size, &is_pos); 
+						poly[num_comp]->nbline = split_matrix(opk,poly[num_comp]->F,F,ind_map_b,cli_copy->size, &is_pos); 
 					
 					
 						poly[res]->satC = opt_satmat_alloc(poly[res]->F->nbrows,opt_bitindex_size(poly[res]->C->nbrows));
 						combine_satmat(opk,poly[res],clv->size,poly[res]->C->nbrows,true);
 						poly[num_comp]->satC = opt_satmat_alloc(poly[num_comp]->F->nbrows,opt_bitindex_size(poly[num_comp]->C->nbrows));
-						combine_satmat(opk,poly[num_comp],clb_copy->size,poly[num_comp]->C->nbrows,true);
+						combine_satmat(opk,poly[num_comp],cli_copy->size,poly[num_comp]->C->nbrows,true);
 
 						 
-						insert_comp_list_tail(acl,clb_copy);
+						insert_comp_list_tail(acl,cli_copy);
 						 
 					
 						free(ca1);
@@ -450,10 +458,10 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 						free(tmp);
 					
 					}
-					else {*/
+					else {
 						poly[res]->satC = opt_satmat_alloc(poly[res]->F->nbrows,opt_bitindex_size(poly[res]->C->nbrows));
 						combine_satmat(opk,poly[res],matC->nbcolumns - opk->dec,poly[res]->C->nbrows,true);
-					//}
+					}
 				}
 				else{
 					opk->exn = ELINA_EXC_NONE;
@@ -586,7 +594,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
     op->acl = acl;
     free(exc_map);
       //printf("ASSIGN OUTPUT\n");
-	
+	//print_array_comp_list(acl,op->maxcols);
 	//elina_lincons0_array_t arr1 = opt_pk_to_lincons_array(man,op);
 	//elina_lincons0_array_fprint(stdout,&arr1,NULL);
 	//elina_lincons0_array_clear(&arr1);

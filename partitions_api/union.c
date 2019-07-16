@@ -1,7 +1,7 @@
 /*
  *
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2018 Department of Computer Science, ETH Zurich
+ *  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
  *  This software is distributed under GNU Lesser General Public License Version 3.0.
  *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
@@ -193,6 +193,32 @@ unsigned short int calculate_common_comp(comp_list_t *cl1, comp_list_t *cl2, uns
 	return res;
 }
 
+array_comp_list_t * singleton_union_array_comp_list(array_comp_list_t *acl1, array_comp_list_t *acl2, unsigned short int n){
+	char * map = (char *)calloc(n,sizeof(char));
+	unsigned short int i;
+	comp_list_t * cl1 = acl1->head;
+	while(cl1!=NULL){
+		map[cl1->head->num] = 1;
+		cl1 = cl1->next;
+	}
+
+	comp_list_t * cl2 = acl2->head;
+	while(cl2!=NULL){
+		map[cl2->head->num] = 1;
+		cl2 = cl2->next;
+	}
+	array_comp_list_t *res = create_array_comp_list();
+	for(i=0; i < n;i++){
+		if(map[i]){
+			comp_list_t * cl = create_comp_list();
+			insert_comp(cl,i);
+			insert_comp_list(res,cl);
+		}
+	}
+	free(map);
+	return res;
+}
+
 array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_list_t *acl2, unsigned short int n){
 	unsigned short int s1 = acl1->size;
 	if(!s1){
@@ -208,7 +234,27 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 	
 	char *overlap_map = (char *)calloc(tnc*tnc,sizeof(char));
 	comp_list_t * cl1 = acl1->head;
-       	
+       	char is_singleton1 = 1;
+	char is_singleton2 = 1;
+	while(cl1!=NULL){
+		if(cl1->size>1){
+			is_singleton1 = 0;
+		}
+		cl1 = cl1->next;
+	}
+	if(is_singleton1){
+		comp_list_t * cl2 = acl2->head;
+		while(cl2!=NULL){
+			if(cl2->size>1){
+				is_singleton2 = 0;
+			}
+			cl2 = cl2->next;
+		}
+		if(is_singleton2){
+			return singleton_union_array_comp_list(acl1,acl2,n);
+		}
+	}
+	cl1 = acl1->head;
 	for(unsigned short int i = 0; i < s1; i++){
 		comp_list_t *cl2 = acl2->head;
 		char flag = 0;

@@ -1,7 +1,7 @@
 /*
  *
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2018 Department of Computer Science, ETH Zurich
+ *  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
  *  This software is distributed under GNU Lesser General Public License Version 3.0.
  *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
@@ -576,6 +576,8 @@ elina_abstract0_t *maxpool_zono_refined(elina_manager_t* man, bool destructive, 
 elina_abstract0_t * relu_zono_layerwise(elina_manager_t* man, bool destructive, elina_abstract0_t * abs,  elina_dim_t start_offset, elina_dim_t num_dim){
 	//elina_dim_t i;
 	//elina_dim_t end = start_offset + num_dim;
+	elina_dimension_t dimension = elina_abstract0_dimension(man,abs);
+	
 	elina_abstract0_t *res = destructive? abs : elina_abstract0_copy(man,abs);
    
 	//for(i=start_offset; i < end; i++){
@@ -584,7 +586,7 @@ elina_abstract0_t * relu_zono_layerwise(elina_manager_t* man, bool destructive, 
         zonotope_t *zo = zonotope_of_abstract0(res);
         relu_zono_parallel(man, zo, start_offset, num_dim, handle_relu_zono_parallel);
         res = abstract0_of_zonotope(man,zo);
-    
+       
     return res;
 }
 
@@ -1143,8 +1145,11 @@ elina_abstract0_t * tanh_zono_layerwise(elina_manager_t* man, bool destructive, 
 }
 
 bool is_greater(elina_manager_t *man, elina_abstract0_t *elem, elina_dim_t y, elina_dim_t x){
-	
+    
 	zonotope_t * zo = zonotope_of_abstract0(elem);
+    if(-zo->box_inf[y]>zo->box_sup[x]){
+        return true;
+    }
 	elina_dimension_t dims = zonotope_dimension(man,zo);
 	elina_dim_t num_dim = dims.intdim + dims.realdim;
 
