@@ -1,16 +1,16 @@
 /*
  *
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2018 Department of Computer Science, ETH Zurich
- *  This software is distributed under GNU Lesser General Public License
- * Version 3.0. For more information, see the ELINA project website at:
+ *  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
  *
  *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
  *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
  *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
  *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
- *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
  *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
  *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
  *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
@@ -539,6 +539,7 @@ void opt_poly_widening_gen(elina_manager_t *man, opt_pk_array_t **out, opt_pk_ar
 		opt_poly_clear(tmp[k]);
 	}
 	unsigned short int k1=0;
+
 	unsigned short int bound = num_comp;
 	for(k=0; k < num_comp; k++){
 		opt_pk_t *oak = poly[k1];
@@ -554,11 +555,25 @@ void opt_poly_widening_gen(elina_manager_t *man, opt_pk_array_t **out, opt_pk_ar
 			bound--;
 		}
 		else{
-                  poly[k1]->C->nbrows = counter[k1];
-                  opt_poly_chernikova(man, poly[k1], "widening result");
-                  k1++;
-                  cl = cl->next;
-                }
+			poly[k1]->C->nbrows = counter[k];
+			opt_poly_chernikova(man,poly[k1],"widening result");
+			if(opk->exn){
+				comp_list_t * tmp = cl;
+				cl = cl->next;
+				remove_comp_list(acl,tmp);
+				unsigned short int k2;
+				for(k2=k1; k2 < bound - 1; k2++){
+					poly[k2] = poly[k2+1];
+				}
+				opt_poly_clear(oak);
+				bound--;
+				opk->exn = ELINA_EXC_NONE;
+			}
+			else{
+				k1++;
+				cl=cl->next;
+			}
+		}
 		
 	}
 	

@@ -474,7 +474,7 @@ EOF
 if test "$has_ocaml" -eq 0; then has_ocaml=; fi
 if test "$has_java" -eq 0; then has_java=; fi
 if test "$has_apron" -eq 0; then has_apron=; else has_apron=-DHAS_APRON; fi
-if test "$has_vector" -eq 0; then IS_VECTOR=; else IS_VECTOR=-DVECTOR; fi
+if test "$has_vector" -eq 0; then is_vector=; else is_vector=-DVECTOR; fi
 if test "$use_opam" -eq 0; then use_opam=; fi
 
 cat > Makefile.config <<EOF
@@ -491,6 +491,10 @@ HAS_JAVA = $has_java
 
 # If defined to HAS_APRON, uses the apron interface
 IS_APRON = $has_apron
+
+# if defined to VECTOR, uses SIMD instructions for the Octagon library
+IS_VECTOR = $is_vector
+
 
 ELINA_PREFIX = $elina_prefix
 APRON_PREFIX = $apron_prefix
@@ -567,8 +571,8 @@ JNIINC = -I$java_home/include/
 CFLAGS = $cflags
 
 # Architecture specific flags
-AFLAGS = -D_GNU_SOURCE -pthread -fno-tree-vectorize -m64 -march=native 
-DFLAGS = -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING \$(AFLAGS) \$(IS_APRON) \$(IS_VECTOR)
+AFLAGS = -D_GNU_SOURCE -pthread -fno-tree-vectorize -m64 -march=native -mno-fused-madd
+DFLAGS = -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING \$(AFLAGS) \$(IS_APRON) \$(IS_VECTOR) 
 
 # ocamlc compilation flags
 OCAMLFLAGS = -g

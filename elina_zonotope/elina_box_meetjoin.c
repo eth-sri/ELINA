@@ -1,22 +1,23 @@
 /*
  *
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2018 Department of Computer Science, ETH Zurich
- *  This software is distributed under GNU Lesser General Public License
- * Version 3.0. For more information, see the ELINA project website at:
+ *  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
+ *  This software is distributed under GNU Lesser General Public License Version 3.0.
+ *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
  *
  *  THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
  *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
  *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
  *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
- *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
  *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
  *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
  *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
  *  CONTRACT, TORT OR OTHERWISE).
  *
  */
+
 
 #include <string.h>
 #include <stdio.h>
@@ -487,13 +488,31 @@ static bool elina_double_boxize_lincons0(double* res_inf, double * res_sup,
     elina_coeff_swap(tmp,coeff);
     double inf = 0.0;
     double sup = 0.0;
+    double d;
 
-    if (tmp->discr == ELINA_COEFF_SCALAR) {
-      inf = -tmp->val.scalar->val.dbl;
-      sup = tmp->val.scalar->val.dbl;
+    if (tmp->discr==ELINA_COEFF_SCALAR) {
+      if (tmp->discr == ELINA_SCALAR_DOUBLE) {
+        inf = -tmp->val.scalar->val.dbl;
+        sup = tmp->val.scalar->val.dbl;
+      } else {
+        elina_double_set_scalar(&d, tmp->val.scalar, GMP_RNDD);
+        inf = -d;
+        elina_double_set_scalar(&d, tmp->val.scalar, GMP_RNDU);
+        sup = d;
+      }
     } else {
-      inf = -tmp->val.interval->inf->val.dbl;
-      sup = tmp->val.interval->sup->val.dbl;
+        if (tmp->val.interval->inf->discr == ELINA_SCALAR_DOUBLE) {
+            inf = -tmp->val.interval->inf->val.dbl;
+        } else {
+            elina_double_set_scalar(&d,tmp->val.interval->inf,GMP_RNDD);
+            inf = -d;
+        }
+        if (tmp->val.interval->sup->discr == ELINA_SCALAR_DOUBLE) {
+            sup = tmp->val.interval->sup->val.dbl;
+        } else {
+            elina_double_set_scalar(&d,tmp->val.interval->inf,GMP_RNDU);
+            sup = d;
+        }
     }
     /* 2. evaluate e' */
     elina_double_interval_eval_elina_linexpr0(&itv_inf, & itv_sup, expr,env_inf, env_sup, discr);
