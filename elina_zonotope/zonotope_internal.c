@@ -191,9 +191,13 @@ zonotope_aff_t* zonotope_aff_add(zonotope_internal_t* pr, zonotope_aff_t* exprA,
     
     zonotope_aff_t* res = zonotope_aff_alloc_init(pr);
     zonotope_aaterm_t *p, *q, *ptr;
-    res->c_inf = exprA->c_inf + exprB->c_inf;
-    res->c_sup = exprA->c_sup + exprB->c_sup;
-
+    double maxA = fmax(fabs(exprA->c_inf),fabs(exprA->c_sup));
+    double maxB = fmax(fabs(exprB->c_inf),fabs(exprB->c_sup));
+    double fp_err_inf = (maxA + maxB) * pr->ulp + pr->min_denormal;
+    double fp_err_sup = (maxA + maxB) * pr->ulp + pr->min_denormal;
+    res->c_inf = exprA->c_inf + exprB->c_inf + (maxA + maxB)*pr->ulp + pr->min_denormal;
+    res->c_sup = exprA->c_sup + exprB->c_sup + (maxA + maxB)*pr->ulp + pr->min_denormal;
+	
     box_inf = res->c_inf;
     box_sup = res->c_sup;
     //size_t count = 0;
@@ -205,11 +209,16 @@ zonotope_aff_t* zonotope_aff_add(zonotope_internal_t* pr, zonotope_aff_t* exprA,
             if (p && q) {
                 
                 if (p->pnsym->index == q->pnsym->index) {
-                  ptr->inf = p->inf + q->inf;
-                  ptr->sup = p->sup + q->sup;
-                  ptr->pnsym = p->pnsym;
-                  p = p->n;
-                  q = q->n;
+                    maxA = fmax(fabs(p->inf),fabs(p->sup));
+                    maxB = fmax(fabs(q->inf),fabs(q->sup));
+                    
+                    ptr->inf = p->inf + q->inf + (maxA + maxB)*pr->ulp;
+                    ptr->sup = p->sup + q->sup + (maxA + maxB)*pr->ulp;
+                    fp_err_inf += (maxA + maxB) * pr->ulp;
+                    fp_err_sup += (maxA + maxB) * pr->ulp;
+                    ptr->pnsym = p->pnsym;
+                    p = p->n ;
+                    q = q->n ;
 			
                 } else if (p->pnsym->index < q->pnsym->index) {
 		    ptr->inf = p->inf;
@@ -273,8 +282,8 @@ zonotope_aff_t* zonotope_aff_add(zonotope_internal_t* pr, zonotope_aff_t* exprA,
     
     //elina_interval_add(box, box, tmp, ELINA_SCALAR_DOUBLE);
     //elina_interval_add(res->itv, exprA->itv, exprB->itv, ELINA_SCALAR_DOUBLE);
-    res->itv_inf = exprA->itv_inf + exprB->itv_inf;
-    res->itv_sup = exprA->itv_sup + exprB->itv_sup;
+    res->itv_inf = exprA->itv_inf + exprB->itv_inf + fp_err_inf;
+    res->itv_sup = exprA->itv_sup + exprB->itv_sup + fp_err_sup;
 
     // printf("Box %g %g\n",-box_inf,box_sup);
     res->itv_inf = fmin(res->itv_inf,box_inf);
