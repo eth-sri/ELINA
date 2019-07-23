@@ -61,8 +61,9 @@ typedef struct fppoly_internal_t {
 } fppoly_internal_t;
 
 typedef enum layertype_t {
-  FFN,  /* FFN layer */
-  CONV, /* CONV layer */
+  FFN,      /* FFN layer */
+  CONV,     /* CONV layer */
+  RESIDUAL, /* RESIDUAL layer */
 } layertype_t;
 
 typedef enum activation_type_t {
