@@ -68,6 +68,7 @@ typedef enum layertype_t
 {
   FFN, /* FFN layer */
   CONV,    /* CONV layer */
+  RESIDUAL, /* RESIDUAL layer */
 } layertype_t;
 
 

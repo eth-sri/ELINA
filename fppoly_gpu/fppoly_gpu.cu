@@ -53,16 +53,6 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 }
 
 
-long int offset_y = 0;
-long int offset_x = 0;
-
-long int length_y = 0;
-long int length_x = 0;
-
-long int shift_y = 0;
-long int shift_x = 0;
-
-
 __device__
 void elina_double_interval_mul(float_type* const a_inf, float_type* const a_sup, const float_type b_inf, const float_type b_sup, const float_type c_inf, const float_type c_sup)
 {
@@ -641,16 +631,98 @@ void layer_create_dense_exprs(float_type* coeffs, float_type* csts, const double
 
 
 __global__
-void copy_coeffs_and_csts(float_type* __restrict__ target_coeff, float_type* __restrict__ target_cst, const float_type* __restrict__ source_coeffs, const float_type* __restrict__ source_csts, const size_t num_exprs, const size_t expr_size)
+void copy_coeffs_and_csts(float_type* __restrict__ target_coeff, float_type* __restrict__ target_cst, const float_type* __restrict__ source_coeffs, const float_type* __restrict__ source_csts, const size_t coeff_size)
 {
     const size_t i = blockIdx.x;
 
-    for(size_t j = 0; j < expr_size; j++)
+    for(size_t j = 0; j < coeff_size; j++)
     {
-        target_coeff[i*expr_size + j] = source_coeffs[i*expr_size + j];
+        target_coeff[i*coeff_size + j] = source_coeffs[i*coeff_size + j];
     }
 
     target_cst[i] = source_csts[i];
+}
+
+
+__global__
+void add_coeffs_and_csts(float_type* __restrict__ target_inf_coeff, float_type* __restrict__ target_sup_coeff, float_type* __restrict__ target_inf_cst, float_type* __restrict__ target_sup_cst, const float_type* __restrict__ source_inf_coeff, const float_type* __restrict__ source_sup_coeff, const float_type* __restrict__ source_inf_cst, const float_type* __restrict__ source_sup_cst, const size_t expr_size)
+{
+    const size_t i = blockIdx.x;
+
+    float_type maxRes;
+    float_type maxMul;
+
+    for(size_t j = 0; j < expr_size; j++)
+    {
+        const float_type src_inf = source_inf_coeff[i*expr_size + j];
+        const float_type src_sup = source_sup_coeff[i*expr_size + j];
+
+        const float_type tar_inf = target_inf_coeff[i*expr_size + j];
+        const float_type tar_sup = target_sup_coeff[i*expr_size + j];
+
+        maxRes = max(abs(tar_inf), abs(tar_sup));
+        maxMul = max(abs(src_inf), abs(src_sup));
+
+        target_inf_coeff[i*expr_size + j] = tar_inf + src_inf - (maxRes + maxMul)*ulp;
+        target_sup_coeff[i*expr_size + j] = tar_sup + src_sup + (maxRes + maxMul)*ulp;
+    }
+
+    target_inf_cst[i] += source_inf_cst[i];
+    target_sup_cst[i] += source_sup_cst[i];
+
+    maxRes = max(abs(target_inf_cst[i]), abs(target_sup_cst[i]));
+    maxMul = max(abs(source_inf_cst[i]), abs(source_sup_cst[i]));
+
+    target_inf_cst[i] += source_inf_cst[i] - (maxRes + maxMul)*ulp - min_denormal;
+    target_sup_cst[i] += source_sup_cst[i] + (maxRes + maxMul)*ulp + min_denormal;
+}
+
+
+__global__
+void add_coeffs_and_csts_sparse(float_type* __restrict__ target_inf_coeff, float_type* __restrict__ target_sup_coeff, float_type* __restrict__ target_inf_cst, float_type* __restrict__ target_sup_cst, const float_type* __restrict__ source_inf_coeff, const float_type* __restrict__ source_sup_coeff, const float_type* __restrict__ source_inf_cst, const float_type* __restrict__ source_sup_cst, const size_t output_size_target_x, const size_t output_size_target_y, const size_t output_size_source_x, const size_t output_size_source_y, const size_t output_size_z, const size_t relative_offset_x, const size_t relative_offset_y)
+{
+    size_t out_x = blockIdx.x;
+    size_t out_y = blockIdx.y;
+    size_t out_z = blockIdx.z;
+
+    const size_t n = out_x*gridDim.y*gridDim.z + out_y*gridDim.z + out_z;
+
+    const size_t num_coeffs_target = output_size_target_x*output_size_target_y*output_size_z;
+    const size_t num_coeffs_source = output_size_source_x*output_size_source_y*output_size_z;
+
+    float_type maxRes;
+    float_type maxMul;
+
+    for(size_t out_x = 0; out_x < output_size_source_x; out_x++)
+    {
+        for(size_t out_y = 0; out_y < output_size_source_y; out_y++)
+        {
+            for(size_t out_z = 0; out_z < output_size_z; out_z++)
+            {
+                const size_t target_idx = (out_x + relative_offset_x)*output_size_target_y*output_size_z + (out_y + relative_offset_y)*output_size_z + out_z;
+
+                const size_t source_idx = out_x*output_size_source_y*output_size_z + out_y*output_size_z + out_z;
+
+                const float_type src_inf = source_inf_coeff[n*num_coeffs_source + source_idx];
+                const float_type src_sup = source_sup_coeff[n*num_coeffs_source + source_idx];
+
+                const float_type tar_inf = target_inf_coeff[n*num_coeffs_target + target_idx];
+                const float_type tar_sup = target_sup_coeff[n*num_coeffs_target + target_idx];
+
+                maxRes = max(abs(tar_inf), abs(tar_sup));
+                maxMul = max(abs(src_inf), abs(src_sup));
+
+                target_inf_coeff[n*num_coeffs_target + target_idx] = tar_inf + src_inf - (maxRes + maxMul)*ulp;
+                target_sup_coeff[n*num_coeffs_target + target_idx] = tar_sup + src_sup + (maxRes + maxMul)*ulp;
+            }
+        }
+    }
+
+    maxRes = max(abs(target_inf_cst[n]), abs(target_sup_cst[n]));
+    maxMul = max(abs(source_inf_cst[n]), abs(source_sup_cst[n]));
+
+    target_inf_cst[n] += source_inf_cst[n] - (maxRes + maxMul)*ulp - min_denormal;
+    target_sup_cst[n] += source_sup_cst[n] + (maxRes + maxMul)*ulp + min_denormal;
 }
 
 
@@ -1721,16 +1793,16 @@ void update_state_using_predecessor_layer(fppoly_internal_t* pr, fppoly_t* fp, d
 
     if(fp->layers[k]->type == CONV)
     {
-        if(fp->layers[k]->input_size[2] >= 128)
-        {
+        //if(fp->layers[k]->input_size[2] >= 128)
+        //{
             coeffs_from_previous_layer_conv_filter_serial<<<num_out_neurons_last_layer, fp->layers[k]->input_size[2]>>>(*linf_coeff, *lsup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
             coeffs_from_previous_layer_conv_filter_serial<<<num_out_neurons_last_layer, fp->layers[k]->input_size[2]>>>(*uinf_coeff, *usup_coeff, *uinf_coeff_tmp, *usup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-        }
-        else
-        {
-            coeffs_from_previous_layer_conv<<<num_out_neurons_last_layer, dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(*linf_coeff, *lsup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-            coeffs_from_previous_layer_conv<<<num_out_neurons_last_layer, dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(*uinf_coeff, *usup_coeff, *uinf_coeff_tmp, *usup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-        }
+        //}
+        //else
+        //{
+            //coeffs_from_previous_layer_conv<<<num_out_neurons_last_layer, dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(*linf_coeff, *lsup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+            //coeffs_from_previous_layer_conv<<<num_out_neurons_last_layer, dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(*uinf_coeff, *usup_coeff, *uinf_coeff_tmp, *usup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+        //}
 
         csts_from_previous_layer_conv<<<num_out_neurons_last_layer, 1>>>(*linf_coeff, *lsup_coeff, *linf_cst, *lsup_cst, *linf_cst_tmp, *lsup_cst_tmp, aux_csts, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2]);
         csts_from_previous_layer_conv<<<num_out_neurons_last_layer, 1>>>(*uinf_coeff, *usup_coeff, *uinf_cst, *usup_cst, *uinf_cst_tmp, *usup_cst_tmp, aux_csts, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2]);
@@ -1803,10 +1875,10 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
     cudaMalloc((void**) &uinf_cst, num_out_neurons_last_layer*sizeof(float_type));
     cudaMalloc((void**) &usup_cst, num_out_neurons_last_layer*sizeof(float_type));
 
-    copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(linf_coeff, linf_cst, coeffs, csts, num_out_neurons_last_layer, num_in_neurons_last_layer);
-    copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(lsup_coeff, lsup_cst, coeffs, csts, num_out_neurons_last_layer, num_in_neurons_last_layer);
-    copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(uinf_coeff, uinf_cst, coeffs, csts, num_out_neurons_last_layer, num_in_neurons_last_layer);
-    copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(usup_coeff, usup_cst, coeffs, csts, num_out_neurons_last_layer, num_in_neurons_last_layer);
+    copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(linf_coeff, linf_cst, coeffs, csts, num_in_neurons_last_layer);
+    copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(lsup_coeff, lsup_cst, coeffs, csts, num_in_neurons_last_layer);
+    copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(uinf_coeff, uinf_cst, coeffs, csts, num_in_neurons_last_layer);
+    copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(usup_coeff, usup_cst, coeffs, csts, num_in_neurons_last_layer);
 
     float_type* linf_coeff_tmp;
     float_type* lsup_coeff_tmp;
@@ -1827,9 +1899,135 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
 
     while(k >= 0)
     {
-        update_state_using_predecessor_layer(pr, fp, &linf_coeff, &lsup_coeff, &linf_cst, &lsup_cst, &uinf_coeff, &usup_coeff, &uinf_cst, &usup_cst, &linf_coeff_tmp, &lsup_coeff_tmp, &linf_cst_tmp, &lsup_cst_tmp, &uinf_coeff_tmp, &usup_coeff_tmp, &uinf_cst_tmp, &usup_cst_tmp, k, use_area_heuristic, num_out_neurons_last_layer);
+        if(fp->layers[k]->type == RESIDUAL)
+        {
+            std::cout << "DENSE RESIDUAL" << std::endl;
 
-        k = fp->layers[k]->predecessors[0] - 1;
+            const size_t reslayer_size = fp->layers[k]->num_out_neurons;
+
+            const size_t predecessor1 = fp->layers[k]->predecessors[0] - 1;
+            const size_t predecessor2 = fp->layers[k]->predecessors[1] - 1;
+
+            char* predecessor_map = (char*) calloc(k, sizeof(char));
+            // Assume no nested residual layers
+            int iter = predecessor1;
+
+            while(iter >= 0)
+            {
+                predecessor_map[iter] = 1;
+                iter = fp->layers[iter]->predecessors[0] - 1;
+            }
+
+            iter =  predecessor2;
+            int common_predecessor = 0;
+
+            while(iter >= 0)
+            {
+                if(predecessor_map[iter] == 1)
+                {
+                    common_predecessor = iter;
+
+                    break;
+                }
+
+                iter = fp->layers[iter]->predecessors[0] - 1;
+            }
+
+            free(predecessor_map);
+
+            float_type* copy_linf_coeff;
+            float_type* copy_lsup_coeff;
+            float_type* copy_linf_cst;
+            float_type* copy_lsup_cst;
+
+            cudaMalloc((void**) &copy_linf_coeff, num_out_neurons_last_layer*reslayer_size*sizeof(float_type));
+            cudaMalloc((void**) &copy_lsup_coeff, num_out_neurons_last_layer*reslayer_size*sizeof(float_type));
+
+            cudaMalloc((void**) &copy_linf_cst, num_out_neurons_last_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_lsup_cst, num_out_neurons_last_layer*sizeof(float_type));
+
+            float_type* copy_uinf_coeff;
+            float_type* copy_usup_coeff;
+            float_type* copy_uinf_cst;
+            float_type* copy_usup_cst;
+
+            cudaMalloc((void**) &copy_uinf_coeff, num_out_neurons_last_layer*reslayer_size*sizeof(float_type));
+            cudaMalloc((void**) &copy_usup_coeff, num_out_neurons_last_layer*reslayer_size*sizeof(float_type));
+
+            cudaMalloc((void**) &copy_uinf_cst, num_out_neurons_last_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_usup_cst, num_out_neurons_last_layer*sizeof(float_type));
+
+            copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(copy_linf_coeff, copy_linf_cst, linf_coeff, linf_cst, reslayer_size);
+            copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(copy_lsup_coeff, copy_lsup_cst, lsup_coeff, lsup_cst, reslayer_size);
+            copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(copy_uinf_coeff, copy_uinf_cst, uinf_coeff, uinf_cst, reslayer_size);
+            copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(copy_usup_coeff, copy_usup_cst, usup_coeff, usup_cst, reslayer_size);
+
+            cudaMemset(copy_linf_cst, 0, num_out_neurons_last_layer*sizeof(float_type));
+            cudaMemset(copy_lsup_cst, 0, num_out_neurons_last_layer*sizeof(float_type));
+            cudaMemset(copy_uinf_cst, 0, num_out_neurons_last_layer*sizeof(float_type));
+            cudaMemset(copy_usup_cst, 0, num_out_neurons_last_layer*sizeof(float_type));
+
+            float_type* copy_linf_coeff_tmp;
+            float_type* copy_lsup_coeff_tmp;
+            float_type* copy_linf_cst_tmp;
+            float_type* copy_lsup_cst_tmp;
+
+            float_type* copy_uinf_coeff_tmp;
+            float_type* copy_usup_coeff_tmp;
+            float_type* copy_uinf_cst_tmp;
+            float_type* copy_usup_cst_tmp;
+
+            cudaMalloc((void**) &copy_linf_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_lsup_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_uinf_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_usup_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
+
+            iter = predecessor1;
+
+            while(iter != common_predecessor)
+            {
+                update_state_using_predecessor_layer(pr, fp, &linf_coeff, &lsup_coeff, &linf_cst, &lsup_cst, &uinf_coeff, &usup_coeff, &uinf_cst, &usup_cst, &linf_coeff_tmp, &lsup_coeff_tmp, &linf_cst_tmp, &lsup_cst_tmp, &uinf_coeff_tmp, &usup_coeff_tmp, &uinf_cst_tmp, &usup_cst_tmp, iter, use_area_heuristic, num_out_neurons_last_layer);
+
+                iter = fp->layers[iter]->predecessors[0] - 1;
+            }
+
+            iter = predecessor2;
+
+            while(iter != common_predecessor)
+            {
+                update_state_using_predecessor_layer(pr, fp, &copy_linf_coeff, &copy_lsup_coeff, &copy_linf_cst, &copy_lsup_cst, &copy_uinf_coeff, &copy_usup_coeff, &copy_uinf_cst, &copy_usup_cst, &copy_linf_coeff_tmp, &copy_lsup_coeff_tmp, &copy_linf_cst_tmp, &copy_lsup_cst_tmp, &copy_uinf_coeff_tmp, &copy_usup_coeff_tmp, &copy_uinf_cst_tmp, &copy_usup_cst_tmp, iter, use_area_heuristic, num_out_neurons_last_layer);
+
+                iter = fp->layers[iter]->predecessors[0] - 1;
+            }
+
+            add_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, copy_linf_coeff, copy_lsup_coeff, copy_linf_cst, copy_lsup_cst, fp->layers[common_predecessor]->num_out_neurons);
+            add_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, copy_uinf_coeff, copy_usup_coeff, copy_uinf_cst, copy_usup_cst, fp->layers[common_predecessor]->num_out_neurons);
+            // Assume at least one non-residual layer between two residual layers
+
+            cudaFree(copy_linf_coeff);
+            cudaFree(copy_lsup_coeff);
+            cudaFree(copy_linf_cst);
+            cudaFree(copy_lsup_cst);
+
+            cudaFree(copy_uinf_coeff);
+            cudaFree(copy_usup_coeff);
+            cudaFree(copy_uinf_cst);
+            cudaFree(copy_usup_cst);
+
+            cudaFree(copy_linf_cst_tmp);
+            cudaFree(copy_lsup_cst_tmp);
+
+            cudaFree(copy_uinf_cst_tmp);
+            cudaFree(copy_usup_cst_tmp);
+
+            k = common_predecessor;
+        }
+        else
+        {
+            update_state_using_predecessor_layer(pr, fp, &linf_coeff, &lsup_coeff, &linf_cst, &lsup_cst, &uinf_coeff, &usup_coeff, &uinf_cst, &usup_cst, &linf_coeff_tmp, &lsup_coeff_tmp, &linf_cst_tmp, &lsup_cst_tmp, &uinf_coeff_tmp, &usup_coeff_tmp, &uinf_cst_tmp, &usup_cst_tmp, k, use_area_heuristic, num_out_neurons_last_layer);
+
+            k = fp->layers[k]->predecessors[0] - 1;
+        }
     }
 
     compute_lb_from_expr<<<num_out_neurons_last_layer, 1>>>(lb_array, linf_coeff, lsup_coeff, linf_cst, fp->input_inf, fp->input_sup, num_in_neurons_first_layer);
@@ -1872,18 +2070,18 @@ size_t predict_size(fppoly_t* fp, const size_t layerno)
 
     const size_t num_out_neurons_last_layer = fp->layers[layerno]->num_out_neurons;
 
-    offset_x = -fp->layers[layerno]->pad[0];
-    offset_y = -fp->layers[layerno]->pad[1];
+    long int offset_x = -fp->layers[layerno]->pad[0];
+    long int offset_y = -fp->layers[layerno]->pad[1];
 
     std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
 
-    length_x = fp->layers[layerno]->filter_size[0];
-    length_y = fp->layers[layerno]->filter_size[1];
+    long int length_x = fp->layers[layerno]->filter_size[0];
+    long int length_y = fp->layers[layerno]->filter_size[1];
 
     std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
 
-    shift_x = fp->layers[layerno]->strides[0];
-    shift_y = fp->layers[layerno]->strides[1];
+    long int shift_x = fp->layers[layerno]->strides[0];
+    long int shift_y = fp->layers[layerno]->strides[1];
 
     std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
 
@@ -1894,7 +2092,9 @@ size_t predict_size(fppoly_t* fp, const size_t layerno)
 
     std::cout << "Starting size: " << current_size << " bytes" << std::endl;
 
-    for(int k = layerno - 1; k >= 0; k--)
+    int k = layerno - 1;
+
+    while(k >= 0)
     {
         const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
         const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
@@ -1930,6 +2130,8 @@ size_t predict_size(fppoly_t* fp, const size_t layerno)
         {
             maximum_size = 4*(last_size + current_size);
         }
+
+        k = fp->layers[k]->predecessors[0] - 1;
     }
 
     size_t num_chunks = 1;
@@ -1949,7 +2151,7 @@ size_t predict_size(fppoly_t* fp, const size_t layerno)
 }
 
 
-void update_state_using_predecessor_layer_conv_chunk(fppoly_internal_t* pr, fppoly_t* fp, double** linf_coeff, double** lsup_coeff, double** linf_cst, double** lsup_cst, double** uinf_coeff, double** usup_coeff, double** uinf_cst, double** usup_cst, double** linf_coeff_tmp, double** lsup_coeff_tmp, double** linf_cst_tmp, double** lsup_cst_tmp, double** uinf_coeff_tmp, double** usup_coeff_tmp, double** uinf_cst_tmp, double** usup_cst_tmp, const size_t layerno, const size_t k, bool use_area_heuristic, const size_t x_y_size_last_layer, const size_t num_filters_last_layer, const size_t num_chunks)
+void update_state_using_predecessor_layer_conv_chunk(fppoly_internal_t* pr, fppoly_t* fp, double** linf_coeff, double** lsup_coeff, double** linf_cst, double** lsup_cst, double** uinf_coeff, double** usup_coeff, double** uinf_cst, double** usup_cst, double** linf_coeff_tmp, double** lsup_coeff_tmp, double** linf_cst_tmp, double** lsup_cst_tmp, double** uinf_coeff_tmp, double** usup_coeff_tmp, double** uinf_cst_tmp, double** usup_cst_tmp, const size_t layerno, const size_t k, bool use_area_heuristic, const size_t x_y_size_last_layer, const size_t num_filters_last_layer, const size_t num_chunks, long int& offset_x, long int& offset_y, long int& length_x, long int& length_y, long int& shift_x, long int& shift_y)
 {
     const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
     const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
@@ -1990,16 +2192,16 @@ void update_state_using_predecessor_layer_conv_chunk(fppoly_internal_t* pr, fppo
     cudaMemset(*uinf_coeff_tmp, 0, x_y_size_last_layer*num_filters_last_layer*missing_length*sizeof(float_type));
     cudaMemset(*usup_coeff_tmp, 0, x_y_size_last_layer*num_filters_last_layer*missing_length*sizeof(float_type));
 
-    if(fp->layers[k]->input_size[2] >= 128)
-    {
+    //if(fp->layers[k]->input_size[2] >= 128)
+    //{
         coeffs_from_previous_layer_conv_sparse_filter_serial<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), fp->layers[k]->input_size[2]>>>(*linf_coeff, *lsup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
         coeffs_from_previous_layer_conv_sparse_filter_serial<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), fp->layers[k]->input_size[2]>>>(*uinf_coeff, *usup_coeff, *uinf_coeff_tmp, *usup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-    }
-    else
-    {
-        coeffs_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(*linf_coeff, *lsup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-        coeffs_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(*uinf_coeff, *usup_coeff, *uinf_coeff_tmp, *usup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-    }
+    //}
+    //else
+    //{
+        //coeffs_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(*linf_coeff, *lsup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+        //coeffs_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(*uinf_coeff, *usup_coeff, *uinf_coeff_tmp, *usup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+    //}
 
     csts_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), 1>>>(*linf_coeff, *lsup_coeff, *linf_cst, *lsup_cst, *linf_cst_tmp, *lsup_cst_tmp, aux_csts, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y);
     csts_from_previous_layer_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), 1>>>(*uinf_coeff, *usup_coeff, *uinf_cst, *usup_cst, *uinf_cst_tmp, *usup_cst_tmp, aux_csts, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y);
@@ -2041,14 +2243,14 @@ void update_state_using_previous_layers_conv_chunk(elina_manager_t* man, fppoly_
 
     std::cout << "num_out_neurons_last " << x_y_size_last_layer*num_filters_last_layer << std::endl;
 
-    offset_x = -fp->layers[layerno]->pad[0];
-    offset_y = -fp->layers[layerno]->pad[1];
+    long int offset_x = -fp->layers[layerno]->pad[0];
+    long int offset_y = -fp->layers[layerno]->pad[1];
 
-    length_x = fp->layers[layerno]->filter_size[0];
-    length_y = fp->layers[layerno]->filter_size[1];
+    long int length_x = fp->layers[layerno]->filter_size[0];
+    long int length_y = fp->layers[layerno]->filter_size[1];
 
-    shift_x = fp->layers[layerno]->strides[0];
-    shift_y = fp->layers[layerno]->strides[1];
+    long int shift_x = fp->layers[layerno]->strides[0];
+    long int shift_y = fp->layers[layerno]->strides[1];
 
     float_type* coeffs;
     float_type* csts;
@@ -2086,10 +2288,10 @@ void update_state_using_previous_layers_conv_chunk(elina_manager_t* man, fppoly_
     cudaMalloc((void**) &uinf_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
     cudaMalloc((void**) &usup_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
 
-    copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(linf_coeff, linf_cst, coeffs, csts, x_y_size_last_layer*num_filters_last_layer, length_x*length_y*fp->layers[layerno]->input_size[2]);
-    copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(lsup_coeff, lsup_cst, coeffs, csts, x_y_size_last_layer*num_filters_last_layer, length_x*length_y*fp->layers[layerno]->input_size[2]);
-    copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(uinf_coeff, uinf_cst, coeffs, csts, x_y_size_last_layer*num_filters_last_layer, length_x*length_y*fp->layers[layerno]->input_size[2]);
-    copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(usup_coeff, usup_cst, coeffs, csts, x_y_size_last_layer*num_filters_last_layer, length_x*length_y*fp->layers[layerno]->input_size[2]);
+    copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(linf_coeff, linf_cst, coeffs, csts, length_x*length_y*fp->layers[layerno]->input_size[2]);
+    copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(lsup_coeff, lsup_cst, coeffs, csts, length_x*length_y*fp->layers[layerno]->input_size[2]);
+    copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(uinf_coeff, uinf_cst, coeffs, csts, length_x*length_y*fp->layers[layerno]->input_size[2]);
+    copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(usup_coeff, usup_cst, coeffs, csts, length_x*length_y*fp->layers[layerno]->input_size[2]);
 
     cudaFree(coeffs);
     cudaFree(csts);
@@ -2113,9 +2315,159 @@ void update_state_using_previous_layers_conv_chunk(elina_manager_t* man, fppoly_
 
     while(k >= 0)
     {
-        update_state_using_predecessor_layer_conv_chunk(pr, fp, &linf_coeff, &lsup_coeff, &linf_cst, &lsup_cst, &uinf_coeff, &usup_coeff, &uinf_cst, &usup_cst, &linf_coeff_tmp, &lsup_coeff_tmp, &linf_cst_tmp, &lsup_cst_tmp, &uinf_coeff_tmp, &usup_coeff_tmp, &uinf_cst_tmp, &usup_cst_tmp, layerno, k, use_area_heuristic, x_y_size_last_layer, num_filters_last_layer, num_chunks);
+        if(fp->layers[k]->type == RESIDUAL)
+        {
+            const size_t predecessor1 = fp->layers[k]->predecessors[0] - 1;
+            const size_t predecessor2 = fp->layers[k]->predecessors[1] - 1;
 
-         k = fp->layers[k]->predecessors[0] - 1;
+            char* predecessor_map = (char*) calloc(k, sizeof(char));
+            // Assume no nested residual layers
+            int iter = predecessor1;
+
+            while(iter >= 0)
+            {
+                predecessor_map[iter] = 1;
+                iter = fp->layers[iter]->predecessors[0] - 1;
+            }
+
+            iter =  predecessor2;
+            int common_predecessor = 0;
+
+            while(iter >= 0)
+            {
+                if(predecessor_map[iter] == 1)
+                {
+                    common_predecessor = iter;
+
+                    break;
+                }
+
+                iter = fp->layers[iter]->predecessors[0] - 1;
+            }
+
+            free(predecessor_map);
+
+            const size_t num_filters_current_layer = fp->layers[predecessor1]->output_size[2];
+
+            float_type* copy_linf_coeff;
+            float_type* copy_lsup_coeff;
+            float_type* copy_linf_cst;
+            float_type* copy_lsup_cst;
+
+            cudaMalloc((void**) &copy_linf_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_lsup_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer*sizeof(float_type));
+
+            cudaMalloc((void**) &copy_linf_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_lsup_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+
+            float_type* copy_uinf_coeff;
+            float_type* copy_usup_coeff;
+            float_type* copy_uinf_cst;
+            float_type* copy_usup_cst;
+
+            cudaMalloc((void**) &copy_uinf_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_usup_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer*sizeof(float_type));
+
+            cudaMalloc((void**) &copy_uinf_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_usup_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+
+            copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(copy_linf_coeff, copy_linf_cst, linf_coeff, linf_cst, length_x*length_y*num_filters_current_layer);
+            copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(copy_lsup_coeff, copy_lsup_cst, lsup_coeff, lsup_cst, length_x*length_y*num_filters_current_layer);
+            copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(copy_uinf_coeff, copy_uinf_cst, uinf_coeff, uinf_cst, length_x*length_y*num_filters_current_layer);
+            copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(copy_usup_coeff, copy_usup_cst, usup_coeff, usup_cst, length_x*length_y*num_filters_current_layer);
+
+            cudaMemset(copy_linf_cst, 0, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+            cudaMemset(copy_lsup_cst, 0, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+            cudaMemset(copy_uinf_cst, 0, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+            cudaMemset(copy_usup_cst, 0, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+
+            float_type* copy_linf_coeff_tmp;
+            float_type* copy_lsup_coeff_tmp;
+            float_type* copy_linf_cst_tmp;
+            float_type* copy_lsup_cst_tmp;
+
+            float_type* copy_uinf_coeff_tmp;
+            float_type* copy_usup_coeff_tmp;
+            float_type* copy_uinf_cst_tmp;
+            float_type* copy_usup_cst_tmp;
+
+            cudaMalloc((void**) &copy_linf_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_lsup_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_uinf_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_usup_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+
+            long int copy_offset_x = offset_x;
+            long int copy_offset_y = offset_y;
+
+            long int copy_length_x = length_x;
+            long int copy_length_y = length_y;
+
+            long int copy_shift_x = shift_x;
+            long int copy_shift_y = shift_y;
+
+            std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
+
+            std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
+
+            std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
+
+
+            iter = predecessor1;
+
+            while(iter != common_predecessor)
+            {
+                update_state_using_predecessor_layer_conv_chunk(pr, fp, &copy_linf_coeff, &copy_lsup_coeff, &copy_linf_cst, &copy_lsup_cst, &copy_uinf_coeff, &copy_usup_coeff, &copy_uinf_cst, &copy_usup_cst, &copy_linf_coeff_tmp, &copy_lsup_coeff_tmp, &copy_linf_cst_tmp, &copy_lsup_cst_tmp, &copy_uinf_coeff_tmp, &copy_usup_coeff_tmp, &copy_uinf_cst_tmp, &copy_usup_cst_tmp, layerno, iter, use_area_heuristic, x_y_size_last_layer, num_filters_last_layer, num_chunks, copy_offset_x, copy_offset_y, copy_length_x, copy_length_y, copy_shift_x, copy_shift_y);
+
+                iter = fp->layers[iter]->predecessors[0] - 1;
+            }
+
+            iter = predecessor2;
+
+            while(iter != common_predecessor)
+            {
+                update_state_using_predecessor_layer_conv_chunk(pr, fp, &linf_coeff, &lsup_coeff, &linf_cst, &lsup_cst, &uinf_coeff, &usup_coeff, &uinf_cst, &usup_cst, &linf_coeff_tmp, &lsup_coeff_tmp, &linf_cst_tmp, &lsup_cst_tmp, &uinf_coeff_tmp, &usup_coeff_tmp, &uinf_cst_tmp, &usup_cst_tmp, layerno, iter, use_area_heuristic, x_y_size_last_layer, num_filters_last_layer, num_chunks, offset_x, offset_y, length_x, length_y, shift_x, shift_y);
+
+                iter = fp->layers[iter]->predecessors[0] - 1;
+            }
+
+            if(offset_x != copy_offset_x || offset_y != copy_offset_y || length_x != copy_length_x || length_y != copy_length_y || shift_x != copy_shift_x || shift_y != copy_shift_y)
+            {
+                std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
+                std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
+                std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
+                std::cout << "copy_offset_x " << copy_offset_x << " copy_offset_y " << copy_offset_y << std::endl;
+                std::cout << "copy_length_x " << copy_length_x << " copy_length_y " << copy_length_y << std::endl;
+                std::cout << "copy_shift_x " << copy_shift_x << " copy_shift_y " << copy_shift_y << std::endl;
+            }
+
+            add_coeffs_and_csts_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), 1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, copy_linf_coeff, copy_lsup_coeff, copy_linf_cst, copy_lsup_cst, length_x, length_y, copy_length_x, copy_length_y,  fp->layers[common_predecessor + 1]->input_size[2], copy_offset_x - offset_x, copy_offset_y - offset_y);
+            add_coeffs_and_csts_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), 1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, copy_uinf_coeff, copy_usup_coeff, copy_uinf_cst, copy_usup_cst, length_x, length_y, copy_length_x, copy_length_y,  fp->layers[common_predecessor + 1]->input_size[2], copy_offset_x - offset_x, copy_offset_y - offset_y);
+            // Assume at least one non-residual layer between two residual layers
+
+            cudaFree(copy_linf_coeff);
+            cudaFree(copy_lsup_coeff);
+            cudaFree(copy_linf_cst);
+            cudaFree(copy_lsup_cst);
+
+            cudaFree(copy_uinf_coeff);
+            cudaFree(copy_usup_coeff);
+            cudaFree(copy_uinf_cst);
+            cudaFree(copy_usup_cst);
+
+            cudaFree(copy_linf_cst_tmp);
+            cudaFree(copy_lsup_cst_tmp);
+
+            cudaFree(copy_uinf_cst_tmp);
+            cudaFree(copy_usup_cst_tmp);
+
+            k = common_predecessor;
+        }
+        else
+        {
+            update_state_using_predecessor_layer_conv_chunk(pr, fp, &linf_coeff, &lsup_coeff, &linf_cst, &lsup_cst, &uinf_coeff, &usup_coeff, &uinf_cst, &usup_cst, &linf_coeff_tmp, &lsup_coeff_tmp, &linf_cst_tmp, &lsup_cst_tmp, &uinf_coeff_tmp, &usup_coeff_tmp, &uinf_cst_tmp, &usup_cst_tmp, layerno, k, use_area_heuristic, x_y_size_last_layer, num_filters_last_layer, num_chunks, offset_x, offset_y, length_x, length_y, shift_x, shift_y);
+
+            k = fp->layers[k]->predecessors[0] - 1;
+        }
     }
 
     compute_lb_from_expr_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), 1>>>(lb_array, linf_coeff, lsup_coeff, linf_cst, fp->input_inf, fp->input_sup, num_chunks, chunk_counter, fp->layers[0]->input_size[0], fp->layers[0]->input_size[1], fp->layers[0]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y);
@@ -2148,7 +2500,8 @@ void update_state_using_previous_layers_conv_chunk(elina_manager_t* man, fppoly_
 
 void update_state_using_previous_layers_conv(elina_manager_t* man, fppoly_t* fp, const size_t layerno, const bool use_area_heuristic)
 {
-    const size_t num_chunks = predict_size(fp, layerno);
+    //const size_t num_chunks = predict_size(fp, layerno);
+    const size_t num_chunks = 1;
 
     for(size_t chunk_counter = 0; chunk_counter < num_chunks; chunk_counter++)
     {
@@ -2259,9 +2612,73 @@ void create_sub_expr(float_type* __restrict__ inf_coeff, float_type* __restrict_
 }
 
 
-void get_lb_using_previous_layers(elina_manager_t* man, const fppoly_t* const fp, const bool use_area_heuristic)
+void update_state_using_predecessor_layer_lower_half(fppoly_internal_t* pr, fppoly_t* fp, double** linf_coeff, double** lsup_coeff, double** linf_cst, double** lsup_cst, double** linf_coeff_tmp, double** lsup_coeff_tmp, double** linf_cst_tmp, double** lsup_cst_tmp, const size_t k, bool use_area_heuristic, const size_t num_out_neurons_last_layer)
 {
-    const size_t numlayers = fp->numlayers;
+    const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
+    const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
+    std::cout << "num_out_neurons_current " << num_out_neurons_current_layer << " num_in_neurons_current " << num_in_neurons_current_layer << std::endl;
+
+    float_type* aux_coeffs;
+    float_type* aux_csts;
+
+    if(fp->layers[k]->type == CONV)
+    {
+        aux_coeffs = fp->layers[k]->filter_weights;
+        aux_csts = fp->layers[k]->filter_bias;
+    }
+    else
+    {
+        aux_coeffs = fp->layers[k]->coeffs;
+        aux_csts = fp->layers[k]->csts;
+    }
+
+    float_type* aux_lb_array = fp->layers[k]->lb_array;
+    float_type* aux_ub_array = fp->layers[k]->ub_array;
+
+    if(fp->layers[k]->activation == RELU)
+    {
+        lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(*linf_coeff, *lsup_coeff, *linf_cst, *lsup_cst, aux_lb_array, aux_ub_array, num_out_neurons_current_layer, use_area_heuristic);
+    }
+
+    cudaMalloc((void**) &(*linf_coeff_tmp), num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
+    cudaMalloc((void**) &(*lsup_coeff_tmp), num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
+
+    cudaMemset(*linf_coeff_tmp, 0, num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
+    cudaMemset(*lsup_coeff_tmp, 0, num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
+
+    if(fp->layers[k]->type == CONV)
+    {
+        //if(fp->layers[k]->input_size[2] >= 128)
+        //{
+            coeffs_from_previous_layer_conv_filter_serial<<<num_out_neurons_last_layer, fp->layers[k]->input_size[2]>>>(*linf_coeff, *lsup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+        //}
+        //else
+        //{
+            //coeffs_from_previous_layer_conv<<<num_out_neurons_last_layer, dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(*linf_coeff, *lsup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+        //}
+
+        csts_from_previous_layer_conv<<<num_out_neurons_last_layer, 1>>>(*linf_coeff, *lsup_coeff, *linf_cst, *lsup_cst, *linf_cst_tmp, *lsup_cst_tmp, aux_csts, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2]);
+
+    }
+    else
+    {
+        coeffs_from_previous_layer<<<num_out_neurons_last_layer, num_threads>>>(*linf_coeff, *lsup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, aux_coeffs, num_out_neurons_current_layer, num_in_neurons_current_layer);
+
+        csts_from_previous_layer<<<num_out_neurons_last_layer, 1>>>(*linf_coeff, *lsup_coeff, *linf_cst, *lsup_cst, *linf_cst_tmp, *lsup_cst_tmp, aux_csts, num_out_neurons_current_layer);
+    }
+
+    std::swap(*linf_coeff, *linf_coeff_tmp);
+    std::swap(*lsup_coeff, *lsup_coeff_tmp);
+    std::swap(*linf_cst, *linf_cst_tmp);
+    std::swap(*lsup_cst, *lsup_cst_tmp);
+
+    cudaFree(*linf_coeff_tmp);
+    cudaFree(*lsup_coeff_tmp);
+}
+
+
+void get_lb_using_previous_layers(elina_manager_t* man, fppoly_t* const fp, const bool use_area_heuristic)
+{
     fppoly_internal_t* pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
     const size_t num_out_neurons_last_layer = 90;
@@ -2305,64 +2722,106 @@ void get_lb_using_previous_layers(elina_manager_t* man, const fppoly_t* const fp
     cudaMalloc((void**) &linf_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
     cudaMalloc((void**) &lsup_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
 
-    for(int k = numlayers - 1; k >= 0; k--)
+    int k = fp->numlayers - 1;
+
+    while(k >= 0)
     {
-        const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
-        const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
-
-        float_type* aux_coeffs;
-        float_type* aux_csts;
-
-        if(fp->layers[k]->type == CONV)
+        if(fp->layers[k]->type == RESIDUAL)
         {
-            aux_coeffs = fp->layers[k]->filter_weights;
-            aux_csts = fp->layers[k]->filter_bias;
+            std::cout << "DENSE RESIDUAL" << std::endl;
+
+            const size_t reslayer_size = fp->layers[k]->num_out_neurons;
+
+            const size_t predecessor1 = fp->layers[k]->predecessors[0] - 1;
+            const size_t predecessor2 = fp->layers[k]->predecessors[1] - 1;
+
+            char* predecessor_map = (char*) calloc(k, sizeof(char));
+            // Assume no nested residual layers
+            int iter = predecessor1;
+
+            while(iter >= 0)
+            {
+                predecessor_map[iter] = 1;
+                iter = fp->layers[iter]->predecessors[0] - 1;
+            }
+
+            iter =  predecessor2;
+            int common_predecessor = 0;
+
+            while(iter >= 0)
+            {
+                if(predecessor_map[iter] == 1)
+                {
+                    common_predecessor = iter;
+
+                    break;
+                }
+
+                iter = fp->layers[iter]->predecessors[0] - 1;
+            }
+
+            free(predecessor_map);
+
+            float_type* copy_linf_coeff;
+            float_type* copy_lsup_coeff;
+            float_type* copy_linf_cst;
+            float_type* copy_lsup_cst;
+
+            cudaMalloc((void**) &copy_linf_coeff, num_out_neurons_last_layer*reslayer_size*sizeof(float_type));
+            cudaMalloc((void**) &copy_lsup_coeff, num_out_neurons_last_layer*reslayer_size*sizeof(float_type));
+
+            cudaMalloc((void**) &copy_linf_cst, num_out_neurons_last_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_lsup_cst, num_out_neurons_last_layer*sizeof(float_type));
+
+            copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(copy_linf_coeff, copy_linf_cst, linf_coeff, linf_cst, reslayer_size);
+            copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(copy_lsup_coeff, copy_lsup_cst, lsup_coeff, lsup_cst, reslayer_size);
+
+            cudaMemset(copy_linf_cst, 0, num_out_neurons_last_layer*sizeof(float_type));
+            cudaMemset(copy_lsup_cst, 0, num_out_neurons_last_layer*sizeof(float_type));
+
+            float_type* copy_linf_coeff_tmp;
+            float_type* copy_lsup_coeff_tmp;
+            float_type* copy_linf_cst_tmp;
+            float_type* copy_lsup_cst_tmp;
+
+            cudaMalloc((void**) &copy_linf_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
+            cudaMalloc((void**) &copy_lsup_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
+
+            iter = predecessor1;
+
+            while(iter != common_predecessor)
+            {
+                update_state_using_predecessor_layer_lower_half(pr, fp, &linf_coeff, &lsup_coeff, &linf_cst, &lsup_cst, &linf_coeff_tmp, &lsup_coeff_tmp, &linf_cst_tmp, &lsup_cst_tmp, iter, use_area_heuristic, num_out_neurons_last_layer);
+
+                iter = fp->layers[iter]->predecessors[0] - 1;
+            }
+
+            iter = predecessor2;
+
+            while(iter != common_predecessor)
+            {
+                update_state_using_predecessor_layer_lower_half(pr, fp, &copy_linf_coeff, &copy_lsup_coeff, &copy_linf_cst, &copy_lsup_cst, &copy_linf_coeff_tmp, &copy_lsup_coeff_tmp, &copy_linf_cst_tmp, &copy_lsup_cst_tmp, iter, use_area_heuristic, num_out_neurons_last_layer);
+
+                iter = fp->layers[iter]->predecessors[0] - 1;
+            }
+
+            add_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, copy_linf_coeff, copy_lsup_coeff, copy_linf_cst, copy_lsup_cst, fp->layers[common_predecessor]->num_out_neurons);
+
+            cudaFree(copy_linf_coeff);
+            cudaFree(copy_lsup_coeff);
+            cudaFree(copy_linf_cst);
+            cudaFree(copy_lsup_cst);
+
+            cudaFree(copy_linf_cst_tmp);
+            cudaFree(copy_lsup_cst_tmp);
+
+            k = common_predecessor;
         }
         else
         {
-            aux_coeffs = fp->layers[k]->coeffs;
-            aux_csts = fp->layers[k]->csts;
-        }
+            update_state_using_predecessor_layer_lower_half(pr, fp, &linf_coeff, &lsup_coeff, &linf_cst, &lsup_cst, &linf_coeff_tmp, &lsup_coeff_tmp, &linf_cst_tmp, &lsup_cst_tmp, k, use_area_heuristic, num_out_neurons_last_layer);
 
-        float_type* aux_lb_array = fp->layers[k]->lb_array;
-        float_type* aux_ub_array = fp->layers[k]->ub_array;
-
-        if(fp->layers[k]->activation == RELU)
-        {
-            lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, aux_lb_array, aux_ub_array, num_out_neurons_current_layer, use_area_heuristic);
-        }
-
-        cudaMalloc((void**) &linf_coeff_tmp, num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
-        cudaMalloc((void**) &lsup_coeff_tmp, num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
-
-        cudaMemset(linf_coeff_tmp, 0, num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
-        cudaMemset(lsup_coeff_tmp, 0, num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
-
-        if(fp->layers[k]->type == CONV)
-        {
-            coeffs_from_previous_layer_conv<<<num_out_neurons_last_layer, dim3(fp->layers[k]->input_size[2], fp->layers[k]->filter_size[1], fp->layers[k]->filter_size[0])>>>(linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
-
-            csts_from_previous_layer_conv<<<num_out_neurons_last_layer, 1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp, lsup_cst_tmp, aux_csts, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2]);
-        }
-        else
-        {
-            coeffs_from_previous_layer<<<num_out_neurons_last_layer, num_threads>>>(linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, aux_coeffs, num_out_neurons_current_layer, num_in_neurons_current_layer);
-
-            csts_from_previous_layer<<<num_out_neurons_last_layer, 1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp, lsup_cst_tmp, aux_csts, num_out_neurons_current_layer);
-        }
-
-        std::swap(linf_coeff, linf_coeff_tmp);
-        std::swap(lsup_coeff, lsup_coeff_tmp);
-        std::swap(linf_cst, linf_cst_tmp);
-        std::swap(lsup_cst, lsup_cst_tmp);
-
-        cudaFree(linf_coeff_tmp);
-        cudaFree(lsup_coeff_tmp);
-
-        if(fp->layers[k]->type == CONV)
-        {
-            cudaFree(aux_coeffs);
-            cudaFree(aux_csts);
+            k = fp->layers[k]->predecessors[0] - 1;
         }
     }
 
@@ -2397,7 +2856,7 @@ void get_lb_using_previous_layers(elina_manager_t* man, const fppoly_t* const fp
 
 bool is_greater(elina_manager_t* man, elina_abstract0_t* element, const elina_dim_t y, const elina_dim_t x, const bool use_area_heuristic)
 {
-    const fppoly_t* fp = fppoly_of_abstract0(element);
+    fppoly_t* fp = fppoly_of_abstract0(element);
     fppoly_internal_t* pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
     if(!results_calculated)
@@ -2575,6 +3034,48 @@ void conv_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t
     fp->layers[fp->numlayers - 1]->predecessors = predecessors;
 
     update_state_using_previous_layers_conv(man, fp, fp->numlayers - 1, use_area_heuristic);
+}
+
+
+void res_add_layer(fppoly_t* const fp, const size_t num_neurons, const layertype_t type, const activation_type_t activation)
+{
+    layer_t* layer = (layer_t*) malloc(sizeof(layer_t));
+
+    layer->num_out_neurons = num_neurons;
+    layer->num_in_neurons = 0;
+
+    layer->type = type;
+    layer->activation = activation;
+
+    layer->coeffs = nullptr;
+    layer->csts = nullptr;
+
+    cudaMalloc((void**) &layer->lb_array, layer->num_out_neurons*sizeof(float_type));
+    cudaMalloc((void**) &layer->ub_array, layer->num_out_neurons*sizeof(float_type));
+
+    cudaMemset(layer->lb_array, 0, layer->num_out_neurons*sizeof(float_type));
+    cudaMemset(layer->ub_array, 0, layer->num_out_neurons*sizeof(float_type));
+
+    layer->filter_weights = nullptr;
+    layer->filter_bias = nullptr;
+
+    layer->input_size = nullptr;
+    layer->output_size = nullptr;
+    layer->filter_size = nullptr;
+    layer->strides = nullptr;
+    layer->pad = nullptr;
+
+    fp->layers[fp->numlayers] = layer;
+
+    fp->numlayers++;
+}
+
+
+void handle_residual_layer(elina_manager_t* man, elina_abstract0_t* element, const size_t num_neurons, size_t* predecessors)
+{
+	fppoly_t* fp = fppoly_of_abstract0(element);
+	res_add_layer(fp, num_neurons, RESIDUAL, NONE);
+	fp->layers[fp->numlayers - 1]->predecessors = predecessors;
 }
 
 
