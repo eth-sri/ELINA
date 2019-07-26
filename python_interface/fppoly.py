@@ -1619,6 +1619,36 @@ def handle_residual_relu_layer(man, element, num_neurons, predecessors, use_area
         print(inst)
 
 
+def handle_residual_affine_layer(man, element, num_neurons, predecessors, use_area_heuristic):
+    """
+    handle the Residual layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0 abstract element.
+    num_neurons: c_size_t
+        The number of neurons in the residual layer 
+    predecessors:
+        the layers before the current layer
+    Returns
+    -------
+    None
+
+    """
+
+    try:
+        handle_residual_affine_layer_c = fppoly_api.handle_residual_affine_layer
+        handle_residual_affine_layer_c.restype = None
+        handle_residual_affine_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_bool]
+        handle_residual_affine_layer_c(man, element, num_neurons, predecessors, use_area_heuristic)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_residual_affine_layer" from "libfppoly.so"')
+        print(inst)
+
+
 
 def box_for_neuron(man, element,layerno, neuron_no):
     """
