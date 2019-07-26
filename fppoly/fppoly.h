@@ -265,6 +265,7 @@ void update_bounds_for_neuron(elina_manager_t *man, elina_abstract0_t *abs, size
 elina_interval_t * get_bounds_for_linexpr(elina_manager_t *man, elina_abstract0_t *element, elina_linexpr0_t *linexpr0, size_t layerno);
 
 void handle_residual_relu_layer(elina_manager_t *man, elina_abstract0_t *element, size_t num_neurons, size_t *predecessors, bool use_area_heuristic);
+void handle_residual_affine_layer(elina_manager_t *man, elina_abstract0_t *element, size_t num_neurons, size_t *predecessors, bool use_area_heuristic);
 
 #ifdef __cplusplus
  }

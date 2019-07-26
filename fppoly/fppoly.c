@@ -4363,6 +4363,10 @@ void handle_residual_relu_layer(elina_manager_t *man, elina_abstract0_t *element
 	handle_residual_layer(man,element,num_neurons,predecessors,RELU, use_area_heuristic);
 }
 
+void handle_residual_affine_layer(elina_manager_t *man, elina_abstract0_t *element, size_t num_neurons, size_t *predecessors, bool use_area_heuristic){
+	handle_residual_layer(man,element,num_neurons,predecessors,NONE, use_area_heuristic);
+}
+
 void free_neuron(neuron_t *neuron){
 	if(neuron->expr){
 		free_expr(neuron->expr);
