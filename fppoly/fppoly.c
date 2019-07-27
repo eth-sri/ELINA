@@ -944,11 +944,10 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp,
                                 expr->sup_coeff[i], fp->input_inf[k],
                                 fp->input_sup[k]);
     } else {
-      double lb = fp->layers[layerno]->activation == RELU
-                      ? 0
-                      : fp->layers[layerno]->neurons[k]->lb;
+
       elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                expr->sup_coeff[i], lb,
+                                expr->sup_coeff[i],
+                                fp->layers[layerno]->neurons[k]->lb,
                                 fp->layers[layerno]->neurons[k]->ub);
     }
     // printf("tmp1: %g\n",tmp1);
@@ -990,11 +989,9 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp,
                                 expr->sup_coeff[i], fp->input_inf[k],
                                 fp->input_sup[k]);
     } else {
-      double lb = fp->layers[layerno]->activation == RELU
-                      ? 0
-                      : fp->layers[layerno]->neurons[k]->lb;
       elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                expr->sup_coeff[i], lb,
+                                expr->sup_coeff[i],
+                                fp->layers[layerno]->neurons[k]->lb,
                                 fp->layers[layerno]->neurons[k]->ub);
     }
     res_sup = res_sup + tmp2;
@@ -2864,6 +2861,16 @@ void *update_state_using_previous_layers(void *args) {
         // Assume at least one non-residual layer between two residual layers
 
         k = common_predecessor;
+        if (fp->layers[k]->activation == RELU) {
+          expr_t *tmp_l = lexpr;
+          expr_t *tmp_u = uexpr;
+          lexpr = lexpr_replace_relu_bounds(pr, lexpr, fp->layers[k]->neurons,
+                                            use_area_heuristic);
+          uexpr = uexpr_replace_relu_bounds(pr, uexpr, fp->layers[k]->neurons,
+                                            use_area_heuristic);
+          free_expr(tmp_l);
+          free_expr(tmp_u);
+        }
         out_neurons[i]->lb = compute_lb_from_expr(pr, lexpr, fp, k);
         out_neurons[i]->ub = compute_ub_from_expr(pr, uexpr, fp, k);
         already_computed = true;
