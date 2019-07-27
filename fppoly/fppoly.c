@@ -2593,6 +2593,7 @@ void * update_state_using_previous_layers(void *args){
 	//printf("idx: %zu %zu\n",idx_start,idx_end);
 	//fflush(stdout);
 	for(i=idx_start; i < idx_end; i++){
+		bool already_computed= false;
 		expr_t *lexpr = copy_expr(out_neurons[i]->expr);
 		expr_t *uexpr = copy_expr(out_neurons[i]->expr);
 	 	if(fp->layers[layerno]->type==RESIDUAL){
@@ -2713,8 +2714,7 @@ void * update_state_using_previous_layers(void *args){
 				k = common_predecessor;
 				out_neurons[i]->lb = compute_lb_from_expr(pr, lexpr,fp,k); 
 				out_neurons[i]->ub = compute_ub_from_expr(pr, uexpr,fp,k);
-				free(lexpr);
-				free(uexpr);
+				already_computed = true;
 				break;
 				//continue;
 			}
@@ -2729,13 +2729,11 @@ void * update_state_using_previous_layers(void *args){
 			
 		}
 		
-		//if(layerno==17){
-					//printf("here k: %zu %d %zu\n",layerno, lexpr->type==DENSE ,lexpr->size);
-				//}
-		out_neurons[i]->lb = compute_lb_from_expr(pr, lexpr,fp,-1); 
-		//- bias_i;
-		out_neurons[i]->ub = compute_ub_from_expr(pr, uexpr,fp,-1); //+ bias_i;
-		//printf("lb: %g ub: %g\n",out_neurons[i]->lb,out_neurons[i]->ub);
+		if(!already_computed){
+			out_neurons[i]->lb = compute_lb_from_expr(pr, lexpr,fp,-1); 
+			//- bias_i;
+			out_neurons[i]->ub = compute_ub_from_expr(pr, uexpr,fp,-1); //+ bias_i;
+		}
 		if(fp->out!=NULL){
 			
 			fp->out->lexpr[i] = lexpr;
