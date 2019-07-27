@@ -932,7 +932,8 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 				elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],fp->input_inf[k],fp->input_sup[k]);
 			}
 			else{
-				elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],fp->layers[layerno]->neurons[k]->lb,fp->layers[layerno]->neurons[k]->ub);
+				double lb = fp->layers[k]->activation==RELU ? 0 : fp->layers[layerno]->neurons[k]->lb;
+				elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],lb,fp->layers[layerno]->neurons[k]->ub);
 			}
 			//printf("tmp1: %g\n",tmp1);
 			res_inf = res_inf + tmp1;
@@ -973,7 +974,8 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 			elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],fp->input_inf[k],fp->input_sup[k]);
 		}
 		else{
-			elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],fp->layers[layerno]->neurons[k]->lb,fp->layers[layerno]->neurons[k]->ub);
+			double lb = fp->layers[k]->activation==RELU ? 0 : fp->layers[layerno]->neurons[k]->lb;
+			elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],lb,fp->layers[layerno]->neurons[k]->ub);
 		}
 		res_sup = res_sup + tmp2;
 			
