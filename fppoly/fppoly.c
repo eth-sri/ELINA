@@ -916,7 +916,8 @@ expr_t *replace_input_poly_cons_in_uexpr(fppoly_internal_t *pr, expr_t *expr,
   return res;
 }
 
-double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
+double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp,
+                            int layerno) {
   size_t i, k;
   double tmp1, tmp2;
   // printf("start\n");
@@ -938,10 +939,16 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
     } else {
       k = expr->dim[i];
     }
-
-    elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                              expr->sup_coeff[i], fp->input_inf[k],
-                              fp->input_sup[k]);
+    if (layerno == -1) {
+      elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                expr->sup_coeff[i], fp->input_inf[k],
+                                fp->input_sup[k]);
+    } else {
+      elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                expr->sup_coeff[i],
+                                fp->layers[layerno]->neurons[k]->lb,
+                                fp->layers[layerno]->neurons[k]->ub);
+    }
     // printf("tmp1: %g\n",tmp1);
     res_inf = res_inf + tmp1;
   }
@@ -955,7 +962,8 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
   return res_inf;
 }
 
-double compute_ub_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
+double compute_ub_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp,
+                            int layerno) {
   size_t i, k;
   double tmp1, tmp2;
 
@@ -975,9 +983,16 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp) {
     } else {
       k = expr->dim[i];
     }
-    elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                              expr->sup_coeff[i], fp->input_inf[k],
-                              fp->input_sup[k]);
+    if (layerno == -1) {
+      elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                expr->sup_coeff[i], fp->input_inf[k],
+                                fp->input_sup[k]);
+    } else {
+      elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                expr->sup_coeff[i],
+                                fp->layers[layerno]->neurons[k]->lb,
+                                fp->layers[layerno]->neurons[k]->ub);
+    }
     res_sup = res_sup + tmp2;
   }
   // printf("sup: %g\n",res_sup);
@@ -1018,8 +1033,8 @@ void ffn_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
     double *weight_i = weights[i];
     double bias_i = bias[i];
     neuron->expr = create_dense_expr(weight_i, bias_i, num_pixels);
-    neuron->lb = compute_lb_from_expr(pr, neuron->expr, res);
-    neuron->ub = compute_ub_from_expr(pr, neuron->expr, res);
+    neuron->lb = compute_lb_from_expr(pr, neuron->expr, res, -1);
+    neuron->ub = compute_ub_from_expr(pr, neuron->expr, res, -1);
   }
 
   // printf("return here\n");
@@ -2771,6 +2786,7 @@ void *update_state_using_previous_layers(void *args) {
       // Assume at least one non-residual layer between two residual layers
 
       k = common_predecessor;
+
     } else {
 
       k = fp->layers[layerno]->predecessors[0] - 1;
@@ -2843,8 +2859,12 @@ void *update_state_using_previous_layers(void *args) {
         // Assume at least one non-residual layer between two residual layers
 
         k = common_predecessor;
-
-        continue;
+        out_neurons[i]->lb = compute_lb_from_expr(pr, lexpr, fp, k);
+        out_neurons[i]->ub = compute_ub_from_expr(pr, uexpr, fp, k);
+        free(lexpr);
+        free(uexpr);
+        break;
+        // continue;
       } else {
 
         update_state_using_predecessor_layer(pr, fp, &lexpr, &uexpr, k,
@@ -2859,9 +2879,9 @@ void *update_state_using_previous_layers(void *args) {
     // if(layerno==17){
     // printf("here k: %zu %d %zu\n",layerno, lexpr->type==DENSE ,lexpr->size);
     //}
-    out_neurons[i]->lb = compute_lb_from_expr(pr, lexpr, fp);
+    out_neurons[i]->lb = compute_lb_from_expr(pr, lexpr, fp, -1);
     //- bias_i;
-    out_neurons[i]->ub = compute_ub_from_expr(pr, uexpr, fp); //+ bias_i;
+    out_neurons[i]->ub = compute_ub_from_expr(pr, uexpr, fp, -1); //+ bias_i;
     // printf("lb: %g ub: %g\n",out_neurons[i]->lb,out_neurons[i]->ub);
     if (fp->out != NULL) {
 
@@ -3623,7 +3643,7 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
     }
   }
 
-  double res = compute_lb_from_expr(pr, lexpr, fp);
+  double res = compute_lb_from_expr(pr, lexpr, fp, -1);
   return res;
 }
 
@@ -3675,7 +3695,7 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
     }
   }
 
-  double res = compute_ub_from_expr(pr, uexpr, fp);
+  double res = compute_ub_from_expr(pr, uexpr, fp, -1);
   return res;
 }
 
@@ -4190,7 +4210,7 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element, elina_dim_t y,
 
       // expr_print(sub);
       // fflush(stdout);
-      double lb = compute_lb_from_expr(pr, sub, fp);
+      double lb = compute_lb_from_expr(pr, sub, fp, -1);
       // printf("y: %zu x: %zu lb: %g\n",y,x,lb);
       // fflush(stdout);
       free_expr(sub);
@@ -4310,9 +4330,9 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
         sort_sparse_expr(neurons[mat_x]->expr);
 
         neurons[mat_x]->lb =
-            compute_lb_from_expr(pr, neurons[mat_x]->expr, res);
+            compute_lb_from_expr(pr, neurons[mat_x]->expr, res, -1);
         neurons[mat_x]->ub =
-            compute_ub_from_expr(pr, neurons[mat_x]->expr, res);
+            compute_ub_from_expr(pr, neurons[mat_x]->expr, res, -1);
         free(coeff);
         free(dim);
       }
