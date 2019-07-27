@@ -944,7 +944,7 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp,
                                 expr->sup_coeff[i], fp->input_inf[k],
                                 fp->input_sup[k]);
     } else {
-      double lb = fp->layers[k]->activation == RELU
+      double lb = fp->layers[layerno]->activation == RELU
                       ? 0
                       : fp->layers[layerno]->neurons[k]->lb;
       elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
@@ -990,7 +990,7 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp,
                                 expr->sup_coeff[i], fp->input_inf[k],
                                 fp->input_sup[k]);
     } else {
-      double lb = fp->layers[k]->activation == RELU
+      double lb = fp->layers[layerno]->activation == RELU
                       ? 0
                       : fp->layers[layerno]->neurons[k]->lb;
       elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
