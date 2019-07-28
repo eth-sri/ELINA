@@ -491,15 +491,15 @@ static bool elina_double_boxize_lincons0(double* res_inf, double * res_sup,
     double d;
 
     if (tmp->discr==ELINA_COEFF_SCALAR) {
-      if (tmp->discr == ELINA_SCALAR_DOUBLE) {
-        inf = -tmp->val.scalar->val.dbl;
-        sup = tmp->val.scalar->val.dbl;
-      } else {
-        elina_double_set_scalar(&d, tmp->val.scalar, GMP_RNDD);
-        inf = -d;
-        elina_double_set_scalar(&d, tmp->val.scalar, GMP_RNDU);
-        sup = d;
-      }
+        if (tmp->val.scalar->discr == ELINA_SCALAR_DOUBLE) {
+            inf = -tmp->val.scalar->val.dbl;
+            sup = tmp->val.scalar->val.dbl;
+        } else {
+            elina_double_set_scalar(&d,tmp->val.scalar,GMP_RNDD);
+            inf = -d;
+            elina_double_set_scalar(&d,tmp->val.scalar,GMP_RNDU);
+            sup = d;
+        }
     } else {
         if (tmp->val.interval->inf->discr == ELINA_SCALAR_DOUBLE) {
             inf = -tmp->val.interval->inf->val.dbl;
