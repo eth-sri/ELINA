@@ -344,6 +344,12 @@ void conv_handle_intermediate_relu_layer(
     size_t num_filters, size_t *strides, bool is_valid_padding, bool has_bias,
     size_t *predecessors, bool use_area_heuristic);
 
+void conv_handle_intermediate_affine_layer(
+    elina_manager_t *man, elina_abstract0_t *element, double *filter_weights,
+    double *filter_bias, size_t *input_size, size_t *filter_size,
+    size_t num_filters, size_t *strides, bool is_valid_padding, bool has_bias,
+    size_t *predecessors, bool use_area_heuristic);
+
 size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *abs,
                             size_t *pool_size, size_t *input_size,
                             size_t *predecessors);
@@ -379,8 +385,13 @@ elina_interval_t *get_bounds_for_linexpr(elina_manager_t *man,
                                          elina_linexpr0_t *linexpr0,
                                          size_t layerno);
 
-void handle_residual_layer(elina_manager_t *man, elina_abstract0_t *element,
-                           size_t num_neurons, size_t *predecessors);
+void handle_residual_relu_layer(elina_manager_t *man,
+                                elina_abstract0_t *element, size_t num_neurons,
+                                size_t *predecessors, bool use_area_heuristic);
+void handle_residual_affine_layer(elina_manager_t *man,
+                                  elina_abstract0_t *element,
+                                  size_t num_neurons, size_t *predecessors,
+                                  bool use_area_heuristic);
 
 #ifdef __cplusplus
  }

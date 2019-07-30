@@ -158,6 +158,8 @@ typedef struct _zonotope_internal_t {
     uint_t* inputns;
     uint_t epssize;
     uint_t it;
+    double min_denormal;
+    double ulp;
 } zonotope_internal_t;
 
 /***********/
@@ -1611,9 +1613,26 @@ static inline zonotope_internal_t* zonotope_internal_alloc(elina_manager_t* manN
     pr->inputns = (uint_t*)calloc(1024, sizeof(uint_t));	/* starts with a limit of 1024 noise symbols */
     pr->epssize = 0;
     pr->it = 0;
+    pr->min_denormal = ldexpl(1.0,-1074);
+    pr->ulp = ldexpl(1.0,-52);
     return pr;
 }
 
+static inline void elina_double_interval_mul_expr_coeff(zonotope_internal_t *pr, double * res_inf, double *res_sup, double inf, double sup, double inf_expr, double sup_expr){
+        elina_double_interval_mul(res_inf,res_sup,inf,sup,inf_expr,sup_expr);
+        double maxA = fmax(fabs(inf_expr),fabs(sup_expr));
+        double tmp1, tmp2;
+        elina_double_interval_mul(&tmp1,&tmp2, inf, sup, maxA*pr->ulp, maxA*pr->ulp);
+        *res_inf += tmp1;
+        *res_sup += tmp2;
+    }
+    
+static inline void elina_double_interval_mul_cst_coeff(zonotope_internal_t *pr, double * res_inf, double *res_sup, double inf, double sup, double inf_expr, double sup_expr){
+        elina_double_interval_mul_expr_coeff(pr, res_inf, res_sup, inf, sup, inf_expr, sup_expr);
+        *res_inf += pr->min_denormal;
+        *res_sup += pr->min_denormal;
+    }
+    
 #ifdef __cplusplus
 }
 #endif

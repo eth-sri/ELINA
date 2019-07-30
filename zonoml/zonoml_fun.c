@@ -84,7 +84,13 @@ zonotope_aff_t* zonotope_aff_mul_weight(zonotope_internal_t* pr, zonotope_aff_t*
         dst = zonotope_aff_alloc_init(pr);
         
         elina_double_interval_mul(&dst->c_inf,&dst->c_sup, -lambda, lambda, src->c_inf,src->c_sup);
-
+        double maxA =  fmax(fabs(src->c_inf),fabs(src->c_sup));
+        double tmp1, tmp2;
+        elina_double_interval_mul(&tmp1,&tmp2, -lambda, lambda, maxA*pr->ulp, maxA*pr->ulp);
+        double fp_err_inf = tmp1+ pr->min_denormal;
+        double fp_err_sup = tmp2 + pr->min_denormal;
+        dst->c_inf+= tmp1 + pr->min_denormal;
+        dst->c_sup+= tmp2 + pr->min_denormal;
         if (src->q) {
             
             dst->q = q = zonotope_aaterm_alloc_init();
@@ -93,8 +99,12 @@ zonotope_aff_t* zonotope_aff_mul_weight(zonotope_internal_t* pr, zonotope_aff_t*
                 double tmp_inf = 0.0;
 		double tmp_sup = 0.0;
                 elina_double_interval_mul(&tmp_inf, &tmp_sup, -lambda, lambda, p->inf, p->sup);
-                q->inf = tmp_inf;
-                q->sup = tmp_sup;
+                maxA =  fmax(fabs(p->inf),fabs(p->sup));
+                elina_double_interval_mul(&tmp1,&tmp2, -lambda, lambda, maxA*pr->ulp, maxA*pr->ulp);
+                fp_err_inf += tmp1;
+                fp_err_sup += tmp2;
+		q->inf = tmp_inf+tmp1;
+		q->sup = tmp_sup+tmp2;
                 q->pnsym = p->pnsym;
                 if (p->n) {
                     /* continue */
@@ -111,7 +121,8 @@ zonotope_aff_t* zonotope_aff_mul_weight(zonotope_internal_t* pr, zonotope_aff_t*
         dst->l = src->l;
 	
         elina_double_interval_mul(&dst->itv_inf, &dst->itv_sup,  -lambda, lambda,src->itv_inf, src->itv_sup);
-
+        dst->itv_inf += fp_err_inf;
+        dst->itv_sup += fp_err_sup;
         return dst;
     }
 }
