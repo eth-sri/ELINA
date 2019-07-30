@@ -2501,7 +2501,7 @@ void update_state_using_previous_layers_conv_chunk(elina_manager_t* man, fppoly_
 
             free(predecessor_map);
 
-            const size_t num_filters_current_layer = fp->layers[predecessor1]->output_size[2];
+            const size_t num_filters_current_layer = fp->layers[k]->output_size[2];
 
             float_type* copy_linf_coeff;
             float_type* copy_lsup_coeff;
@@ -2612,8 +2612,8 @@ void update_state_using_previous_layers_conv_chunk(elina_manager_t* man, fppoly_
                 std::swap(shift_y, copy_shift_y);
             }
 
-            add_coeffs_and_csts_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), 1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, copy_linf_coeff, copy_lsup_coeff, copy_linf_cst, copy_lsup_cst, length_x, length_y, copy_length_x, copy_length_y,  fp->layers[common_predecessor + 1]->input_size[2], copy_offset_x - offset_x, copy_offset_y - offset_y);
-            add_coeffs_and_csts_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), 1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, copy_uinf_coeff, copy_usup_coeff, copy_uinf_cst, copy_usup_cst, length_x, length_y, copy_length_x, copy_length_y,  fp->layers[common_predecessor + 1]->input_size[2], copy_offset_x - offset_x, copy_offset_y - offset_y);
+            add_coeffs_and_csts_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), 1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, copy_linf_coeff, copy_lsup_coeff, copy_linf_cst, copy_lsup_cst, length_x, length_y, copy_length_x, copy_length_y,  fp->layers[common_predecessor]->output_size[2], copy_offset_x - offset_x, copy_offset_y - offset_y);
+            add_coeffs_and_csts_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), 1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, copy_uinf_coeff, copy_usup_coeff, copy_uinf_cst, copy_usup_cst, length_x, length_y, copy_length_x, copy_length_y,  fp->layers[common_predecessor]->output_size[2], copy_offset_x - offset_x, copy_offset_y - offset_y);
             // Assume at least one non-residual layer between two residual layers
 
             cudaFree(copy_linf_coeff);
@@ -3138,9 +3138,7 @@ void conv_add_layer(fppoly_t* const fp, const size_t num_out_neurons, const size
 }
 
 
-void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights, const double* filter_bias,
-                               const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides,
-                               const bool is_valid_padding, const bool has_bias)
+void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights, const double* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, const activation_type_t activation)
 {
     const size_t num_pixels = input_size[0]*input_size[1]*input_size[2];
 
@@ -3162,7 +3160,7 @@ void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights,
     const size_t num_out_neurons = output_size[0]*output_size[1]*output_size[2];
     const size_t size = filter_size[0]*filter_size[1]*input_size[2]*output_size[2];
 
-    conv_add_layer(fp, num_out_neurons, num_pixels, size, output_size[2], CONV, RELU);
+    conv_add_layer(fp, num_out_neurons, num_pixels, size, output_size[2], CONV, activation);
 
     layer_t* current_layer = fp->layers[fp->numlayers - 1];
 
@@ -3247,7 +3245,7 @@ void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element, c
     fppoly_t* const fp = fppoly_of_abstract0(element);
     fp->layers = (layer_t**) malloc(2000*sizeof(layer_t*));
 
-    layer_create_sparse_exprs(fp, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding, has_bias);
+    layer_create_sparse_exprs(fp, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding, has_bias, RELU);
 
     fp->layers[fp->numlayers - 1]->predecessors = predecessors;
 
@@ -3255,15 +3253,27 @@ void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element, c
 }
 
 
-void conv_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const double* filter_weights, const double* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const bool use_area_heuristic)
+void conv_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* element, const double* filter_weights, const double* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const activation_type_t activation, const bool use_area_heuristic)
 {
     fppoly_t* const fp = fppoly_of_abstract0(element);
 
-    layer_create_sparse_exprs(fp, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding, has_bias);
+    layer_create_sparse_exprs(fp, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding, has_bias, activation);
 
     fp->layers[fp->numlayers - 1]->predecessors = predecessors;
 
     update_state_using_previous_layers_conv(man, fp, fp->numlayers - 1, use_area_heuristic);
+}
+
+
+void conv_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const double* filter_weights, const double* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const bool use_area_heuristic)
+{
+	conv_handle_intermediate_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding, has_bias, predecessors, RELU, use_area_heuristic);
+}
+
+
+void conv_handle_intermediate_affine_layer(elina_manager_t* man, elina_abstract0_t* element, const double* filter_weights, const double* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const bool use_area_heuristic)
+{
+	conv_handle_intermediate_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding, has_bias, predecessors, NONE, use_area_heuristic);
 }
 
 
@@ -3272,7 +3282,7 @@ void res_add_layer(fppoly_t* const fp, const size_t num_neurons, const layertype
     layer_t* layer = (layer_t*) malloc(sizeof(layer_t));
 
     layer->num_out_neurons = num_neurons;
-    layer->num_in_neurons = 0;
+    layer->num_in_neurons = num_neurons;
 
     layer->type = type;
     layer->activation = activation;
@@ -3289,11 +3299,26 @@ void res_add_layer(fppoly_t* const fp, const size_t num_neurons, const layertype
     layer->filter_weights = nullptr;
     layer->filter_bias = nullptr;
 
-    layer->input_size = nullptr;
-    layer->output_size = nullptr;
-    layer->filter_size = nullptr;
-    layer->strides = nullptr;
-    layer->pad = nullptr;
+    layer->input_size = (size_t*) malloc(3*sizeof(size_t));
+    layer->output_size = (size_t*) malloc(3*sizeof(size_t));
+    layer->filter_size = (size_t*) malloc(2*sizeof(size_t));
+    layer->strides = (size_t*) malloc(2*sizeof(size_t));
+    layer->pad = (long int*) malloc(2*sizeof(long int));
+
+    for(size_t i = 0; i < 3; i++)
+    {
+        layer->output_size[i] = fp->layers[fp->numlayers - 1]->output_size[i];
+        layer->input_size[i] = fp->layers[fp->numlayers - 1]->output_size[i];
+    }
+
+    layer->filter_size[0] = 1;
+    layer->filter_size[1] = 1;
+
+    layer->strides[0] = 1;
+    layer->strides[1] = 1;
+
+    layer->pad[0] = 0;
+    layer->pad[1] = 0;
 
     fp->layers[fp->numlayers] = layer;
 
