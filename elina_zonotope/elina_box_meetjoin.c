@@ -491,7 +491,7 @@ static bool elina_double_boxize_lincons0(double* res_inf, double * res_sup,
     double d;
 
     if (tmp->discr==ELINA_COEFF_SCALAR) {
-        if (tmp->discr == ELINA_SCALAR_DOUBLE) {
+        if (tmp->val.scalar->discr == ELINA_SCALAR_DOUBLE) {
             inf = -tmp->val.scalar->val.dbl;
             sup = tmp->val.scalar->val.dbl;
         } else {
