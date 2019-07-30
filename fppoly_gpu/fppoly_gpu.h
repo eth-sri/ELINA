@@ -171,8 +171,24 @@ void conv_handle_intermediate_relu_layer(
     const bool is_valid_padding, const bool has_bias, size_t *predecessors,
     const bool use_area_heuristic);
 
-void handle_residual_layer(elina_manager_t *man, elina_abstract0_t *element,
-                           const size_t num_neurons, size_t *predecessors);
+void conv_handle_intermediate_affine_layer(
+    elina_manager_t *man, elina_abstract0_t *element,
+    const double *filter_weights, const double *filter_bias,
+    const size_t *input_size, const size_t *filter_size,
+    const size_t num_filters, const size_t *strides,
+    const bool is_valid_padding, const bool has_bias, size_t *predecessors,
+    const bool use_area_heuristic);
+
+void handle_residual_relu_layer(elina_manager_t *man,
+                                elina_abstract0_t *element,
+                                const size_t num_neurons, size_t *predecessors,
+                                bool use_area_heuristic);
+
+void handle_residual_affine_layer(elina_manager_t *man,
+                                  elina_abstract0_t *element,
+                                  const size_t num_neurons,
+                                  size_t *predecessors,
+                                  const bool use_area_heuristic);
 
 void fppoly_alloc_first_layer(fppoly_t *fp, const size_t size,
                               const layertype_t type,
