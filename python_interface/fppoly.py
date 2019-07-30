@@ -1511,6 +1511,51 @@ def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bia
         print(inst)
 
 
+def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding,  has_bias, predecessors, use_area_heuristic):
+    """
+    Convolutional Matrix multiplication in an Intermediate layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0 abstract element.
+    filter_weights: POINTER(double)
+        filter weights
+    filter_bias: POINTER(double)
+        filter biases
+    input_size: POINTER(c_size_t)
+        size of the input
+    filter_size: POINTER(c_size_t)  
+        size of the filters
+    num_filters: c_size_t
+        number of filters
+    strides: POINTER(c_size_t)
+       size of the strides
+    is_valid_padding: c_bool
+       if the padding is valid
+    has_bias: c_bool
+       if the filter has bias
+    predecessors:
+        the layers before the current layer
+    use_area_heuristic: c_bool
+        whether to use area heuristic
+    Returns
+    -------
+    None
+
+    """
+    try:
+        conv_handle_intermediate_affine_layer_c = fppoly_api.conv_handle_intermediate_affine_layer
+        conv_handle_intermediate_affine_layer_c.restype = None
+        conv_handle_intermediate_affine_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_bool, c_bool, POINTER(c_size_t), c_bool]
+        conv_handle_intermediate_affine_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding, has_bias, predecessors, use_area_heuristic)
+    except Exception as inst:
+        print('Problem with loading/calling "conv_handle_intermediate_affine_layer" from "libfppoly.so"')
+        print(inst)
+
+
 def handle_maxpool_layer(man, element, pool_size, input_size, predecessors):
     """
     handle the Maxpool layer
@@ -1544,7 +1589,7 @@ def handle_maxpool_layer(man, element, pool_size, input_size, predecessors):
         print(inst)
     return res
 
-def handle_residual_layer(man, element, num_neurons, predecessors):
+def handle_residual_relu_layer(man, element, num_neurons, predecessors, use_area_heuristic):
     """
     handle the Residual layer
     
@@ -1565,12 +1610,42 @@ def handle_residual_layer(man, element, num_neurons, predecessors):
     """
 
     try:
-        handle_residual_layer_c = fppoly_api.handle_residual_layer
-        handle_residual_layer_c.restype = None
-        handle_residual_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t)]
-        handle_residual_layer_c(man, element, num_neurons, predecessors)
+        handle_residual_relu_layer_c = fppoly_api.handle_residual_relu_layer
+        handle_residual_relu_layer_c.restype = None
+        handle_residual_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_bool]
+        handle_residual_relu_layer_c(man, element, num_neurons, predecessors, use_area_heuristic)
     except Exception as inst:
-        print('Problem with loading/calling "handle_residual_layer" from "libfppoly.so"')
+        print('Problem with loading/calling "handle_residual_relu_layer" from "libfppoly.so"')
+        print(inst)
+
+
+def handle_residual_affine_layer(man, element, num_neurons, predecessors, use_area_heuristic):
+    """
+    handle the Residual layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0 abstract element.
+    num_neurons: c_size_t
+        The number of neurons in the residual layer 
+    predecessors:
+        the layers before the current layer
+    Returns
+    -------
+    None
+
+    """
+
+    try:
+        handle_residual_affine_layer_c = fppoly_api.handle_residual_affine_layer
+        handle_residual_affine_layer_c.restype = None
+        handle_residual_affine_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_bool]
+        handle_residual_affine_layer_c(man, element, num_neurons, predecessors, use_area_heuristic)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_residual_affine_layer" from "libfppoly.so"')
         print(inst)
 
 
