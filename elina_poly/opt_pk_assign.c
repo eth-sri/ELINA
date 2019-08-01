@@ -474,7 +474,11 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 				poly[res]->C = opt_matrix_substitute_variable(opk,true, matC, nvar, opk->poly_numintp);
 				if(!opk->exn){
 					opt_poly_chernikova(man,poly[res],"non invertible assign");
-					
+					if(poly[res]->F==NULL && poly[res]->C==NULL){
+						opt_poly_set_bottom(opk,op);
+						man->result.flag_best = man->result.flag_exact = true;
+						goto opt_poly_asssub_linexpr_det_exit;
+					}
 				}
 				else{
 					opk->exn = ELINA_EXC_NONE;
@@ -553,7 +557,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
     //}	
   	
     opt_poly_asssub_linexpr_det_exit:
-	    if(destructive){
+	    if(destructive && !op->is_bottom){
 		for(k=0; k < num_compa;k++){
 			if(!disjoint_map[k]){
 				opt_poly_clear(poly_a[k]);
@@ -663,7 +667,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr(bool assign, bool lazy,
     op = opt_poly_asssub_linexpr_det(assign, man,destructive,oa,dim,linexpr);
     
     if (ob){
-      opt_poly_meet(true,lazy,man,op,op,ob);
+      op=opt_pk_meet(man,true,op,ob);
 	 
     }
   }
