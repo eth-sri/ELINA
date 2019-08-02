@@ -644,9 +644,6 @@ add_coeffs_and_csts(float_type *__restrict__ target_inf_coeff,
         tar_sup + src_sup + (maxRes + maxMul) * ulp;
   }
 
-  target_inf_cst[i] += source_inf_cst[i];
-  target_sup_cst[i] += source_sup_cst[i];
-
   maxRes = max(abs(target_inf_cst[i]), abs(target_sup_cst[i]));
   maxMul = max(abs(source_inf_cst[i]), abs(source_sup_cst[i]));
 
