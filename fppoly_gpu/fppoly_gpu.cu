@@ -2165,14 +2165,14 @@ size_t predict_size(fppoly_t* fp, const size_t layerno)
     std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
 
     size_t current_size = 4*num_out_neurons_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]*sizeof(float_type);
-    size_t last_size;
+    size_t last_size = 0;
 
     size_t maximum_size = 0;
 
     std::cout << "Size: " << current_size << " bytes" << std::endl;
     std::cout << std::endl;
 
-    int k = layerno - 1;
+    int k = fp->layers[layerno]->predecessors[0] - 1;
 
     while(k >= 0)
     {
@@ -2286,7 +2286,7 @@ size_t predict_size(fppoly_t* fp, const size_t layerno)
 
     if(num_chunks > 1)
     {
-        std::cout << "Number of chunks " << num_chunks << std::endl;
+        std::cout << "Number of chunks for convolutional " << num_chunks << std::endl;
     }
 
     return num_chunks;
@@ -2914,8 +2914,8 @@ void get_lb_using_previous_layers(elina_manager_t* man, fppoly_t* const fp, cons
     float_type* linf_cst;
     float_type* lsup_cst;
 
-    cudaMalloc((void**) &linf_coeff, num_out_neurons_last_layer*10*sizeof(float_type*));
-    cudaMalloc((void**) &lsup_coeff, num_out_neurons_last_layer*10*sizeof(float_type*));
+    cudaMalloc((void**) &linf_coeff, num_out_neurons_last_layer*10*sizeof(float_type));
+    cudaMalloc((void**) &lsup_coeff, num_out_neurons_last_layer*10*sizeof(float_type));
     cudaMalloc((void**) &linf_cst, num_out_neurons_last_layer*10*sizeof(float_type));
     cudaMalloc((void**) &lsup_cst, num_out_neurons_last_layer*10*sizeof(float_type));
 
@@ -2938,8 +2938,8 @@ void get_lb_using_previous_layers(elina_manager_t* man, fppoly_t* const fp, cons
     float_type* linf_cst_tmp;
     float_type* lsup_cst_tmp;
 
-    cudaMalloc((void**) &linf_coeff_tmp, num_out_neurons_last_layer*sizeof(float_type*));
-    cudaMalloc((void**) &lsup_coeff_tmp, num_out_neurons_last_layer*sizeof(float_type*));
+    cudaMalloc((void**) &linf_coeff_tmp, num_out_neurons_last_layer*sizeof(float_type));
+    cudaMalloc((void**) &lsup_coeff_tmp, num_out_neurons_last_layer*sizeof(float_type));
     cudaMalloc((void**) &linf_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
     cudaMalloc((void**) &lsup_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
 
@@ -3339,7 +3339,6 @@ void res_add_layer(fppoly_t* const fp, const size_t num_neurons, const layertype
 }
 
 
-/*
 size_t predict_size_residual(fppoly_t* fp, const size_t layerno)
 {
     size_t free_space;
@@ -3368,14 +3367,106 @@ size_t predict_size_residual(fppoly_t* fp, const size_t layerno)
     std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
 
     size_t current_size = 4*num_out_neurons_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]*sizeof(float_type);
-    size_t last_size;
+    size_t last_size = 0;
 
     size_t maximum_size = 0;
 
     std::cout << "Size: " << current_size << " bytes" << std::endl;
     std::cout << std::endl;
 
-    int k = layerno - 1;
+    int k;
+
+    if(fp->layers[layerno]->type == RESIDUAL)
+    {
+        const size_t predecessor1 = fp->layers[layerno]->predecessors[0] - 1;
+        const size_t predecessor2 = fp->layers[layerno]->predecessors[1] - 1;
+
+        char* predecessor_map = (char*) calloc(layerno, sizeof(char));
+        int iter = predecessor1;
+
+        while(iter >= 0)
+        {
+            predecessor_map[iter] = 1;
+            iter = fp->layers[iter]->predecessors[0] - 1;
+        }
+
+        iter =  predecessor2;
+        int common_predecessor = 0;
+
+        while(iter >= 0)
+        {
+            if(predecessor_map[iter] == 1)
+            {
+                common_predecessor = iter;
+
+                break;
+            }
+
+            iter = fp->layers[iter]->predecessors[0] - 1;
+        }
+
+        free(predecessor_map);
+
+        long int copy_offset_x = offset_x;
+        long int copy_offset_y = offset_y;
+
+        long int copy_length_x = length_x;
+        long int copy_length_y = length_y;
+
+        long int copy_shift_x = shift_x;
+        long int copy_shift_y = shift_y;
+
+        size_t copy_current_size = current_size;
+        size_t copy_last_size = last_size;
+
+        iter = predecessor1;
+
+        while(iter != common_predecessor)
+        {
+            predict_size_of_conv_layer(fp, copy_current_size, copy_last_size, copy_offset_x, copy_offset_y, copy_length_x, copy_length_y, copy_shift_x, copy_shift_y, iter, num_out_neurons_last_layer);
+
+            if(copy_last_size + copy_current_size + current_size > maximum_size)
+            {
+                maximum_size = copy_last_size + copy_current_size + current_size;
+            }
+
+            iter = fp->layers[iter]->predecessors[0] - 1;
+        }
+
+        iter = predecessor2;
+
+        while(iter != common_predecessor)
+        {
+            predict_size_of_conv_layer(fp, current_size, last_size, offset_x, offset_y, length_x, length_y, shift_x, shift_y, iter, num_out_neurons_last_layer);
+
+            if(last_size + current_size + copy_current_size > maximum_size)
+            {
+                maximum_size = last_size + current_size + copy_current_size;
+            }
+
+            iter = fp->layers[iter]->predecessors[0] - 1;
+        }
+
+        if(copy_length_x > length_x)
+        {
+            std::swap(copy_current_size, current_size);
+
+            std::swap(offset_x, copy_offset_x);
+            std::swap(offset_y, copy_offset_y);
+
+            std::swap(length_x, copy_length_x);
+            std::swap(length_y, copy_length_y);
+
+            std::swap(shift_x, copy_shift_x);
+            std::swap(shift_y, copy_shift_y);
+        }
+
+        k = common_predecessor;
+    }
+    else
+    {
+        k = fp->layers[layerno]->predecessors[0] - 1;
+    }
 
     while(k >= 0)
     {
@@ -3489,24 +3580,13 @@ size_t predict_size_residual(fppoly_t* fp, const size_t layerno)
 
     if(num_chunks > 1)
     {
-        std::cout << "Number of chunks " << num_chunks << std::endl;
+        std::cout << "Number of chunks for residual " << num_chunks << std::endl;
     }
 
     return num_chunks;
 }
-*/
 
 
-    /*
-	neuron_t **neurons = fp->layers[fp->numlayers - 1]->neurons;
-	for(size_t i=0; i < num_neurons; i++){
-		double *coeff = (double*)malloc(sizeof(double));
-		coeff[0] = 1;
-		size_t *dim = (size_t*)malloc(sizeof(size_t));
-		dim[0] = i;
-		neurons[i]->expr = create_sparse_expr(coeff,0,dim,1);
-	}
-    */
 __global__
 void create_res_coeffs_csts(float_type* coeffs, float_type* bias, const size_t num_chunks, const size_t chunk_counter, const size_t input_size_z)
 {
@@ -3515,7 +3595,6 @@ void create_res_coeffs_csts(float_type* coeffs, float_type* bias, const size_t n
     size_t out_z = blockIdx.z;
 
     const size_t local_mat_x = out_x*gridDim.y*gridDim.z + out_y*gridDim.z + out_z;
-    //const size_t global_mat_x = out_x*gridDim.y*num_chunks*gridDim.z + out_y*num_chunks*gridDim.z + chunk_counter*gridDim.z + out_z;
 
     coeffs[local_mat_x*input_size_z + chunk_counter*gridDim.z + out_z] = 1;
 
@@ -4036,8 +4115,7 @@ void update_state_using_previous_layers_residual_chunk(elina_manager_t* man, fpp
 
 void update_state_using_previous_layers_residual(elina_manager_t* man, fppoly_t* fp, const size_t layerno, const bool use_area_heuristic)
 {
-    //const size_t num_chunks = predict_size_residual(fp, layerno);
-    const size_t num_chunks = 1;
+    const size_t num_chunks = predict_size_residual(fp, layerno);
 
     for(size_t chunk_counter = 0; chunk_counter < num_chunks; chunk_counter++)
     {
