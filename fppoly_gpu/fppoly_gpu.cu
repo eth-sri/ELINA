@@ -847,9 +847,8 @@ __global__ void lexpr_replace_relu_bounds(
     const float_type *__restrict__ ub_array,
     const size_t num_out_neurons_current_layer, const bool use_area_heuristic) {
   const size_t n = blockIdx.x;
-  size_t i = threadIdx.x;
 
-  while (i < num_out_neurons_current_layer) {
+  for (size_t i = 0; i < num_out_neurons_current_layer; i++) {
     const size_t a = n * num_out_neurons_current_layer + i;
 
     const float_type lb = lb_array[i];
@@ -880,8 +879,8 @@ __global__ void lexpr_replace_relu_bounds(
       elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup,
                                           old_inf_coeff, old_sup_coeff);
 
-      atomicAdd(&inf_cst[n], tmp1 - min_denormal);
-      atomicAdd(&sup_cst[n], tmp2 + min_denormal);
+      inf_cst[n] += tmp1 - min_denormal;
+      sup_cst[n] += tmp2 + min_denormal;
     } else if (old_inf_coeff > 0) {
       if (use_area_heuristic) {
         const float_type area1 = -lb * ub;
@@ -910,11 +909,9 @@ __global__ void lexpr_replace_relu_bounds(
       elina_double_interval_mul2(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0,
                                  ub);
 
-      atomicAdd(&inf_cst[n], tmp1);
-      atomicAdd(&sup_cst[n], tmp1);
+      inf_cst[n] += tmp1;
+      sup_cst[n] += tmp1;
     }
-
-    i += blockDim.x;
   }
 }
 
@@ -925,9 +922,8 @@ __global__ void uexpr_replace_relu_bounds(
     const float_type *__restrict__ ub_array,
     const size_t num_out_neurons_current_layer, const bool use_area_heuristic) {
   const size_t n = blockIdx.x;
-  size_t i = threadIdx.x;
 
-  while (i < num_out_neurons_current_layer) {
+  for (size_t i = 0; i < num_out_neurons_current_layer; i++) {
     const size_t a = n * num_out_neurons_current_layer + i;
 
     const float_type lb = lb_array[i];
@@ -958,8 +954,8 @@ __global__ void uexpr_replace_relu_bounds(
       elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup,
                                           old_inf_coeff, old_sup_coeff);
 
-      atomicAdd(&inf_cst[n], tmp1 - min_denormal);
-      atomicAdd(&sup_cst[n], tmp2 + min_denormal);
+      inf_cst[n] += tmp1 - min_denormal;
+      sup_cst[n] += tmp2 + min_denormal;
     } else if (old_sup_coeff < 0) {
       if (use_area_heuristic) {
         const float_type area1 = -lb * ub;
@@ -988,11 +984,9 @@ __global__ void uexpr_replace_relu_bounds(
       elina_double_interval_mul2(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0,
                                  ub);
 
-      atomicAdd(&inf_cst[n], tmp2);
-      atomicAdd(&sup_cst[n], tmp2);
+      inf_cst[n] += tmp2;
+      sup_cst[n] += tmp2;
     }
-
-    i += blockDim.x;
   }
 }
 
@@ -1825,10 +1819,10 @@ void update_state_using_predecessor_layer(
   float_type *aux_ub_array = fp->layers[k]->ub_array;
 
   if (fp->layers[k]->activation == RELU) {
-    lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(
+    lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, 1>>>(
         *linf_coeff, *lsup_coeff, *linf_cst, *lsup_cst, aux_lb_array,
         aux_ub_array, num_out_neurons_current_layer, use_area_heuristic);
-    uexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(
+    uexpr_replace_relu_bounds<<<num_out_neurons_last_layer, 1>>>(
         *uinf_coeff, *usup_coeff, *uinf_cst, *usup_cst, aux_lb_array,
         aux_ub_array, num_out_neurons_current_layer, use_area_heuristic);
   }
@@ -2069,11 +2063,11 @@ void update_state_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   while (k >= 0) {
     if (fp->layers[k]->type == RESIDUAL) {
       if (fp->layers[k]->activation == RELU) {
-        lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(
+        lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, 1>>>(
             linf_coeff, lsup_coeff, linf_cst, lsup_cst, fp->layers[k]->lb_array,
             fp->layers[k]->ub_array, fp->layers[k]->num_out_neurons,
             use_area_heuristic);
-        uexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(
+        uexpr_replace_relu_bounds<<<num_out_neurons_last_layer, 1>>>(
             uinf_coeff, usup_coeff, uinf_cst, usup_cst, fp->layers[k]->lb_array,
             fp->layers[k]->ub_array, fp->layers[k]->num_out_neurons,
             use_area_heuristic);
@@ -3421,7 +3415,7 @@ void update_state_using_predecessor_layer_lower_half(
   float_type *aux_ub_array = fp->layers[k]->ub_array;
 
   if (fp->layers[k]->activation == RELU) {
-    lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(
+    lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, 1>>>(
         *linf_coeff, *lsup_coeff, *linf_cst, *lsup_cst, aux_lb_array,
         aux_ub_array, num_out_neurons_current_layer, use_area_heuristic);
   }
@@ -3566,7 +3560,7 @@ void get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *const fp,
   while (k >= 0) {
     if (fp->layers[k]->type == RESIDUAL) {
       if (fp->layers[k]->activation == RELU) {
-        lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(
+        lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, 1>>>(
             linf_coeff, lsup_coeff, linf_cst, lsup_cst, fp->layers[k]->lb_array,
             fp->layers[k]->ub_array, fp->layers[k]->num_out_neurons,
             use_area_heuristic);
