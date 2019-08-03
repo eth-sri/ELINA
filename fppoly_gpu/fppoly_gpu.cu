@@ -2340,6 +2340,8 @@ void predict_size_of_conv_layer(fppoly_t *fp, size_t &current_size,
 }
 
 size_t predict_size(fppoly_t *fp, const size_t layerno) {
+  size_t backstep_counter = 0;
+
   size_t free_space;
   size_t total_space;
 
@@ -2460,6 +2462,12 @@ size_t predict_size(fppoly_t *fp, const size_t layerno) {
       }
 
       k = common_predecessor;
+
+      backstep_counter++;
+
+      if (backstep_counter >= maximum_backstep) {
+        break;
+      }
     } else {
       predict_size_of_conv_layer(fp, current_size, last_size, offset_x,
                                  offset_y, length_x, length_y, shift_x, shift_y,
@@ -4014,6 +4022,8 @@ void res_add_layer(fppoly_t *const fp, const size_t num_neurons,
 }
 
 size_t predict_size_residual(fppoly_t *fp, const size_t layerno) {
+  size_t backstep_counter = 0;
+
   size_t free_space;
   size_t total_space;
 
@@ -4220,6 +4230,12 @@ size_t predict_size_residual(fppoly_t *fp, const size_t layerno) {
       }
 
       k = common_predecessor;
+
+      backstep_counter++;
+
+      if (backstep_counter >= maximum_backstep) {
+        break;
+      }
     } else {
       predict_size_of_conv_layer(fp, current_size, last_size, offset_x,
                                  offset_y, length_x, length_y, shift_x, shift_y,
