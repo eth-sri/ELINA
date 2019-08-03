@@ -54,69 +54,70 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 }
 
 
+/*
 __device__
 void elina_double_interval_mul(float_type* const a_inf, float_type* const a_sup, const float_type b_inf, const float_type b_sup, const float_type c_inf, const float_type c_sup)
 {
     if(c_inf >= 0)
     {
-        /* interval c is positive */
+        // interval c is positive
         if(b_inf >= 0)
         {
-            /*interval b is positive*/
+            //interval b is positive
             *a_inf = b_inf*c_inf;
             *a_sup = b_sup*c_sup;
         }
         else if(b_sup <= 0)
         {
-            /* interval b is negative */
+            // interval b is negative
             *a_inf = c_sup*b_inf;
             *a_sup = c_inf*b_sup;
         }
         else
         {
-            /* there is 0 in between for b */
+            // there is 0 in between for b
             *a_inf = b_inf*c_sup;
             *a_sup = b_sup*c_sup;
         }
     }
     else if(c_sup <= 0)
     {
-        /* interval c is negative */
+        // interval c is negative
         if(b_inf >= 0)
         {
-            /*interval b is positive*/
+            //interval b is positive
             *a_inf = b_sup*c_inf;
             *a_sup = b_inf*c_sup;
         }
         else if(b_sup <= 0)
         {
-            /* interval b is negative */
+            // interval b is negative
             *a_inf = b_sup*c_sup;
             *a_sup = b_inf*c_inf;
         }
         else
         {
-            /* there is 0 in between for b */
+            // there is 0 in between for b
             *a_inf = b_sup*c_inf;
             *a_sup = b_inf*c_inf;
         }
     }
-    /* there is 0 in between for c */
+    // there is 0 in between for c
     else if(b_inf >= 0)
     {
-        /*interval b is positive*/
+        //interval b is positive
         *a_inf = b_sup*c_inf;
         *a_sup = b_sup*c_sup;
     }
     else if(b_sup <= 0)
     {
-        /* interval b is negative */
+        // interval b is negative
         *a_inf = b_inf*c_sup;
         *a_sup = b_inf*c_inf;
     }
     else
     {
-        /* there is 0 in between for both b and c */
+        // there is 0 in between for both b and c
         float_type tmp_inf1 = b_sup*c_inf;
         float_type tmp_sup1 = b_inf*c_inf;
         float_type tmp_inf2 = b_inf*c_sup;
@@ -125,6 +126,7 @@ void elina_double_interval_mul(float_type* const a_inf, float_type* const a_sup,
         *a_sup = max(tmp_sup1, tmp_sup2);
     }
 }
+*/
 
 
 __device__
