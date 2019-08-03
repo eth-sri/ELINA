@@ -24,6 +24,8 @@
 #include <cuda.h>
 #include <iostream>
 
+const size_t maximum_backstep = 2;
+
 const size_t num_threads = 128;
 
 bool results[90];
@@ -2721,6 +2723,8 @@ void update_state_using_previous_layers_conv_chunk(
     elina_manager_t *man, fppoly_t *fp, const size_t layerno,
     const size_t num_chunks, const size_t chunk_counter,
     const bool use_area_heuristic) {
+  size_t backstep_counter = 0;
+
   auto start = std::chrono::system_clock::now();
 
   fppoly_internal_t *pr =
@@ -3124,6 +3128,52 @@ void update_state_using_previous_layers_conv_chunk(
       copy_usup_cst_tmp = nullptr;
 
       k = common_predecessor;
+
+      backstep_counter++;
+
+      if (backstep_counter >= maximum_backstep) {
+        if (fp->layers[k]->activation == RELU) {
+          lexpr_replace_relu_bounds_conv_sparse<<<
+              dim3(fp->layers[layerno]->output_size[0],
+                   fp->layers[layerno]->output_size[1],
+                   fp->layers[layerno]->output_size[2] / num_chunks),
+              1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst,
+                   fp->layers[k]->lb_array, fp->layers[k]->ub_array,
+                   fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+                   fp->layers[k]->output_size[2], offset_x, offset_y, length_x,
+                   length_y, shift_x, shift_y, use_area_heuristic);
+          uexpr_replace_relu_bounds_conv_sparse<<<
+              dim3(fp->layers[layerno]->output_size[0],
+                   fp->layers[layerno]->output_size[1],
+                   fp->layers[layerno]->output_size[2] / num_chunks),
+              1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst,
+                   fp->layers[k]->lb_array, fp->layers[k]->ub_array,
+                   fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+                   fp->layers[k]->output_size[2], offset_x, offset_y, length_x,
+                   length_y, shift_x, shift_y, use_area_heuristic);
+        }
+
+        compute_lb_from_expr_conv_sparse<<<
+            dim3(fp->layers[layerno]->output_size[0],
+                 fp->layers[layerno]->output_size[1],
+                 fp->layers[layerno]->output_size[2] / num_chunks),
+            1>>>(lb_array, linf_coeff, lsup_coeff, linf_cst,
+                 fp->layers[k]->lb_array, fp->layers[k]->ub_array, num_chunks,
+                 chunk_counter, fp->layers[k]->output_size[0],
+                 fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
+                 offset_x, offset_y, length_x, length_y, shift_x, shift_y);
+        compute_ub_from_expr_conv_sparse<<<
+            dim3(fp->layers[layerno]->output_size[0],
+                 fp->layers[layerno]->output_size[1],
+                 fp->layers[layerno]->output_size[2] / num_chunks),
+            1>>>(ub_array, uinf_coeff, usup_coeff, usup_cst,
+                 fp->layers[k]->lb_array, fp->layers[k]->ub_array, num_chunks,
+                 chunk_counter, fp->layers[k]->output_size[0],
+                 fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
+                 offset_x, offset_y, length_x, length_y, shift_x, shift_y);
+
+        break;
+      }
     } else {
       update_state_using_predecessor_layer_conv_chunk(
           pr, fp, &linf_coeff, &lsup_coeff, &linf_cst, &lsup_cst, &uinf_coeff,
@@ -3137,24 +3187,26 @@ void update_state_using_previous_layers_conv_chunk(
     }
   }
 
-  compute_lb_from_expr_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0],
-                                          fp->layers[layerno]->output_size[1],
-                                          fp->layers[layerno]->output_size[2] /
-                                              num_chunks),
-                                     1>>>(
-      lb_array, linf_coeff, lsup_coeff, linf_cst, fp->input_inf, fp->input_sup,
-      num_chunks, chunk_counter, fp->layers[0]->input_size[0],
-      fp->layers[0]->input_size[1], fp->layers[0]->input_size[2], offset_x,
-      offset_y, length_x, length_y, shift_x, shift_y);
-  compute_ub_from_expr_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0],
-                                          fp->layers[layerno]->output_size[1],
-                                          fp->layers[layerno]->output_size[2] /
-                                              num_chunks),
-                                     1>>>(
-      ub_array, uinf_coeff, usup_coeff, usup_cst, fp->input_inf, fp->input_sup,
-      num_chunks, chunk_counter, fp->layers[0]->input_size[0],
-      fp->layers[0]->input_size[1], fp->layers[0]->input_size[2], offset_x,
-      offset_y, length_x, length_y, shift_x, shift_y);
+  if (backstep_counter < maximum_backstep) {
+    compute_lb_from_expr_conv_sparse<<<
+        dim3(fp->layers[layerno]->output_size[0],
+             fp->layers[layerno]->output_size[1],
+             fp->layers[layerno]->output_size[2] / num_chunks),
+        1>>>(lb_array, linf_coeff, lsup_coeff, linf_cst, fp->input_inf,
+             fp->input_sup, num_chunks, chunk_counter,
+             fp->layers[0]->input_size[0], fp->layers[0]->input_size[1],
+             fp->layers[0]->input_size[2], offset_x, offset_y, length_x,
+             length_y, shift_x, shift_y);
+    compute_ub_from_expr_conv_sparse<<<
+        dim3(fp->layers[layerno]->output_size[0],
+             fp->layers[layerno]->output_size[1],
+             fp->layers[layerno]->output_size[2] / num_chunks),
+        1>>>(ub_array, uinf_coeff, usup_coeff, usup_cst, fp->input_inf,
+             fp->input_sup, num_chunks, chunk_counter,
+             fp->layers[0]->input_size[0], fp->layers[0]->input_size[1],
+             fp->layers[0]->input_size[2], offset_x, offset_y, length_x,
+             length_y, shift_x, shift_y);
+  }
 
   cudaFree(linf_coeff);
   cudaFree(lsup_coeff);
@@ -4223,6 +4275,8 @@ void update_state_using_previous_layers_residual_chunk(
     const bool use_area_heuristic) {
   auto start = std::chrono::system_clock::now();
 
+  size_t backstep_counter = 0;
+
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
@@ -4833,7 +4887,7 @@ void update_state_using_previous_layers_residual_chunk(
           1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, copy_linf_coeff,
                copy_lsup_coeff, copy_linf_cst, copy_lsup_cst, length_x,
                length_y, copy_length_x, copy_length_y,
-               fp->layers[common_predecessor + 1]->input_size[2],
+               fp->layers[common_predecessor]->output_size[2],
                copy_offset_x - offset_x, copy_offset_y - offset_y);
       add_coeffs_and_csts_sparse<<<
           dim3(fp->layers[layerno]->output_size[0],
@@ -4842,7 +4896,7 @@ void update_state_using_previous_layers_residual_chunk(
           1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, copy_uinf_coeff,
                copy_usup_coeff, copy_uinf_cst, copy_usup_cst, length_x,
                length_y, copy_length_x, copy_length_y,
-               fp->layers[common_predecessor + 1]->input_size[2],
+               fp->layers[common_predecessor]->output_size[2],
                copy_offset_x - offset_x, copy_offset_y - offset_y);
 
       cudaFree(copy_linf_coeff);
@@ -4878,6 +4932,52 @@ void update_state_using_previous_layers_residual_chunk(
       copy_usup_cst_tmp = nullptr;
 
       k = common_predecessor;
+
+      backstep_counter++;
+
+      if (backstep_counter >= maximum_backstep) {
+        if (fp->layers[k]->activation == RELU) {
+          lexpr_replace_relu_bounds_conv_sparse<<<
+              dim3(fp->layers[layerno]->output_size[0],
+                   fp->layers[layerno]->output_size[1],
+                   fp->layers[layerno]->output_size[2] / num_chunks),
+              1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst,
+                   fp->layers[k]->lb_array, fp->layers[k]->ub_array,
+                   fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+                   fp->layers[k]->output_size[2], offset_x, offset_y, length_x,
+                   length_y, shift_x, shift_y, use_area_heuristic);
+          uexpr_replace_relu_bounds_conv_sparse<<<
+              dim3(fp->layers[layerno]->output_size[0],
+                   fp->layers[layerno]->output_size[1],
+                   fp->layers[layerno]->output_size[2] / num_chunks),
+              1>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst,
+                   fp->layers[k]->lb_array, fp->layers[k]->ub_array,
+                   fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
+                   fp->layers[k]->output_size[2], offset_x, offset_y, length_x,
+                   length_y, shift_x, shift_y, use_area_heuristic);
+        }
+
+        compute_lb_from_expr_conv_sparse<<<
+            dim3(fp->layers[layerno]->output_size[0],
+                 fp->layers[layerno]->output_size[1],
+                 fp->layers[layerno]->output_size[2] / num_chunks),
+            1>>>(lb_array, linf_coeff, lsup_coeff, linf_cst,
+                 fp->layers[k]->lb_array, fp->layers[k]->ub_array, num_chunks,
+                 chunk_counter, fp->layers[k]->output_size[0],
+                 fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
+                 offset_x, offset_y, length_x, length_y, shift_x, shift_y);
+        compute_ub_from_expr_conv_sparse<<<
+            dim3(fp->layers[layerno]->output_size[0],
+                 fp->layers[layerno]->output_size[1],
+                 fp->layers[layerno]->output_size[2] / num_chunks),
+            1>>>(ub_array, uinf_coeff, usup_coeff, usup_cst,
+                 fp->layers[k]->lb_array, fp->layers[k]->ub_array, num_chunks,
+                 chunk_counter, fp->layers[k]->output_size[0],
+                 fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
+                 offset_x, offset_y, length_x, length_y, shift_x, shift_y);
+
+        break;
+      }
     } else {
       update_state_using_predecessor_layer_conv_chunk(
           pr, fp, &linf_coeff, &lsup_coeff, &linf_cst, &lsup_cst, &uinf_coeff,
@@ -4891,24 +4991,26 @@ void update_state_using_previous_layers_residual_chunk(
     }
   }
 
-  compute_lb_from_expr_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0],
-                                          fp->layers[layerno]->output_size[1],
-                                          fp->layers[layerno]->output_size[2] /
-                                              num_chunks),
-                                     1>>>(
-      lb_array, linf_coeff, lsup_coeff, linf_cst, fp->input_inf, fp->input_sup,
-      num_chunks, chunk_counter, fp->layers[0]->input_size[0],
-      fp->layers[0]->input_size[1], fp->layers[0]->input_size[2], offset_x,
-      offset_y, length_x, length_y, shift_x, shift_y);
-  compute_ub_from_expr_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0],
-                                          fp->layers[layerno]->output_size[1],
-                                          fp->layers[layerno]->output_size[2] /
-                                              num_chunks),
-                                     1>>>(
-      ub_array, uinf_coeff, usup_coeff, usup_cst, fp->input_inf, fp->input_sup,
-      num_chunks, chunk_counter, fp->layers[0]->input_size[0],
-      fp->layers[0]->input_size[1], fp->layers[0]->input_size[2], offset_x,
-      offset_y, length_x, length_y, shift_x, shift_y);
+  if (backstep_counter < maximum_backstep) {
+    compute_lb_from_expr_conv_sparse<<<
+        dim3(fp->layers[layerno]->output_size[0],
+             fp->layers[layerno]->output_size[1],
+             fp->layers[layerno]->output_size[2] / num_chunks),
+        1>>>(lb_array, linf_coeff, lsup_coeff, linf_cst, fp->input_inf,
+             fp->input_sup, num_chunks, chunk_counter,
+             fp->layers[0]->input_size[0], fp->layers[0]->input_size[1],
+             fp->layers[0]->input_size[2], offset_x, offset_y, length_x,
+             length_y, shift_x, shift_y);
+    compute_ub_from_expr_conv_sparse<<<
+        dim3(fp->layers[layerno]->output_size[0],
+             fp->layers[layerno]->output_size[1],
+             fp->layers[layerno]->output_size[2] / num_chunks),
+        1>>>(ub_array, uinf_coeff, usup_coeff, usup_cst, fp->input_inf,
+             fp->input_sup, num_chunks, chunk_counter,
+             fp->layers[0]->input_size[0], fp->layers[0]->input_size[1],
+             fp->layers[0]->input_size[2], offset_x, offset_y, length_x,
+             length_y, shift_x, shift_y);
+  }
 
   cudaFree(linf_coeff);
   cudaFree(lsup_coeff);
