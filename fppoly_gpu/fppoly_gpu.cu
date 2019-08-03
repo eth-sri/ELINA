@@ -1404,11 +1404,12 @@ __global__ void coeffs_from_previous_layer_conv_sparse(
     const float_type *__restrict__ aux_coeffs, const size_t output_size_x,
     const size_t output_size_y, const size_t output_size_z,
     const size_t input_size_x, const size_t input_size_y,
-    const size_t input_size_z, long int offset_x, long int offset_y,
-    long int length_x, long int length_y, long int shift_x, long int shift_y,
-    const size_t filter_size_x, const size_t filter_size_y,
-    const size_t stride_x, const size_t stride_y, const size_t pad_x,
-    const size_t pad_y) {
+    const size_t input_size_z, const long int offset_x, const long int offset_y,
+    const long int length_x, const long int length_y, const long int shift_x,
+    const long int shift_y, const long int new_length_x,
+    const long int new_length_y, const size_t filter_size_x,
+    const size_t filter_size_y, const size_t stride_x, const size_t stride_y,
+    const size_t pad_x, const size_t pad_y) {
   const size_t last_x = blockIdx.x;
   const size_t last_y = blockIdx.y;
   const size_t last_z = blockIdx.z;
@@ -1445,13 +1446,10 @@ __global__ void coeffs_from_previous_layer_conv_sparse(
         if (!((x_val < 0) || (x_val >= (long int)input_size_x))) {
           if (!((y_val < 0) || (y_val >= (long int)input_size_y))) {
             const size_t mat_in =
-                (out_x * stride_x + x_shift) *
-                    ((length_y - 1) * stride_y + filter_size_y) * input_size_z +
+                (out_x * stride_x + x_shift) * new_length_y * input_size_z +
                 (out_y * stride_y + y_shift) * input_size_z + inp_z;
-            const size_t b = n * ((length_x - 1) * stride_x + filter_size_x) *
-                                 ((length_y - 1) * stride_y + filter_size_y) *
-                                 input_size_z +
-                             mat_in;
+            const size_t b =
+                n * new_length_x * new_length_y * input_size_z + mat_in;
 
             float_type inf_coeff = res_inf_coeff[b];
             float_type sup_coeff = res_sup_coeff[b];
@@ -1502,11 +1500,12 @@ __global__ void coeffs_from_previous_layer_conv_sparse_filter_serial(
     const float_type *__restrict__ aux_coeffs, const size_t output_size_x,
     const size_t output_size_y, const size_t output_size_z,
     const size_t input_size_x, const size_t input_size_y,
-    const size_t input_size_z, long int offset_x, long int offset_y,
-    long int length_x, long int length_y, long int shift_x, long int shift_y,
-    const size_t filter_size_x, const size_t filter_size_y,
-    const size_t stride_x, const size_t stride_y, const size_t pad_x,
-    const size_t pad_y) {
+    const size_t input_size_z, const long int offset_x, const long int offset_y,
+    const long int length_x, const long int length_y, const long int shift_x,
+    const long int shift_y, const long int new_length_x,
+    const long int new_length_y, const size_t filter_size_x,
+    const size_t filter_size_y, const size_t stride_x, const size_t stride_y,
+    const size_t pad_x, const size_t pad_y) {
   const size_t last_x = blockIdx.x;
   const size_t last_y = blockIdx.y;
   const size_t last_z = blockIdx.z;
@@ -1542,15 +1541,10 @@ __global__ void coeffs_from_previous_layer_conv_sparse_filter_serial(
             if (!((x_val < 0) || (x_val >= (long int)input_size_x))) {
               if (!((y_val < 0) || (y_val >= (long int)input_size_y))) {
                 const size_t mat_in =
-                    (out_x * stride_x + x_shift) *
-                        ((length_y - 1) * stride_y + filter_size_y) *
-                        input_size_z +
+                    (out_x * stride_x + x_shift) * new_length_y * input_size_z +
                     (out_y * stride_y + y_shift) * input_size_z + inp_z;
                 const size_t b =
-                    n * ((length_x - 1) * stride_x + filter_size_x) *
-                        ((length_y - 1) * stride_y + filter_size_y) *
-                        input_size_z +
-                    mat_in;
+                    n * new_length_x * new_length_y * input_size_z + mat_in;
 
                 float_type inf_coeff = res_inf_coeff[b];
                 float_type sup_coeff = res_sup_coeff[b];
@@ -2581,6 +2575,19 @@ void update_state_using_predecessor_layer_conv_chunk(
              x_y_size_last_layer * num_filters_last_layer * missing_length *
                  sizeof(float_type));
 
+  const long int new_offset_x =
+      fp->layers[k]->strides[0] * offset_x - fp->layers[k]->pad[0];
+  const long int new_offset_y =
+      fp->layers[k]->strides[1] * offset_y - fp->layers[k]->pad[1];
+
+  const long int new_length_x = (length_x - 1) * fp->layers[k]->strides[0] +
+                                fp->layers[k]->filter_size[0];
+  const long int new_length_y = (length_y - 1) * fp->layers[k]->strides[1] +
+                                fp->layers[k]->filter_size[1];
+
+  const long int new_shift_x = fp->layers[k]->strides[0] * shift_x;
+  const long int new_shift_y = fp->layers[k]->strides[1] * shift_y;
+
   if (fp->layers[k]->input_size[0] * fp->layers[k]->input_size[1] *
           fp->layers[k]->input_size[2] >=
       256) {
@@ -2594,10 +2601,10 @@ void update_state_using_predecessor_layer_conv_chunk(
                  fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
                  fp->layers[k]->input_size[0], fp->layers[k]->input_size[1],
                  fp->layers[k]->input_size[2], offset_x, offset_y, length_x,
-                 length_y, shift_x, shift_y, fp->layers[k]->filter_size[0],
-                 fp->layers[k]->filter_size[1], fp->layers[k]->strides[0],
-                 fp->layers[k]->strides[1], fp->layers[k]->pad[0],
-                 fp->layers[k]->pad[1]);
+                 length_y, shift_x, shift_y, new_length_x, new_length_y,
+                 fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
+                 fp->layers[k]->strides[0], fp->layers[k]->strides[1],
+                 fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
       coeffs_from_previous_layer_conv_sparse_filter_serial<<<
           dim3(fp->layers[layerno]->output_size[0],
                fp->layers[layerno]->output_size[1],
@@ -2607,10 +2614,10 @@ void update_state_using_predecessor_layer_conv_chunk(
                  fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
                  fp->layers[k]->input_size[0], fp->layers[k]->input_size[1],
                  fp->layers[k]->input_size[2], offset_x, offset_y, length_x,
-                 length_y, shift_x, shift_y, fp->layers[k]->filter_size[0],
-                 fp->layers[k]->filter_size[1], fp->layers[k]->strides[0],
-                 fp->layers[k]->strides[1], fp->layers[k]->pad[0],
-                 fp->layers[k]->pad[1]);
+                 length_y, shift_x, shift_y, new_length_x, new_length_y,
+                 fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
+                 fp->layers[k]->strides[0], fp->layers[k]->strides[1],
+                 fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
     } else {
       coeffs_from_previous_layer_conv_sparse_filter_serial<<<
           dim3(fp->layers[layerno]->output_size[0],
@@ -2622,10 +2629,10 @@ void update_state_using_predecessor_layer_conv_chunk(
           fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
           fp->layers[k]->input_size[0], fp->layers[k]->input_size[1],
           fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y,
-          shift_x, shift_y, fp->layers[k]->filter_size[0],
-          fp->layers[k]->filter_size[1], fp->layers[k]->strides[0],
-          fp->layers[k]->strides[1], fp->layers[k]->pad[0],
-          fp->layers[k]->pad[1]);
+          shift_x, shift_y, new_length_x, new_length_y,
+          fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
+          fp->layers[k]->strides[0], fp->layers[k]->strides[1],
+          fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
       coeffs_from_previous_layer_conv_sparse_filter_serial<<<
           dim3(fp->layers[layerno]->output_size[0],
                fp->layers[layerno]->output_size[1],
@@ -2636,10 +2643,10 @@ void update_state_using_predecessor_layer_conv_chunk(
           fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
           fp->layers[k]->input_size[0], fp->layers[k]->input_size[1],
           fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y,
-          shift_x, shift_y, fp->layers[k]->filter_size[0],
-          fp->layers[k]->filter_size[1], fp->layers[k]->strides[0],
-          fp->layers[k]->strides[1], fp->layers[k]->pad[0],
-          fp->layers[k]->pad[1]);
+          shift_x, shift_y, new_length_x, new_length_y,
+          fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
+          fp->layers[k]->strides[0], fp->layers[k]->strides[1],
+          fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
     }
   } else {
     coeffs_from_previous_layer_conv_sparse<<<
@@ -2652,10 +2659,11 @@ void update_state_using_predecessor_layer_conv_chunk(
         fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
         fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
         fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x,
-        offset_y, length_x, length_y, shift_x, shift_y,
-        fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
-        fp->layers[k]->strides[0], fp->layers[k]->strides[1],
-        fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+        offset_y, length_x, length_y, shift_x, shift_y, new_length_x,
+        new_length_y, fp->layers[k]->filter_size[0],
+        fp->layers[k]->filter_size[1], fp->layers[k]->strides[0],
+        fp->layers[k]->strides[1], fp->layers[k]->pad[0],
+        fp->layers[k]->pad[1]);
     coeffs_from_previous_layer_conv_sparse<<<
         dim3(fp->layers[layerno]->output_size[0],
              fp->layers[layerno]->output_size[1],
@@ -2666,10 +2674,11 @@ void update_state_using_predecessor_layer_conv_chunk(
         fp->layers[k]->output_size[0], fp->layers[k]->output_size[1],
         fp->layers[k]->output_size[2], fp->layers[k]->input_size[0],
         fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x,
-        offset_y, length_x, length_y, shift_x, shift_y,
-        fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1],
-        fp->layers[k]->strides[0], fp->layers[k]->strides[1],
-        fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+        offset_y, length_x, length_y, shift_x, shift_y, new_length_x,
+        new_length_y, fp->layers[k]->filter_size[0],
+        fp->layers[k]->filter_size[1], fp->layers[k]->strides[0],
+        fp->layers[k]->strides[1], fp->layers[k]->pad[0],
+        fp->layers[k]->pad[1]);
   }
 
   csts_from_previous_layer_conv_sparse<<<
@@ -2689,16 +2698,14 @@ void update_state_using_predecessor_layer_conv_chunk(
            fp->layers[k]->output_size[1], fp->layers[k]->output_size[2],
            offset_x, offset_y, length_x, length_y, shift_x, shift_y);
 
-  offset_x = fp->layers[k]->strides[0] * offset_x - fp->layers[k]->pad[0];
-  offset_y = fp->layers[k]->strides[1] * offset_y - fp->layers[k]->pad[1];
+  offset_x = new_offset_x;
+  offset_y = new_offset_y;
 
-  length_x = (length_x - 1) * fp->layers[k]->strides[0] +
-             fp->layers[k]->filter_size[0];
-  length_y = (length_y - 1) * fp->layers[k]->strides[1] +
-             fp->layers[k]->filter_size[1];
+  length_x = new_length_x;
+  length_y = new_length_y;
 
-  shift_x = fp->layers[k]->strides[0] * shift_x;
-  shift_y = fp->layers[k]->strides[1] * shift_y;
+  shift_x = new_shift_x;
+  shift_y = new_shift_y;
 
   std::swap(*linf_coeff, *linf_coeff_tmp);
   std::swap(*lsup_coeff, *lsup_coeff_tmp);
