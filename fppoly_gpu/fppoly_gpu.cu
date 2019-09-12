@@ -509,24 +509,20 @@ void compute_lb_from_expr_conv_sparse(float_type* __restrict__ lb_array, const f
     const long int min_out_x = offset_x + last_x*shift_x;
     const long int min_out_y = offset_y + last_y*shift_y;
 
+    const long int min_x = (min_out_x < 0) ? -min_out_x : 0;
+    const long int min_y = (min_out_y < 0) ? -min_out_y : 0;
+
+    const long int max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
+    const long int max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
+
     float_type res_inf = inf_cst[local_n];
 
     float_type tmp1, tmp2;
 
-    for(long int out_x = 0; out_x < length_x; out_x++)
+    for(long int out_x = min_x; out_x < max_x; out_x++)
     {
-        if((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x))
+        for(long int out_y = min_y; out_y < max_y; out_y++)
         {
-            continue;
-        }
-
-        for(long int out_y = 0; out_y < length_y; out_y++)
-        {
-            if((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y))
-            {
-                continue;
-            }
-
             for(size_t out_z = 0; out_z < output_size_z; out_z++)
             {
                 size_t i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
@@ -554,27 +550,24 @@ void compute_ub_from_expr_conv_sparse(float_type* __restrict__ ub_array, const f
 
     const size_t local_n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
     const size_t global_n = last_x*gridDim.y*num_chunks*gridDim.z + last_y*num_chunks*gridDim.z + chunk_counter*gridDim.z + last_z;
+
     const long int min_out_x = offset_x + last_x*shift_x;
     const long int min_out_y = offset_y + last_y*shift_y;
+
+    const long int min_x = (min_out_x < 0) ? -min_out_x : 0;
+    const long int min_y = (min_out_y < 0) ? -min_out_y : 0;
+
+    const long int max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
+    const long int max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
 
     float_type res_sup = sup_cst[local_n];
 
     float_type tmp1, tmp2;
 
-    for(long int out_x = 0; out_x < length_x; out_x++)
+    for(long int out_x = min_x; out_x < max_x; out_x++)
     {
-        if((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x))
+        for(long int out_y = min_y; out_y < max_y; out_y++)
         {
-            continue;
-        }
-
-        for(long int out_y = 0; out_y < length_y; out_y++)
-        {
-            if((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y))
-            {
-                continue;
-            }
-
             for(size_t out_z = 0; out_z < output_size_z; out_z++)
             {
                 size_t i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
@@ -1010,20 +1003,16 @@ void lexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
     const long int min_out_x = offset_x + last_x*shift_x;
     const long int min_out_y = offset_y + last_y*shift_y;
 
-    for(long int out_x = 0; out_x < length_x; out_x++)
+    const long int min_x = (min_out_x < 0) ? -min_out_x : 0;
+    const long int min_y = (min_out_y < 0) ? -min_out_y : 0;
+
+    const long int max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
+    const long int max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
+
+    for(long int out_x = min_x; out_x < max_x; out_x++)
     {
-        if((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x))
+        for(long int out_y = min_y; out_y < max_y; out_y++)
         {
-            continue;
-        }
-
-        for(long int out_y = 0; out_y < length_y; out_y++)
-        {
-            if((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y))
-            {
-                continue;
-            }
-
             for(size_t out_z = 0; out_z < output_size_z; out_z++)
             {
                 size_t i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
@@ -1123,20 +1112,16 @@ void uexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
     const long int min_out_x = offset_x + last_x*shift_x;
     const long int min_out_y = offset_y + last_y*shift_y;
 
-    for(long int out_x = 0; out_x < length_x; out_x++)
+    const long int min_x = (min_out_x < 0) ? -min_out_x : 0;
+    const long int min_y = (min_out_y < 0) ? -min_out_y : 0;
+
+    const long int max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
+    const long int max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
+
+    for(long int out_x = min_x; out_x < max_x; out_x++)
     {
-        if((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x))
+        for(long int out_y = min_y; out_y < max_y; out_y++)
         {
-            continue;
-        }
-
-        for(long int out_y = 0; out_y < length_y; out_y++)
-        {
-            if((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y))
-            {
-                continue;
-            }
-
             for(size_t out_z = 0; out_z < output_size_z; out_z++)
             {
                 size_t i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
@@ -1414,34 +1399,46 @@ void coeffs_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_
     const size_t last_y = blockIdx.y;
     const size_t last_z = blockIdx.z;
 
-    const size_t n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
-
-    const long int min_out_x = offset_x + last_x*shift_x;
-    const long int min_out_y = offset_y + last_y*shift_y;
-
     const size_t inp_z = threadIdx.x;
     const size_t y_shift = threadIdx.y;
     const size_t x_shift = threadIdx.z;
+
+    __shared__ size_t n;
+
+    __shared__ long int min_out_x;
+    __shared__ long int min_out_y;
+
+    __shared__ long int min_x;
+    __shared__ long int min_y;
+
+    __shared__ long int max_x;
+    __shared__ long int max_y;
+
+    if(x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z == 0)
+    {
+        n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
+
+        min_out_x = offset_x + last_x*shift_x;
+        min_out_y = offset_y + last_y*shift_y;
+
+        min_x = (min_out_x < 0) ? -min_out_x : 0;
+        min_y = (min_out_y < 0) ? -min_out_y : 0;
+
+        max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
+        max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
+    }
+
+    __syncthreads();
 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
     if(x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z < filter_size_x*filter_size_y*input_size_z)
     {
-        for(long int out_x = 0; out_x < length_x; out_x++)
+        for(long int out_x = min_x; out_x < max_x; out_x++)
         {
-            if((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x))
+            for(long int out_y = min_y; out_y < max_y; out_y++)
             {
-                continue;
-            }
-
-            for(long int out_y = 0; out_y < length_y; out_y++)
-            {
-                if((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y))
-                {
-                    continue;
-                }
-
                 const long int x_val = out_x*stride_x + min_out_x*stride_x + x_shift - pad_x;
                 const long int y_val = out_y*stride_y + min_out_y*stride_y + y_shift - pad_y;
 
@@ -1497,32 +1494,44 @@ void coeffs_from_previous_layer_conv_sparse_filter_serial(const float_type* __re
     const size_t last_y = blockIdx.y;
     const size_t last_z = blockIdx.z;
 
-    const size_t n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
-
-    const long int min_out_x = offset_x + last_x*shift_x;
-    const long int min_out_y = offset_y + last_y*shift_y;
-
     size_t inp_z = threadIdx.x;
+
+    __shared__ size_t n;
+
+    __shared__ long int min_out_x;
+    __shared__ long int min_out_y;
+
+    __shared__ long int min_x;
+    __shared__ long int min_y;
+
+    __shared__ long int max_x;
+    __shared__ long int max_y;
+
+    if(inp_z == 0)
+    {
+        n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
+
+        min_out_x = offset_x + last_x*shift_x;
+        min_out_y = offset_y + last_y*shift_y;
+
+        min_x = (min_out_x < 0) ? -min_out_x : 0;
+        min_y = (min_out_y < 0) ? -min_out_y : 0;
+
+        max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
+        max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
+    }
+
+    __syncthreads();
 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
     while(inp_z < input_size_z)
     {
-        for(long int out_x = 0; out_x < length_x; out_x++)
+        for(long int out_x = min_x; out_x < max_x; out_x++)
         {
-            if((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x))
+            for(long int out_y = min_y; out_y < max_y; out_y++)
             {
-                continue;
-            }
-
-            for(long int out_y = 0; out_y < length_y; out_y++)
-            {
-                if((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y))
-                {
-                    continue;
-                }
-
                 for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
                 {
                     for(size_t y_shift = 0; y_shift < filter_size_y; y_shift++)
@@ -1662,26 +1671,22 @@ void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_in
     const long int min_out_x = offset_x + last_x*shift_x;
     const long int min_out_y = offset_y + last_y*shift_y;
 
+    const long int min_x = (min_out_x < 0) ? -min_out_x : 0;
+    const long int min_y = (min_out_y < 0) ? -min_out_y : 0;
+
+    const long int max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
+    const long int max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
+
     float_type inf_cst = expr_inf_cst[n];
     float_type sup_cst = expr_sup_cst[n];
 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
-    for(long int out_x = 0; out_x < length_x; out_x++)
+    for(long int out_x = min_x; out_x < max_x; out_x++)
     {
-        if((out_x + min_out_x < 0) || (out_x + min_out_x >= output_size_x))
+        for(long int out_y = min_y; out_y < max_y; out_y++)
         {
-            continue;
-        }
-
-        for(long int out_y = 0; out_y < length_y; out_y++)
-        {
-            if((out_y + min_out_y < 0) || (out_y + min_out_y >= output_size_y))
-            {
-                continue;
-            }
-
             for(size_t out_z = 0; out_z < output_size_z; out_z++)
             {
                 size_t mat_out = n*length_x*length_y*output_size_z + out_x*length_y*output_size_z + out_y*output_size_z + out_z;
