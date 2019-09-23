@@ -91,6 +91,42 @@ def zonotope_from_network_input(man, intdim, realdim, inf_array, sup_array):
     return res
 
 
+def elina_abstract0_from_zonotope(man, intdim, realdim, num_error_terms, zonotope):
+    """
+    Create the perturbed zonotope from input
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    intdim : c_size_t
+        Number of integer variables.
+    realdim: c_size_t
+        Number of real variables
+    inf_array: POINTER(double)
+        lower bound array
+    sup_array: POINTER(double)
+        upper bound array
+    
+    Returns
+    -------
+    res: ElinaAbstract0Ptr
+         Pointer to the new abstract object
+
+    """
+
+    try:
+        elina_abstract0_from_zonotope_c = zonoml_api.elina_abstract0_from_zonotope
+        elina_abstract0_from_zonotope_c.restype = ElinaAbstract0Ptr
+        elina_abstract0_from_zonotope_c.argtypes = [ElinaManagerPtr, c_size_t, c_size_t, c_size_t, _doublepp]
+        res = elina_abstract0_from_zonotope_c(man,intdim, realdim, num_error_terms, zonotope)
+    except Exception as inst:
+        print('Problem with loading/calling "elina_abstract0_from_zonotope" from "libzonoml.so"')
+        print(inst)
+    return res
+
+
+
 def ffn_matmult_zono(man, destructive, element, start_offset, weights, bias, num_var, expr_offset, expr_size):
     """
     FFN Matrix multiplication
