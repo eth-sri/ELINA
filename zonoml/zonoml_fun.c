@@ -394,7 +394,7 @@ void * handle_conv_matmult_zono_parallel(void *args){
 
 // assumes that the variables for the convolutional matmult have already been added, two dimensional filter, the first assignment is from start_offset
 elina_abstract0_t* conv_matmult_zono(elina_manager_t* man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset, double *filter_weights, double * filter_bias,  
-				      size_t * input_size, size_t expr_offset, size_t *filter_size, size_t num_filters, size_t *strides, bool is_valid_padding, bool has_bias){
+				      size_t * input_size, size_t expr_offset, size_t *filter_size, size_t num_filters, size_t *strides, size_t *output_size, size_t pad_top, size_t pad_left, bool has_bias){
 	start_timing();
 	zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	
@@ -403,42 +403,8 @@ elina_abstract0_t* conv_matmult_zono(elina_manager_t* man, bool destructive, eli
 	elina_dimension_t dims = zonotope_dimension(man,res);
 	size_t i, j;
 	size_t num_pixels = input_size[0]*input_size[1]*input_size[2];
-	size_t output_size[3];
-        if(is_valid_padding){
-		output_size[0] = ceil((double)(input_size[0] - filter_size[0]+1) / (double)strides[0]);
-		output_size[1] = ceil((double)(input_size[1] - filter_size[1]+1) / (double)strides[1]);
-	}
-	else{
-		output_size[0] = ceil((double)input_size[0] / (double)strides[0]);
-		output_size[1] = ceil((double)input_size[1] / (double)strides[1]);
-	}
 	
-	output_size[2] = num_filters;
 	size_t num_out_neurons = output_size[0]*output_size[1]*output_size[2];
-	long int pad_along_height=0, pad_along_width=0;
-	long int pad_top=0,  pad_left=0,  tmp=0;
-	if(!is_valid_padding){
-		if (input_size[0] % strides[0] == 0){
-			long int tmp = filter_size[0] - strides[0];
-	  		pad_along_height = max(tmp, 0);
-		}
-		else{
-			tmp = filter_size[0] - (input_size[0] % strides[0]);
-	  		pad_along_height = max(tmp, 0);
-		}
-		if (input_size[1] % strides[1] == 0){
-			tmp = filter_size[1] - strides[1];
-	  		pad_along_width = max(tmp, 0);
-		}
-		else{
-			tmp = filter_size[1] - (input_size[1] % strides[1]);
-	  		pad_along_width = max(tmp, 0);
-		}
-		pad_top = pad_along_height / 2;
-		
-		pad_left = pad_along_width / 2;
-		
-	}
 	
 
 	conv_matmult_zono_parallel(pr, res, start_offset, filter_weights, filter_bias, num_out_neurons,
