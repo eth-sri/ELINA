@@ -248,7 +248,7 @@ def ffn_add_bias_zono(man, destructive, element, start_offset,  bias, num_var):
     return res   
 
 
-def conv_matmult_zono(man, destructive, element, start_offset, filter_weights, filter_bias, input_size, expr_offset, filter_size, num_filters, strides, is_valid_padding, has_bias):
+def conv_matmult_zono(man, destructive, element, start_offset, filter_weights, filter_bias, input_size, expr_offset, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias):
     """
     Convolutional Matrix multiplication
     
@@ -289,8 +289,8 @@ def conv_matmult_zono(man, destructive, element, start_offset, filter_weights, f
     try:
         conv_matmult_zono_c = zonoml_api.conv_matmult_zono
         conv_matmult_zono_c.restype = ElinaAbstract0Ptr
-        conv_matmult_zono_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, ElinaDim, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_bool, c_bool]
-        res = conv_matmult_zono_c(man, destructive, element, start_offset, filter_weights, filter_bias, input_size, expr_offset, filter_size, num_filters, strides, is_valid_padding, has_bias)
+        conv_matmult_zono_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, ElinaDim, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool]
+        res = conv_matmult_zono_c(man, destructive, element, start_offset, filter_weights, filter_bias, input_size, expr_offset, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias)
     except Exception as inst:
         print('Problem with loading/calling "conv_matmult_zono" from "libzonoml.so"')
         print(inst)

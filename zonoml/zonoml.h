@@ -54,11 +54,8 @@ elina_abstract0_t *maxpool_zono_refined(elina_manager_t* man, bool destructive, 
 elina_abstract0_t* ffn_matmult_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
 			       double **weights, double * bias,  size_t num_var, size_t expr_offset, size_t expr_size);
 
-elina_abstract0_t *conv_matmult_zono(
-    elina_manager_t *man, bool destructive, elina_abstract0_t *element,
-    elina_dim_t start_offset, double *filter_weights, double *filter_bias,
-    size_t *input_size, size_t expr_offset, size_t *filter_size,
-    size_t num_filters, size_t *strides, bool is_valid_padding, bool has_bias);
+elina_abstract0_t* conv_matmult_zono(elina_manager_t* man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset, double *filter_weights, double * filter_bias,  
+				      size_t * input_size, size_t expr_offset, size_t *filter_size, size_t num_filters, size_t *strides, size_t* output_size, size_t pad_top, size_t pad_left, bool has_bias);
 
 bool is_greater(elina_manager_t *man, elina_abstract0_t *elem, elina_dim_t y, elina_dim_t x);
 
@@ -72,6 +69,8 @@ elina_abstract0_t *relu_zono_layerwise(elina_manager_t *man, bool destructive,
 elina_abstract0_t * sigmoid_zono_layerwise(elina_manager_t* man, bool destructive, elina_abstract0_t * abs,  elina_dim_t start_offset, elina_dim_t num_dim);
 
 elina_abstract0_t * tanh_zono_layerwise(elina_manager_t* man, bool destructive, elina_abstract0_t * abs,  elina_dim_t start_offset, elina_dim_t num_dim);
+
+elina_abstract0_t * elina_abstract0_from_zonotope(elina_manager_t *man, size_t intdim, size_t realdim, size_t num_error_terms, double **coeffs);
 
 void zono_add(elina_manager_t *man, elina_abstract0_t *elem, size_t dst_offset, size_t src_offset, size_t num_var);
 
