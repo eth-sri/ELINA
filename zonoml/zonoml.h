@@ -49,6 +49,8 @@ elina_abstract0_t* maxpool_zono(elina_manager_t *man, bool destructive, elina_ab
 
 elina_abstract0_t *maxpool_zono_refined(elina_manager_t* man, bool destructive, elina_abstract0_t * abs,  elina_dim_t x, double new_inf, double new_sup);
 
+elina_abstract0_t *handle_gather_layer(elina_manager_t* man, bool destructive, elina_abstract0_t * abs, size_t *indexes);
+
 elina_abstract0_t* ffn_matmult_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
 			       double **weights, double * bias,  size_t num_var, size_t expr_offset, size_t expr_size);
 

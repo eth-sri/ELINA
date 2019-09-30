@@ -417,7 +417,18 @@ elina_abstract0_t* conv_matmult_zono(elina_manager_t* man, bool destructive, eli
     	return abstract0_of_zonotope(man,res);
 }
 
-
+elina_abstract0_t *handle_gather_layer(elina_manager_t* man, bool destructive, elina_abstract0_t * abs, size_t *indexes){
+        elina_dimension_t dimension = elina_abstract0_dimension(man,abs);
+        size_t size = dimension.intdim + dimension.realdim;
+	elina_dimperm_t * dimperm = elina_dimperm_alloc(size);
+	size_t i;
+	for(i=0; i < size; i++){
+		dimperm->dim[i] = (elina_dim_t)indexes[i];
+	}
+	elina_abstract0_t *res = elina_abstract0_permute_dimensions(man,destructive, abs,dimperm);
+	elina_dimperm_free(dimperm);
+	return res;
+}
 
 
 
