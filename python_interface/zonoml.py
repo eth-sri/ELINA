@@ -772,3 +772,35 @@ def get_interval_width_var_zono(man, element, i):
         print(inst)
 
     return width
+
+
+def handle_gather_layer(man, destructive, element, indexes):
+    """
+    get interval width for an affine form
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    destructive: c_bool
+        whether the returned element is the same as input
+    element : ElinaAbstract0Ptr
+        Abstract element.
+    indexes : POINTER(c_size_t)
+        The indexes for the gather
+    Returns
+    -------
+    width = c_double
+
+    """
+    
+    try:
+        handle_gather_layer_c = zonoml_api.handle_gather_layer
+        handle_gather_layer_c.restype = ElinaAbstract0Ptr
+        handle_gather_layer_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, ndpointer(c_size_t)]
+        res = handle_gather_layer_c(man,destructive, element, indexes)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_gather_layer" from "libzonoml.so"')
+        print(inst)
+
+    return res
