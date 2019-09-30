@@ -423,7 +423,8 @@ elina_abstract0_t *handle_gather_layer(elina_manager_t* man, bool destructive, e
 	elina_dimperm_t * dimperm = elina_dimperm_alloc(size);
 	size_t i;
 	for(i=0; i < size; i++){
-		dimperm->dim[i] = (elina_dim_t)indexes[i];
+               
+		dimperm->dim[indexes[i]] = i;
 	}
 	elina_abstract0_t *res = elina_abstract0_permute_dimensions(man,destructive, abs,dimperm);
 	elina_dimperm_free(dimperm);
