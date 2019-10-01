@@ -3535,12 +3535,13 @@ void ffn_handle_last_log_layer_no_alloc(
                         use_area_heuristic);
 }
 
-void get_lb_using_predecessor_layer(fppoly_internal_t *pr, fppoly_t *fp,
-                                    expr_t **lexpr_ptr, size_t k,
-                                    bool use_area_heuristic) {
+double get_lb_using_predecessor_layer(fppoly_internal_t *pr, fppoly_t *fp,
+                                      expr_t **lexpr_ptr, size_t k,
+                                      bool use_area_heuristic) {
   expr_t *tmp_l;
   neuron_t **aux_neurons = fp->layers[k]->neurons;
   expr_t *lexpr = *lexpr_ptr;
+  double res = INFINITY;
   if (fp->layers[k]->type == FFN || fp->layers[k]->type == CONV) {
 
     if (fp->layers[k]->activation == RELU) {
@@ -3572,6 +3573,7 @@ void get_lb_using_predecessor_layer(fppoly_internal_t *pr, fppoly_t *fp,
       free_expr(tmp_l);
     }
     tmp_l = lexpr;
+    res = compute_lb_from_expr(pr, lexpr, fp, k);
     *lexpr_ptr = expr_from_previous_layer(pr, lexpr, fp->layers[k]);
     free_expr(tmp_l);
   } else {
@@ -3579,14 +3581,16 @@ void get_lb_using_predecessor_layer(fppoly_internal_t *pr, fppoly_t *fp,
     *lexpr_ptr = lexpr_replace_maxpool_or_lstm_bounds(pr, lexpr, aux_neurons);
     free_expr(tmp_l);
   }
+  return res;
 }
 
-void get_ub_using_predecessor_layer(fppoly_internal_t *pr, fppoly_t *fp,
-                                    expr_t **uexpr_ptr, size_t k,
-                                    bool use_area_heuristic) {
+double get_ub_using_predecessor_layer(fppoly_internal_t *pr, fppoly_t *fp,
+                                      expr_t **uexpr_ptr, size_t k,
+                                      bool use_area_heuristic) {
   expr_t *tmp_u;
   neuron_t **aux_neurons = fp->layers[k]->neurons;
   expr_t *uexpr = *uexpr_ptr;
+  double res = INFINITY;
   if (fp->layers[k]->type == FFN || fp->layers[k]->type == CONV) {
 
     if (fp->layers[k]->activation == RELU) {
@@ -3615,6 +3619,7 @@ void get_ub_using_predecessor_layer(fppoly_internal_t *pr, fppoly_t *fp,
       free_expr(tmp_u);
     }
     tmp_u = uexpr;
+    res = compute_ub_from_expr(pr, uexpr, fp, k);
     *uexpr_ptr = expr_from_previous_layer(pr, uexpr, fp->layers[k]);
     free_expr(tmp_u);
   } else {
@@ -3622,6 +3627,7 @@ void get_ub_using_predecessor_layer(fppoly_internal_t *pr, fppoly_t *fp,
     *uexpr_ptr = uexpr_replace_maxpool_or_lstm_bounds(pr, uexpr, aux_neurons);
     free_expr(tmp_u);
   }
+  return res;
 }
 
 double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
@@ -3696,9 +3702,9 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
       continue;
     } else {
 
-      get_lb_using_predecessor_layer(pr, fp, &lexpr, k, use_area_heuristic);
+      res = fmin(res, get_lb_using_predecessor_layer(pr, fp, &lexpr, k,
+                                                     use_area_heuristic));
       k = fp->layers[k]->predecessors[0] - 1;
-      // res = fmin(res,compute_lb_from_expr(pr,lexpr,fp,k));
     }
   }
 
@@ -3778,9 +3784,9 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
       continue;
     } else {
 
-      get_ub_using_predecessor_layer(pr, fp, &uexpr, k, use_area_heuristic);
+      res = fmin(res, get_ub_using_predecessor_layer(pr, fp, &uexpr, k,
+                                                     use_area_heuristic));
       k = fp->layers[k]->predecessors[0] - 1;
-      // res = fmin(res,compute_ub_from_expr(pr,uexpr,fp,k));
     }
   }
 
