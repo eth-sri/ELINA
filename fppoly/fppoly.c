@@ -3492,7 +3492,7 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 				
 				 get_ub_using_predecessor_layer(pr,fp, &uexpr, k, use_area_heuristic);
 				 k = fp->layers[k]->predecessors[0]-1;
-				// res = fmin(res,compute_ub_from_expr(pr,uexpr,fp,k));
+				 //res = fmin(res,compute_ub_from_expr(pr,uexpr,fp,k));
 			}
 			
 	}
