@@ -3345,12 +3345,13 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	expr_t * lexpr = copy_expr(expr);
         fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	if(fp->numlayers==layerno){
+		
 		k = layerno-1;
 	}
 	else{
 		k = fp->layers[layerno]->predecessors[0]-1;
 	}	
-	double res = -INFINITY;
+	double res = INFINITY;
 	while(k >=0){
 	
 		if(fp->layers[k]->type==RESIDUAL){
@@ -3407,7 +3408,7 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 								
 				 get_lb_using_predecessor_layer(pr,fp, &lexpr, k, use_area_heuristic);
 				 k = fp->layers[k]->predecessors[0]-1;
-				 res = fmax(res,compute_lb_from_expr(pr,lexpr,fp,k)); 
+				 res = fmin(res,compute_lb_from_expr(pr,lexpr,fp,k));
 			}
 		
 		
@@ -3415,7 +3416,7 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 			
 	}
 		
-	res = fmax(res,compute_lb_from_expr(pr,lexpr,fp,-1)); 
+	res = fmin(res,compute_lb_from_expr(pr,lexpr,fp,-1)); 
         free_expr(lexpr);
 	return res;
 	
