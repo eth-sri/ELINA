@@ -272,9 +272,47 @@ elina_abstract0_t* ffn_matmult_without_bias_zono(elina_manager_t * man, bool des
     return abstract0_of_zonotope(man,res);
 }
 
+typedef enum bias_op{
+	ADD,
+        SUB1,
+	SUB2,
+        MUL,
+}bias_op;
 
-elina_abstract0_t* ffn_add_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
-			        double * bias, size_t num_var){
+void create_linexpr_array_with_bias(elina_linexpr0_t ** expr_array, elina_dim_t * tdim_array, size_t offset, double *bias, size_t num_var, bias_op OP){
+	size_t i;
+	for (i=0; i<num_var; i++) {
+		double cst, coeff;
+		if(OP==MUL){
+			cst = 0;
+			coeff = bias[i];
+		}
+		else{
+			if(OP==SUB1){
+				coeff = 1;
+				cst = -bias[i];
+			}
+			else if(OP==SUB2) {
+				coeff = -1;
+				cst = bias[i];
+			}
+			else{
+				coeff = 1;
+				cst = bias[i];
+			}
+		}
+		expr_array[i] = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,1);
+		elina_coeff_set_scalar_double(&expr_array[i]->cst,cst);
+		elina_linterm_t *lterm = &expr_array[i]->p.linterm[0];
+		lterm->dim = offset;
+		elina_coeff_set_interval_double(&lterm->coeff,coeff,coeff); 
+		tdim_array[i] = offset;
+		offset++;
+   	}
+}
+
+elina_abstract0_t * ffn_unary_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
+			        double * bias, size_t num_var, bias_op OP){
    start_timing();
    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
    zonotope_t *z = zonotope_of_abstract0(element);
@@ -282,16 +320,7 @@ elina_abstract0_t* ffn_add_bias_zono(elina_manager_t * man, bool destructive, el
    size_t i = 0;
    elina_linexpr0_t ** expr_array = (elina_linexpr0_t **)malloc(num_var*sizeof(elina_linexpr0_t *));
    elina_dim_t * tdim_array = (elina_dim_t *)malloc(num_var*sizeof(elina_dim_t));
-   size_t offset = start_offset;
-   for (i=0; i<num_var; i++) {
-	expr_array[i] = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,1);
-	elina_coeff_set_scalar_double(&expr_array[i]->cst,bias[i]);
-	elina_linterm_t *lterm = &expr_array[i]->p.linterm[0];
-	lterm->dim = offset;
-	elina_coeff_set_interval_double(&lterm->coeff,1,1); 
-	tdim_array[i] = offset;
-	offset++;
-   }
+   create_linexpr_array_with_bias(expr_array, tdim_array, start_offset, bias, num_var, OP);
    res = zonotope_assign_linexpr_array(man,true,res,tdim_array,expr_array,num_var,NULL);
    for(i=0; i < num_var; i++){
 	elina_linexpr0_free(expr_array[i]);
@@ -303,6 +332,31 @@ elina_abstract0_t* ffn_add_bias_zono(elina_manager_t * man, bool destructive, el
     record_timing(zonoml_ffn_matmult_time);
     return abstract0_of_zonotope(man,res);
 }
+
+elina_abstract0_t* ffn_add_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
+			        double * bias, size_t num_var){
+   return ffn_unary_bias_zono(man, destructive, element, start_offset, bias, num_var, ADD);
+}
+
+elina_abstract0_t* ffn_sub_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
+			        double * bias, bool is_minuend, size_t num_var){
+   if(is_minuend==true){
+	return ffn_unary_bias_zono(man, destructive, element, start_offset, bias, num_var, SUB1);
+   }
+   else{
+	return ffn_unary_bias_zono(man, destructive, element, start_offset, bias, num_var, SUB2);
+   }
+}
+
+
+
+elina_abstract0_t* ffn_mul_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
+			        double * bias, size_t num_var){
+   return ffn_unary_bias_zono(man, destructive, element, start_offset, bias, num_var, MUL);
+}
+
+
+
 
 
 void * handle_conv_matmult_zono_parallel(void *args){
