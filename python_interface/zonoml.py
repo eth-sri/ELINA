@@ -247,6 +247,79 @@ def ffn_add_bias_zono(man, destructive, element, start_offset,  bias, num_var):
 
     return res   
 
+def ffn_sub_bias_zono(man, destructive, element, start_offset,  bias, is_minuend, num_var):
+    """
+    FFN bias add
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    destructive: c_bool
+        Boolean flag
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0 which dimensions need to be assigned.
+    start_offset: ElinaDim
+        The start offset from which the dimensions should be assigned.
+    bias: POINTER(double)
+        bias vector
+    num_var: c_size_t
+        number of neurons to be assigned
+    Returns
+    -------
+    res: ElinaAbstract0Ptr
+         Pointer to the new abstract object
+
+    """
+
+    try:
+        ffn_sub_bias_zono_c = zonoml_api.ffn_sub_bias_zono
+        ffn_sub_bias_zono_c.restype = ElinaAbstract0Ptr
+        ffn_sub_bias_zono_c.argtypes = [ElinaManagerPtr, c_bool,  ElinaAbstract0Ptr, ElinaDim, ndpointer(ctypes.c_double), c_bool, c_size_t]
+        res = ffn_sub_bias_zono_c(man, destructive, element, start_offset, bias, is_minuend, num_var)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_sub_bias_zono" from "libzonoml.so"')
+        print(inst)
+
+    return res 
+
+
+def ffn_mul_bias_zono(man, destructive, element, start_offset,  bias, num_var):
+    """
+    FFN bias add
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    destructive: c_bool
+        Boolean flag
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0 which dimensions need to be assigned.
+    start_offset: ElinaDim
+        The start offset from which the dimensions should be assigned.
+    bias: POINTER(double)
+        bias vector
+    num_var: c_size_t
+        number of neurons to be assigned
+    Returns
+    -------
+    res: ElinaAbstract0Ptr
+         Pointer to the new abstract object
+
+    """
+
+    try:
+        ffn_mul_bias_zono_c = zonoml_api.ffn_mul_bias_zono
+        ffn_mul_bias_zono_c.restype = ElinaAbstract0Ptr
+        ffn_mul_bias_zono_c.argtypes = [ElinaManagerPtr, c_bool,  ElinaAbstract0Ptr, ElinaDim, ndpointer(ctypes.c_double), c_size_t]
+        res = ffn_mul_bias_zono_c(man, destructive, element, start_offset, bias, num_var)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_mul_bias_zono" from "libzonoml.so"')
+        print(inst)
+
+    return res 
+
 
 def conv_matmult_zono(man, destructive, element, start_offset, filter_weights, filter_bias, input_size, expr_offset, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias):
     """

@@ -86,6 +86,12 @@ elina_abstract0_t* ffn_matmult_without_bias_zono(elina_manager_t * man, bool des
 elina_abstract0_t* ffn_add_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
 			        double * bias, size_t num_var);
 
+elina_abstract0_t* ffn_sub_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
+			        double * bias, bool is_minuend, size_t num_var);
+
+elina_abstract0_t* ffn_mul_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
+			        double * bias, size_t num_var);
+
 
 bool affine_form_is_box(elina_manager_t* man, elina_abstract0_t *abs, elina_dim_t x);
 
