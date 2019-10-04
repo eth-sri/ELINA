@@ -289,16 +289,18 @@ void create_linexpr_array_with_bias(elina_linexpr0_t ** expr_array, elina_dim_t 
 		}
 		else{
 			if(OP==SUB1){
+				coeff = -1;
+				cst = bias[i];
+			}
+			else if(OP==SUB2) {
 				coeff = 1;
 				cst = -bias[i];
-                        } else if (OP == SUB2) {
-                          coeff = -1;
-                          cst = bias[i];
-                        } else {
-                          coeff = 1;
-                          cst = bias[i];
-                        }
-                }
+			}
+			else{
+				coeff = 1;
+				cst = bias[i];
+			}
+		}
 		expr_array[i] = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,1);
 		elina_coeff_set_scalar_double(&expr_array[i]->cst,cst);
 		elina_linterm_t *lterm = &expr_array[i]->p.linterm[0];
