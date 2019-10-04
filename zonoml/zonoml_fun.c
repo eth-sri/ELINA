@@ -289,12 +289,12 @@ void create_linexpr_array_with_bias(elina_linexpr0_t ** expr_array, elina_dim_t 
 		}
 		else{
 			if(OP==SUB1){
-				coeff = 1;
-				cst = -bias[i];
-			}
-			else if(OP==SUB2) {
 				coeff = -1;
 				cst = bias[i];
+			}
+			else if(OP==SUB2) {
+				coeff = 1;
+				cst = -bias[i];
 			}
 			else{
 				coeff = 1;
