@@ -484,3 +484,30 @@ elina_abstract0_t *handle_gather_layer(elina_manager_t* man, bool destructive, e
 	elina_dimperm_free(dimperm);
 	return res;
 }
+
+
+double * get_affine_form_for_dim(elina_manager_t* man, elina_abstract0_t *abs, size_t dim){
+	zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
+	zonotope_t * z = zonotope_of_abstract0(abs);
+	if(dim>=z->dims){
+		printf("Invalid index, returning NULL\n");
+		fflush(stdout);
+	}
+	zonotope_aff_t *paf = z->paf[dim];
+	size_t size = 0;
+	zonotope_aaterm_t *p;
+	for (p=paf->q; p; p=p->n) {
+		size++;
+	}
+	double * res = (double *)malloc((2*size+2)*sizeof(double));
+	res[0] = (double)(size+1);
+	res[1] = paf->c_sup;
+	size_t i = 2; 
+	for (p=paf->q; p; p=p->n) {
+	     res[i] = p->sup;
+	     res[i+size] = (double)p->pnsym->index; 
+	     i++;
+	}
+	return res;
+}
+
