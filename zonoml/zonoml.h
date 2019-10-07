@@ -90,6 +90,8 @@ elina_abstract0_t* ffn_mul_bias_zono(elina_manager_t * man, bool destructive, el
 
 bool affine_form_is_box(elina_manager_t* man, elina_abstract0_t *abs, elina_dim_t x);
 
+double * get_affine_form_for_dim(elina_manager_t* man, elina_abstract0_t *abs, size_t dim);
+
 static inline long int max(long int a, long int b){
 	return a > b ? a : b;
 }
