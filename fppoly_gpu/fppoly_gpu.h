@@ -99,8 +99,17 @@ typedef struct layer_t {
 typedef struct fppoly_t {
   layer_t **layers;
   size_t numlayers;
+
   float_type *input_inf;
   float_type *input_sup;
+
+  size_t mu;
+
+  float_type *input_lweights;
+  float_type *input_uweights;
+  float_type *input_lcst;
+  float_type *input_ucst;
+
   size_t size;
   size_t num_pixels;
 } fppoly_t;
