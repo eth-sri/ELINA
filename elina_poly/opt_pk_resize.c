@@ -679,7 +679,7 @@ void remove_block_and_factor(opt_pk_array_t *op, comp_list_t *cl){
 			break;
 		}
 		else{
-			cl = cl->next;
+			iter = iter->next;
 		}
 		k++;
 	}
