@@ -660,3 +660,28 @@ opt_pk_array_t* opt_pk_permute_dimensions(elina_manager_t* man,
   #endif
   return op;
 }
+
+void remove_block_and_factor(opt_pk_array_t *op, comp_list_t *cl){
+	comp_list_t *iter = op->acl->head;
+	unsigned short int num_comp = op->acl->size;
+	unsigned short int k = 0;
+        while(iter!=NULL){
+		if(iter==cl){
+			comp_list_t * tcl = cl->next;
+			remove_comp_list(op->acl,cl);
+			cl = tcl;
+			opt_pk_t * tpoly = op->poly[k];
+			unsigned short int k1;
+			for(k1=k; k1 < num_comp - 1; k1++){
+				op->poly[k1] = op->poly[k1+1];
+			}
+			opt_poly_clear(tpoly);
+			break;
+		}
+		else{
+			cl = cl->next;
+		}
+		k++;
+	}
+
+}
