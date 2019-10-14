@@ -918,7 +918,7 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	size_t dims = expr->size;
 	double res_inf = expr->inf_cst;
 	if(expr->inf_coeff==NULL || expr->sup_coeff==NULL){
-		return 0;
+		return res_inf;
 	}
 	for(i=0; i < dims; i++){
 		//if(expr->inf_coeff[i]<0){
@@ -960,7 +960,7 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	size_t dims = expr->size;
 	double res_sup = expr->sup_cst;
 	if(expr->inf_coeff==NULL || expr->sup_coeff==NULL){
-		return 0;
+		return res_sup;
 	}
 	for(i=0; i < dims; i++){
 		//if(expr->inf_coeff[i]<0){
