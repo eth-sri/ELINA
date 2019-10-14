@@ -3572,8 +3572,6 @@ size_t predict_size(fppoly_t *fp, const size_t layerno) {
 
   if ((fp->input_lweights != nullptr) && (fp->input_uweights != nullptr) &&
       (fp->input_lcst != nullptr) && (fp->input_ucst != nullptr)) {
-    const size_t num_in_neurons_0_layer = fp->layers[0]->num_in_neurons;
-
     last_size = current_size;
     current_size = 4 * num_out_neurons_last_layer * fp->mu * sizeof(float_type);
 
@@ -3596,7 +3594,7 @@ size_t predict_size(fppoly_t *fp, const size_t layerno) {
   return num_chunks;
 }
 
-void update_state_using_predecessor_layer_conv_chunk(
+void update_state_using_predecessor_layer_sparse(
     fppoly_internal_t *pr, fppoly_t *fp, float_type **linf_coeff,
     float_type **lsup_coeff, float_type **linf_cst, float_type **lsup_cst,
     float_type **uinf_coeff, float_type **usup_coeff, float_type **uinf_cst,
@@ -3851,10 +3849,12 @@ __global__ void create_res_coeffs_csts(float_type *coeffs, float_type *bias,
   bias[local_mat_x] = 0;
 }
 
-void update_state_using_previous_layers_conv_chunk(
-    elina_manager_t *man, fppoly_t *fp, const size_t layerno,
-    const size_t num_chunks, const size_t chunk_counter,
-    const bool use_area_heuristic) {
+void update_state_using_previous_layers_sparse(elina_manager_t *man,
+                                               fppoly_t *fp,
+                                               const size_t layerno,
+                                               const size_t num_chunks,
+                                               const size_t chunk_counter,
+                                               const bool use_area_heuristic) {
   size_t backstep_counter = 0;
 
   auto start = std::chrono::system_clock::now();
@@ -4142,7 +4142,7 @@ void update_state_using_previous_layers_conv_chunk(
     iter = predecessor1;
 
     while (iter != common_predecessor) {
-      update_state_using_predecessor_layer_conv_chunk(
+      update_state_using_predecessor_layer_sparse(
           pr, fp, &copy_linf_coeff, &copy_lsup_coeff, &copy_linf_cst,
           &copy_lsup_cst, &copy_uinf_coeff, &copy_usup_coeff, &copy_uinf_cst,
           &copy_usup_cst, &copy_linf_coeff_tmp, &copy_lsup_coeff_tmp,
@@ -4158,7 +4158,7 @@ void update_state_using_previous_layers_conv_chunk(
     iter = predecessor2;
 
     while (iter != common_predecessor) {
-      update_state_using_predecessor_layer_conv_chunk(
+      update_state_using_predecessor_layer_sparse(
           pr, fp, &linf_coeff, &lsup_coeff, &linf_cst, &lsup_cst, &uinf_coeff,
           &usup_coeff, &uinf_cst, &usup_cst, &linf_coeff_tmp, &lsup_coeff_tmp,
           &linf_cst_tmp, &lsup_cst_tmp, &uinf_coeff_tmp, &usup_coeff_tmp,
@@ -4416,7 +4416,7 @@ void update_state_using_previous_layers_conv_chunk(
       iter = predecessor1;
 
       while (iter != common_predecessor) {
-        update_state_using_predecessor_layer_conv_chunk(
+        update_state_using_predecessor_layer_sparse(
             pr, fp, &copy_linf_coeff, &copy_lsup_coeff, &copy_linf_cst,
             &copy_lsup_cst, &copy_uinf_coeff, &copy_usup_coeff, &copy_uinf_cst,
             &copy_usup_cst, &copy_linf_coeff_tmp, &copy_lsup_coeff_tmp,
@@ -4432,7 +4432,7 @@ void update_state_using_previous_layers_conv_chunk(
       iter = predecessor2;
 
       while (iter != common_predecessor) {
-        update_state_using_predecessor_layer_conv_chunk(
+        update_state_using_predecessor_layer_sparse(
             pr, fp, &linf_coeff, &lsup_coeff, &linf_cst, &lsup_cst, &uinf_coeff,
             &usup_coeff, &uinf_cst, &usup_cst, &linf_coeff_tmp, &lsup_coeff_tmp,
             &linf_cst_tmp, &lsup_cst_tmp, &uinf_coeff_tmp, &usup_coeff_tmp,
@@ -4575,7 +4575,7 @@ void update_state_using_previous_layers_conv_chunk(
         break;
       }
     } else {
-      update_state_using_predecessor_layer_conv_chunk(
+      update_state_using_predecessor_layer_sparse(
           pr, fp, &linf_coeff, &lsup_coeff, &linf_cst, &lsup_cst, &uinf_coeff,
           &usup_coeff, &uinf_cst, &usup_cst, &linf_coeff_tmp, &lsup_coeff_tmp,
           &linf_cst_tmp, &lsup_cst_tmp, &uinf_coeff_tmp, &usup_coeff_tmp,
@@ -4755,15 +4755,16 @@ void update_state_using_previous_layers_conv_chunk(
             << std::endl;
 }
 
-void update_state_using_previous_layers_conv(elina_manager_t *man, fppoly_t *fp,
-                                             const size_t layerno,
-                                             const bool use_area_heuristic) {
+void update_state_using_previous_layers_sparse(elina_manager_t *man,
+                                               fppoly_t *fp,
+                                               const size_t layerno,
+                                               const bool use_area_heuristic) {
   const size_t num_chunks = predict_size(fp, layerno);
 
   for (size_t chunk_counter = 0; chunk_counter < num_chunks; chunk_counter++) {
-    update_state_using_previous_layers_conv_chunk(man, fp, fp->numlayers - 1,
-                                                  num_chunks, chunk_counter,
-                                                  use_area_heuristic);
+    update_state_using_previous_layers_sparse(man, fp, fp->numlayers - 1,
+                                              num_chunks, chunk_counter,
+                                              use_area_heuristic);
   }
 }
 
@@ -5589,8 +5590,8 @@ void conv_handle_intermediate_layer(
 
   fp->layers[fp->numlayers - 1]->predecessors = predecessors;
 
-  update_state_using_previous_layers_conv(man, fp, fp->numlayers - 1,
-                                          use_area_heuristic);
+  update_state_using_previous_layers_sparse(man, fp, fp->numlayers - 1,
+                                            use_area_heuristic);
 }
 
 void conv_handle_intermediate_relu_layer(
@@ -5676,8 +5677,8 @@ void handle_residual_layer(elina_manager_t *man, elina_abstract0_t *element,
   res_add_layer(fp, num_neurons, RESIDUAL, activation);
   fp->layers[fp->numlayers - 1]->predecessors = predecessors;
 
-  update_state_using_previous_layers_conv(man, fp, fp->numlayers - 1,
-                                          use_area_heuristic);
+  update_state_using_previous_layers_sparse(man, fp, fp->numlayers - 1,
+                                            use_area_heuristic);
 }
 
 void handle_residual_relu_layer(elina_manager_t *man,
