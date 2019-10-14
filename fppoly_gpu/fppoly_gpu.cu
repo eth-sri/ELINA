@@ -2530,7 +2530,7 @@ void device_layer_create_sparse_exprs(float_type* dense_coeff, float_type* bias,
 }
 
 
-void update_state_using_predecessor_layer(fppoly_internal_t* pr, fppoly_t* fp, double** linf_coeff, double** lsup_coeff, double** linf_cst, double** lsup_cst, double** uinf_coeff, double** usup_coeff, double** uinf_cst, double** usup_cst, double** linf_coeff_tmp, double** lsup_coeff_tmp, double** linf_cst_tmp, double** lsup_cst_tmp, double** uinf_coeff_tmp, double** usup_coeff_tmp, double** uinf_cst_tmp, double** usup_cst_tmp, const size_t k, bool use_area_heuristic, const size_t num_out_neurons_last_layer)
+void update_state_using_predecessor_layer(fppoly_internal_t* pr, fppoly_t* fp, float_type** linf_coeff, float_type** lsup_coeff, float_type** linf_cst, float_type** lsup_cst, float_type** uinf_coeff, float_type** usup_coeff, float_type** uinf_cst, float_type** usup_cst, float_type** linf_coeff_tmp, float_type** lsup_coeff_tmp, float_type** linf_cst_tmp, float_type** lsup_cst_tmp, float_type** uinf_coeff_tmp, float_type** usup_coeff_tmp, float_type** uinf_cst_tmp, float_type** usup_cst_tmp, const size_t k, bool use_area_heuristic, const size_t num_out_neurons_last_layer)
 {
     const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
     const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
@@ -3229,7 +3229,7 @@ size_t predict_size(fppoly_t* fp, const size_t layerno)
 }
 
 
-void update_state_using_predecessor_layer_conv_chunk(fppoly_internal_t* pr, fppoly_t* fp, double** linf_coeff, double** lsup_coeff, double** linf_cst, double** lsup_cst, double** uinf_coeff, double** usup_coeff, double** uinf_cst, double** usup_cst, double** linf_coeff_tmp, double** lsup_coeff_tmp, double** linf_cst_tmp, double** lsup_cst_tmp, double** uinf_coeff_tmp, double** usup_coeff_tmp, double** uinf_cst_tmp, double** usup_cst_tmp, const size_t layerno, const size_t k, bool use_area_heuristic, const size_t x_y_size_last_layer, const size_t num_filters_last_layer, const size_t num_chunks, long int& offset_x, long int& offset_y, long int& length_x, long int& length_y, long int& shift_x, long int& shift_y)
+void update_state_using_predecessor_layer_conv_chunk(fppoly_internal_t* pr, fppoly_t* fp, float_type** linf_coeff, float_type** lsup_coeff, float_type** linf_cst, float_type** lsup_cst, float_type** uinf_coeff, float_type** usup_coeff, float_type** uinf_cst, float_type** usup_cst, float_type** linf_coeff_tmp, float_type** lsup_coeff_tmp, float_type** linf_cst_tmp, float_type** lsup_cst_tmp, float_type** uinf_coeff_tmp, float_type** usup_coeff_tmp, float_type** uinf_cst_tmp, float_type** usup_cst_tmp, const size_t layerno, const size_t k, bool use_area_heuristic, const size_t x_y_size_last_layer, const size_t num_filters_last_layer, const size_t num_chunks, long int& offset_x, long int& offset_y, long int& length_x, long int& length_y, long int& shift_x, long int& shift_y)
 {
     const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
     const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
@@ -4048,7 +4048,7 @@ void create_sub_expr(float_type* __restrict__ inf_coeff, float_type* __restrict_
 }
 
 
-void update_state_using_predecessor_layer_lower_half(fppoly_internal_t* pr, fppoly_t* fp, double** linf_coeff, double** lsup_coeff, double** linf_cst, double** lsup_cst, double** linf_coeff_tmp, double** lsup_coeff_tmp, double** linf_cst_tmp, double** lsup_cst_tmp, const size_t k, bool use_area_heuristic, const size_t num_out_neurons_last_layer)
+void update_state_using_predecessor_layer_lower_half(fppoly_internal_t* pr, fppoly_t* fp, float_type** linf_coeff, float_type** lsup_coeff, float_type** linf_cst, float_type** lsup_cst, float_type** linf_coeff_tmp, float_type** lsup_coeff_tmp, float_type** linf_cst_tmp, float_type** lsup_cst_tmp, const size_t k, bool use_area_heuristic, const size_t num_out_neurons_last_layer)
 {
     const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
     const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
