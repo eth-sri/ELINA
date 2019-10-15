@@ -156,6 +156,8 @@ elina_abstract0_t *fppoly_from_network_input_poly(
     size_t *lexpr_dim, double *uexpr_weights, double *uexpr_cst,
     size_t *uexpr_dim, size_t expr_size);
 
+fppoly_internal_t* fppoly_init_from_manager(elina_manager_t* man, elina_funid_t funid);
+
 void ffn_handle_first_relu_layer(elina_manager_t *man, elina_abstract0_t *abs,
                                  double **weights, double *bias, size_t size,
                                  size_t num_pixels, size_t *predecessors);
@@ -268,7 +270,8 @@ void ffn_handle_intermediate_log_layer_no_alloc(
     double *bias, size_t num_out_neurons, size_t num_in_neurons,
     size_t *predecessors, bool use_area_heuristic);
 
-void fppoly_fprint(FILE* stream, elina_manager_t* man, fppoly_t* fp, char** name_of_dim);
+void fppoly_fprint(FILE *stream, elina_manager_t *man, fppoly_t *fp,
+                   char **name_of_dim);
 
 void ffn_handle_last_relu_layer(elina_manager_t *man,
                                 elina_abstract0_t *element, double **weights,
@@ -367,6 +370,8 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
 void fppoly_alloc_first_layer(fppoly_t *fp, size_t size, layertype_t type,
                               activation_type_t activation);
 
+neuron_t *neuron_alloc(void);
+
 elina_linexpr0_t * get_lexpr_for_output_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t i);
 
 elina_linexpr0_t * get_uexpr_for_output_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t i);
@@ -391,10 +396,16 @@ elina_interval_t *get_bounds_for_linexpr(elina_manager_t *man,
 void handle_residual_relu_layer(elina_manager_t *man,
                                 elina_abstract0_t *element, size_t num_neurons,
                                 size_t *predecessors, bool use_area_heuristic);
+
 void handle_residual_affine_layer(elina_manager_t *man,
                                   elina_abstract0_t *element,
                                   size_t num_neurons, size_t *predecessors,
                                   bool use_area_heuristic);
+
+fppoly_t* fppoly_of_abstract0(elina_abstract0_t* a);
+
+void fppoly_add_new_layer(fppoly_t *fp, size_t size, layertype_t type,
+                          activation_type_t activation);
 
 #ifdef __cplusplus
  }
