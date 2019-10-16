@@ -4281,7 +4281,37 @@ void get_lb_using_previous_layers(elina_manager_t* man, fppoly_t* const fp, cons
         }
     }
 
-    compute_lb_from_expr<<<num_out_neurons_last_layer, 1>>>(lb_dev, linf_coeff, lsup_coeff, linf_cst, fp->input_inf, fp->input_sup, num_in_neurons_0_layer);
+    if((fp->input_lweights != nullptr) && (fp->input_uweights != nullptr) && (fp->input_lcst != nullptr) && (fp->input_ucst != nullptr))
+    {
+        const size_t mu = fp->mu;
+
+        cudaMalloc((void**) &linf_coeff_tmp, num_out_neurons_last_layer*mu*sizeof(float_type));
+        cudaMalloc((void**) &lsup_coeff_tmp, num_out_neurons_last_layer*mu*sizeof(float_type));
+
+        cudaMemset(linf_coeff_tmp, 0, num_out_neurons_last_layer*mu*sizeof(float_type));
+        cudaMemset(lsup_coeff_tmp, 0, num_out_neurons_last_layer*mu*sizeof(float_type));
+
+        lcoeffs_from_input_poly<<<num_out_neurons_last_layer, num_threads>>>(linf_coeff, lsup_coeff, linf_coeff_tmp, lsup_coeff_tmp, fp->input_lweights, fp->input_uweights, num_in_neurons_0_layer, mu);
+
+        lcsts_from_input_poly<<<num_out_neurons_last_layer, 1>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, linf_cst_tmp, lsup_cst_tmp, fp->input_lcst, fp->input_ucst, fp->input_inf, fp->input_sup, num_in_neurons_0_layer);
+
+        std::swap(linf_coeff, linf_coeff_tmp);
+        std::swap(lsup_coeff, lsup_coeff_tmp);
+        std::swap(linf_cst, linf_cst_tmp);
+        std::swap(lsup_cst, lsup_cst_tmp);
+
+        cudaFree(linf_coeff_tmp);
+        cudaFree(lsup_coeff_tmp);
+
+        linf_coeff_tmp = nullptr;
+        lsup_coeff_tmp = nullptr;
+
+        compute_lb_from_expr<<<num_out_neurons_last_layer, 1>>>(lb_dev, linf_coeff, lsup_coeff, linf_cst, fp->input_inf + num_in_neurons_0_layer, fp->input_sup + num_in_neurons_0_layer, mu);
+    }
+    else
+    {
+        compute_lb_from_expr<<<num_out_neurons_last_layer, 1>>>(lb_dev, linf_coeff, lsup_coeff, linf_cst, fp->input_inf, fp->input_sup, num_in_neurons_0_layer);
+    }
 
     cudaFree(linf_coeff);
     cudaFree(lsup_coeff);
