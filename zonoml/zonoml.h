@@ -45,7 +45,7 @@ elina_abstract0_t *relu_zono_refined(elina_manager_t* man, bool destructive, eli
 
 elina_abstract0_t* maxpool_zono(elina_manager_t *man, bool destructive, elina_abstract0_t *abs, 
 			   size_t *pool_size, size_t *input_size, size_t src_offset, size_t* strides, 
-			   size_t dimensionality, size_t dst_offset, bool is_valid_padding);
+			   size_t dimensionality, size_t dst_offset, size_t pad_top, size_t pad_left, size_t *output_size);
 
 elina_abstract0_t *maxpool_zono_refined(elina_manager_t* man, bool destructive, elina_abstract0_t * abs,  elina_dim_t x, double new_inf, double new_sup);
 
