@@ -29,7 +29,7 @@ INCLDIR = $(ELINA_PREFIX)/include
 INSTALL = install
 INSTALLd = install -d
 
-OBJS = fppoly.o 
+OBJS = fppoly.o backsubstitute.o compute_bounds.o expr.o relu_approx.o s_curve_approx.o parabola_approx.o log_approx.o maxpool_approx.o lstm_approx.o affine_transform.o
 
 ifeq ($(IS_APRON),)
 LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize  -L../elina_zonotope -lzonotope $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -lpthread
@@ -55,7 +55,35 @@ libfppoly.so : $(OBJS) $(FPPOLYH)
 fppoly.o : fppoly.h fppoly.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o fppoly.o fppoly.c $(LIBS)
 
+backsubstitute.o : backsubstitute.h backsubstitute.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o backsubstitute.o backsubstitute.c $(LIBS)
 
+compute_bounds.o : compute_bounds.h compute_bounds.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o compute_bounds.o compute_bounds.c $(LIBS)
+
+expr.o : expr.h expr.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o expr.o expr.c $(LIBS)
+
+relu_approx.o : relu_approx.h relu_approx.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o relu_approx.o relu_approx.c $(LIBS)
+
+s_curve_approx.o : s_curve_approx.h s_curve_approx.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o s_curve_approx.o s_curve_approx.c $(LIBS)
+
+parabola_approx.o : parabola_approx.h parabola_approx.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o parabola_approx.o parabola_approx.c $(LIBS)
+
+log_approx.o : log_approx.h log_approx.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o log_approx.o log_approx.c $(LIBS)
+
+maxpool_approx.o : maxpool_approx.h maxpool_approx.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o maxpool_approx.o maxpool_approx.c $(LIBS)
+
+lstm_approx.o : lstm_approx.h lstm_approx.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o lstm_approx.o lstm_approx.c $(LIBS)
+
+affine_transform.o : affine_transform.h affine_transform.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o affine_transform.o affine_transform.c $(LIBS)
 
 install:
 	$(INSTALLd) $(LIBDIR); \

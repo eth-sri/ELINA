@@ -766,14 +766,16 @@ elina_interval_t *get_bounds_for_linexpr0(elina_manager_t *man,
   expr_t *tmp = elina_linexpr0_to_expr(linexpr0);
   // printf("coming here\n");
   // fflush(stdout);
+  double lb = compute_lb_from_expr(pr, tmp, fp, layerno);
+  double ub = compute_ub_from_expr(pr, tmp, fp, layerno);
   expr_t *expr = expr_from_previous_layer(pr, tmp, fp->layers[layerno]);
   // printf("end\n");
   // fflush(stdout);
   expr_t *expr2 = copy_expr(expr);
 
-  double lb = get_lb_using_previous_layers(man, fp, expr, layerno, true);
+  lb = fmin(lb, get_lb_using_previous_layers(man, fp, expr, layerno, true));
 
-  double ub = get_ub_using_previous_layers(man, fp, expr2, layerno, true);
+  ub = fmin(ub, get_ub_using_previous_layers(man, fp, expr2, layerno, true));
 
   elina_interval_set_double(res, -lb, ub);
   free_expr(expr);
