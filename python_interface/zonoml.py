@@ -646,7 +646,7 @@ def tanh_zono_layerwise(man,destructive,elem,start_offset, num_dim):
 
     return res
 
-def maxpool_zono(man, destructive, elem, pool_size, input_size, src_offset, strides, dimensionality, dst_offset, is_valid_padding):
+def maxpool_zono(man, destructive, elem, pool_size, input_size, src_offset, strides, dimensionality, dst_offset, pad_top, pad_left, output_shape):
     """
     Performs the Maxpool operation
     
@@ -683,8 +683,8 @@ def maxpool_zono(man, destructive, elem, pool_size, input_size, src_offset, stri
     try:
         maxpool_zono_c = zonoml_api.maxpool_zono
         maxpool_zono_c.restype = ElinaAbstract0Ptr
-        maxpool_zono_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, POINTER(c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_size_t, c_size_t,c_bool]
-        res = maxpool_zono_c(man,destructive,elem,pool_size,input_size, src_offset, strides, dimensionality, dst_offset,is_valid_padding)
+        maxpool_zono_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, POINTER(c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_size_t, c_size_t, c_size_t, c_size_t,POINTER(c_size_t) ]
+        res = maxpool_zono_c(man,destructive,elem,pool_size,input_size, src_offset, strides, dimensionality, dst_offset, pad_top, pad_left, output_shape)
     except Exception as inst:
         print('Problem with loading/calling "maxpool_zono" from "libzonoml.so"')
         print(inst)
