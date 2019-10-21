@@ -1387,7 +1387,7 @@ elina_abstract0_t* maxpool_zono(elina_manager_t *man, bool destructive, elina_ab
 	//num_var = dims.intdim + dims.realdim;
 	//printf("end %u\n",num_var);
 	//fflush(stdout);
-	free(output_size);
+	//free(output_size);
 	return abstract0_of_zonotope(man,res);
 }
 
