@@ -768,7 +768,13 @@ elina_interval_t *get_bounds_for_linexpr0(elina_manager_t *man,
   // fflush(stdout);
   double lb = compute_lb_from_expr(pr, tmp, fp, layerno);
   double ub = compute_ub_from_expr(pr, tmp, fp, layerno);
-  expr_t *expr = expr_from_previous_layer(pr, tmp, fp->layers[layerno]);
+
+  expr_t *expr = NULL;
+  if (fp->layers[layerno]->type == RESIDUAL) {
+    expr = copy_expr(tmp);
+  } else {
+    expr = expr_from_previous_layer(pr, tmp, fp->layers[layerno]);
+  }
   // printf("end\n");
   // fflush(stdout);
   expr_t *expr2 = copy_expr(expr);
@@ -781,6 +787,8 @@ elina_interval_t *get_bounds_for_linexpr0(elina_manager_t *man,
   free_expr(expr);
   free_expr(expr2);
   free_expr(tmp);
+  // printf("lb: %g ub: %g\n",lb,ub);
+  // fflush(stdout);
   return res;
 }
 

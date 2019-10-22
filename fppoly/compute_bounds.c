@@ -350,6 +350,8 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   if (fp->numlayers == layerno) {
 
     k = layerno - 1;
+  } else if (fp->layers[layerno]->type == RESIDUAL) {
+    k = layerno;
   } else {
     k = fp->layers[layerno]->predecessors[0] - 1;
   }
@@ -357,7 +359,7 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
   while (k >= 0) {
 
     if (fp->layers[k]->type == RESIDUAL) {
-      if (fp->layers[k]->activation == RELU) {
+      if (fp->layers[k]->activation == RELU && k != (int)layerno) {
         neuron_t **aux_neurons = fp->layers[k]->neurons;
         expr_t *tmp_l = lexpr;
         lexpr = lexpr_replace_relu_bounds(pr, lexpr, aux_neurons,
@@ -433,13 +435,15 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp,
 
   if (fp->numlayers == layerno) {
     k = layerno - 1;
+  } else if (fp->layers[layerno]->type == RESIDUAL) {
+    k = layerno;
   } else {
     k = fp->layers[layerno]->predecessors[0] - 1;
   }
   double res = INFINITY;
   while (k >= 0) {
     if (fp->layers[k]->type == RESIDUAL) {
-      if (fp->layers[k]->activation == RELU) {
+      if (fp->layers[k]->activation == RELU && k != (int)layerno) {
         neuron_t **aux_neurons = fp->layers[k]->neurons;
         expr_t *tmp_u = uexpr;
         uexpr = uexpr_replace_relu_bounds(pr, uexpr, aux_neurons,
