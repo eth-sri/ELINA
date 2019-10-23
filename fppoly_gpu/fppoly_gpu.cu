@@ -2800,8 +2800,9 @@ void csts_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, co
     while(i < num_out_neurons_current_layer)
     {
         size_t a = n*num_out_neurons_current_layer + i;
+        const float_type aux_cst = aux_csts[i];
 
-        elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_linf_coeff[a], expr_lsup_coeff[a], aux_csts[i]);
+        elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_linf_coeff[a], expr_lsup_coeff[a], aux_cst);
 
         maxRes = max(abs(linf_cst), abs(lsup_cst));
         maxMul = max(abs(tmp1), abs(tmp2));
@@ -2809,7 +2810,7 @@ void csts_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, co
         linf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
         lsup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
 
-        elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_uinf_coeff[a], expr_usup_coeff[a], aux_csts[i]);
+        elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_uinf_coeff[a], expr_usup_coeff[a], aux_cst);
 
         maxRes = max(abs(uinf_cst), abs(usup_cst));
         maxMul = max(abs(tmp1), abs(tmp2));
@@ -2851,26 +2852,19 @@ void csts_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff
         {
             size_t a = n*current_layer_out_size_x*current_layer_out_size_y*current_layer_out_size_z + i*current_layer_out_size_z + j;
 
-            const float_type prev_inf_coeff = expr_inf_coeff[a];
-            const float_type prev_sup_coeff = expr_sup_coeff[a];
+            elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_inf_coeff[a], expr_sup_coeff[a], aux_csts[j]);
 
-            if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
-            {
-                elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_csts[j]);
+            maxRes = max(abs(inf_cst), abs(sup_cst));
+            maxMul = max(abs(tmp1), abs(tmp2));
 
-                maxRes = max(abs(inf_cst), abs(sup_cst));
-                maxMul = max(abs(tmp1), abs(tmp2));
-
-                inf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
-                sup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
-            }
+            inf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
+            sup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
         }
 
         j += blockDim.x;
     }
 
-    block_reduce_sum(inf_cst, blockDim.x);
-    block_reduce_sum(sup_cst, blockDim.x);
+    block_reduce_sum_csts(inf_cst, sup_cst, blockDim.x);
 
     if(threadIdx.x == 0)
     {
@@ -2899,43 +2893,30 @@ void csts_from_previous_layer_conv(const float_type* __restrict__ expr_linf_coef
         for(size_t i = 0; i < current_layer_out_size_x*current_layer_out_size_y; i++)
         {
             size_t a = n*current_layer_out_size_x*current_layer_out_size_y*current_layer_out_size_z + i*current_layer_out_size_z + j;
+            const float_type aux_cst = aux_csts[j];
 
-            const float_type prev_linf_coeff = expr_linf_coeff[a];
-            const float_type prev_lsup_coeff = expr_lsup_coeff[a];
+            elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_linf_coeff[a], expr_lsup_coeff[a], aux_cst);
 
-            if((prev_linf_coeff != 0) || (prev_lsup_coeff != 0))
-            {
-                elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, prev_linf_coeff, prev_lsup_coeff, aux_csts[j]);
+            maxRes = max(abs(linf_cst), abs(lsup_cst));
+            maxMul = max(abs(tmp1), abs(tmp2));
 
-                maxRes = max(abs(linf_cst), abs(lsup_cst));
-                maxMul = max(abs(tmp1), abs(tmp2));
+            linf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
+            lsup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
 
-                linf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
-                lsup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
-            }
+            elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_uinf_coeff[a], expr_usup_coeff[a], aux_cst);
 
-            const float_type prev_uinf_coeff = expr_uinf_coeff[a];
-            const float_type prev_usup_coeff = expr_usup_coeff[a];
+            maxRes = max(abs(uinf_cst), abs(usup_cst));
+            maxMul = max(abs(tmp1), abs(tmp2));
 
-            if((prev_uinf_coeff != 0) || (prev_usup_coeff != 0))
-            {
-                elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, prev_uinf_coeff, prev_usup_coeff, aux_csts[j]);
-
-                maxRes = max(abs(uinf_cst), abs(usup_cst));
-                maxMul = max(abs(tmp1), abs(tmp2));
-
-                uinf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
-                usup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
-            }
+            uinf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
+            usup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
         }
 
         j += blockDim.x;
     }
 
-    block_reduce_sum(linf_cst, blockDim.x);
-    block_reduce_sum(lsup_cst, blockDim.x);
-    block_reduce_sum(uinf_cst, blockDim.x);
-    block_reduce_sum(usup_cst, blockDim.x);
+    block_reduce_sum_csts(linf_cst, lsup_cst, blockDim.x);
+    block_reduce_sum_csts(uinf_cst, usup_cst, blockDim.x);
 
     if(threadIdx.x == 0)
     {
@@ -2998,11 +2979,9 @@ void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_li
             for(long int out_y = min_y; out_y < max_y; out_y++)
             {
                 size_t mat_out = n*length_x*length_y*output_size_z + out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                const float_type aux_cst = aux_csts[out_z];
 
-                const float_type prev_linf_coeff = expr_linf_coeff[mat_out];
-                const float_type prev_lsup_coeff = expr_lsup_coeff[mat_out];
-
-                elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, prev_linf_coeff, prev_lsup_coeff, aux_csts[out_z]);
+                elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_linf_coeff[mat_out], expr_lsup_coeff[mat_out], aux_cst);
 
                 maxRes = max(abs(linf_cst), abs(lsup_cst));
                 maxMul = max(abs(tmp1), abs(tmp2));
@@ -3010,10 +2989,7 @@ void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_li
                 linf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
                 lsup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
 
-                const float_type prev_uinf_coeff = expr_uinf_coeff[mat_out];
-                const float_type prev_usup_coeff = expr_usup_coeff[mat_out];
-
-                elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, prev_uinf_coeff, prev_usup_coeff, aux_csts[out_z]);
+                elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_uinf_coeff[mat_out], expr_usup_coeff[mat_out], aux_cst);
 
                 maxRes = max(abs(uinf_cst), abs(usup_cst));
                 maxMul = max(abs(tmp1), abs(tmp2));
@@ -3026,10 +3002,8 @@ void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_li
         out_z += blockDim.x;
     }
 
-    block_reduce_sum(linf_cst, blockDim.x);
-    block_reduce_sum(lsup_cst, blockDim.x);
-    block_reduce_sum(uinf_cst, blockDim.x);
-    block_reduce_sum(usup_cst, blockDim.x);
+    block_reduce_sum_csts(linf_cst, lsup_cst, blockDim.x);
+    block_reduce_sum_csts(uinf_cst, usup_cst, blockDim.x);
 
     if(threadIdx.x == 0)
     {
