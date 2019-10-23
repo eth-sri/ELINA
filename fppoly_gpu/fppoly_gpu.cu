@@ -353,7 +353,7 @@ void warp_reduce_sum(T& val)
 
 template <typename T>
 __inline__ __device__
-void block_reduce_sum(T& val, int number_threads)
+void block_reduce_sum(T& val, const int number_threads)
 {
     if(number_threads <= warpSize)
     {
@@ -362,8 +362,8 @@ void block_reduce_sum(T& val, int number_threads)
     else
     {
         static __shared__ T shared[32];
-        int lane = threadIdx.x%warpSize;
-        int wid = threadIdx.x/warpSize;
+        const int lane = threadIdx.x%warpSize;
+        const int wid = threadIdx.x/warpSize;
 
         warp_reduce_sum(val);
 
@@ -401,7 +401,7 @@ void warp_reduce_sum_csts(T& lval, T& uval)
 
 template <typename T>
 __inline__ __device__
-void block_reduce_sum_csts(T& lval, T&uval, int number_threads)
+void block_reduce_sum_csts(T& lval, T& uval, const int number_threads)
 {
     if(number_threads <= warpSize)
     {
@@ -411,8 +411,8 @@ void block_reduce_sum_csts(T& lval, T&uval, int number_threads)
     {
         static __shared__ T lshared[32];
         static __shared__ T ushared[32];
-        int lane = threadIdx.x%warpSize;
-        int wid = threadIdx.x/warpSize;
+        const int lane = threadIdx.x%warpSize;
+        const int wid = threadIdx.x/warpSize;
 
         warp_reduce_sum_csts(lval, uval);
 
@@ -440,7 +440,7 @@ void fppoly_from_network_input_box(fppoly_t* const res, const size_t intdim, con
     res->layers = nullptr;
     res->numlayers = 0;
 
-    size_t num_pixels = intdim + realdim;
+    const size_t num_pixels = intdim + realdim;
 
     float_type* tmp_input_inf = (float_type*) malloc(num_pixels*sizeof(float_type));
     float_type* tmp_input_sup = (float_type*) malloc(num_pixels*sizeof(float_type));
@@ -676,7 +676,7 @@ void compute_ub_from_expr(float_type* __restrict__ ub_array, const float_type* _
 
 
 __global__
-void compute_lb_from_expr_conv_sparse(float_type* __restrict__ lb_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ inf_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int num_chunks, const int chunk_counter, const int output_size_x, const int output_size_y, const int output_size_z, int offset_x, int offset_y, int length_x, int length_y, int shift_x, int shift_y)
+void compute_lb_from_expr_conv_sparse(float_type* __restrict__ lb_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ inf_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int num_chunks, const int chunk_counter, const int output_size_x, const int output_size_y, const int output_size_z, const int offset_x, const int offset_y, const int length_x, const int length_y, const int shift_x, const int shift_y)
 {
     const int last_x = blockIdx.x;
     const int last_y = blockIdx.y;
@@ -706,10 +706,10 @@ void compute_lb_from_expr_conv_sparse(float_type* __restrict__ lb_array, const f
         {
             for(int out_y = min_y; out_y < max_y; out_y++)
             {
-                int i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
-                int j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                const int i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
+                const int j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
 
-                int mat_out = local_n*length_x*length_y*output_size_z + j;
+                const int mat_out = local_n*length_x*length_y*output_size_z + j;
 
                 float_type inf_coeff = inf_coeffs[mat_out];
                 float_type sup_coeff = sup_coeffs[mat_out];
@@ -736,7 +736,7 @@ void compute_lb_from_expr_conv_sparse(float_type* __restrict__ lb_array, const f
 
 
 __global__
-void compute_ub_from_expr_conv_sparse(float_type* __restrict__ ub_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ sup_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int num_chunks, const int chunk_counter, const int output_size_x, const int output_size_y, const int output_size_z, int offset_x, int offset_y, int length_x, int length_y, int shift_x, int shift_y)
+void compute_ub_from_expr_conv_sparse(float_type* __restrict__ ub_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ sup_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int num_chunks, const int chunk_counter, const int output_size_x, const int output_size_y, const int output_size_z, const int offset_x, const int offset_y, const int length_x, const int length_y, const int shift_x, const int shift_y)
 {
     const int last_x = blockIdx.x;
     const int last_y = blockIdx.y;
@@ -766,10 +766,10 @@ void compute_ub_from_expr_conv_sparse(float_type* __restrict__ ub_array, const f
         {
             for(int out_y = min_y; out_y < max_y; out_y++)
             {
-                int i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
-                int j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                const int i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
+                const int j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
 
-                int mat_out = local_n*length_x*length_y*output_size_z + j;
+                const int mat_out = local_n*length_x*length_y*output_size_z + j;
 
                 float_type inf_coeff = inf_coeffs[mat_out];
                 float_type sup_coeff = sup_coeffs[mat_out];
@@ -811,7 +811,7 @@ void compute_lb_from_expr_input_poly_sparse(float_type* __restrict__ lb_array, c
 
     for(int i = 0; i < mu; i++)
     {
-        int mat_out = local_n*mu + i;
+        const int mat_out = local_n*mu + i;
 
         float_type inf_coeff = inf_coeffs[mat_out];
         float_type sup_coeff = sup_coeffs[mat_out];
@@ -844,7 +844,7 @@ void compute_ub_from_expr_input_poly_sparse(float_type* __restrict__ ub_array, c
 
     for(int i = 0; i < mu; i++)
     {
-        int mat_out = local_n*mu + i;
+        const int mat_out = local_n*mu + i;
 
         float_type inf_coeff = inf_coeffs[mat_out];
         float_type sup_coeff = sup_coeffs[mat_out];
@@ -949,11 +949,11 @@ void add_coeffs_and_csts(float_type* __restrict__ target_inf_coeff, float_type* 
 __global__
 void add_coeffs_and_csts_sparse(float_type* __restrict__ target_inf_coeff, float_type* __restrict__ target_sup_coeff, float_type* __restrict__ target_inf_cst, float_type* __restrict__ target_sup_cst, const float_type* __restrict__ source_inf_coeff, const float_type* __restrict__ source_sup_coeff, const float_type* __restrict__ source_inf_cst, const float_type* __restrict__ source_sup_cst, const int output_size_target_x, const int output_size_target_y, const int output_size_source_x, const int output_size_source_y, const int output_size_z, const int relative_offset_x, const int relative_offset_y)
 {
-    int out_x = blockIdx.x;
-    int out_y = blockIdx.y;
-    int out_z = blockIdx.z;
+    int last_x = blockIdx.x;
+    int last_y = blockIdx.y;
+    int last_z = blockIdx.z;
 
-    const int n = out_x*gridDim.y*gridDim.z + out_y*gridDim.z + out_z;
+    const int n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
 
     const int num_coeffs_target = output_size_target_x*output_size_target_y*output_size_z;
     const int num_coeffs_source = output_size_source_x*output_size_source_y*output_size_z;
@@ -997,9 +997,9 @@ void add_coeffs_and_csts_sparse(float_type* __restrict__ target_inf_coeff, float
 __global__
 void layer_compute_bounds_from_exprs_conv(const float_type* __restrict__ coeffs, const float_type* __restrict__ csts, float_type* __restrict__ lb_array, float_type* __restrict__ ub_array, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int output_size_x, const int output_size_y, const int output_size_z, const int input_size_x, const int input_size_y, const int input_size_z, const int filter_size_x, const int filter_size_y, const int stride_x, const int stride_y, const int pad_x, const int pad_y)
 {
-    int out_x = blockIdx.x;
-    int out_y = blockIdx.y;
-    int out_z = blockIdx.z;
+    const int out_x = blockIdx.x;
+    const int out_y = blockIdx.y;
+    const int out_z = blockIdx.z;
 
     const int mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
 
@@ -1086,8 +1086,8 @@ void lcoeffs_from_input_poly(const float_type* __restrict__ expr_inf_coeff, cons
 
         for(int i = 0; i < num_out_neurons_current_layer; i++)
         {
-            int a = n*num_out_neurons_current_layer + i;
-            int c = i*num_in_neurons_current_layer + j;
+            const int a = n*num_out_neurons_current_layer + i;
+            const int c = i*num_in_neurons_current_layer + j;
 
             const float_type prev_inf_coeff = expr_inf_coeff[a];
             const float_type prev_sup_coeff = expr_sup_coeff[a];
@@ -1142,8 +1142,8 @@ void ucoeffs_from_input_poly(const float_type* __restrict__ expr_inf_coeff, cons
 
         for(int i = 0; i < num_out_neurons_current_layer; i++)
         {
-            int a = n*num_out_neurons_current_layer + i;
-            int c = i*num_in_neurons_current_layer + j;
+            const int a = n*num_out_neurons_current_layer + i;
+            const int c = i*num_in_neurons_current_layer + j;
 
             const float_type prev_inf_coeff = expr_inf_coeff[a];
             const float_type prev_sup_coeff = expr_sup_coeff[a];
@@ -1192,7 +1192,7 @@ void lcsts_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const 
 
     for(int i = 0; i < num_out_neurons_current_layer; i++)
     {
-        int a = n*num_out_neurons_current_layer + i;
+        const int a = n*num_out_neurons_current_layer + i;
 
         const float_type prev_inf_coeff = expr_inf_coeff[a];
         const float_type prev_sup_coeff = expr_sup_coeff[a];
@@ -1247,7 +1247,7 @@ void ucsts_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const 
 
     for(int i = 0; i < num_out_neurons_current_layer; i++)
     {
-        int a = n*num_out_neurons_current_layer + i;
+        const int a = n*num_out_neurons_current_layer + i;
 
         const float_type prev_inf_coeff = expr_inf_coeff[a];
         const float_type prev_sup_coeff = expr_sup_coeff[a];
@@ -1545,7 +1545,7 @@ void expr_replace_relu_bounds(float_type* __restrict__ linf_coeff, float_type* _
 
 
 __global__
-void expr_replace_relu_bounds_conv_sparse(float_type* __restrict__ linf_coeff, float_type* __restrict__ lsup_coeff, float_type* __restrict__ uinf_coeff, float_type* __restrict__ usup_coeff, float_type* __restrict__ linf_cst, float_type* __restrict__ lsup_cst, float_type* __restrict__ uinf_cst, float_type* __restrict__ usup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const int output_size_x, const int output_size_y, const int output_size_z, int offset_x, int offset_y, int length_x, int length_y, int shift_x, int shift_y, const bool use_area_heuristic)
+void expr_replace_relu_bounds_conv_sparse(float_type* __restrict__ linf_coeff, float_type* __restrict__ lsup_coeff, float_type* __restrict__ uinf_coeff, float_type* __restrict__ usup_coeff, float_type* __restrict__ linf_cst, float_type* __restrict__ lsup_cst, float_type* __restrict__ uinf_cst, float_type* __restrict__ usup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const int output_size_x, const int output_size_y, const int output_size_z, const int offset_x, const int offset_y, const int length_x, const int length_y, const int shift_x, const int shift_y, const bool use_area_heuristic)
 {
     const int last_x = blockIdx.x;
     const int last_y = blockIdx.y;
@@ -1591,10 +1591,10 @@ void expr_replace_relu_bounds_conv_sparse(float_type* __restrict__ linf_coeff, f
         {
             for(int out_y = min_y; out_y < max_y; out_y++)
             {
-                int i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
-                int j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                const int i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
+                const int j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
 
-                int a = n*length_x*length_y*output_size_z + j;
+                const int a = n*length_x*length_y*output_size_z + j;
 
                 const float_type lb = lb_array[i];
                 const float_type ub = ub_array[i];
@@ -1781,8 +1781,8 @@ void coeffs_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, 
 
         for(int i = 0; i < num_out_neurons_current_layer; i++)
         {
-            int a = n*num_out_neurons_current_layer + i;
-            int c = i*num_in_neurons_current_layer + j;
+            const int a = n*num_out_neurons_current_layer + i;
+            const int c = i*num_in_neurons_current_layer + j;
 
             const float_type prev_linf_coeff = expr_linf_coeff[a];
             const float_type prev_lsup_coeff = expr_lsup_coeff[a];
@@ -2668,7 +2668,7 @@ void csts_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, co
 
     while(i < num_out_neurons_current_layer)
     {
-        int a = n*num_out_neurons_current_layer + i;
+        const int a = n*num_out_neurons_current_layer + i;
         const float_type aux_cst = aux_csts[i];
 
         elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_linf_coeff[a], expr_lsup_coeff[a], aux_cst);
@@ -2721,7 +2721,7 @@ void csts_from_previous_layer_conv(const float_type* __restrict__ expr_linf_coef
     {
         for(int i = 0; i < current_layer_out_size_x*current_layer_out_size_y; i++)
         {
-            int a = n*current_layer_out_size_x*current_layer_out_size_y*current_layer_out_size_z + i*current_layer_out_size_z + j;
+            const int a = n*current_layer_out_size_x*current_layer_out_size_y*current_layer_out_size_z + i*current_layer_out_size_z + j;
             const float_type aux_cst = aux_csts[j];
 
             elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_linf_coeff[a], expr_lsup_coeff[a], aux_cst);
@@ -2758,7 +2758,7 @@ void csts_from_previous_layer_conv(const float_type* __restrict__ expr_linf_coef
 
 
 __global__
-void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, const float_type* __restrict__ expr_linf_cst, const float_type* __restrict__ expr_lsup_cst, const float_type* __restrict__ expr_uinf_cst, const float_type* __restrict__ expr_usup_cst, float_type* __restrict__ res_linf_cst, float_type* __restrict__ res_lsup_cst, float_type* __restrict__ res_uinf_cst, float_type* __restrict__ res_usup_cst, const float_type* __restrict__ aux_csts, const int output_size_x, const int output_size_y, const int output_size_z, int offset_x, int offset_y, int length_x, int length_y, int shift_x, int shift_y)
+void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, const float_type* __restrict__ expr_linf_cst, const float_type* __restrict__ expr_lsup_cst, const float_type* __restrict__ expr_uinf_cst, const float_type* __restrict__ expr_usup_cst, float_type* __restrict__ res_linf_cst, float_type* __restrict__ res_lsup_cst, float_type* __restrict__ res_uinf_cst, float_type* __restrict__ res_usup_cst, const float_type* __restrict__ aux_csts, const int output_size_x, const int output_size_y, const int output_size_z, const int offset_x, const int offset_y, const int length_x, const int length_y, const int shift_x, const int shift_y)
 {
     const int last_x = blockIdx.x;
     const int last_y = blockIdx.y;
@@ -2807,7 +2807,7 @@ void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_li
         {
             for(int out_y = min_y; out_y < max_y; out_y++)
             {
-                int mat_out = n*length_x*length_y*output_size_z + out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                const int mat_out = n*length_x*length_y*output_size_z + out_x*length_y*output_size_z + out_y*output_size_z + out_z;
                 const float_type aux_cst = aux_csts[out_z];
 
                 elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_linf_coeff[mat_out], expr_lsup_coeff[mat_out], aux_cst);
@@ -2845,7 +2845,7 @@ void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_li
 
 
 __global__
-void lcsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ input_lcsts, const float_type* __restrict__ input_ucsts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int output_size_x, const int output_size_y, const int output_size_z, int offset_x, int offset_y, int length_x, int length_y, int shift_x, int shift_y)
+void lcsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ input_lcsts, const float_type* __restrict__ input_ucsts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int output_size_x, const int output_size_y, const int output_size_z, const int offset_x, const int offset_y, const int length_x, const int length_y, const int shift_x, const int shift_y)
 {
     const int last_x = blockIdx.x;
     const int last_y = blockIdx.y;
@@ -2922,7 +2922,7 @@ void lcsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff,
 
 
 __global__
-void ucsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ input_lcsts, const float_type* __restrict__ input_ucsts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int output_size_x, const int output_size_y, const int output_size_z, int offset_x, int offset_y, int length_x, int length_y, int shift_x, int shift_y)
+void ucsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ input_lcsts, const float_type* __restrict__ input_ucsts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int output_size_x, const int output_size_y, const int output_size_z, const int offset_x, const int offset_y, const int length_x, const int length_y, const int shift_x, const int shift_y)
 {
     const int last_x = blockIdx.x;
     const int last_y = blockIdx.y;
@@ -3001,9 +3001,9 @@ void ucsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff,
 __global__
 void device_layer_create_sparse_exprs(float_type* dense_coeff, float_type* bias, const float_type* filter_weights, const float_type* filter_bias, const int chunk_counter, const int input_size_x, const int input_size_y, const int input_size_z, const int filter_size_x, const int filter_size_y, const int stride_x, const int stride_y, const int pad_x, const int pad_y)
 {
-    int out_x = blockIdx.x;
-    int out_y = blockIdx.y;
-    int out_z = blockIdx.z;
+    const int out_x = blockIdx.x;
+    const int out_y = blockIdx.y;
+    const int out_z = blockIdx.z;
 
     const int local_mat_x = out_x*gridDim.y*gridDim.z + out_y*gridDim.z + out_z;
 
@@ -3038,7 +3038,7 @@ void device_layer_create_sparse_exprs(float_type* dense_coeff, float_type* bias,
 }
 
 
-void update_state_using_predecessor_layer(fppoly_internal_t* pr, fppoly_t* fp, float_type** linf_coeff, float_type** lsup_coeff, float_type** linf_cst, float_type** lsup_cst, float_type** uinf_coeff, float_type** usup_coeff, float_type** uinf_cst, float_type** usup_cst, float_type** linf_coeff_tmp, float_type** lsup_coeff_tmp, float_type** linf_cst_tmp, float_type** lsup_cst_tmp, float_type** uinf_coeff_tmp, float_type** usup_coeff_tmp, float_type** uinf_cst_tmp, float_type** usup_cst_tmp, const size_t k, bool use_area_heuristic, const size_t num_out_neurons_last_layer)
+void update_state_using_predecessor_layer(fppoly_internal_t* pr, fppoly_t* fp, float_type** linf_coeff, float_type** lsup_coeff, float_type** linf_cst, float_type** lsup_cst, float_type** uinf_coeff, float_type** usup_coeff, float_type** uinf_cst, float_type** usup_cst, float_type** linf_coeff_tmp, float_type** lsup_coeff_tmp, float_type** linf_cst_tmp, float_type** lsup_cst_tmp, float_type** uinf_coeff_tmp, float_type** usup_coeff_tmp, float_type** uinf_cst_tmp, float_type** usup_cst_tmp, const size_t k, const bool use_area_heuristic, const size_t num_out_neurons_last_layer)
 {
     const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
     const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
@@ -3134,7 +3134,7 @@ void update_state_using_predecessor_layer(fppoly_internal_t* pr, fppoly_t* fp, f
 
 void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, const size_t layerno, const bool use_area_heuristic)
 {
-    auto start = std::chrono::system_clock::now();
+    const auto start = std::chrono::system_clock::now();
 
     fppoly_internal_t* pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
@@ -3430,9 +3430,9 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
 
     cudaDeviceSynchronize();
 
-    auto end = std::chrono::system_clock::now();
+    const auto end = std::chrono::system_clock::now();
 
-    std::chrono::duration<double> elapsed_seconds = end - start;
+    const std::chrono::duration<double> elapsed_seconds = end - start;
     std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl << std::endl;
 }
 
@@ -3733,7 +3733,7 @@ size_t predict_size(fppoly_t* fp, const size_t layerno)
 }
 
 
-void update_state_using_predecessor_layer_sparse(fppoly_internal_t* pr, fppoly_t* fp, float_type** linf_coeff, float_type** lsup_coeff, float_type** linf_cst, float_type** lsup_cst, float_type** uinf_coeff, float_type** usup_coeff, float_type** uinf_cst, float_type** usup_cst, float_type** linf_coeff_tmp, float_type** lsup_coeff_tmp, float_type** linf_cst_tmp, float_type** lsup_cst_tmp, float_type** uinf_coeff_tmp, float_type** usup_coeff_tmp, float_type** uinf_cst_tmp, float_type** usup_cst_tmp, const size_t layerno, const size_t k, bool use_area_heuristic, const size_t x_y_size_last_layer, const size_t num_filters_last_layer, const size_t num_chunks, long int& offset_x, long int& offset_y, long int& length_x, long int& length_y, long int& shift_x, long int& shift_y)
+void update_state_using_predecessor_layer_sparse(fppoly_internal_t* pr, fppoly_t* fp, float_type** linf_coeff, float_type** lsup_coeff, float_type** linf_cst, float_type** lsup_cst, float_type** uinf_coeff, float_type** usup_coeff, float_type** uinf_cst, float_type** usup_cst, float_type** linf_coeff_tmp, float_type** lsup_coeff_tmp, float_type** linf_cst_tmp, float_type** lsup_cst_tmp, float_type** uinf_coeff_tmp, float_type** usup_coeff_tmp, float_type** uinf_cst_tmp, float_type** usup_cst_tmp, const size_t layerno, const size_t k, const bool use_area_heuristic, const size_t x_y_size_last_layer, const size_t num_filters_last_layer, const size_t num_chunks, long int& offset_x, long int& offset_y, long int& length_x, long int& length_y, long int& shift_x, long int& shift_y)
 {
     const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
     const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
@@ -3841,9 +3841,9 @@ void update_state_using_predecessor_layer_sparse(fppoly_internal_t* pr, fppoly_t
 __global__
 void create_res_coeffs_csts(float_type* coeffs, float_type* bias, const int num_chunks, const int chunk_counter, const int input_size_z)
 {
-    int out_x = blockIdx.x;
-    int out_y = blockIdx.y;
-    int out_z = blockIdx.z;
+    const int out_x = blockIdx.x;
+    const int out_y = blockIdx.y;
+    const int out_z = blockIdx.z;
 
     const int local_mat_x = out_x*gridDim.y*gridDim.z + out_y*gridDim.z + out_z;
 
@@ -3855,9 +3855,9 @@ void create_res_coeffs_csts(float_type* coeffs, float_type* bias, const int num_
 
 void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* fp, const size_t layerno, const size_t num_chunks, const size_t chunk_counter, const bool use_area_heuristic)
 {
-    size_t backstep_counter = 0;
+    const auto start = std::chrono::system_clock::now();
 
-    auto start = std::chrono::system_clock::now();
+    size_t backstep_counter = 0;
 
     fppoly_internal_t* pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
@@ -4432,9 +4432,9 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
 
     cudaDeviceSynchronize();
 
-    auto end = std::chrono::system_clock::now();
+    const auto end = std::chrono::system_clock::now();
 
-    std::chrono::duration<double> elapsed_seconds = end - start;
+    const std::chrono::duration<double> elapsed_seconds = end - start;
     std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl << std::endl;
 }
 
@@ -4571,8 +4571,8 @@ void coeffs_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, c
 
         for(int i = 0; i < num_out_neurons_current_layer; i++)
         {
-            int a = n*num_out_neurons_current_layer + i;
-            int c = i*num_in_neurons_current_layer + j;
+            const int a = n*num_out_neurons_current_layer + i;
+            const int c = i*num_in_neurons_current_layer + j;
 
             const float_type prev_inf_coeff = expr_inf_coeff[a];
             const float_type prev_sup_coeff = expr_sup_coeff[a];
@@ -4818,7 +4818,7 @@ void csts_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, con
 
     while(i < num_out_neurons_current_layer)
     {
-        int a = n*num_out_neurons_current_layer + i;
+        const int a = n*num_out_neurons_current_layer + i;
 
         elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_inf_coeff[a], expr_sup_coeff[a], aux_csts[i]);
 
@@ -4857,7 +4857,7 @@ void csts_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff
     {
         for(int i = 0; i < current_layer_out_size_x*current_layer_out_size_y; i++)
         {
-            int a = n*current_layer_out_size_x*current_layer_out_size_y*current_layer_out_size_z + i*current_layer_out_size_z + j;
+            const int a = n*current_layer_out_size_x*current_layer_out_size_y*current_layer_out_size_z + i*current_layer_out_size_z + j;
 
             elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_inf_coeff[a], expr_sup_coeff[a], aux_csts[j]);
 
@@ -4984,7 +4984,7 @@ void lexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* _
 }
 
 
-void update_state_using_predecessor_layer_lower_half(fppoly_internal_t* pr, fppoly_t* fp, float_type** linf_coeff, float_type** lsup_coeff, float_type** linf_cst, float_type** lsup_cst, float_type** linf_coeff_tmp, float_type** lsup_coeff_tmp, float_type** linf_cst_tmp, float_type** lsup_cst_tmp, const size_t k, bool use_area_heuristic, const size_t num_out_neurons_last_layer)
+void update_state_using_predecessor_layer_lower_half(fppoly_internal_t* pr, fppoly_t* fp, float_type** linf_coeff, float_type** lsup_coeff, float_type** linf_cst, float_type** lsup_cst, float_type** linf_coeff_tmp, float_type** lsup_coeff_tmp, float_type** linf_cst_tmp, float_type** lsup_cst_tmp, const size_t k, const bool use_area_heuristic, const size_t num_out_neurons_last_layer)
 {
     const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
     const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
