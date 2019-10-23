@@ -1855,51 +1855,6 @@ void uexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, f
 
 
 __global__
-void coeffs_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const size_t num_out_neurons_current_layer, const size_t num_in_neurons_current_layer)
-{
-    const size_t n = blockIdx.x;
-
-    size_t j = threadIdx.x;
-
-    float_type tmp1, tmp2;
-    float_type maxRes, maxMul;
-
-    while(j < num_in_neurons_current_layer)
-    {
-        const size_t b = n*num_in_neurons_current_layer + j;
-
-        float_type inf_coeff = 0;
-        float_type sup_coeff = 0;
-
-        for(size_t i = 0; i < num_out_neurons_current_layer; i++)
-        {
-            size_t a = n*num_out_neurons_current_layer + i;
-            size_t c = i*num_in_neurons_current_layer + j;
-
-            const float_type prev_inf_coeff = expr_inf_coeff[a];
-            const float_type prev_sup_coeff = expr_sup_coeff[a];
-
-            if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
-            {
-                elina_double_interval_mul_expr_coeff_const_expr(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeffs[c]);
-
-                maxRes = max(abs(inf_coeff), abs(sup_coeff));
-                maxMul = max(abs(tmp1), abs(tmp2));
-
-                inf_coeff = inf_coeff + tmp1 - (maxRes + maxMul)*ulp;
-                sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
-            }
-        }
-
-        res_inf_coeff[b] = inf_coeff;
-        res_sup_coeff[b] = sup_coeff;
-
-        j += blockDim.x;
-    }
-}
-
-
-__global__
 void coeffs_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const size_t num_out_neurons_current_layer, const size_t num_in_neurons_current_layer)
 {
     const size_t n = blockIdx.x;
@@ -1958,73 +1913,6 @@ void coeffs_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, 
         res_usup_coeff[b] = usup_coeff;
 
         j += blockDim.x;
-    }
-}
-
-
-__global__
-void coeffs_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
-{
-    const size_t n = blockIdx.x;
-
-    const size_t inp_z = threadIdx.x;
-    const size_t y_shift = threadIdx.y;
-    const size_t x_shift = threadIdx.z;
-
-    float_type tmp1, tmp2;
-    float_type maxRes, maxMul;
-
-    if(x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z < filter_size_x*filter_size_y*input_size_z)
-    {
-        for(size_t out_x = 0; out_x < output_size_x; out_x++)
-        {
-            for(size_t out_y = 0; out_y < output_size_y; out_y++)
-            {
-                const long int x_val = out_x*stride_x + x_shift - pad_x;
-                const long int y_val = out_y*stride_y + y_shift - pad_y;
-
-                if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
-                {
-                    if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
-                    {
-                        const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
-                        const size_t b = n*input_size_x*input_size_y*input_size_z + mat_in;
-
-                        float_type inf_coeff = res_inf_coeff[b];
-                        float_type sup_coeff = res_sup_coeff[b];
-
-                        for(size_t out_z = 0; out_z < output_size_z; out_z++)
-                        {
-                            const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
-
-                            const size_t a = n*output_size_x*output_size_y*output_size_z + mat_out;
-
-                            const float_type prev_inf_coeff = expr_inf_coeff[a];
-                            const float_type prev_sup_coeff = expr_sup_coeff[a];
-
-                            if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
-                            {
-                                const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
-
-                                const float_type aux_coeff = aux_coeffs[filter_index];
-                                elina_double_interval_mul_expr_coeff_const_expr(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeff);
-
-                                maxRes = max(abs(inf_coeff), abs(sup_coeff));
-                                maxMul = max(abs(tmp1), abs(tmp2));
-
-                                inf_coeff = inf_coeff + tmp1 - (maxRes + maxMul)*ulp;
-                                sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
-                            }
-                        }
-
-                        res_inf_coeff[b] = inf_coeff;
-                        res_sup_coeff[b] = sup_coeff;
-                    }
-                }
-
-                __syncthreads();
-            }
-        }
     }
 }
 
@@ -2113,77 +2001,6 @@ void coeffs_from_previous_layer_conv(const float_type* __restrict__ expr_linf_co
                 __syncthreads();
             }
         }
-    }
-}
-
-
-__global__
-void coeffs_from_previous_layer_conv_filter_serial(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
-{
-    const size_t n = blockIdx.x;
-
-    size_t inp_z = threadIdx.x;
-
-    float_type tmp1, tmp2;
-    float_type maxRes, maxMul;
-
-    while(inp_z < input_size_z)
-    {
-        for(size_t out_x = 0; out_x < output_size_x; out_x++)
-        {
-            for(size_t out_y = 0; out_y < output_size_y; out_y++)
-            {
-                for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
-                {
-                    for(size_t y_shift = 0; y_shift < filter_size_y; y_shift++)
-                    {
-                        const long int x_val = out_x*stride_x + x_shift - pad_x;
-                        const long int y_val = out_y*stride_y + y_shift - pad_y;
-
-                        if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
-                        {
-                            if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
-                            {
-                                const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
-                                const size_t b = n*input_size_x*input_size_y*input_size_z + mat_in;
-
-                                float_type inf_coeff = res_inf_coeff[b];
-                                float_type sup_coeff = res_sup_coeff[b];
-
-                                for(size_t out_z = 0; out_z < output_size_z; out_z++)
-                                {
-                                    const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
-
-                                    const size_t a = n*output_size_x*output_size_y*output_size_z + mat_out;
-
-                                    const float_type prev_inf_coeff = expr_inf_coeff[a];
-                                    const float_type prev_sup_coeff = expr_sup_coeff[a];
-
-                                    if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
-                                    {
-                                        const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
-
-                                        const float_type aux_coeff = aux_coeffs[filter_index];
-                                        elina_double_interval_mul_expr_coeff_const_expr(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeff);
-
-                                        maxRes = max(abs(inf_coeff), abs(sup_coeff));
-                                        maxMul = max(abs(tmp1), abs(tmp2));
-
-                                        inf_coeff = inf_coeff + tmp1 - (maxRes + maxMul)*ulp;
-                                        sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
-                                    }
-                                }
-
-                                res_inf_coeff[b] = inf_coeff;
-                                res_sup_coeff[b] = sup_coeff;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        inp_z += blockDim.x;
     }
 }
 
@@ -4563,6 +4380,189 @@ void create_sub_expr(float_type* __restrict__ inf_coeff, float_type* __restrict_
 
     inf_coeff[index*10 + x] = -1.;
     sup_coeff[index*10 + x] = -1.;
+}
+
+
+__global__
+void coeffs_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const size_t num_out_neurons_current_layer, const size_t num_in_neurons_current_layer)
+{
+    const size_t n = blockIdx.x;
+
+    size_t j = threadIdx.x;
+
+    float_type tmp1, tmp2;
+    float_type maxRes, maxMul;
+
+    while(j < num_in_neurons_current_layer)
+    {
+        const size_t b = n*num_in_neurons_current_layer + j;
+
+        float_type inf_coeff = 0;
+        float_type sup_coeff = 0;
+
+        for(size_t i = 0; i < num_out_neurons_current_layer; i++)
+        {
+            size_t a = n*num_out_neurons_current_layer + i;
+            size_t c = i*num_in_neurons_current_layer + j;
+
+            const float_type prev_inf_coeff = expr_inf_coeff[a];
+            const float_type prev_sup_coeff = expr_sup_coeff[a];
+
+            if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
+            {
+                elina_double_interval_mul_expr_coeff_const_expr(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeffs[c]);
+
+                maxRes = max(abs(inf_coeff), abs(sup_coeff));
+                maxMul = max(abs(tmp1), abs(tmp2));
+
+                inf_coeff = inf_coeff + tmp1 - (maxRes + maxMul)*ulp;
+                sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
+            }
+        }
+
+        res_inf_coeff[b] = inf_coeff;
+        res_sup_coeff[b] = sup_coeff;
+
+        j += blockDim.x;
+    }
+}
+
+
+__global__
+void coeffs_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
+{
+    const size_t n = blockIdx.x;
+
+    const size_t inp_z = threadIdx.x;
+    const size_t y_shift = threadIdx.y;
+    const size_t x_shift = threadIdx.z;
+
+    float_type tmp1, tmp2;
+    float_type maxRes, maxMul;
+
+    if(x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z < filter_size_x*filter_size_y*input_size_z)
+    {
+        for(size_t out_x = 0; out_x < output_size_x; out_x++)
+        {
+            for(size_t out_y = 0; out_y < output_size_y; out_y++)
+            {
+                const long int x_val = out_x*stride_x + x_shift - pad_x;
+                const long int y_val = out_y*stride_y + y_shift - pad_y;
+
+                if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
+                {
+                    if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
+                    {
+                        const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
+                        const size_t b = n*input_size_x*input_size_y*input_size_z + mat_in;
+
+                        float_type inf_coeff = res_inf_coeff[b];
+                        float_type sup_coeff = res_sup_coeff[b];
+
+                        for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                        {
+                            const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
+
+                            const size_t a = n*output_size_x*output_size_y*output_size_z + mat_out;
+
+                            const float_type prev_inf_coeff = expr_inf_coeff[a];
+                            const float_type prev_sup_coeff = expr_sup_coeff[a];
+
+                            if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
+                            {
+                                const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+
+                                const float_type aux_coeff = aux_coeffs[filter_index];
+                                elina_double_interval_mul_expr_coeff_const_expr(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeff);
+
+                                maxRes = max(abs(inf_coeff), abs(sup_coeff));
+                                maxMul = max(abs(tmp1), abs(tmp2));
+
+                                inf_coeff = inf_coeff + tmp1 - (maxRes + maxMul)*ulp;
+                                sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
+                            }
+                        }
+
+                        res_inf_coeff[b] = inf_coeff;
+                        res_sup_coeff[b] = sup_coeff;
+                    }
+                }
+
+                __syncthreads();
+            }
+        }
+    }
+}
+
+
+__global__
+void coeffs_from_previous_layer_conv_filter_serial(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
+{
+    const size_t n = blockIdx.x;
+
+    size_t inp_z = threadIdx.x;
+
+    float_type tmp1, tmp2;
+    float_type maxRes, maxMul;
+
+    while(inp_z < input_size_z)
+    {
+        for(size_t out_x = 0; out_x < output_size_x; out_x++)
+        {
+            for(size_t out_y = 0; out_y < output_size_y; out_y++)
+            {
+                for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
+                {
+                    for(size_t y_shift = 0; y_shift < filter_size_y; y_shift++)
+                    {
+                        const long int x_val = out_x*stride_x + x_shift - pad_x;
+                        const long int y_val = out_y*stride_y + y_shift - pad_y;
+
+                        if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
+                        {
+                            if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
+                            {
+                                const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
+                                const size_t b = n*input_size_x*input_size_y*input_size_z + mat_in;
+
+                                float_type inf_coeff = res_inf_coeff[b];
+                                float_type sup_coeff = res_sup_coeff[b];
+
+                                for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                                {
+                                    const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
+
+                                    const size_t a = n*output_size_x*output_size_y*output_size_z + mat_out;
+
+                                    const float_type prev_inf_coeff = expr_inf_coeff[a];
+                                    const float_type prev_sup_coeff = expr_sup_coeff[a];
+
+                                    if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
+                                    {
+                                        const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+
+                                        const float_type aux_coeff = aux_coeffs[filter_index];
+                                        elina_double_interval_mul_expr_coeff_const_expr(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeff);
+
+                                        maxRes = max(abs(inf_coeff), abs(sup_coeff));
+                                        maxMul = max(abs(tmp1), abs(tmp2));
+
+                                        inf_coeff = inf_coeff + tmp1 - (maxRes + maxMul)*ulp;
+                                        sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
+                                    }
+                                }
+
+                                res_inf_coeff[b] = inf_coeff;
+                                res_sup_coeff[b] = sup_coeff;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        inp_z += blockDim.x;
+    }
 }
 
 
