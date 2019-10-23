@@ -26,7 +26,7 @@
 
 const size_t maximum_backstep = 2;
 
-const size_t num_threads = 128;
+const size_t num_threads = 256;
 
 #define FULL_MASK 0xffffffff
 
@@ -1367,212 +1367,6 @@ void ffn_handle_first_relu_layer(elina_manager_t* man, elina_abstract0_t* abs, c
 
 
 __global__
-void lexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* __restrict__ sup_coeff, float_type* __restrict__ inf_cst, float_type* __restrict__ sup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const size_t num_out_neurons_current_layer, const bool use_area_heuristic)
-{
-    const size_t n = blockIdx.x;
-
-    size_t i = threadIdx.x;
-
-    float_type res_inf_cst = 0;
-    float_type res_sup_cst = 0;
-
-    while(i < num_out_neurons_current_layer)
-    {
-        const size_t a = n*num_out_neurons_current_layer + i;
-
-        const float_type lb = lb_array[i];
-        const float_type ub = ub_array[i];
-        const float_type width = ub - lb;
-        const float_type lambda_inf = ub/width;
-        const float_type lambda_sup = ub/width;
-
-        const float_type old_inf_coeff = inf_coeff[a];
-        const float_type old_sup_coeff = sup_coeff[a];
-
-        if((old_sup_coeff == 0) && (old_inf_coeff == 0))
-        {
-            inf_coeff[a] = 0.0;
-            sup_coeff[a] = 0.0;
-        }
-        else if(ub <= 0)
-        {
-            inf_coeff[a] = 0.0;
-            sup_coeff[a] = 0.0;
-        }
-        else if(lb > 0)
-        {
-            inf_coeff[a] = old_inf_coeff;
-            sup_coeff[a] = old_sup_coeff;
-        }
-        else if(old_sup_coeff < 0)
-        {
-            const float_type mu_inf = -lambda_inf*lb;
-            const float_type mu_sup = -lambda_sup*lb;
-            elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
-            float_type tmp1, tmp2;
-            elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
-
-            res_inf_cst += tmp1 - min_denormal;
-            res_sup_cst += tmp2 + min_denormal;
-        }
-        else if (old_inf_coeff > 0)
-        {
-            if(use_area_heuristic)
-            {
-                const float_type area1 = -lb*ub;
-                const float_type area2 = 0.5*ub*width;
-                const float_type area3 = -0.5*lb*width;
-
-                if((area1 < area2) && (area1 < area3))
-                {
-                    elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
-                }
-                else if((area2 < area1) && (area2 < area3))
-                {
-                    inf_coeff[a] = 0.0;
-                    sup_coeff[a] = 0.0;
-                }
-                else
-                {
-                    inf_coeff[a] = old_inf_coeff;
-                    sup_coeff[a] = old_sup_coeff;
-                }
-            }
-            else
-            {
-                inf_coeff[a] = 0.0;
-                sup_coeff[a] = 0.0;
-            }
-        }
-        else
-        {
-            inf_coeff[a] = 0.0;
-            sup_coeff[a] = 0.0;
-            float_type tmp1, tmp2;
-            elina_double_interval_mul2(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
-
-            res_inf_cst += tmp1;
-            res_sup_cst += tmp1;
-        }
-
-        i += blockDim.x;
-    }
-
-    block_reduce_sum(res_inf_cst, blockDim.x);
-    block_reduce_sum(res_sup_cst, blockDim.x);
-
-    if(threadIdx.x == 0)
-    {
-        inf_cst[n] = res_inf_cst + inf_cst[n];
-        sup_cst[n] = res_sup_cst + sup_cst[n];
-    }
-}
-
-
-__global__
-void uexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* __restrict__ sup_coeff, float_type* __restrict__ inf_cst, float_type* __restrict__ sup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const size_t num_out_neurons_current_layer, const bool use_area_heuristic)
-{
-    const size_t n = blockIdx.x;
-
-    size_t i = threadIdx.x;
-
-    float_type res_inf_cst = 0;
-    float_type res_sup_cst = 0;
-
-    while(i < num_out_neurons_current_layer)
-    {
-        const size_t a = n*num_out_neurons_current_layer + i;
-
-        const float_type lb = lb_array[i];
-        const float_type ub = ub_array[i];
-        const float_type width = ub - lb;
-        const float_type lambda_inf = ub/width;
-        const float_type lambda_sup = ub/width;
-
-        const float_type old_inf_coeff = inf_coeff[a];
-        const float_type old_sup_coeff = sup_coeff[a];
-
-        if((old_sup_coeff == 0) && (old_inf_coeff == 0))
-        {
-            inf_coeff[a] = 0.0;
-            sup_coeff[a] = 0.0;
-        }
-        else if(ub <= 0)
-        {
-            inf_coeff[a] = 0.0;
-            sup_coeff[a] = 0.0;
-        }
-        else if(lb > 0)
-        {
-            inf_coeff[a] = old_inf_coeff;
-            sup_coeff[a] = old_sup_coeff;
-        }
-        else if(old_inf_coeff > 0)
-        {
-            const float_type mu_inf = -lambda_inf*lb;
-            const float_type mu_sup = -lambda_sup*lb;
-            elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
-            float_type tmp1, tmp2;
-            elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
-
-            res_inf_cst += tmp1 - min_denormal;
-            res_sup_cst += tmp2 + min_denormal;
-        }
-        else if(old_sup_coeff < 0)
-        {
-            if(use_area_heuristic)
-            {
-                const float_type area1 = -lb*ub;
-                const float_type area2 = 0.5*ub*width;
-                const float_type area3 = -0.5*lb*width;
-
-                if((area1 < area2) && (area1 < area3))
-                {
-                    elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
-                }
-                else if((area2 < area1) && (area2 < area3))
-                {
-                    inf_coeff[a] = 0.0;
-                    sup_coeff[a] = 0.0;
-                }
-                else
-                {
-                    inf_coeff[a] = old_inf_coeff;
-                    sup_coeff[a] = old_sup_coeff;
-                }
-            }
-            else
-            {
-                inf_coeff[a] = 0.0;
-                sup_coeff[a] = 0.0;
-            }
-        }
-        else
-        {
-            inf_coeff[a] = 0.0;
-            sup_coeff[a] = 0.0;
-            float_type tmp1, tmp2;
-            elina_double_interval_mul2(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
-
-            res_inf_cst += tmp2;
-            res_sup_cst += tmp2;
-        }
-
-        i += blockDim.x;
-    }
-
-    block_reduce_sum(res_inf_cst, blockDim.x);
-    block_reduce_sum(res_sup_cst, blockDim.x);
-
-    if(threadIdx.x == 0)
-    {
-        inf_cst[n] = res_inf_cst + inf_cst[n];
-        sup_cst[n] = res_sup_cst + sup_cst[n];
-    }
-}
-
-
-__global__
 void expr_replace_relu_bounds(float_type* __restrict__ linf_coeff, float_type* __restrict__ lsup_coeff, float_type* __restrict__ uinf_coeff, float_type* __restrict__ usup_coeff, float_type* __restrict__ linf_cst, float_type* __restrict__ lsup_cst, float_type* __restrict__ uinf_cst, float_type* __restrict__ usup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const size_t num_out_neurons_current_layer, const bool use_area_heuristic)
 {
     const size_t n = blockIdx.x;
@@ -1746,288 +1540,6 @@ void expr_replace_relu_bounds(float_type* __restrict__ linf_coeff, float_type* _
         lsup_cst[n] = res_lsup_cst + lsup_cst[n];
         uinf_cst[n] = res_uinf_cst + uinf_cst[n];
         usup_cst[n] = res_usup_cst + usup_cst[n];
-    }
-}
-
-
-__global__
-void lexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, float_type* __restrict__ sup_coeff, float_type* __restrict__ inf_cst, float_type* __restrict__ sup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, long int offset_x, long int offset_y, long int length_x, long int length_y, long int shift_x, long int shift_y, const bool use_area_heuristic)
-{
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
-
-    size_t out_z = threadIdx.x;
-
-    __shared__ size_t n;
-
-    __shared__ long int min_out_x;
-    __shared__ long int min_out_y;
-
-    __shared__ long int min_x;
-    __shared__ long int min_y;
-
-    __shared__ long int max_x;
-    __shared__ long int max_y;
-
-    if(out_z == 0)
-    {
-        n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
-
-        min_out_x = offset_x + last_x*shift_x;
-        min_out_y = offset_y + last_y*shift_y;
-
-        min_x = (min_out_x < 0) ? -min_out_x : 0;
-        min_y = (min_out_y < 0) ? -min_out_y : 0;
-
-        max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
-        max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
-    }
-
-    __syncthreads();
-
-    float_type res_inf_cst = 0;
-    float_type res_sup_cst = 0;
-
-    while(out_z < output_size_z)
-    {
-        for(long int out_x = min_x; out_x < max_x; out_x++)
-        {
-            for(long int out_y = min_y; out_y < max_y; out_y++)
-            {
-                size_t i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
-                size_t j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
-
-                size_t a = n*length_x*length_y*output_size_z + j;
-
-                const float_type lb = lb_array[i];
-                const float_type ub = ub_array[i];
-                const float_type width = ub - lb;
-                const float_type lambda_inf = ub/width;
-                const float_type lambda_sup = ub/width;
-
-                const float_type old_inf_coeff = inf_coeff[a];
-                const float_type old_sup_coeff = sup_coeff[a];
-
-                if((old_sup_coeff == 0) && (old_inf_coeff == 0))
-                {
-                    inf_coeff[a] = 0.0;
-                    sup_coeff[a] = 0.0;
-                }
-                else if(ub <= 0)
-                {
-                    inf_coeff[a] = 0.0;
-                    sup_coeff[a] = 0.0;
-                }
-                else if(lb > 0)
-                {
-                    inf_coeff[a] = old_inf_coeff;
-                    sup_coeff[a] = old_sup_coeff;
-                }
-                else if(old_sup_coeff < 0)
-                {
-                    const float_type mu_inf = -lambda_inf*lb;
-                    const float_type mu_sup = -lambda_sup*lb;
-                    elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
-                    float_type tmp1, tmp2;
-                    elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
-
-                    res_inf_cst += tmp1 - min_denormal;
-                    res_sup_cst += tmp2 + min_denormal;
-                }
-                else if (old_inf_coeff > 0)
-                {
-                    if(use_area_heuristic)
-                    {
-                        const float_type area1 = -lb*ub;
-                        const float_type area2 = 0.5*ub*width;
-                        const float_type area3 = -0.5*lb*width;
-
-                        if((area1 < area2) && (area1 < area3))
-                        {
-                            elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
-                        }
-                        else if((area2 < area1) && (area2 < area3))
-                        {
-                            inf_coeff[a] = 0.0;
-                            sup_coeff[a] = 0.0;
-                        }
-                        else
-                        {
-                            inf_coeff[a] = old_inf_coeff;
-                            sup_coeff[a] = old_sup_coeff;
-                        }
-                    }
-                    else
-                    {
-                        inf_coeff[a] = 0.0;
-                        sup_coeff[a] = 0.0;
-                    }
-                }
-                else
-                {
-                    inf_coeff[a] = 0.0;
-                    sup_coeff[a] = 0.0;
-                    float_type tmp1, tmp2;
-                    elina_double_interval_mul2(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
-
-                    res_inf_cst += tmp1;
-                    res_sup_cst += tmp1;
-                }
-            }
-        }
-
-        out_z += blockDim.x;
-    }
-
-    block_reduce_sum(res_inf_cst, blockDim.x);
-    block_reduce_sum(res_sup_cst, blockDim.x);
-
-    if(threadIdx.x == 0)
-    {
-        inf_cst[n] = res_inf_cst + inf_cst[n];
-        sup_cst[n] = res_sup_cst + sup_cst[n];
-    }
-}
-
-
-__global__
-void uexpr_replace_relu_bounds_conv_sparse(float_type* __restrict__ inf_coeff, float_type* __restrict__ sup_coeff, float_type* __restrict__ inf_cst, float_type* __restrict__ sup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, long int offset_x, long int offset_y, long int length_x, long int length_y, long int shift_x, long int shift_y, const bool use_area_heuristic)
-{
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
-
-    size_t out_z = threadIdx.x;
-
-    __shared__ size_t n;
-
-    __shared__ long int min_out_x;
-    __shared__ long int min_out_y;
-
-    __shared__ long int min_x;
-    __shared__ long int min_y;
-
-    __shared__ long int max_x;
-    __shared__ long int max_y;
-
-    if(out_z == 0)
-    {
-        n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
-
-        min_out_x = offset_x + last_x*shift_x;
-        min_out_y = offset_y + last_y*shift_y;
-
-        min_x = (min_out_x < 0) ? -min_out_x : 0;
-        min_y = (min_out_y < 0) ? -min_out_y : 0;
-
-        max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
-        max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
-    }
-
-    __syncthreads();
-
-    float_type res_inf_cst = 0;
-    float_type res_sup_cst = 0;
-
-    while(out_z < output_size_z)
-    {
-        for(long int out_x = min_x; out_x < max_x; out_x++)
-        {
-            for(long int out_y = min_y; out_y < max_y; out_y++)
-            {
-                size_t i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
-                size_t j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
-
-                size_t a = n*length_x*length_y*output_size_z + j;
-
-                const float_type lb = lb_array[i];
-                const float_type ub = ub_array[i];
-                const float_type width = ub - lb;
-                const float_type lambda_inf = ub/width;
-                const float_type lambda_sup = ub/width;
-
-                const float_type old_inf_coeff = inf_coeff[a];
-                const float_type old_sup_coeff = sup_coeff[a];
-
-                if((old_sup_coeff == 0) && (old_inf_coeff == 0))
-                {
-                    inf_coeff[a] = 0.0;
-                    sup_coeff[a] = 0.0;
-                }
-                else if(ub <= 0)
-                {
-                    inf_coeff[a] = 0.0;
-                    sup_coeff[a] = 0.0;
-                }
-                else if(lb > 0)
-                {
-                    inf_coeff[a] = old_inf_coeff;
-                    sup_coeff[a] = old_sup_coeff;
-                }
-                else if(old_inf_coeff > 0)
-                {
-                    const float_type mu_inf = -lambda_inf*lb;
-                    const float_type mu_sup = -lambda_sup*lb;
-                    elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
-                    float_type tmp1, tmp2;
-                    elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
-
-                    res_inf_cst += tmp1 - min_denormal;
-                    res_sup_cst += tmp2 + min_denormal;
-                }
-                else if(old_sup_coeff < 0)
-                {
-                    if(use_area_heuristic)
-                    {
-                        const float_type area1 = -lb*ub;
-                        const float_type area2 = 0.5*ub*width;
-                        const float_type area3 = -0.5*lb*width;
-
-                        if((area1 < area2) && (area1 < area3))
-                        {
-                            elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
-                        }
-                        else if((area2 < area1) && (area2 < area3))
-                        {
-                            inf_coeff[a] = 0.0;
-                            sup_coeff[a] = 0.0;
-                        }
-                        else
-                        {
-                            inf_coeff[a] = old_inf_coeff;
-                            sup_coeff[a] = old_sup_coeff;
-                        }
-                    }
-                    else
-                    {
-                        inf_coeff[a] = 0.0;
-                        sup_coeff[a] = 0.0;
-                    }
-                }
-                else
-                {
-                    inf_coeff[a] = 0.0;
-                    sup_coeff[a] = 0.0;
-                    float_type tmp1, tmp2;
-                    elina_double_interval_mul2(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
-
-                    res_inf_cst += tmp2;
-                    res_sup_cst += tmp2;
-                }
-            }
-        }
-
-        out_z += blockDim.x;
-    }
-
-    block_reduce_sum(res_inf_cst, blockDim.x);
-    block_reduce_sum(res_sup_cst, blockDim.x);
-
-    if(threadIdx.x == 0)
-    {
-        inf_cst[n] = res_inf_cst + inf_cst[n];
-        sup_cst[n] = res_sup_cst + sup_cst[n];
     }
 }
 
@@ -3141,43 +2653,6 @@ void ucoeffs_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coef
 
 
 __global__
-void csts_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ aux_csts, const size_t num_out_neurons_current_layer)
-{
-    const size_t n = blockIdx.x;
-    size_t i = threadIdx.x;
-
-    float_type inf_cst = 0;
-    float_type sup_cst = 0;
-
-    float_type tmp1, tmp2;
-    float_type maxRes, maxMul;
-
-    while(i < num_out_neurons_current_layer)
-    {
-        size_t a = n*num_out_neurons_current_layer + i;
-
-        elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_inf_coeff[a], expr_sup_coeff[a], aux_csts[i]);
-
-        maxRes = max(abs(inf_cst), abs(sup_cst));
-        maxMul = max(abs(tmp1), abs(tmp2));
-
-        inf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
-        sup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
-
-        i += blockDim.x;
-    }
-
-    block_reduce_sum_csts(inf_cst, sup_cst, blockDim.x);
-
-    if(threadIdx.x == 0)
-    {
-        res_inf_cst[n] = inf_cst + expr_inf_cst[n];
-        res_sup_cst[n] = sup_cst + expr_sup_cst[n];
-    }
-}
-
-
-__global__
 void csts_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, const float_type* __restrict__ expr_linf_cst, const float_type* __restrict__ expr_lsup_cst, const float_type* __restrict__ expr_uinf_cst, const float_type* __restrict__ expr_usup_cst, float_type* __restrict__ res_linf_cst, float_type* __restrict__ res_lsup_cst, float_type* __restrict__ res_uinf_cst, float_type* __restrict__ res_usup_cst, const float_type* __restrict__ aux_csts, const size_t num_out_neurons_current_layer)
 {
     const size_t n = blockIdx.x;
@@ -3224,46 +2699,6 @@ void csts_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, co
         res_lsup_cst[n] = lsup_cst + expr_lsup_cst[n];
         res_uinf_cst[n] = uinf_cst + expr_uinf_cst[n];
         res_usup_cst[n] = usup_cst + expr_usup_cst[n];
-    }
-}
-
-
-__global__
-void csts_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ aux_csts, const size_t current_layer_out_size_x, const size_t current_layer_out_size_y, const size_t current_layer_out_size_z)
-{
-    const size_t n = blockIdx.x;
-    size_t j = threadIdx.x;
-
-    float_type inf_cst = 0;
-    float_type sup_cst = 0;
-
-    float_type tmp1, tmp2;
-    float_type maxRes, maxMul;
-
-    while(j < current_layer_out_size_z)
-    {
-        for(size_t i = 0; i < current_layer_out_size_x*current_layer_out_size_y; i++)
-        {
-            size_t a = n*current_layer_out_size_x*current_layer_out_size_y*current_layer_out_size_z + i*current_layer_out_size_z + j;
-
-            elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_inf_coeff[a], expr_sup_coeff[a], aux_csts[j]);
-
-            maxRes = max(abs(inf_cst), abs(sup_cst));
-            maxMul = max(abs(tmp1), abs(tmp2));
-
-            inf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
-            sup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
-        }
-
-        j += blockDim.x;
-    }
-
-    block_reduce_sum_csts(inf_cst, sup_cst, blockDim.x);
-
-    if(threadIdx.x == 0)
-    {
-        res_inf_cst[n] = inf_cst + expr_inf_cst[n];
-        res_sup_cst[n] = sup_cst + expr_sup_cst[n];
     }
 }
 
@@ -3629,8 +3064,6 @@ void update_state_using_predecessor_layer(fppoly_internal_t* pr, fppoly_t* fp, f
     if(fp->layers[k]->activation == RELU)
     {
         expr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(*linf_coeff, *lsup_coeff, *uinf_coeff, *usup_coeff, *linf_cst, *lsup_cst, *uinf_cst, *usup_cst, aux_lb_array, aux_ub_array, num_out_neurons_current_layer, use_area_heuristic);
-        //lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(*linf_coeff, *lsup_coeff, *linf_cst, *lsup_cst, aux_lb_array, aux_ub_array, num_out_neurons_current_layer, use_area_heuristic);
-        //uexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(*uinf_coeff, *usup_coeff, *uinf_cst, *usup_cst, aux_lb_array, aux_ub_array, num_out_neurons_current_layer, use_area_heuristic);
     }
 
     cudaMalloc((void**) &(*linf_coeff_tmp), num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
@@ -3645,13 +3078,13 @@ void update_state_using_predecessor_layer(fppoly_internal_t* pr, fppoly_t* fp, f
 
     if(fp->layers[k]->type == CONV)
     {
-        if(fp->layers[k]->input_size[0]*fp->layers[k]->input_size[1]*fp->layers[k]->input_size[2] > 256)
+        if(fp->layers[k]->input_size[0]*fp->layers[k]->input_size[1]*fp->layers[k]->input_size[2] > num_threads)
         {
-            if(fp->layers[k]->input_size[1]*fp->layers[k]->input_size[2] > 256)
+            if(fp->layers[k]->input_size[1]*fp->layers[k]->input_size[2] > num_threads)
             {
-                if(fp->layers[k]->input_size[2] > 256)
+                if(fp->layers[k]->input_size[2] > num_threads)
                 {
-                    coeffs_from_previous_layer_conv_filter_serial<<<num_out_neurons_last_layer, 256>>>(*linf_coeff, *lsup_coeff, *uinf_coeff, *usup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, *uinf_coeff_tmp, *usup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+                    coeffs_from_previous_layer_conv_filter_serial<<<num_out_neurons_last_layer, num_threads>>>(*linf_coeff, *lsup_coeff, *uinf_coeff, *usup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, *uinf_coeff_tmp, *usup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
                 }
                 else
                 {
@@ -3769,8 +3202,6 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
             if(fp->layers[k]->activation==RELU)
             {
                 expr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(linf_coeff, lsup_coeff, uinf_coeff, usup_coeff, linf_cst, lsup_cst, uinf_cst, usup_cst, fp->layers[k]->lb_array, fp->layers[k]->ub_array, fp->layers[k]->num_out_neurons, use_area_heuristic);
-                //lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, fp->layers[k]->lb_array, fp->layers[k]->ub_array, fp->layers[k]->num_out_neurons, use_area_heuristic);
-                //uexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, fp->layers[k]->lb_array, fp->layers[k]->ub_array, fp->layers[k]->num_out_neurons, use_area_heuristic);
             }
 
             std::cout << "DENSE RESIDUAL" << std::endl;
@@ -4328,8 +3759,6 @@ void update_state_using_predecessor_layer_sparse(fppoly_internal_t* pr, fppoly_t
     if(fp->layers[k]->activation == RELU)
     {
         expr_replace_relu_bounds_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), fp->layers[k]->output_size[2]>>>(*linf_coeff, *lsup_coeff, *uinf_coeff, *usup_coeff, *linf_cst, *lsup_cst, *uinf_cst, *usup_cst, aux_lb_array, aux_ub_array, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, use_area_heuristic);
-        //lexpr_replace_relu_bounds_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), fp->layers[k]->output_size[2]>>>(*linf_coeff, *lsup_coeff, *linf_cst, *lsup_cst, aux_lb_array, aux_ub_array, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, use_area_heuristic);
-        //uexpr_replace_relu_bounds_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), fp->layers[k]->output_size[2]>>>(*uinf_coeff, *usup_coeff, *uinf_cst, *usup_cst, aux_lb_array, aux_ub_array, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, use_area_heuristic);
     }
 
     size_t missing_length = ((length_x - 1)*fp->layers[k]->strides[0] + fp->layers[k]->filter_size[0])*((length_y - 1)*fp->layers[k]->strides[1] + fp->layers[k]->filter_size[1])*fp->layers[k]->input_size[2];
@@ -4353,13 +3782,13 @@ void update_state_using_predecessor_layer_sparse(fppoly_internal_t* pr, fppoly_t
     const long int new_shift_x = fp->layers[k]->strides[0]*shift_x;
     const long int new_shift_y = fp->layers[k]->strides[1]*shift_y;
 
-    if(fp->layers[k]->input_size[0]*fp->layers[k]->input_size[1]*fp->layers[k]->input_size[2] > 256)
+    if(fp->layers[k]->input_size[0]*fp->layers[k]->input_size[1]*fp->layers[k]->input_size[2] > num_threads)
     {
-        if(fp->layers[k]->input_size[1]*fp->layers[k]->input_size[2] > 256)
+        if(fp->layers[k]->input_size[1]*fp->layers[k]->input_size[2] > num_threads)
         {
-            if(fp->layers[k]->input_size[2] > 256)
+            if(fp->layers[k]->input_size[2] > num_threads)
             {
-                coeffs_from_previous_layer_conv_sparse_filter_serial<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), 256>>>(*linf_coeff, *lsup_coeff, *uinf_coeff, *usup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, *uinf_coeff_tmp, *usup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, new_length_x, new_length_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+                coeffs_from_previous_layer_conv_sparse_filter_serial<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), num_threads>>>(*linf_coeff, *lsup_coeff, *uinf_coeff, *usup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, *uinf_coeff_tmp, *usup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, new_length_x, new_length_y, fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
             }
             else
             {
@@ -4715,8 +4144,6 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
             if(fp->layers[k]->activation == RELU)
             {
                 expr_replace_relu_bounds_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), fp->layers[k]->output_size[2]>>>(linf_coeff, lsup_coeff, uinf_coeff, usup_coeff, linf_cst, lsup_cst, uinf_cst, usup_cst, fp->layers[k]->lb_array, fp->layers[k]->ub_array, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, use_area_heuristic);
-                //lexpr_replace_relu_bounds_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), fp->layers[k]->output_size[2]>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, fp->layers[k]->lb_array, fp->layers[k]->ub_array, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, use_area_heuristic);
-                //uexpr_replace_relu_bounds_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), fp->layers[k]->output_size[2]>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, fp->layers[k]->lb_array, fp->layers[k]->ub_array, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, use_area_heuristic);
             }
 
             const size_t predecessor1 = fp->layers[k]->predecessors[0] - 1;
@@ -4903,8 +4330,6 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
                 if(fp->layers[k]->activation == RELU)
                 {
                     expr_replace_relu_bounds_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), fp->layers[k]->output_size[2]>>>(linf_coeff, lsup_coeff, uinf_coeff, usup_coeff, linf_cst, lsup_cst, uinf_cst, usup_cst, fp->layers[k]->lb_array, fp->layers[k]->ub_array, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, use_area_heuristic);
-                    //lexpr_replace_relu_bounds_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), fp->layers[k]->output_size[2]>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, fp->layers[k]->lb_array, fp->layers[k]->ub_array, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, use_area_heuristic);
-                    //uexpr_replace_relu_bounds_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), fp->layers[k]->output_size[2]>>>(uinf_coeff, usup_coeff, uinf_cst, usup_cst, fp->layers[k]->lb_array, fp->layers[k]->ub_array, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y, use_area_heuristic);
                 }
 
                 compute_lb_from_expr_conv_sparse<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), fp->layers[k]->output_size[2]>>>(lb_array, linf_coeff, lsup_coeff, linf_cst, fp->layers[k]->lb_array, fp->layers[k]->ub_array, num_chunks, chunk_counter, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], offset_x, offset_y, length_x, length_y, shift_x, shift_y);
@@ -5379,6 +4804,186 @@ void coeffs_from_previous_layer_conv_filter_serial(const float_type* __restrict_
 }
 
 
+__global__
+void csts_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ aux_csts, const size_t num_out_neurons_current_layer)
+{
+    const size_t n = blockIdx.x;
+    size_t i = threadIdx.x;
+
+    float_type inf_cst = 0;
+    float_type sup_cst = 0;
+
+    float_type tmp1, tmp2;
+    float_type maxRes, maxMul;
+
+    while(i < num_out_neurons_current_layer)
+    {
+        size_t a = n*num_out_neurons_current_layer + i;
+
+        elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_inf_coeff[a], expr_sup_coeff[a], aux_csts[i]);
+
+        maxRes = max(abs(inf_cst), abs(sup_cst));
+        maxMul = max(abs(tmp1), abs(tmp2));
+
+        inf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
+        sup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
+
+        i += blockDim.x;
+    }
+
+    block_reduce_sum_csts(inf_cst, sup_cst, blockDim.x);
+
+    if(threadIdx.x == 0)
+    {
+        res_inf_cst[n] = inf_cst + expr_inf_cst[n];
+        res_sup_cst[n] = sup_cst + expr_sup_cst[n];
+    }
+}
+
+
+__global__
+void csts_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ aux_csts, const size_t current_layer_out_size_x, const size_t current_layer_out_size_y, const size_t current_layer_out_size_z)
+{
+    const size_t n = blockIdx.x;
+    size_t j = threadIdx.x;
+
+    float_type inf_cst = 0;
+    float_type sup_cst = 0;
+
+    float_type tmp1, tmp2;
+    float_type maxRes, maxMul;
+
+    while(j < current_layer_out_size_z)
+    {
+        for(size_t i = 0; i < current_layer_out_size_x*current_layer_out_size_y; i++)
+        {
+            size_t a = n*current_layer_out_size_x*current_layer_out_size_y*current_layer_out_size_z + i*current_layer_out_size_z + j;
+
+            elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_inf_coeff[a], expr_sup_coeff[a], aux_csts[j]);
+
+            maxRes = max(abs(inf_cst), abs(sup_cst));
+            maxMul = max(abs(tmp1), abs(tmp2));
+
+            inf_cst += tmp1 - (maxRes + maxMul)*ulp - min_denormal;
+            sup_cst += tmp2 + (maxRes + maxMul)*ulp + min_denormal;
+        }
+
+        j += blockDim.x;
+    }
+
+    block_reduce_sum_csts(inf_cst, sup_cst, blockDim.x);
+
+    if(threadIdx.x == 0)
+    {
+        res_inf_cst[n] = inf_cst + expr_inf_cst[n];
+        res_sup_cst[n] = sup_cst + expr_sup_cst[n];
+    }
+}
+
+
+__global__
+void lexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* __restrict__ sup_coeff, float_type* __restrict__ inf_cst, float_type* __restrict__ sup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const size_t num_out_neurons_current_layer, const bool use_area_heuristic)
+{
+    const size_t n = blockIdx.x;
+
+    size_t i = threadIdx.x;
+
+    float_type res_inf_cst = 0;
+    float_type res_sup_cst = 0;
+
+    while(i < num_out_neurons_current_layer)
+    {
+        const size_t a = n*num_out_neurons_current_layer + i;
+
+        const float_type lb = lb_array[i];
+        const float_type ub = ub_array[i];
+        const float_type width = ub - lb;
+        const float_type lambda_inf = ub/width;
+        const float_type lambda_sup = ub/width;
+
+        const float_type old_inf_coeff = inf_coeff[a];
+        const float_type old_sup_coeff = sup_coeff[a];
+
+        if((old_sup_coeff == 0) && (old_inf_coeff == 0))
+        {
+            inf_coeff[a] = 0.0;
+            sup_coeff[a] = 0.0;
+        }
+        else if(ub <= 0)
+        {
+            inf_coeff[a] = 0.0;
+            sup_coeff[a] = 0.0;
+        }
+        else if(lb > 0)
+        {
+            inf_coeff[a] = old_inf_coeff;
+            sup_coeff[a] = old_sup_coeff;
+        }
+        else if(old_sup_coeff < 0)
+        {
+            const float_type mu_inf = -lambda_inf*lb;
+            const float_type mu_sup = -lambda_sup*lb;
+            elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
+            float_type tmp1, tmp2;
+            elina_double_interval_mul_cst_coeff(&tmp1, &tmp2, mu_inf, mu_sup, old_inf_coeff, old_sup_coeff);
+
+            res_inf_cst += tmp1 - min_denormal;
+            res_sup_cst += tmp2 + min_denormal;
+        }
+        else if (old_inf_coeff > 0)
+        {
+            if(use_area_heuristic)
+            {
+                const float_type area1 = -lb*ub;
+                const float_type area2 = 0.5*ub*width;
+                const float_type area3 = -0.5*lb*width;
+
+                if((area1 < area2) && (area1 < area3))
+                {
+                    elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a], lambda_inf, lambda_sup, old_inf_coeff, old_sup_coeff);
+                }
+                else if((area2 < area1) && (area2 < area3))
+                {
+                    inf_coeff[a] = 0.0;
+                    sup_coeff[a] = 0.0;
+                }
+                else
+                {
+                    inf_coeff[a] = old_inf_coeff;
+                    sup_coeff[a] = old_sup_coeff;
+                }
+            }
+            else
+            {
+                inf_coeff[a] = 0.0;
+                sup_coeff[a] = 0.0;
+            }
+        }
+        else
+        {
+            inf_coeff[a] = 0.0;
+            sup_coeff[a] = 0.0;
+            float_type tmp1, tmp2;
+            elina_double_interval_mul2(&tmp1, &tmp2, old_inf_coeff, old_sup_coeff, 0, ub);
+
+            res_inf_cst += tmp1;
+            res_sup_cst += tmp1;
+        }
+
+        i += blockDim.x;
+    }
+
+    block_reduce_sum(res_inf_cst, blockDim.x);
+    block_reduce_sum(res_sup_cst, blockDim.x);
+
+    if(threadIdx.x == 0)
+    {
+        inf_cst[n] = res_inf_cst + inf_cst[n];
+        sup_cst[n] = res_sup_cst + sup_cst[n];
+    }
+}
+
+
 void update_state_using_predecessor_layer_lower_half(fppoly_internal_t* pr, fppoly_t* fp, float_type** linf_coeff, float_type** lsup_coeff, float_type** linf_cst, float_type** lsup_cst, float_type** linf_coeff_tmp, float_type** lsup_coeff_tmp, float_type** linf_cst_tmp, float_type** lsup_cst_tmp, const size_t k, bool use_area_heuristic, const size_t num_out_neurons_last_layer)
 {
     const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
@@ -5415,13 +5020,13 @@ void update_state_using_predecessor_layer_lower_half(fppoly_internal_t* pr, fppo
 
     if(fp->layers[k]->type == CONV)
     {
-        if(fp->layers[k]->input_size[0]*fp->layers[k]->input_size[1]*fp->layers[k]->input_size[2] > 256)
+        if(fp->layers[k]->input_size[0]*fp->layers[k]->input_size[1]*fp->layers[k]->input_size[2] > num_threads)
         {
-            if(fp->layers[k]->input_size[1]*fp->layers[k]->input_size[2] > 256)
+            if(fp->layers[k]->input_size[1]*fp->layers[k]->input_size[2] > num_threads)
             {
-                if(fp->layers[k]->input_size[2] > 256)
+                if(fp->layers[k]->input_size[2] > num_threads)
                 {
-                    coeffs_from_previous_layer_conv_filter_serial<<<num_out_neurons_last_layer, 256>>>(*linf_coeff, *lsup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
+                    coeffs_from_previous_layer_conv_filter_serial<<<num_out_neurons_last_layer, num_threads>>>(*linf_coeff, *lsup_coeff, *linf_coeff_tmp, *lsup_coeff_tmp, aux_coeffs, fp->layers[k]->output_size[0], fp->layers[k]->output_size[1], fp->layers[k]->output_size[2], fp->layers[k]->input_size[0], fp->layers[k]->input_size[1], fp->layers[k]->input_size[2], fp->layers[k]->filter_size[0], fp->layers[k]->filter_size[1], fp->layers[k]->strides[0], fp->layers[k]->strides[1], fp->layers[k]->pad[0], fp->layers[k]->pad[1]);
                 }
                 else
                 {
