@@ -353,7 +353,7 @@ void warp_reduce_sum(T& val)
 
 template <typename T>
 __inline__ __device__
-void block_reduce_sum(T& val, size_t number_threads)
+void block_reduce_sum(T& val, int number_threads)
 {
     if(number_threads <= warpSize)
     {
@@ -401,7 +401,7 @@ void warp_reduce_sum_csts(T& lval, T& uval)
 
 template <typename T>
 __inline__ __device__
-void block_reduce_sum_csts(T& lval, T&uval, size_t number_threads)
+void block_reduce_sum_csts(T& lval, T&uval, int number_threads)
 {
     if(number_threads <= warpSize)
     {
@@ -620,10 +620,10 @@ void elina_double_interval_mul_cst_coeff_const_expr(float_type* const res_inf, f
 
 
 __global__
-void compute_lb_from_expr(float_type* __restrict__ lb_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ inf_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t expr_size)
+void compute_lb_from_expr(float_type* __restrict__ lb_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ inf_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int expr_size)
 {
-    const size_t n = blockIdx.x;
-    size_t i = threadIdx.x;
+    const int n = blockIdx.x;
+    int i = threadIdx.x;
 
     float_type res_inf = 0;
 
@@ -648,10 +648,10 @@ void compute_lb_from_expr(float_type* __restrict__ lb_array, const float_type* _
 
 
 __global__
-void compute_ub_from_expr(float_type* __restrict__ ub_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ sup_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t expr_size)
+void compute_ub_from_expr(float_type* __restrict__ ub_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ sup_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int expr_size)
 {
-    const size_t n = blockIdx.x;
-    size_t i = threadIdx.x;
+    const int n = blockIdx.x;
+    int i = threadIdx.x;
 
     float_type res_sup = 0;
 
@@ -676,25 +676,25 @@ void compute_ub_from_expr(float_type* __restrict__ ub_array, const float_type* _
 
 
 __global__
-void compute_lb_from_expr_conv_sparse(float_type* __restrict__ lb_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ inf_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t num_chunks, const size_t chunk_counter, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, long int offset_x, long int offset_y, long int length_x, long int length_y, long int shift_x, long int shift_y)
+void compute_lb_from_expr_conv_sparse(float_type* __restrict__ lb_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ inf_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int num_chunks, const int chunk_counter, const int output_size_x, const int output_size_y, const int output_size_z, int offset_x, int offset_y, int length_x, int length_y, int shift_x, int shift_y)
 {
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
+    const int last_x = blockIdx.x;
+    const int last_y = blockIdx.y;
+    const int last_z = blockIdx.z;
 
-    const size_t local_n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
-    const size_t global_n = last_x*gridDim.y*num_chunks*gridDim.z + last_y*num_chunks*gridDim.z + chunk_counter*gridDim.z + last_z;
+    const int local_n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
+    const int global_n = last_x*gridDim.y*num_chunks*gridDim.z + last_y*num_chunks*gridDim.z + chunk_counter*gridDim.z + last_z;
 
-    size_t out_z = threadIdx.x;
+    int out_z = threadIdx.x;
 
-    const long int min_out_x = offset_x + last_x*shift_x;
-    const long int min_out_y = offset_y + last_y*shift_y;
+    const int min_out_x = offset_x + last_x*shift_x;
+    const int min_out_y = offset_y + last_y*shift_y;
 
-    const long int min_x = (min_out_x < 0) ? -min_out_x : 0;
-    const long int min_y = (min_out_y < 0) ? -min_out_y : 0;
+    const int min_x = (min_out_x < 0) ? -min_out_x : 0;
+    const int min_y = (min_out_y < 0) ? -min_out_y : 0;
 
-    const long int max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
-    const long int max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
+    const int max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
+    const int max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
 
     float_type res_inf = 0;
 
@@ -702,14 +702,14 @@ void compute_lb_from_expr_conv_sparse(float_type* __restrict__ lb_array, const f
 
     while(out_z < output_size_z)
     {
-        for(long int out_x = min_x; out_x < max_x; out_x++)
+        for(int out_x = min_x; out_x < max_x; out_x++)
         {
-            for(long int out_y = min_y; out_y < max_y; out_y++)
+            for(int out_y = min_y; out_y < max_y; out_y++)
             {
-                size_t i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
-                size_t j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                int i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
+                int j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
 
-                size_t mat_out = local_n*length_x*length_y*output_size_z + j;
+                int mat_out = local_n*length_x*length_y*output_size_z + j;
 
                 float_type inf_coeff = inf_coeffs[mat_out];
                 float_type sup_coeff = sup_coeffs[mat_out];
@@ -736,25 +736,25 @@ void compute_lb_from_expr_conv_sparse(float_type* __restrict__ lb_array, const f
 
 
 __global__
-void compute_ub_from_expr_conv_sparse(float_type* __restrict__ ub_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ sup_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t num_chunks, const size_t chunk_counter, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, long int offset_x, long int offset_y, long int length_x, long int length_y, long int shift_x, long int shift_y)
+void compute_ub_from_expr_conv_sparse(float_type* __restrict__ ub_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ sup_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int num_chunks, const int chunk_counter, const int output_size_x, const int output_size_y, const int output_size_z, int offset_x, int offset_y, int length_x, int length_y, int shift_x, int shift_y)
 {
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
+    const int last_x = blockIdx.x;
+    const int last_y = blockIdx.y;
+    const int last_z = blockIdx.z;
 
-    const size_t local_n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
-    const size_t global_n = last_x*gridDim.y*num_chunks*gridDim.z + last_y*num_chunks*gridDim.z + chunk_counter*gridDim.z + last_z;
+    const int local_n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
+    const int global_n = last_x*gridDim.y*num_chunks*gridDim.z + last_y*num_chunks*gridDim.z + chunk_counter*gridDim.z + last_z;
 
-    size_t out_z = threadIdx.x;
+    int out_z = threadIdx.x;
 
-    const long int min_out_x = offset_x + last_x*shift_x;
-    const long int min_out_y = offset_y + last_y*shift_y;
+    const int min_out_x = offset_x + last_x*shift_x;
+    const int min_out_y = offset_y + last_y*shift_y;
 
-    const long int min_x = (min_out_x < 0) ? -min_out_x : 0;
-    const long int min_y = (min_out_y < 0) ? -min_out_y : 0;
+    const int min_x = (min_out_x < 0) ? -min_out_x : 0;
+    const int min_y = (min_out_y < 0) ? -min_out_y : 0;
 
-    const long int max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
-    const long int max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
+    const int max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
+    const int max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
 
     float_type res_sup = 0;
 
@@ -762,14 +762,14 @@ void compute_ub_from_expr_conv_sparse(float_type* __restrict__ ub_array, const f
 
     while(out_z < output_size_z)
     {
-        for(long int out_x = min_x; out_x < max_x; out_x++)
+        for(int out_x = min_x; out_x < max_x; out_x++)
         {
-            for(long int out_y = min_y; out_y < max_y; out_y++)
+            for(int out_y = min_y; out_y < max_y; out_y++)
             {
-                size_t i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
-                size_t j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                int i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
+                int j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
 
-                size_t mat_out = local_n*length_x*length_y*output_size_z + j;
+                int mat_out = local_n*length_x*length_y*output_size_z + j;
 
                 float_type inf_coeff = inf_coeffs[mat_out];
                 float_type sup_coeff = sup_coeffs[mat_out];
@@ -796,22 +796,22 @@ void compute_ub_from_expr_conv_sparse(float_type* __restrict__ ub_array, const f
 
 
 __global__
-void compute_lb_from_expr_input_poly_sparse(float_type* __restrict__ lb_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ inf_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t num_chunks, const size_t chunk_counter, const size_t mu)
+void compute_lb_from_expr_input_poly_sparse(float_type* __restrict__ lb_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ inf_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int num_chunks, const int chunk_counter, const int mu)
 {
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
+    const int last_x = blockIdx.x;
+    const int last_y = blockIdx.y;
+    const int last_z = blockIdx.z;
 
-    const size_t local_n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
-    const size_t global_n = last_x*gridDim.y*num_chunks*gridDim.z + last_y*num_chunks*gridDim.z + chunk_counter*gridDim.z + last_z;
+    const int local_n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
+    const int global_n = last_x*gridDim.y*num_chunks*gridDim.z + last_y*num_chunks*gridDim.z + chunk_counter*gridDim.z + last_z;
 
     float_type res_inf = inf_csts[local_n];
 
     float_type tmp1, tmp2;
 
-    for(size_t i = 0; i < mu; i++)
+    for(int i = 0; i < mu; i++)
     {
-        size_t mat_out = local_n*mu + i;
+        int mat_out = local_n*mu + i;
 
         float_type inf_coeff = inf_coeffs[mat_out];
         float_type sup_coeff = sup_coeffs[mat_out];
@@ -829,22 +829,22 @@ void compute_lb_from_expr_input_poly_sparse(float_type* __restrict__ lb_array, c
 
 
 __global__
-void compute_ub_from_expr_input_poly_sparse(float_type* __restrict__ ub_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ sup_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t num_chunks, const size_t chunk_counter, const size_t mu)
+void compute_ub_from_expr_input_poly_sparse(float_type* __restrict__ ub_array, const float_type* __restrict__ inf_coeffs, const float_type* __restrict__ sup_coeffs, const float_type* __restrict__ sup_csts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int num_chunks, const int chunk_counter, const int mu)
 {
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
+    const int last_x = blockIdx.x;
+    const int last_y = blockIdx.y;
+    const int last_z = blockIdx.z;
 
-    const size_t local_n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
-    const size_t global_n = last_x*gridDim.y*num_chunks*gridDim.z + last_y*num_chunks*gridDim.z + chunk_counter*gridDim.z + last_z;
+    const int local_n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
+    const int global_n = last_x*gridDim.y*num_chunks*gridDim.z + last_y*num_chunks*gridDim.z + chunk_counter*gridDim.z + last_z;
 
     float_type res_sup = sup_csts[local_n];
 
     float_type tmp1, tmp2;
 
-    for(size_t i = 0; i < mu; i++)
+    for(int i = 0; i < mu; i++)
     {
-        size_t mat_out = local_n*mu + i;
+        int mat_out = local_n*mu + i;
 
         float_type inf_coeff = inf_coeffs[mat_out];
         float_type sup_coeff = sup_coeffs[mat_out];
@@ -863,16 +863,16 @@ void compute_ub_from_expr_input_poly_sparse(float_type* __restrict__ ub_array, c
 
 template <typename FloatType>
 __global__
-void device_layer_create_dense_expr(float_type* __restrict__ coeffs, float_type* __restrict__ csts, const FloatType* __restrict__ weights, const FloatType* __restrict__ bias, const size_t num_out_neurons, const size_t num_in_neurons)
+void device_layer_create_dense_expr(float_type* __restrict__ coeffs, float_type* __restrict__ csts, const FloatType* __restrict__ weights, const FloatType* __restrict__ bias, const int num_out_neurons, const int num_in_neurons)
 {
-    const size_t i = blockIdx.x;
+    const int i = blockIdx.x;
 
     const FloatType* weight_i = weights + i*num_in_neurons;
     const FloatType bias_i = bias[i];
 
     csts[i] = bias_i;
 
-    for(size_t j = 0; j < num_in_neurons; j++)
+    for(int j = 0; j < num_in_neurons; j++)
     {
         coeffs[i*num_in_neurons + j] = weight_i[j];
     }
@@ -902,11 +902,11 @@ void layer_create_dense_exprs(float_type* coeffs, float_type* csts, const double
 
 
 __global__
-void copy_coeffs_and_csts(float_type* __restrict__ target_coeff, float_type* __restrict__ target_cst, const float_type* __restrict__ source_coeffs, const float_type* __restrict__ source_csts, const size_t coeff_size)
+void copy_coeffs_and_csts(float_type* __restrict__ target_coeff, float_type* __restrict__ target_cst, const float_type* __restrict__ source_coeffs, const float_type* __restrict__ source_csts, const int coeff_size)
 {
-    const size_t i = blockIdx.x;
+    const int i = blockIdx.x;
 
-    for(size_t j = 0; j < coeff_size; j++)
+    for(int j = 0; j < coeff_size; j++)
     {
         target_coeff[i*coeff_size + j] = source_coeffs[i*coeff_size + j];
     }
@@ -916,14 +916,14 @@ void copy_coeffs_and_csts(float_type* __restrict__ target_coeff, float_type* __r
 
 
 __global__
-void add_coeffs_and_csts(float_type* __restrict__ target_inf_coeff, float_type* __restrict__ target_sup_coeff, float_type* __restrict__ target_inf_cst, float_type* __restrict__ target_sup_cst, const float_type* __restrict__ source_inf_coeff, const float_type* __restrict__ source_sup_coeff, const float_type* __restrict__ source_inf_cst, const float_type* __restrict__ source_sup_cst, const size_t expr_size)
+void add_coeffs_and_csts(float_type* __restrict__ target_inf_coeff, float_type* __restrict__ target_sup_coeff, float_type* __restrict__ target_inf_cst, float_type* __restrict__ target_sup_cst, const float_type* __restrict__ source_inf_coeff, const float_type* __restrict__ source_sup_coeff, const float_type* __restrict__ source_inf_cst, const float_type* __restrict__ source_sup_cst, const int expr_size)
 {
-    const size_t i = blockIdx.x;
+    const int i = blockIdx.x;
 
     float_type maxRes;
     float_type maxMul;
 
-    for(size_t j = 0; j < expr_size; j++)
+    for(int j = 0; j < expr_size; j++)
     {
         const float_type src_inf = source_inf_coeff[i*expr_size + j];
         const float_type src_sup = source_sup_coeff[i*expr_size + j];
@@ -947,29 +947,29 @@ void add_coeffs_and_csts(float_type* __restrict__ target_inf_coeff, float_type* 
 
 
 __global__
-void add_coeffs_and_csts_sparse(float_type* __restrict__ target_inf_coeff, float_type* __restrict__ target_sup_coeff, float_type* __restrict__ target_inf_cst, float_type* __restrict__ target_sup_cst, const float_type* __restrict__ source_inf_coeff, const float_type* __restrict__ source_sup_coeff, const float_type* __restrict__ source_inf_cst, const float_type* __restrict__ source_sup_cst, const size_t output_size_target_x, const size_t output_size_target_y, const size_t output_size_source_x, const size_t output_size_source_y, const size_t output_size_z, const size_t relative_offset_x, const size_t relative_offset_y)
+void add_coeffs_and_csts_sparse(float_type* __restrict__ target_inf_coeff, float_type* __restrict__ target_sup_coeff, float_type* __restrict__ target_inf_cst, float_type* __restrict__ target_sup_cst, const float_type* __restrict__ source_inf_coeff, const float_type* __restrict__ source_sup_coeff, const float_type* __restrict__ source_inf_cst, const float_type* __restrict__ source_sup_cst, const int output_size_target_x, const int output_size_target_y, const int output_size_source_x, const int output_size_source_y, const int output_size_z, const int relative_offset_x, const int relative_offset_y)
 {
-    size_t out_x = blockIdx.x;
-    size_t out_y = blockIdx.y;
-    size_t out_z = blockIdx.z;
+    int out_x = blockIdx.x;
+    int out_y = blockIdx.y;
+    int out_z = blockIdx.z;
 
-    const size_t n = out_x*gridDim.y*gridDim.z + out_y*gridDim.z + out_z;
+    const int n = out_x*gridDim.y*gridDim.z + out_y*gridDim.z + out_z;
 
-    const size_t num_coeffs_target = output_size_target_x*output_size_target_y*output_size_z;
-    const size_t num_coeffs_source = output_size_source_x*output_size_source_y*output_size_z;
+    const int num_coeffs_target = output_size_target_x*output_size_target_y*output_size_z;
+    const int num_coeffs_source = output_size_source_x*output_size_source_y*output_size_z;
 
     float_type maxRes;
     float_type maxMul;
 
-    for(size_t out_x = 0; out_x < output_size_source_x; out_x++)
+    for(int out_x = 0; out_x < output_size_source_x; out_x++)
     {
-        for(size_t out_y = 0; out_y < output_size_source_y; out_y++)
+        for(int out_y = 0; out_y < output_size_source_y; out_y++)
         {
-            for(size_t out_z = 0; out_z < output_size_z; out_z++)
+            for(int out_z = 0; out_z < output_size_z; out_z++)
             {
-                const size_t target_idx = (out_x + relative_offset_x)*output_size_target_y*output_size_z + (out_y + relative_offset_y)*output_size_z + out_z;
+                const int target_idx = (out_x + relative_offset_x)*output_size_target_y*output_size_z + (out_y + relative_offset_y)*output_size_z + out_z;
 
-                const size_t source_idx = out_x*output_size_source_y*output_size_z + out_y*output_size_z + out_z;
+                const int source_idx = out_x*output_size_source_y*output_size_z + out_y*output_size_z + out_z;
 
                 const float_type src_inf = source_inf_coeff[n*num_coeffs_source + source_idx];
                 const float_type src_sup = source_sup_coeff[n*num_coeffs_source + source_idx];
@@ -995,41 +995,41 @@ void add_coeffs_and_csts_sparse(float_type* __restrict__ target_inf_coeff, float
 
 
 __global__
-void layer_compute_bounds_from_exprs_conv(const float_type* __restrict__ coeffs, const float_type* __restrict__ csts, float_type* __restrict__ lb_array, float_type* __restrict__ ub_array, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const long int pad_x, const long int pad_y)
+void layer_compute_bounds_from_exprs_conv(const float_type* __restrict__ coeffs, const float_type* __restrict__ csts, float_type* __restrict__ lb_array, float_type* __restrict__ ub_array, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int output_size_x, const int output_size_y, const int output_size_z, const int input_size_x, const int input_size_y, const int input_size_z, const int filter_size_x, const int filter_size_y, const int stride_x, const int stride_y, const int pad_x, const int pad_y)
 {
-    size_t out_x = blockIdx.x;
-    size_t out_y = blockIdx.y;
-    size_t out_z = blockIdx.z;
+    int out_x = blockIdx.x;
+    int out_y = blockIdx.y;
+    int out_z = blockIdx.z;
 
-    const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
+    const int mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
 
     float_type res_inf = csts[out_z];
     float_type res_sup = csts[out_z];
 
     float_type tmp1, tmp2;
 
-    for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
+    for(int x_shift = 0; x_shift < filter_size_x; x_shift++)
     {
-        for(size_t y_shift = 0; y_shift < filter_size_y; y_shift++)
+        for(int y_shift = 0; y_shift < filter_size_y; y_shift++)
         {
-            for(size_t inp_z = 0; inp_z < input_size_z; inp_z++)
+            for(int inp_z = 0; inp_z < input_size_z; inp_z++)
             {
-                const long int x_val = out_x*stride_x + x_shift - pad_x;
-                const long int y_val = out_y*stride_y + y_shift - pad_y;
+                const int x_val = out_x*stride_x + x_shift - pad_x;
+                const int y_val = out_y*stride_y + y_shift - pad_y;
 
-                if((y_val < 0) || (y_val >= (long int)input_size_y))
+                if((y_val < 0) || (y_val >= input_size_y))
                 {
                     continue;
                 }
 
-                if((x_val < 0) || (x_val >= (long int)input_size_x))
+                if((x_val < 0) || (x_val >= input_size_x))
                 {
                     continue;
                 }
 
-                const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
+                const int mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
 
-                const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+                const int filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
 
                 elina_double_interval_mul2(&tmp1, &tmp2, coeffs[filter_index], coeffs[filter_index], input_inf[mat_in], input_sup[mat_in]);
 
@@ -1045,16 +1045,16 @@ void layer_compute_bounds_from_exprs_conv(const float_type* __restrict__ coeffs,
 
 
 __global__
-void layer_compute_bounds_from_exprs(const float_type* __restrict__ coeffs, const float_type* __restrict__ csts, float_type* lb_array, float_type* ub_array, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t num_out_neurons, const size_t num_in_neurons)
+void layer_compute_bounds_from_exprs(const float_type* __restrict__ coeffs, const float_type* __restrict__ csts, float_type* lb_array, float_type* ub_array, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int num_out_neurons, const int num_in_neurons)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
     float_type res_inf = csts[n];
     float_type res_sup = csts[n];
 
     float_type tmp1, tmp2;
 
-    for(size_t i = 0; i < num_in_neurons; i++)
+    for(int i = 0; i < num_in_neurons; i++)
     {
         elina_double_interval_mul2(&tmp1, &tmp2, coeffs[n*num_in_neurons + i], coeffs[n*num_in_neurons + i], input_inf[i], input_sup[i]);
 
@@ -1068,26 +1068,26 @@ void layer_compute_bounds_from_exprs(const float_type* __restrict__ coeffs, cons
 
 
 __global__
-void lcoeffs_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ input_lcoeffs, const float_type* __restrict__ input_ucoeffs, const size_t num_out_neurons_current_layer, const size_t num_in_neurons_current_layer)
+void lcoeffs_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ input_lcoeffs, const float_type* __restrict__ input_ucoeffs, const int num_out_neurons_current_layer, const int num_in_neurons_current_layer)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
-    size_t j = threadIdx.x;
+    int j = threadIdx.x;
 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
     while(j < num_in_neurons_current_layer)
     {
-        const size_t b = n*num_in_neurons_current_layer + j;
+        const int b = n*num_in_neurons_current_layer + j;
 
         float_type inf_coeff = 0;
         float_type sup_coeff = 0;
 
-        for(size_t i = 0; i < num_out_neurons_current_layer; i++)
+        for(int i = 0; i < num_out_neurons_current_layer; i++)
         {
-            size_t a = n*num_out_neurons_current_layer + i;
-            size_t c = i*num_in_neurons_current_layer + j;
+            int a = n*num_out_neurons_current_layer + i;
+            int c = i*num_in_neurons_current_layer + j;
 
             const float_type prev_inf_coeff = expr_inf_coeff[a];
             const float_type prev_sup_coeff = expr_sup_coeff[a];
@@ -1124,26 +1124,26 @@ void lcoeffs_from_input_poly(const float_type* __restrict__ expr_inf_coeff, cons
 
 
 __global__
-void ucoeffs_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ input_lcoeffs, const float_type* __restrict__ input_ucoeffs, const size_t num_out_neurons_current_layer, const size_t num_in_neurons_current_layer)
+void ucoeffs_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ input_lcoeffs, const float_type* __restrict__ input_ucoeffs, const int num_out_neurons_current_layer, const int num_in_neurons_current_layer)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
-    size_t j = threadIdx.x;
+    int j = threadIdx.x;
 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
     while(j < num_in_neurons_current_layer)
     {
-        const size_t b = n*num_in_neurons_current_layer + j;
+        const int b = n*num_in_neurons_current_layer + j;
 
         float_type inf_coeff = 0;
         float_type sup_coeff = 0;
 
-        for(size_t i = 0; i < num_out_neurons_current_layer; i++)
+        for(int i = 0; i < num_out_neurons_current_layer; i++)
         {
-            size_t a = n*num_out_neurons_current_layer + i;
-            size_t c = i*num_in_neurons_current_layer + j;
+            int a = n*num_out_neurons_current_layer + i;
+            int c = i*num_in_neurons_current_layer + j;
 
             const float_type prev_inf_coeff = expr_inf_coeff[a];
             const float_type prev_sup_coeff = expr_sup_coeff[a];
@@ -1180,9 +1180,9 @@ void ucoeffs_from_input_poly(const float_type* __restrict__ expr_inf_coeff, cons
 
 
 __global__
-void lcsts_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ input_lcsts, const float_type* __restrict__ input_ucsts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t num_out_neurons_current_layer)
+void lcsts_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ input_lcsts, const float_type* __restrict__ input_ucsts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int num_out_neurons_current_layer)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
     float_type inf_cst = expr_inf_cst[n];
     float_type sup_cst = expr_sup_cst[n];
@@ -1190,9 +1190,9 @@ void lcsts_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
-    for(size_t i = 0; i < num_out_neurons_current_layer; i++)
+    for(int i = 0; i < num_out_neurons_current_layer; i++)
     {
-        size_t a = n*num_out_neurons_current_layer + i;
+        int a = n*num_out_neurons_current_layer + i;
 
         const float_type prev_inf_coeff = expr_inf_coeff[a];
         const float_type prev_sup_coeff = expr_sup_coeff[a];
@@ -1235,9 +1235,9 @@ void lcsts_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const 
 
 
 __global__
-void ucsts_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ input_lcsts, const float_type* __restrict__ input_ucsts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t num_out_neurons_current_layer)
+void ucsts_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ input_lcsts, const float_type* __restrict__ input_ucsts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int num_out_neurons_current_layer)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
     float_type inf_cst = expr_inf_cst[n];
     float_type sup_cst = expr_sup_cst[n];
@@ -1245,9 +1245,9 @@ void ucsts_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
-    for(size_t i = 0; i < num_out_neurons_current_layer; i++)
+    for(int i = 0; i < num_out_neurons_current_layer; i++)
     {
-        size_t a = n*num_out_neurons_current_layer + i;
+        int a = n*num_out_neurons_current_layer + i;
 
         const float_type prev_inf_coeff = expr_inf_coeff[a];
         const float_type prev_sup_coeff = expr_sup_coeff[a];
@@ -1367,11 +1367,11 @@ void ffn_handle_first_relu_layer(elina_manager_t* man, elina_abstract0_t* abs, c
 
 
 __global__
-void expr_replace_relu_bounds(float_type* __restrict__ linf_coeff, float_type* __restrict__ lsup_coeff, float_type* __restrict__ uinf_coeff, float_type* __restrict__ usup_coeff, float_type* __restrict__ linf_cst, float_type* __restrict__ lsup_cst, float_type* __restrict__ uinf_cst, float_type* __restrict__ usup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const size_t num_out_neurons_current_layer, const bool use_area_heuristic)
+void expr_replace_relu_bounds(float_type* __restrict__ linf_coeff, float_type* __restrict__ lsup_coeff, float_type* __restrict__ uinf_coeff, float_type* __restrict__ usup_coeff, float_type* __restrict__ linf_cst, float_type* __restrict__ lsup_cst, float_type* __restrict__ uinf_cst, float_type* __restrict__ usup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const int num_out_neurons_current_layer, const bool use_area_heuristic)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
-    size_t i = threadIdx.x;
+    int i = threadIdx.x;
 
     float_type res_linf_cst = 0;
     float_type res_lsup_cst = 0;
@@ -1380,7 +1380,7 @@ void expr_replace_relu_bounds(float_type* __restrict__ linf_coeff, float_type* _
 
     while(i < num_out_neurons_current_layer)
     {
-        const size_t a = n*num_out_neurons_current_layer + i;
+        const int a = n*num_out_neurons_current_layer + i;
 
         const float_type lb = lb_array[i];
         const float_type ub = ub_array[i];
@@ -1545,24 +1545,24 @@ void expr_replace_relu_bounds(float_type* __restrict__ linf_coeff, float_type* _
 
 
 __global__
-void expr_replace_relu_bounds_conv_sparse(float_type* __restrict__ linf_coeff, float_type* __restrict__ lsup_coeff, float_type* __restrict__ uinf_coeff, float_type* __restrict__ usup_coeff, float_type* __restrict__ linf_cst, float_type* __restrict__ lsup_cst, float_type* __restrict__ uinf_cst, float_type* __restrict__ usup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, long int offset_x, long int offset_y, long int length_x, long int length_y, long int shift_x, long int shift_y, const bool use_area_heuristic)
+void expr_replace_relu_bounds_conv_sparse(float_type* __restrict__ linf_coeff, float_type* __restrict__ lsup_coeff, float_type* __restrict__ uinf_coeff, float_type* __restrict__ usup_coeff, float_type* __restrict__ linf_cst, float_type* __restrict__ lsup_cst, float_type* __restrict__ uinf_cst, float_type* __restrict__ usup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const int output_size_x, const int output_size_y, const int output_size_z, int offset_x, int offset_y, int length_x, int length_y, int shift_x, int shift_y, const bool use_area_heuristic)
 {
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
+    const int last_x = blockIdx.x;
+    const int last_y = blockIdx.y;
+    const int last_z = blockIdx.z;
 
-    size_t out_z = threadIdx.x;
+    int out_z = threadIdx.x;
 
-    __shared__ size_t n;
+    __shared__ int n;
 
-    __shared__ long int min_out_x;
-    __shared__ long int min_out_y;
+    __shared__ int min_out_x;
+    __shared__ int min_out_y;
 
-    __shared__ long int min_x;
-    __shared__ long int min_y;
+    __shared__ int min_x;
+    __shared__ int min_y;
 
-    __shared__ long int max_x;
-    __shared__ long int max_y;
+    __shared__ int max_x;
+    __shared__ int max_y;
 
     if(out_z == 0)
     {
@@ -1587,14 +1587,14 @@ void expr_replace_relu_bounds_conv_sparse(float_type* __restrict__ linf_coeff, f
 
     while(out_z < output_size_z)
     {
-        for(long int out_x = min_x; out_x < max_x; out_x++)
+        for(int out_x = min_x; out_x < max_x; out_x++)
         {
-            for(long int out_y = min_y; out_y < max_y; out_y++)
+            for(int out_y = min_y; out_y < max_y; out_y++)
             {
-                size_t i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
-                size_t j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                int i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
+                int j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
 
-                size_t a = n*length_x*length_y*output_size_z + j;
+                int a = n*length_x*length_y*output_size_z + j;
 
                 const float_type lb = lb_array[i];
                 const float_type ub = ub_array[i];
@@ -1761,28 +1761,28 @@ void expr_replace_relu_bounds_conv_sparse(float_type* __restrict__ linf_coeff, f
 
 
 __global__
-void coeffs_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const size_t num_out_neurons_current_layer, const size_t num_in_neurons_current_layer)
+void coeffs_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const int num_out_neurons_current_layer, const int num_in_neurons_current_layer)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
-    size_t j = threadIdx.x;
+    int j = threadIdx.x;
 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
     while(j < num_in_neurons_current_layer)
     {
-        const size_t b = n*num_in_neurons_current_layer + j;
+        const int b = n*num_in_neurons_current_layer + j;
 
         float_type linf_coeff = 0;
         float_type lsup_coeff = 0;
         float_type uinf_coeff = 0;
         float_type usup_coeff = 0;
 
-        for(size_t i = 0; i < num_out_neurons_current_layer; i++)
+        for(int i = 0; i < num_out_neurons_current_layer; i++)
         {
-            size_t a = n*num_out_neurons_current_layer + i;
-            size_t c = i*num_in_neurons_current_layer + j;
+            int a = n*num_out_neurons_current_layer + i;
+            int c = i*num_in_neurons_current_layer + j;
 
             const float_type prev_linf_coeff = expr_linf_coeff[a];
             const float_type prev_lsup_coeff = expr_lsup_coeff[a];
@@ -1831,43 +1831,43 @@ void coeffs_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, 
 
 
 __global__
-void coeffs_from_previous_layer_conv(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
+void coeffs_from_previous_layer_conv(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const int output_size_x, const int output_size_y, const int output_size_z, const int input_size_x, const int input_size_y, const int input_size_z, const int filter_size_x, const int filter_size_y, const int stride_x, const int stride_y, const int pad_x, const int pad_y)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
-    const size_t inp_z = threadIdx.x;
-    const size_t y_shift = threadIdx.y;
-    const size_t x_shift = threadIdx.z;
+    const int inp_z = threadIdx.x;
+    const int y_shift = threadIdx.y;
+    const int x_shift = threadIdx.z;
 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
     if(x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z < filter_size_x*filter_size_y*input_size_z)
     {
-        for(size_t out_x = 0; out_x < output_size_x; out_x++)
+        for(int out_x = 0; out_x < output_size_x; out_x++)
         {
-            for(size_t out_y = 0; out_y < output_size_y; out_y++)
+            for(int out_y = 0; out_y < output_size_y; out_y++)
             {
-                const long int x_val = out_x*stride_x + x_shift - pad_x;
-                const long int y_val = out_y*stride_y + y_shift - pad_y;
+                const int x_val = out_x*stride_x + x_shift - pad_x;
+                const int y_val = out_y*stride_y + y_shift - pad_y;
 
-                if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
+                if(!((y_val < 0) || (y_val >= input_size_y)))
                 {
-                    if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
+                    if(!((x_val < 0) || (x_val >= input_size_x)))
                     {
-                        const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
-                        const size_t b = n*input_size_x*input_size_y*input_size_z + mat_in;
+                        const int mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
+                        const int b = n*input_size_x*input_size_y*input_size_z + mat_in;
 
                         float_type linf_coeff = res_linf_coeff[b];
                         float_type lsup_coeff = res_lsup_coeff[b];
                         float_type uinf_coeff = res_uinf_coeff[b];
                         float_type usup_coeff = res_usup_coeff[b];
 
-                        for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                        for(int out_z = 0; out_z < output_size_z; out_z++)
                         {
-                            const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
+                            const int mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
 
-                            const size_t a = n*output_size_x*output_size_y*output_size_z + mat_out;
+                            const int a = n*output_size_x*output_size_y*output_size_z + mat_out;
 
                             const float_type prev_linf_coeff = expr_linf_coeff[a];
                             const float_type prev_lsup_coeff = expr_lsup_coeff[a];
@@ -1879,7 +1879,7 @@ void coeffs_from_previous_layer_conv(const float_type* __restrict__ expr_linf_co
 
                             if(lnonnull || unonnull)
                             {
-                                const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+                                const int filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
                                 const float_type aux_coeff = aux_coeffs[filter_index];
 
                                 if(lnonnull)
@@ -1921,44 +1921,44 @@ void coeffs_from_previous_layer_conv(const float_type* __restrict__ expr_linf_co
 
 
 __global__
-void coeffs_from_previous_layer_conv_x_filter_serial(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
+void coeffs_from_previous_layer_conv_x_filter_serial(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const int output_size_x, const int output_size_y, const int output_size_z, const int input_size_x, const int input_size_y, const int input_size_z, const int filter_size_x, const int filter_size_y, const int stride_x, const int stride_y, const int pad_x, const int pad_y)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
-    const size_t inp_z = threadIdx.x;
-    const size_t y_shift = threadIdx.y;
+    const int inp_z = threadIdx.x;
+    const int y_shift = threadIdx.y;
 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
     if(y_shift*input_size_z + inp_z < filter_size_y*input_size_z)
     {
-        for(size_t out_x = 0; out_x < output_size_x; out_x++)
+        for(int out_x = 0; out_x < output_size_x; out_x++)
         {
-            for(size_t out_y = 0; out_y < output_size_y; out_y++)
+            for(int out_y = 0; out_y < output_size_y; out_y++)
             {
-                for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
+                for(int x_shift = 0; x_shift < filter_size_x; x_shift++)
                 {
-                    const long int x_val = out_x*stride_x + x_shift - pad_x;
-                    const long int y_val = out_y*stride_y + y_shift - pad_y;
+                    const int x_val = out_x*stride_x + x_shift - pad_x;
+                    const int y_val = out_y*stride_y + y_shift - pad_y;
 
-                    if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
+                    if(!((y_val < 0) || (y_val >= input_size_y)))
                     {
-                        if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
+                        if(!((x_val < 0) || (x_val >= input_size_x)))
                         {
-                            const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
-                            const size_t b = n*input_size_x*input_size_y*input_size_z + mat_in;
+                            const int mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
+                            const int b = n*input_size_x*input_size_y*input_size_z + mat_in;
 
                             float_type linf_coeff = res_linf_coeff[b];
                             float_type lsup_coeff = res_lsup_coeff[b];
                             float_type uinf_coeff = res_uinf_coeff[b];
                             float_type usup_coeff = res_usup_coeff[b];
 
-                            for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                            for(int out_z = 0; out_z < output_size_z; out_z++)
                             {
-                                const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
+                                const int mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
 
-                                const size_t a = n*output_size_x*output_size_y*output_size_z + mat_out;
+                                const int a = n*output_size_x*output_size_y*output_size_z + mat_out;
 
                                 const float_type prev_linf_coeff = expr_linf_coeff[a];
                                 const float_type prev_lsup_coeff = expr_lsup_coeff[a];
@@ -1970,7 +1970,7 @@ void coeffs_from_previous_layer_conv_x_filter_serial(const float_type* __restric
 
                                 if(lnonnull || unonnull)
                                 {
-                                    const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+                                    const int filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
                                     const float_type aux_coeff = aux_coeffs[filter_index];
 
                                     if(lnonnull)
@@ -2013,45 +2013,45 @@ void coeffs_from_previous_layer_conv_x_filter_serial(const float_type* __restric
 
 
 __global__
-void coeffs_from_previous_layer_conv_filter_serial(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
+void coeffs_from_previous_layer_conv_filter_serial(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const int output_size_x, const int output_size_y, const int output_size_z, const int input_size_x, const int input_size_y, const int input_size_z, const int filter_size_x, const int filter_size_y, const int stride_x, const int stride_y, const int pad_x, const int pad_y)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
-    size_t inp_z = threadIdx.x;
+    int inp_z = threadIdx.x;
 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
     while(inp_z < input_size_z)
     {
-        for(size_t out_x = 0; out_x < output_size_x; out_x++)
+        for(int out_x = 0; out_x < output_size_x; out_x++)
         {
-            for(size_t out_y = 0; out_y < output_size_y; out_y++)
+            for(int out_y = 0; out_y < output_size_y; out_y++)
             {
-                for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
+                for(int x_shift = 0; x_shift < filter_size_x; x_shift++)
                 {
-                    for(size_t y_shift = 0; y_shift < filter_size_y; y_shift++)
+                    for(int y_shift = 0; y_shift < filter_size_y; y_shift++)
                     {
-                        const long int x_val = out_x*stride_x + x_shift - pad_x;
-                        const long int y_val = out_y*stride_y + y_shift - pad_y;
+                        const int x_val = out_x*stride_x + x_shift - pad_x;
+                        const int y_val = out_y*stride_y + y_shift - pad_y;
 
-                        if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
+                        if(!((y_val < 0) || (y_val >= input_size_y)))
                         {
-                            if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
+                            if(!((x_val < 0) || (x_val >= input_size_x)))
                             {
-                                const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
-                                const size_t b = n*input_size_x*input_size_y*input_size_z + mat_in;
+                                const int mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
+                                const int b = n*input_size_x*input_size_y*input_size_z + mat_in;
 
                                 float_type linf_coeff = res_linf_coeff[b];
                                 float_type lsup_coeff = res_lsup_coeff[b];
                                 float_type uinf_coeff = res_uinf_coeff[b];
                                 float_type usup_coeff = res_usup_coeff[b];
 
-                                for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                                for(int out_z = 0; out_z < output_size_z; out_z++)
                                 {
-                                    const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
+                                    const int mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
 
-                                    const size_t a = n*output_size_x*output_size_y*output_size_z + mat_out;
+                                    const int a = n*output_size_x*output_size_y*output_size_z + mat_out;
 
                                     const float_type prev_linf_coeff = expr_linf_coeff[a];
                                     const float_type prev_lsup_coeff = expr_lsup_coeff[a];
@@ -2063,7 +2063,7 @@ void coeffs_from_previous_layer_conv_filter_serial(const float_type* __restrict_
 
                                     if(lnonnull || unonnull)
                                     {
-                                        const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+                                        const int filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
                                         const float_type aux_coeff = aux_coeffs[filter_index];
 
                                         if(lnonnull)
@@ -2107,26 +2107,26 @@ void coeffs_from_previous_layer_conv_filter_serial(const float_type* __restrict_
 
 
 __global__
-void coeffs_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const long int offset_x, const long int offset_y, const long int length_x, const long int length_y, const long int shift_x, const long int shift_y, const long int new_length_x, const long int new_length_y, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
+void coeffs_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const int output_size_x, const int output_size_y, const int output_size_z, const int input_size_x, const int input_size_y, const int input_size_z, const int offset_x, const int offset_y, const int length_x, const int length_y, const int shift_x, const int shift_y, const int new_length_x, const int new_length_y, const int filter_size_x, const int filter_size_y, const int stride_x, const int stride_y, const int pad_x, const int pad_y)
 {
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
+    const int last_x = blockIdx.x;
+    const int last_y = blockIdx.y;
+    const int last_z = blockIdx.z;
 
-    const size_t inp_z = threadIdx.x;
-    const size_t y_shift = threadIdx.y;
-    const size_t x_shift = threadIdx.z;
+    const int inp_z = threadIdx.x;
+    const int y_shift = threadIdx.y;
+    const int x_shift = threadIdx.z;
 
-    __shared__ size_t n;
+    __shared__ int n;
 
-    __shared__ long int min_out_x;
-    __shared__ long int min_out_y;
+    __shared__ int min_out_x;
+    __shared__ int min_out_y;
 
-    __shared__ long int min_x;
-    __shared__ long int min_y;
+    __shared__ int min_x;
+    __shared__ int min_y;
 
-    __shared__ long int max_x;
-    __shared__ long int max_y;
+    __shared__ int max_x;
+    __shared__ int max_y;
 
     if(x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z == 0)
     {
@@ -2149,29 +2149,29 @@ void coeffs_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_
 
     if(x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z < filter_size_x*filter_size_y*input_size_z)
     {
-        for(long int out_x = min_x; out_x < max_x; out_x++)
+        for(int out_x = min_x; out_x < max_x; out_x++)
         {
-            for(long int out_y = min_y; out_y < max_y; out_y++)
+            for(int out_y = min_y; out_y < max_y; out_y++)
             {
-                const long int x_val = out_x*stride_x + min_out_x*stride_x + x_shift - pad_x;
-                const long int y_val = out_y*stride_y + min_out_y*stride_y + y_shift - pad_y;
+                const int x_val = out_x*stride_x + min_out_x*stride_x + x_shift - pad_x;
+                const int y_val = out_y*stride_y + min_out_y*stride_y + y_shift - pad_y;
 
-                if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
+                if(!((x_val < 0) || (x_val >= input_size_x)))
                 {
-                    if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
+                    if(!((y_val < 0) || (y_val >= input_size_y)))
                     {
-                        const size_t mat_in = (out_x*stride_x + x_shift)*new_length_y*input_size_z + (out_y*stride_y + y_shift)*input_size_z + inp_z;
-                        const size_t b = n*new_length_x*new_length_y*input_size_z + mat_in;
+                        const int mat_in = (out_x*stride_x + x_shift)*new_length_y*input_size_z + (out_y*stride_y + y_shift)*input_size_z + inp_z;
+                        const int b = n*new_length_x*new_length_y*input_size_z + mat_in;
 
                         float_type linf_coeff = res_linf_coeff[b];
                         float_type lsup_coeff = res_lsup_coeff[b];
                         float_type uinf_coeff = res_uinf_coeff[b];
                         float_type usup_coeff = res_usup_coeff[b];
 
-                        for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                        for(int out_z = 0; out_z < output_size_z; out_z++)
                         {
-                            const size_t mat_out = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
-                            const size_t a = n*length_x*length_y*output_size_z + mat_out;
+                            const int mat_out = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                            const int a = n*length_x*length_y*output_size_z + mat_out;
 
                             const float_type prev_linf_coeff = expr_linf_coeff[a];
                             const float_type prev_lsup_coeff = expr_lsup_coeff[a];
@@ -2183,7 +2183,7 @@ void coeffs_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_
 
                             if(lnonnull || unonnull)
                             {
-                                const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+                                const int filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
                                 const float_type aux_coeff = aux_coeffs[filter_index];
 
                                 if(lnonnull)
@@ -2225,25 +2225,25 @@ void coeffs_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_
 
 
 __global__
-void coeffs_from_previous_layer_conv_sparse_x_filter_serial(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const long int offset_x, const long int offset_y, const long int length_x, const long int length_y, const long int shift_x, const long int shift_y, const long int new_length_x, const long int new_length_y, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
+void coeffs_from_previous_layer_conv_sparse_x_filter_serial(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const int output_size_x, const int output_size_y, const int output_size_z, const int input_size_x, const int input_size_y, const int input_size_z, const int offset_x, const int offset_y, const int length_x, const int length_y, const int shift_x, const int shift_y, const int new_length_x, const int new_length_y, const int filter_size_x, const int filter_size_y, const int stride_x, const int stride_y, const int pad_x, const int pad_y)
 {
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
+    const int last_x = blockIdx.x;
+    const int last_y = blockIdx.y;
+    const int last_z = blockIdx.z;
 
-    const size_t inp_z = threadIdx.x;
-    const size_t y_shift = threadIdx.y;
+    const int inp_z = threadIdx.x;
+    const int y_shift = threadIdx.y;
 
-    __shared__ size_t n;
+    __shared__ int n;
 
-    __shared__ long int min_out_x;
-    __shared__ long int min_out_y;
+    __shared__ int min_out_x;
+    __shared__ int min_out_y;
 
-    __shared__ long int min_x;
-    __shared__ long int min_y;
+    __shared__ int min_x;
+    __shared__ int min_y;
 
-    __shared__ long int max_x;
-    __shared__ long int max_y;
+    __shared__ int max_x;
+    __shared__ int max_y;
 
     if(y_shift*input_size_z + inp_z == 0)
     {
@@ -2266,31 +2266,31 @@ void coeffs_from_previous_layer_conv_sparse_x_filter_serial(const float_type* __
 
     if(y_shift*input_size_z + inp_z < filter_size_y*input_size_z)
     {
-        for(long int out_x = min_x; out_x < max_x; out_x++)
+        for(int out_x = min_x; out_x < max_x; out_x++)
         {
-            for(long int out_y = min_y; out_y < max_y; out_y++)
+            for(int out_y = min_y; out_y < max_y; out_y++)
             {
-                for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
+                for(int x_shift = 0; x_shift < filter_size_x; x_shift++)
                 {
-                    const long int x_val = out_x*stride_x + min_out_x*stride_x + x_shift - pad_x;
-                    const long int y_val = out_y*stride_y + min_out_y*stride_y + y_shift - pad_y;
+                    const int x_val = out_x*stride_x + min_out_x*stride_x + x_shift - pad_x;
+                    const int y_val = out_y*stride_y + min_out_y*stride_y + y_shift - pad_y;
 
-                    if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
+                    if(!((x_val < 0) || (x_val >= input_size_x)))
                     {
-                        if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
+                        if(!((y_val < 0) || (y_val >= input_size_y)))
                         {
-                            const size_t mat_in = (out_x*stride_x + x_shift)*new_length_y*input_size_z + (out_y*stride_y + y_shift)*input_size_z + inp_z;
-                            const size_t b = n*new_length_x*new_length_y*input_size_z + mat_in;
+                            const int mat_in = (out_x*stride_x + x_shift)*new_length_y*input_size_z + (out_y*stride_y + y_shift)*input_size_z + inp_z;
+                            const int b = n*new_length_x*new_length_y*input_size_z + mat_in;
 
                             float_type linf_coeff = res_linf_coeff[b];
                             float_type lsup_coeff = res_lsup_coeff[b];
                             float_type uinf_coeff = res_uinf_coeff[b];
                             float_type usup_coeff = res_usup_coeff[b];
 
-                            for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                            for(int out_z = 0; out_z < output_size_z; out_z++)
                             {
-                                const size_t mat_out = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
-                                const size_t a = n*length_x*length_y*output_size_z + mat_out;
+                                const int mat_out = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                                const int a = n*length_x*length_y*output_size_z + mat_out;
 
                                 const float_type prev_linf_coeff = expr_linf_coeff[a];
                                 const float_type prev_lsup_coeff = expr_lsup_coeff[a];
@@ -2302,7 +2302,7 @@ void coeffs_from_previous_layer_conv_sparse_x_filter_serial(const float_type* __
 
                                 if(lnonnull || unonnull)
                                 {
-                                    const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+                                    const int filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
                                     const float_type aux_coeff = aux_coeffs[filter_index];
 
                                     if(lnonnull)
@@ -2345,24 +2345,24 @@ void coeffs_from_previous_layer_conv_sparse_x_filter_serial(const float_type* __
 
 
 __global__
-void coeffs_from_previous_layer_conv_sparse_filter_serial(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const long int offset_x, const long int offset_y, const long int length_x, const long int length_y, const long int shift_x, const long int shift_y, const long int new_length_x, const long int new_length_y, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
+void coeffs_from_previous_layer_conv_sparse_filter_serial(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, float_type* __restrict__ res_linf_coeff, float_type* __restrict__ res_lsup_coeff, float_type* __restrict__ res_uinf_coeff, float_type* __restrict__ res_usup_coeff, const float_type* __restrict__ aux_coeffs, const int output_size_x, const int output_size_y, const int output_size_z, const int input_size_x, const int input_size_y, const int input_size_z, const int offset_x, const int offset_y, const int length_x, const int length_y, const int shift_x, const int shift_y, const int new_length_x, const int new_length_y, const int filter_size_x, const int filter_size_y, const int stride_x, const int stride_y, const int pad_x, const int pad_y)
 {
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
+    const int last_x = blockIdx.x;
+    const int last_y = blockIdx.y;
+    const int last_z = blockIdx.z;
 
-    size_t inp_z = threadIdx.x;
+    int inp_z = threadIdx.x;
 
-    __shared__ size_t n;
+    __shared__ int n;
 
-    __shared__ long int min_out_x;
-    __shared__ long int min_out_y;
+    __shared__ int min_out_x;
+    __shared__ int min_out_y;
 
-    __shared__ long int min_x;
-    __shared__ long int min_y;
+    __shared__ int min_x;
+    __shared__ int min_y;
 
-    __shared__ long int max_x;
-    __shared__ long int max_y;
+    __shared__ int max_x;
+    __shared__ int max_y;
 
     if(inp_z == 0)
     {
@@ -2385,33 +2385,33 @@ void coeffs_from_previous_layer_conv_sparse_filter_serial(const float_type* __re
 
     while(inp_z < input_size_z)
     {
-        for(long int out_x = min_x; out_x < max_x; out_x++)
+        for(int out_x = min_x; out_x < max_x; out_x++)
         {
-            for(long int out_y = min_y; out_y < max_y; out_y++)
+            for(int out_y = min_y; out_y < max_y; out_y++)
             {
-                for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
+                for(int x_shift = 0; x_shift < filter_size_x; x_shift++)
                 {
-                    for(size_t y_shift = 0; y_shift < filter_size_y; y_shift++)
+                    for(int y_shift = 0; y_shift < filter_size_y; y_shift++)
                     {
-                        const long int x_val = out_x*stride_x + min_out_x*stride_x + x_shift - pad_x;
-                        const long int y_val = out_y*stride_y + min_out_y*stride_y + y_shift - pad_y;
+                        const int x_val = out_x*stride_x + min_out_x*stride_x + x_shift - pad_x;
+                        const int y_val = out_y*stride_y + min_out_y*stride_y + y_shift - pad_y;
 
-                        if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
+                        if(!((x_val < 0) || (x_val >= input_size_x)))
                         {
-                            if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
+                            if(!((y_val < 0) || (y_val >= input_size_y)))
                             {
-                                const size_t mat_in = (out_x*stride_x + x_shift)*new_length_y*input_size_z + (out_y*stride_y + y_shift)*input_size_z + inp_z;
-                                const size_t b = n*new_length_x*new_length_y*input_size_z + mat_in;
+                                const int mat_in = (out_x*stride_x + x_shift)*new_length_y*input_size_z + (out_y*stride_y + y_shift)*input_size_z + inp_z;
+                                const int b = n*new_length_x*new_length_y*input_size_z + mat_in;
 
                                 float_type linf_coeff = res_linf_coeff[b];
                                 float_type lsup_coeff = res_lsup_coeff[b];
                                 float_type uinf_coeff = res_uinf_coeff[b];
                                 float_type usup_coeff = res_usup_coeff[b];
 
-                                for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                                for(int out_z = 0; out_z < output_size_z; out_z++)
                                 {
-                                    const size_t mat_out = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
-                                    const size_t a = n*length_x*length_y*output_size_z + mat_out;
+                                    const int mat_out = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                                    const int a = n*length_x*length_y*output_size_z + mat_out;
 
                                     const float_type prev_linf_coeff = expr_linf_coeff[a];
                                     const float_type prev_lsup_coeff = expr_lsup_coeff[a];
@@ -2423,7 +2423,7 @@ void coeffs_from_previous_layer_conv_sparse_filter_serial(const float_type* __re
 
                                     if(lnonnull || unonnull)
                                     {
-                                        const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+                                        const int filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
                                         const float_type aux_coeff = aux_coeffs[filter_index];
 
                                         if(lnonnull)
@@ -2467,24 +2467,24 @@ void coeffs_from_previous_layer_conv_sparse_filter_serial(const float_type* __re
 
 
 __global__
-void lcoeffs_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ input_lcoeffs, const float_type* __restrict__ input_ucoeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t num_in_neurons, const long int offset_x, const long int offset_y, const long int length_x, const long int length_y, const long int shift_x, const long int shift_y)
+void lcoeffs_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ input_lcoeffs, const float_type* __restrict__ input_ucoeffs, const int output_size_x, const int output_size_y, const int output_size_z, const int num_in_neurons, const int offset_x, const int offset_y, const int length_x, const int length_y, const int shift_x, const int shift_y)
 {
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
+    const int last_x = blockIdx.x;
+    const int last_y = blockIdx.y;
+    const int last_z = blockIdx.z;
 
-    size_t i = threadIdx.x;
+    int i = threadIdx.x;
 
-    __shared__ size_t n;
+    __shared__ int n;
 
-    __shared__ long int min_out_x;
-    __shared__ long int min_out_y;
+    __shared__ int min_out_x;
+    __shared__ int min_out_y;
 
-    __shared__ long int min_x;
-    __shared__ long int min_y;
+    __shared__ int min_x;
+    __shared__ int min_y;
 
-    __shared__ long int max_x;
-    __shared__ long int max_y;
+    __shared__ int max_x;
+    __shared__ int max_y;
 
     if(i == 0)
     {
@@ -2507,24 +2507,24 @@ void lcoeffs_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coef
 
     while(i < num_in_neurons)
     {
-        const size_t b = n*num_in_neurons + i;
+        const int b = n*num_in_neurons + i;
 
         float_type inf_coeff = res_inf_coeff[b];
         float_type sup_coeff = res_sup_coeff[b];
 
-        for(long int out_x = min_x; out_x < max_x; out_x++)
+        for(int out_x = min_x; out_x < max_x; out_x++)
         {
-            for(long int out_y = min_y; out_y < max_y; out_y++)
+            for(int out_y = min_y; out_y < max_y; out_y++)
             {
-                for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                for(int out_z = 0; out_z < output_size_z; out_z++)
                 {
-                    const size_t mat_out = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
-                    const size_t a = n*length_x*length_y*output_size_z + mat_out;
+                    const int mat_out = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                    const int a = n*length_x*length_y*output_size_z + mat_out;
 
                     const float_type prev_inf_coeff = expr_inf_coeff[a];
                     const float_type prev_sup_coeff = expr_sup_coeff[a];
 
-                    const size_t c = ((out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z)*num_in_neurons + i;
+                    const int c = ((out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z)*num_in_neurons + i;
 
                     if(prev_inf_coeff > 0)
                     {
@@ -2560,24 +2560,24 @@ void lcoeffs_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coef
 
 
 __global__
-void ucoeffs_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ input_lcoeffs, const float_type* __restrict__ input_ucoeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t num_in_neurons, const long int offset_x, const long int offset_y, const long int length_x, const long int length_y, const long int shift_x, const long int shift_y)
+void ucoeffs_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ input_lcoeffs, const float_type* __restrict__ input_ucoeffs, const int output_size_x, const int output_size_y, const int output_size_z, const int num_in_neurons, const int offset_x, const int offset_y, const int length_x, const int length_y, const int shift_x, const int shift_y)
 {
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
+    const int last_x = blockIdx.x;
+    const int last_y = blockIdx.y;
+    const int last_z = blockIdx.z;
 
-    size_t i = threadIdx.x;
+    int i = threadIdx.x;
 
-    __shared__ size_t n;
+    __shared__ int n;
 
-    __shared__ long int min_out_x;
-    __shared__ long int min_out_y;
+    __shared__ int min_out_x;
+    __shared__ int min_out_y;
 
-    __shared__ long int min_x;
-    __shared__ long int min_y;
+    __shared__ int min_x;
+    __shared__ int min_y;
 
-    __shared__ long int max_x;
-    __shared__ long int max_y;
+    __shared__ int max_x;
+    __shared__ int max_y;
 
     if(i == 0)
     {
@@ -2600,24 +2600,24 @@ void ucoeffs_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coef
 
     while(i < num_in_neurons)
     {
-        const size_t b = n*num_in_neurons + i;
+        const int b = n*num_in_neurons + i;
 
         float_type inf_coeff = res_inf_coeff[b];
         float_type sup_coeff = res_sup_coeff[b];
 
-        for(long int out_x = min_x; out_x < max_x; out_x++)
+        for(int out_x = min_x; out_x < max_x; out_x++)
         {
-            for(long int out_y = min_y; out_y < max_y; out_y++)
+            for(int out_y = min_y; out_y < max_y; out_y++)
             {
-                for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                for(int out_z = 0; out_z < output_size_z; out_z++)
                 {
-                    const size_t mat_out = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
-                    const size_t a = n*length_x*length_y*output_size_z + mat_out;
+                    const int mat_out = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                    const int a = n*length_x*length_y*output_size_z + mat_out;
 
                     const float_type prev_inf_coeff = expr_inf_coeff[a];
                     const float_type prev_sup_coeff = expr_sup_coeff[a];
 
-                    const size_t c = ((out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z)*num_in_neurons + i;
+                    const int c = ((out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z)*num_in_neurons + i;
 
                     if(prev_inf_coeff > 0)
                     {
@@ -2653,10 +2653,10 @@ void ucoeffs_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coef
 
 
 __global__
-void csts_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, const float_type* __restrict__ expr_linf_cst, const float_type* __restrict__ expr_lsup_cst, const float_type* __restrict__ expr_uinf_cst, const float_type* __restrict__ expr_usup_cst, float_type* __restrict__ res_linf_cst, float_type* __restrict__ res_lsup_cst, float_type* __restrict__ res_uinf_cst, float_type* __restrict__ res_usup_cst, const float_type* __restrict__ aux_csts, const size_t num_out_neurons_current_layer)
+void csts_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, const float_type* __restrict__ expr_linf_cst, const float_type* __restrict__ expr_lsup_cst, const float_type* __restrict__ expr_uinf_cst, const float_type* __restrict__ expr_usup_cst, float_type* __restrict__ res_linf_cst, float_type* __restrict__ res_lsup_cst, float_type* __restrict__ res_uinf_cst, float_type* __restrict__ res_usup_cst, const float_type* __restrict__ aux_csts, const int num_out_neurons_current_layer)
 {
-    const size_t n = blockIdx.x;
-    size_t i = threadIdx.x;
+    const int n = blockIdx.x;
+    int i = threadIdx.x;
 
     float_type linf_cst = 0;
     float_type lsup_cst = 0;
@@ -2668,7 +2668,7 @@ void csts_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, co
 
     while(i < num_out_neurons_current_layer)
     {
-        size_t a = n*num_out_neurons_current_layer + i;
+        int a = n*num_out_neurons_current_layer + i;
         const float_type aux_cst = aux_csts[i];
 
         elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_linf_coeff[a], expr_lsup_coeff[a], aux_cst);
@@ -2704,10 +2704,10 @@ void csts_from_previous_layer(const float_type* __restrict__ expr_linf_coeff, co
 
 
 __global__
-void csts_from_previous_layer_conv(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, const float_type* __restrict__ expr_linf_cst, const float_type* __restrict__ expr_lsup_cst, const float_type* __restrict__ expr_uinf_cst, const float_type* __restrict__ expr_usup_cst, float_type* __restrict__ res_linf_cst, float_type* __restrict__ res_lsup_cst, float_type* __restrict__ res_uinf_cst, float_type* __restrict__ res_usup_cst, const float_type* __restrict__ aux_csts, const size_t current_layer_out_size_x, const size_t current_layer_out_size_y, const size_t current_layer_out_size_z)
+void csts_from_previous_layer_conv(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, const float_type* __restrict__ expr_linf_cst, const float_type* __restrict__ expr_lsup_cst, const float_type* __restrict__ expr_uinf_cst, const float_type* __restrict__ expr_usup_cst, float_type* __restrict__ res_linf_cst, float_type* __restrict__ res_lsup_cst, float_type* __restrict__ res_uinf_cst, float_type* __restrict__ res_usup_cst, const float_type* __restrict__ aux_csts, const int current_layer_out_size_x, const int current_layer_out_size_y, const int current_layer_out_size_z)
 {
-    const size_t n = blockIdx.x;
-    size_t j = threadIdx.x;
+    const int n = blockIdx.x;
+    int j = threadIdx.x;
 
     float_type linf_cst = 0;
     float_type lsup_cst = 0;
@@ -2719,9 +2719,9 @@ void csts_from_previous_layer_conv(const float_type* __restrict__ expr_linf_coef
 
     while(j < current_layer_out_size_z)
     {
-        for(size_t i = 0; i < current_layer_out_size_x*current_layer_out_size_y; i++)
+        for(int i = 0; i < current_layer_out_size_x*current_layer_out_size_y; i++)
         {
-            size_t a = n*current_layer_out_size_x*current_layer_out_size_y*current_layer_out_size_z + i*current_layer_out_size_z + j;
+            int a = n*current_layer_out_size_x*current_layer_out_size_y*current_layer_out_size_z + i*current_layer_out_size_z + j;
             const float_type aux_cst = aux_csts[j];
 
             elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_linf_coeff[a], expr_lsup_coeff[a], aux_cst);
@@ -2758,24 +2758,24 @@ void csts_from_previous_layer_conv(const float_type* __restrict__ expr_linf_coef
 
 
 __global__
-void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, const float_type* __restrict__ expr_linf_cst, const float_type* __restrict__ expr_lsup_cst, const float_type* __restrict__ expr_uinf_cst, const float_type* __restrict__ expr_usup_cst, float_type* __restrict__ res_linf_cst, float_type* __restrict__ res_lsup_cst, float_type* __restrict__ res_uinf_cst, float_type* __restrict__ res_usup_cst, const float_type* __restrict__ aux_csts, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, long int offset_x, long int offset_y, long int length_x, long int length_y, long int shift_x, long int shift_y)
+void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_linf_coeff, const float_type* __restrict__ expr_lsup_coeff, const float_type* __restrict__ expr_uinf_coeff, const float_type* __restrict__ expr_usup_coeff, const float_type* __restrict__ expr_linf_cst, const float_type* __restrict__ expr_lsup_cst, const float_type* __restrict__ expr_uinf_cst, const float_type* __restrict__ expr_usup_cst, float_type* __restrict__ res_linf_cst, float_type* __restrict__ res_lsup_cst, float_type* __restrict__ res_uinf_cst, float_type* __restrict__ res_usup_cst, const float_type* __restrict__ aux_csts, const int output_size_x, const int output_size_y, const int output_size_z, int offset_x, int offset_y, int length_x, int length_y, int shift_x, int shift_y)
 {
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
+    const int last_x = blockIdx.x;
+    const int last_y = blockIdx.y;
+    const int last_z = blockIdx.z;
 
-    size_t out_z = threadIdx.x;
+    int out_z = threadIdx.x;
 
-    __shared__ size_t n;
+    __shared__ int n;
 
-    __shared__ long int min_out_x;
-    __shared__ long int min_out_y;
+    __shared__ int min_out_x;
+    __shared__ int min_out_y;
 
-    __shared__ long int min_x;
-    __shared__ long int min_y;
+    __shared__ int min_x;
+    __shared__ int min_y;
 
-    __shared__ long int max_x;
-    __shared__ long int max_y;
+    __shared__ int max_x;
+    __shared__ int max_y;
 
     if(out_z == 0)
     {
@@ -2803,11 +2803,11 @@ void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_li
 
     while(out_z < output_size_z)
     {
-        for(long int out_x = min_x; out_x < max_x; out_x++)
+        for(int out_x = min_x; out_x < max_x; out_x++)
         {
-            for(long int out_y = min_y; out_y < max_y; out_y++)
+            for(int out_y = min_y; out_y < max_y; out_y++)
             {
-                size_t mat_out = n*length_x*length_y*output_size_z + out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                int mat_out = n*length_x*length_y*output_size_z + out_x*length_y*output_size_z + out_y*output_size_z + out_z;
                 const float_type aux_cst = aux_csts[out_z];
 
                 elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_linf_coeff[mat_out], expr_lsup_coeff[mat_out], aux_cst);
@@ -2845,22 +2845,22 @@ void csts_from_previous_layer_conv_sparse(const float_type* __restrict__ expr_li
 
 
 __global__
-void lcsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ input_lcsts, const float_type* __restrict__ input_ucsts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, long int offset_x, long int offset_y, long int length_x, long int length_y, long int shift_x, long int shift_y)
+void lcsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ input_lcsts, const float_type* __restrict__ input_ucsts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int output_size_x, const int output_size_y, const int output_size_z, int offset_x, int offset_y, int length_x, int length_y, int shift_x, int shift_y)
 {
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
+    const int last_x = blockIdx.x;
+    const int last_y = blockIdx.y;
+    const int last_z = blockIdx.z;
 
-    const size_t n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
+    const int n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
 
-    const long int min_out_x = offset_x + last_x*shift_x;
-    const long int min_out_y = offset_y + last_y*shift_y;
+    const int min_out_x = offset_x + last_x*shift_x;
+    const int min_out_y = offset_y + last_y*shift_y;
 
-    const long int min_x = (min_out_x < 0) ? -min_out_x : 0;
-    const long int min_y = (min_out_y < 0) ? -min_out_y : 0;
+    const int min_x = (min_out_x < 0) ? -min_out_x : 0;
+    const int min_y = (min_out_y < 0) ? -min_out_y : 0;
 
-    const long int max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
-    const long int max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
+    const int max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
+    const int max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
 
     float_type inf_cst = expr_inf_cst[n];
     float_type sup_cst = expr_sup_cst[n];
@@ -2868,16 +2868,16 @@ void lcsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff,
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
-    for(long int out_x = min_x; out_x < max_x; out_x++)
+    for(int out_x = min_x; out_x < max_x; out_x++)
     {
-        for(long int out_y = min_y; out_y < max_y; out_y++)
+        for(int out_y = min_y; out_y < max_y; out_y++)
         {
-            for(size_t out_z = 0; out_z < output_size_z; out_z++)
+            for(int out_z = 0; out_z < output_size_z; out_z++)
             {
-                const size_t j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
-                const size_t i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
+                const int j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                const int i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
 
-                const size_t mat_out = n*length_x*length_y*output_size_z + j;
+                const int mat_out = n*length_x*length_y*output_size_z + j;
 
                 const float_type prev_inf_coeff = expr_inf_coeff[mat_out];
                 const float_type prev_sup_coeff = expr_sup_coeff[mat_out];
@@ -2922,22 +2922,22 @@ void lcsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff,
 
 
 __global__
-void ucsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ input_lcsts, const float_type* __restrict__ input_ucsts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, long int offset_x, long int offset_y, long int length_x, long int length_y, long int shift_x, long int shift_y)
+void ucsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ input_lcsts, const float_type* __restrict__ input_ucsts, const float_type* __restrict__ input_inf, const float_type* __restrict__ input_sup, const int output_size_x, const int output_size_y, const int output_size_z, int offset_x, int offset_y, int length_x, int length_y, int shift_x, int shift_y)
 {
-    const size_t last_x = blockIdx.x;
-    const size_t last_y = blockIdx.y;
-    const size_t last_z = blockIdx.z;
+    const int last_x = blockIdx.x;
+    const int last_y = blockIdx.y;
+    const int last_z = blockIdx.z;
 
-    const size_t n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
+    const int n = last_x*gridDim.y*gridDim.z + last_y*gridDim.z + last_z;
 
-    const long int min_out_x = offset_x + last_x*shift_x;
-    const long int min_out_y = offset_y + last_y*shift_y;
+    const int min_out_x = offset_x + last_x*shift_x;
+    const int min_out_y = offset_y + last_y*shift_y;
 
-    const long int min_x = (min_out_x < 0) ? -min_out_x : 0;
-    const long int min_y = (min_out_y < 0) ? -min_out_y : 0;
+    const int min_x = (min_out_x < 0) ? -min_out_x : 0;
+    const int min_y = (min_out_y < 0) ? -min_out_y : 0;
 
-    const long int max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
-    const long int max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
+    const int max_x = (length_x + min_out_x > output_size_x) ? output_size_x - min_out_x : length_x;
+    const int max_y = (length_y + min_out_y > output_size_y) ? output_size_y - min_out_y : length_y;
 
     float_type inf_cst = expr_inf_cst[n];
     float_type sup_cst = expr_sup_cst[n];
@@ -2945,16 +2945,16 @@ void ucsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff,
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
-    for(long int out_x = min_x; out_x < max_x; out_x++)
+    for(int out_x = min_x; out_x < max_x; out_x++)
     {
-        for(long int out_y = min_y; out_y < max_y; out_y++)
+        for(int out_y = min_y; out_y < max_y; out_y++)
         {
-            for(size_t out_z = 0; out_z < output_size_z; out_z++)
+            for(int out_z = 0; out_z < output_size_z; out_z++)
             {
-                const size_t j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
-                const size_t i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
+                const int j = out_x*length_y*output_size_z + out_y*output_size_z + out_z;
+                const int i = (out_x + min_out_x)*output_size_y*output_size_z + (out_y + min_out_y)*output_size_z + out_z;
 
-                const size_t mat_out = n*length_x*length_y*output_size_z + j;
+                const int mat_out = n*length_x*length_y*output_size_z + j;
 
                 const float_type prev_inf_coeff = expr_inf_coeff[mat_out];
                 const float_type prev_sup_coeff = expr_sup_coeff[mat_out];
@@ -2999,35 +2999,35 @@ void ucsts_from_input_poly_sparse(const float_type* __restrict__ expr_inf_coeff,
 
 
 __global__
-void device_layer_create_sparse_exprs(float_type* dense_coeff, float_type* bias, const float_type* filter_weights, const float_type* filter_bias, const size_t chunk_counter, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const long int pad_x, const long int pad_y)
+void device_layer_create_sparse_exprs(float_type* dense_coeff, float_type* bias, const float_type* filter_weights, const float_type* filter_bias, const int chunk_counter, const int input_size_x, const int input_size_y, const int input_size_z, const int filter_size_x, const int filter_size_y, const int stride_x, const int stride_y, const int pad_x, const int pad_y)
 {
-    size_t out_x = blockIdx.x;
-    size_t out_y = blockIdx.y;
-    size_t out_z = blockIdx.z;
+    int out_x = blockIdx.x;
+    int out_y = blockIdx.y;
+    int out_z = blockIdx.z;
 
-    const size_t local_mat_x = out_x*gridDim.y*gridDim.z + out_y*gridDim.z + out_z;
+    const int local_mat_x = out_x*gridDim.y*gridDim.z + out_y*gridDim.z + out_z;
 
-    for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
+    for(int x_shift = 0; x_shift < filter_size_x; x_shift++)
     {
-        for(size_t y_shift = 0; y_shift < filter_size_y; y_shift++)
+        for(int y_shift = 0; y_shift < filter_size_y; y_shift++)
         {
-            for(size_t inp_z = 0; inp_z < input_size_z; inp_z++)
+            for(int inp_z = 0; inp_z < input_size_z; inp_z++)
             {
-                const long int x_val = out_x*stride_x + x_shift - pad_x;
-                const long int y_val = out_y*stride_y + y_shift - pad_y;
+                const int x_val = out_x*stride_x + x_shift - pad_x;
+                const int y_val = out_y*stride_y + y_shift - pad_y;
 
-                if((y_val < 0) || (y_val >= (long int)input_size_y))
+                if((y_val < 0) || (y_val >= input_size_y))
                 {
                     continue;
                 }
 
-                if((x_val < 0) || (x_val >= (long int)input_size_x))
+                if((x_val < 0) || (x_val >= input_size_x))
                 {
                     continue;
                 }
 
-                const size_t mat_y = x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
-                const size_t filter_index = (chunk_counter*gridDim.z + out_z)*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+                const int mat_y = x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+                const int filter_index = (chunk_counter*gridDim.z + out_z)*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
 
                 dense_coeff[local_mat_x*filter_size_x*filter_size_y*input_size_z + mat_y] = filter_weights[filter_index];
             }
@@ -3839,13 +3839,13 @@ void update_state_using_predecessor_layer_sparse(fppoly_internal_t* pr, fppoly_t
 
 
 __global__
-void create_res_coeffs_csts(float_type* coeffs, float_type* bias, const size_t num_chunks, const size_t chunk_counter, const size_t input_size_z)
+void create_res_coeffs_csts(float_type* coeffs, float_type* bias, const int num_chunks, const int chunk_counter, const int input_size_z)
 {
-    size_t out_x = blockIdx.x;
-    size_t out_y = blockIdx.y;
-    size_t out_z = blockIdx.z;
+    int out_x = blockIdx.x;
+    int out_y = blockIdx.y;
+    int out_z = blockIdx.z;
 
-    const size_t local_mat_x = out_x*gridDim.y*gridDim.z + out_y*gridDim.z + out_z;
+    const int local_mat_x = out_x*gridDim.y*gridDim.z + out_y*gridDim.z + out_z;
 
     coeffs[local_mat_x*input_size_z + chunk_counter*gridDim.z + out_z] = 1;
 
@@ -4533,12 +4533,12 @@ void ffn_handle_last_relu_layer(elina_manager_t* man, elina_abstract0_t* element
 
 
 __global__
-void create_sub_expr(float_type* __restrict__ inf_coeff, float_type* __restrict__ sup_coeff, float_type* __restrict__ inf_cst, float_type* __restrict__ sup_cst, const size_t index, const elina_dim_t y, const elina_dim_t x)
+void create_sub_expr(float_type* __restrict__ inf_coeff, float_type* __restrict__ sup_coeff, float_type* __restrict__ inf_cst, float_type* __restrict__ sup_cst, const int index, const elina_dim_t y, const elina_dim_t x)
 {
     inf_cst[index] = 0;
     sup_cst[index] = 0;
 
-    for(size_t i = 0; i < 10; i++)
+    for(int i = 0; i < 10; i++)
     {
         inf_coeff[index*10 + i] = 0.;
         sup_coeff[index*10 + i] = 0.;
@@ -4553,26 +4553,26 @@ void create_sub_expr(float_type* __restrict__ inf_coeff, float_type* __restrict_
 
 
 __global__
-void coeffs_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const size_t num_out_neurons_current_layer, const size_t num_in_neurons_current_layer)
+void coeffs_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const int num_out_neurons_current_layer, const int num_in_neurons_current_layer)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
-    size_t j = threadIdx.x;
+    int j = threadIdx.x;
 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
     while(j < num_in_neurons_current_layer)
     {
-        const size_t b = n*num_in_neurons_current_layer + j;
+        const int b = n*num_in_neurons_current_layer + j;
 
         float_type inf_coeff = 0;
         float_type sup_coeff = 0;
 
-        for(size_t i = 0; i < num_out_neurons_current_layer; i++)
+        for(int i = 0; i < num_out_neurons_current_layer; i++)
         {
-            size_t a = n*num_out_neurons_current_layer + i;
-            size_t c = i*num_in_neurons_current_layer + j;
+            int a = n*num_out_neurons_current_layer + i;
+            int c = i*num_in_neurons_current_layer + j;
 
             const float_type prev_inf_coeff = expr_inf_coeff[a];
             const float_type prev_sup_coeff = expr_sup_coeff[a];
@@ -4598,48 +4598,48 @@ void coeffs_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, c
 
 
 __global__
-void coeffs_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
+void coeffs_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const int output_size_x, const int output_size_y, const int output_size_z, const int input_size_x, const int input_size_y, const int input_size_z, const int filter_size_x, const int filter_size_y, const int stride_x, const int stride_y, const int pad_x, const int pad_y)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
-    const size_t inp_z = threadIdx.x;
-    const size_t y_shift = threadIdx.y;
-    const size_t x_shift = threadIdx.z;
+    const int inp_z = threadIdx.x;
+    const int y_shift = threadIdx.y;
+    const int x_shift = threadIdx.z;
 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
     if(x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z < filter_size_x*filter_size_y*input_size_z)
     {
-        for(size_t out_x = 0; out_x < output_size_x; out_x++)
+        for(int out_x = 0; out_x < output_size_x; out_x++)
         {
-            for(size_t out_y = 0; out_y < output_size_y; out_y++)
+            for(int out_y = 0; out_y < output_size_y; out_y++)
             {
-                const long int x_val = out_x*stride_x + x_shift - pad_x;
-                const long int y_val = out_y*stride_y + y_shift - pad_y;
+                const int x_val = out_x*stride_x + x_shift - pad_x;
+                const int y_val = out_y*stride_y + y_shift - pad_y;
 
-                if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
+                if(!((y_val < 0) || (y_val >= input_size_y)))
                 {
-                    if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
+                    if(!((x_val < 0) || (x_val >= input_size_x)))
                     {
-                        const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
-                        const size_t b = n*input_size_x*input_size_y*input_size_z + mat_in;
+                        const int mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
+                        const int b = n*input_size_x*input_size_y*input_size_z + mat_in;
 
                         float_type inf_coeff = res_inf_coeff[b];
                         float_type sup_coeff = res_sup_coeff[b];
 
-                        for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                        for(int out_z = 0; out_z < output_size_z; out_z++)
                         {
-                            const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
+                            const int mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
 
-                            const size_t a = n*output_size_x*output_size_y*output_size_z + mat_out;
+                            const int a = n*output_size_x*output_size_y*output_size_z + mat_out;
 
                             const float_type prev_inf_coeff = expr_inf_coeff[a];
                             const float_type prev_sup_coeff = expr_sup_coeff[a];
 
                             if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
                             {
-                                const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+                                const int filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
 
                                 const float_type aux_coeff = aux_coeffs[filter_index];
                                 elina_double_interval_mul_expr_coeff_const_expr(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeff);
@@ -4665,49 +4665,49 @@ void coeffs_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coe
 
 
 __global__
-void coeffs_from_previous_layer_conv_x_filter_serial(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
+void coeffs_from_previous_layer_conv_x_filter_serial(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const int output_size_x, const int output_size_y, const int output_size_z, const int input_size_x, const int input_size_y, const int input_size_z, const int filter_size_x, const int filter_size_y, const int stride_x, const int stride_y, const int pad_x, const int pad_y)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
-    const size_t inp_z = threadIdx.x;
-    const size_t y_shift = threadIdx.y;
+    const int inp_z = threadIdx.x;
+    const int y_shift = threadIdx.y;
 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
     if(y_shift*input_size_z + inp_z < filter_size_y*input_size_z)
     {
-        for(size_t out_x = 0; out_x < output_size_x; out_x++)
+        for(int out_x = 0; out_x < output_size_x; out_x++)
         {
-            for(size_t out_y = 0; out_y < output_size_y; out_y++)
+            for(int out_y = 0; out_y < output_size_y; out_y++)
             {
-                for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
+                for(int x_shift = 0; x_shift < filter_size_x; x_shift++)
                 {
-                    const long int x_val = out_x*stride_x + x_shift - pad_x;
-                    const long int y_val = out_y*stride_y + y_shift - pad_y;
+                    const int x_val = out_x*stride_x + x_shift - pad_x;
+                    const int y_val = out_y*stride_y + y_shift - pad_y;
 
-                    if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
+                    if(!((y_val < 0) || (y_val >= input_size_y)))
                     {
-                        if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
+                        if(!((x_val < 0) || (x_val >= input_size_x)))
                         {
-                            const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
-                            const size_t b = n*input_size_x*input_size_y*input_size_z + mat_in;
+                            const int mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
+                            const int b = n*input_size_x*input_size_y*input_size_z + mat_in;
 
                             float_type inf_coeff = res_inf_coeff[b];
                             float_type sup_coeff = res_sup_coeff[b];
 
-                            for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                            for(int out_z = 0; out_z < output_size_z; out_z++)
                             {
-                                const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
+                                const int mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
 
-                                const size_t a = n*output_size_x*output_size_y*output_size_z + mat_out;
+                                const int a = n*output_size_x*output_size_y*output_size_z + mat_out;
 
                                 const float_type prev_inf_coeff = expr_inf_coeff[a];
                                 const float_type prev_sup_coeff = expr_sup_coeff[a];
 
                                 if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
                                 {
-                                    const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+                                    const int filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
 
                                     const float_type aux_coeff = aux_coeffs[filter_index];
                                     elina_double_interval_mul_expr_coeff_const_expr(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeff);
@@ -4734,50 +4734,50 @@ void coeffs_from_previous_layer_conv_x_filter_serial(const float_type* __restric
 
 
 __global__
-void coeffs_from_previous_layer_conv_filter_serial(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const size_t output_size_x, const size_t output_size_y, const size_t output_size_z, const size_t input_size_x, const size_t input_size_y, const size_t input_size_z, const size_t filter_size_x, const size_t filter_size_y, const size_t stride_x, const size_t stride_y, const size_t pad_x, const size_t pad_y)
+void coeffs_from_previous_layer_conv_filter_serial(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, float_type* __restrict__ res_inf_coeff, float_type* __restrict__ res_sup_coeff, const float_type* __restrict__ aux_coeffs, const int output_size_x, const int output_size_y, const int output_size_z, const int input_size_x, const int input_size_y, const int input_size_z, const int filter_size_x, const int filter_size_y, const int stride_x, const int stride_y, const int pad_x, const int pad_y)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
-    size_t inp_z = threadIdx.x;
+    int inp_z = threadIdx.x;
 
     float_type tmp1, tmp2;
     float_type maxRes, maxMul;
 
     while(inp_z < input_size_z)
     {
-        for(size_t out_x = 0; out_x < output_size_x; out_x++)
+        for(int out_x = 0; out_x < output_size_x; out_x++)
         {
-            for(size_t out_y = 0; out_y < output_size_y; out_y++)
+            for(int out_y = 0; out_y < output_size_y; out_y++)
             {
-                for(size_t x_shift = 0; x_shift < filter_size_x; x_shift++)
+                for(int x_shift = 0; x_shift < filter_size_x; x_shift++)
                 {
-                    for(size_t y_shift = 0; y_shift < filter_size_y; y_shift++)
+                    for(int y_shift = 0; y_shift < filter_size_y; y_shift++)
                     {
-                        const long int x_val = out_x*stride_x + x_shift - pad_x;
-                        const long int y_val = out_y*stride_y + y_shift - pad_y;
+                        const int x_val = out_x*stride_x + x_shift - pad_x;
+                        const int y_val = out_y*stride_y + y_shift - pad_y;
 
-                        if(!((y_val < 0) || (y_val >= (long int)input_size_y)))
+                        if(!((y_val < 0) || (y_val >= input_size_y)))
                         {
-                            if(!((x_val < 0) || (x_val >= (long int)input_size_x)))
+                            if(!((x_val < 0) || (x_val >= input_size_x)))
                             {
-                                const size_t mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
-                                const size_t b = n*input_size_x*input_size_y*input_size_z + mat_in;
+                                const int mat_in = x_val*input_size_y*input_size_z + y_val*input_size_z + inp_z;
+                                const int b = n*input_size_x*input_size_y*input_size_z + mat_in;
 
                                 float_type inf_coeff = res_inf_coeff[b];
                                 float_type sup_coeff = res_sup_coeff[b];
 
-                                for(size_t out_z = 0; out_z < output_size_z; out_z++)
+                                for(int out_z = 0; out_z < output_size_z; out_z++)
                                 {
-                                    const size_t mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
+                                    const int mat_out = out_x*output_size_y*output_size_z + out_y*output_size_z + out_z;
 
-                                    const size_t a = n*output_size_x*output_size_y*output_size_z + mat_out;
+                                    const int a = n*output_size_x*output_size_y*output_size_z + mat_out;
 
                                     const float_type prev_inf_coeff = expr_inf_coeff[a];
                                     const float_type prev_sup_coeff = expr_sup_coeff[a];
 
                                     if((prev_inf_coeff != 0) || (prev_sup_coeff != 0))
                                     {
-                                        const size_t filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
+                                        const int filter_index = out_z*filter_size_x*filter_size_y*input_size_z + x_shift*filter_size_y*input_size_z + y_shift*input_size_z + inp_z;
 
                                         const float_type aux_coeff = aux_coeffs[filter_index];
                                         elina_double_interval_mul_expr_coeff_const_expr(&tmp1, &tmp2, prev_inf_coeff, prev_sup_coeff, aux_coeff);
@@ -4805,10 +4805,10 @@ void coeffs_from_previous_layer_conv_filter_serial(const float_type* __restrict_
 
 
 __global__
-void csts_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ aux_csts, const size_t num_out_neurons_current_layer)
+void csts_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ aux_csts, const int num_out_neurons_current_layer)
 {
-    const size_t n = blockIdx.x;
-    size_t i = threadIdx.x;
+    const int n = blockIdx.x;
+    int i = threadIdx.x;
 
     float_type inf_cst = 0;
     float_type sup_cst = 0;
@@ -4818,7 +4818,7 @@ void csts_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, con
 
     while(i < num_out_neurons_current_layer)
     {
-        size_t a = n*num_out_neurons_current_layer + i;
+        int a = n*num_out_neurons_current_layer + i;
 
         elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_inf_coeff[a], expr_sup_coeff[a], aux_csts[i]);
 
@@ -4842,10 +4842,10 @@ void csts_from_previous_layer(const float_type* __restrict__ expr_inf_coeff, con
 
 
 __global__
-void csts_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ aux_csts, const size_t current_layer_out_size_x, const size_t current_layer_out_size_y, const size_t current_layer_out_size_z)
+void csts_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff, const float_type* __restrict__ expr_sup_coeff, const float_type* __restrict__ expr_inf_cst, const float_type* __restrict__ expr_sup_cst, float_type* __restrict__ res_inf_cst, float_type* __restrict__ res_sup_cst, const float_type* __restrict__ aux_csts, const int current_layer_out_size_x, const int current_layer_out_size_y, const int current_layer_out_size_z)
 {
-    const size_t n = blockIdx.x;
-    size_t j = threadIdx.x;
+    const int n = blockIdx.x;
+    int j = threadIdx.x;
 
     float_type inf_cst = 0;
     float_type sup_cst = 0;
@@ -4855,9 +4855,9 @@ void csts_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff
 
     while(j < current_layer_out_size_z)
     {
-        for(size_t i = 0; i < current_layer_out_size_x*current_layer_out_size_y; i++)
+        for(int i = 0; i < current_layer_out_size_x*current_layer_out_size_y; i++)
         {
-            size_t a = n*current_layer_out_size_x*current_layer_out_size_y*current_layer_out_size_z + i*current_layer_out_size_z + j;
+            int a = n*current_layer_out_size_x*current_layer_out_size_y*current_layer_out_size_z + i*current_layer_out_size_z + j;
 
             elina_double_interval_mul_cst_coeff_const_expr(&tmp1, &tmp2, expr_inf_coeff[a], expr_sup_coeff[a], aux_csts[j]);
 
@@ -4882,18 +4882,18 @@ void csts_from_previous_layer_conv(const float_type* __restrict__ expr_inf_coeff
 
 
 __global__
-void lexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* __restrict__ sup_coeff, float_type* __restrict__ inf_cst, float_type* __restrict__ sup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const size_t num_out_neurons_current_layer, const bool use_area_heuristic)
+void lexpr_replace_relu_bounds(float_type* __restrict__ inf_coeff, float_type* __restrict__ sup_coeff, float_type* __restrict__ inf_cst, float_type* __restrict__ sup_cst, const float_type* __restrict__ lb_array, const float_type* __restrict__ ub_array, const int num_out_neurons_current_layer, const bool use_area_heuristic)
 {
-    const size_t n = blockIdx.x;
+    const int n = blockIdx.x;
 
-    size_t i = threadIdx.x;
+    int i = threadIdx.x;
 
     float_type res_inf_cst = 0;
     float_type res_sup_cst = 0;
 
     while(i < num_out_neurons_current_layer)
     {
-        const size_t a = n*num_out_neurons_current_layer + i;
+        const int a = n*num_out_neurons_current_layer + i;
 
         const float_type lb = lb_array[i];
         const float_type ub = ub_array[i];
