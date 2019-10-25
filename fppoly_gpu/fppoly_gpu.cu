@@ -28,6 +28,8 @@ const size_t maximum_backstep = 2;
 
 const size_t num_threads = 256;
 
+bool retain_bounds = true;
+
 #define FULL_MASK 0xffffffff
 
 bool results[90];
@@ -4108,6 +4110,54 @@ size_t predict_size(fppoly_t *fp, const size_t layerno) {
   return num_chunks;
 }
 
+void print_coeffs(const float_type *lcoeff_host, const float_type *ucoeff_host,
+                  const int output_size_x, const int output_size_y,
+                  const int output_size_z, const int input_size_x,
+                  const int input_size_y, const int input_size_z,
+                  const int length_x, const int length_y, const int shift_x,
+                  const int shift_y, const int offset_x, const int offset_y) {
+  for (int out_x = 0; out_x < output_size_x; out_x++) {
+    for (int out_y = 0; out_y < output_size_y; out_y++) {
+      for (int out_z = 0; out_z < output_size_z; out_z++) {
+        const int n = out_x * output_size_y * output_size_z +
+                      out_y * output_size_z + out_z;
+
+        const int min_out_x = offset_x + out_x * shift_x;
+        const int min_out_y = offset_y + out_y * shift_y;
+
+        const int min_x = (min_out_x < 0) ? -min_out_x : 0;
+        const int min_y = (min_out_y < 0) ? -min_out_y : 0;
+
+        const int max_x = (length_x + min_out_x > input_size_x)
+                              ? input_size_x - min_out_x
+                              : length_x;
+        const int max_y = (length_y + min_out_y > input_size_y)
+                              ? input_size_y - min_out_y
+                              : length_y;
+
+        for (int inp_x = min_x; inp_x < max_x; inp_x++) {
+          for (int inp_y = min_y; inp_y < max_y; inp_y++) {
+            for (int inp_z = 0; inp_z < input_size_z; inp_z++) {
+              const int i = (inp_x + min_out_x) * input_size_y * input_size_z +
+                            (inp_y + min_out_y) * input_size_z + inp_z;
+              const int j = inp_x * length_y * input_size_z +
+                            inp_y * input_size_z + inp_z;
+
+              const int a = n * length_x * length_y * input_size_z + j;
+
+              if (lcoeff_host[a] != 0) {
+                std::cout << i << " ";
+              }
+            }
+          }
+        }
+
+        std::cout << std::endl;
+      }
+    }
+  }
+}
+
 void update_state_using_predecessor_layer_sparse(
     fppoly_internal_t *pr, fppoly_t *fp, float_type **linf_coeff,
     float_type **lsup_coeff, float_type **linf_cst, float_type **lsup_cst,
@@ -5185,6 +5235,64 @@ void update_state_using_previous_layers_sparse(elina_manager_t *man,
           shift_x, shift_y);
     }
   }
+
+  if (retain_bounds) {
+    float_type *lcoeff_host = (float_type *)malloc(
+        x_y_size_last_layer * num_filters_last_layer * length_x * length_y *
+        fp->layers[0]->input_size[2] * sizeof(float_type));
+    float_type *ucoeff_host = (float_type *)malloc(
+        x_y_size_last_layer * num_filters_last_layer * length_x * length_y *
+        fp->layers[0]->input_size[2] * sizeof(float_type));
+
+    cudaMemcpy(lcoeff_host, linf_coeff,
+               x_y_size_last_layer * num_filters_last_layer * length_x *
+                   length_y * fp->layers[0]->input_size[2] * sizeof(float_type),
+               cudaMemcpyDeviceToHost);
+    cudaMemcpy(ucoeff_host, usup_coeff,
+               x_y_size_last_layer * num_filters_last_layer * length_x *
+                   length_y * fp->layers[0]->input_size[2] * sizeof(float_type),
+               cudaMemcpyDeviceToHost);
+
+    float_type *lcst_host = (float_type *)malloc(
+        x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
+    float_type *ucst_host = (float_type *)malloc(
+        x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
+
+    cudaMemcpy(lcst_host, linf_cst,
+               x_y_size_last_layer * num_filters_last_layer *
+                   sizeof(float_type),
+               cudaMemcpyDeviceToHost);
+    cudaMemcpy(ucst_host, usup_cst,
+               x_y_size_last_layer * num_filters_last_layer *
+                   sizeof(float_type),
+               cudaMemcpyDeviceToHost);
+
+    const int output_size_x = fp->layers[layerno]->output_size[0];
+    const int output_size_y = fp->layers[layerno]->output_size[1];
+    const int output_size_z = fp->layers[layerno]->output_size[2];
+
+    const int input_size_x = fp->layers[0]->input_size[0];
+    const int input_size_y = fp->layers[0]->input_size[1];
+    const int input_size_z = fp->layers[0]->input_size[2];
+
+    print_coeffs(lcoeff_host, ucoeff_host, output_size_x, output_size_y,
+                 output_size_z, input_size_x, input_size_y, input_size_z,
+                 length_x, length_y, shift_x, shift_y, offset_x, offset_y);
+
+    free(lcoeff_host);
+    free(ucoeff_host);
+
+    free(lcst_host);
+    free(ucst_host);
+
+    lcoeff_host = nullptr;
+    ucoeff_host = nullptr;
+
+    lcst_host = nullptr;
+    ucst_host = nullptr;
+  }
+
+  retain_bounds = false;
 
   cudaFree(linf_coeff);
   cudaFree(lsup_coeff);
@@ -6552,6 +6660,101 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
         fp->layers[0]->filter_size[1], fp->layers[0]->strides[0],
         fp->layers[0]->strides[1], fp->layers[0]->pad[0],
         fp->layers[0]->pad[1]);
+  }
+
+  if (false) {
+    const int num_out_neurons_0_layer = fp->layers[0]->num_out_neurons;
+
+    const int offset_x = -fp->layers[0]->pad[0];
+    const int offset_y = -fp->layers[0]->pad[1];
+
+    const int length_x = fp->layers[0]->filter_size[0];
+    const int length_y = fp->layers[0]->filter_size[1];
+
+    const int shift_x = fp->layers[0]->strides[0];
+    const int shift_y = fp->layers[0]->strides[1];
+
+    float_type *coeffs;
+    float_type *csts;
+
+    cudaMalloc((void **)&coeffs, num_out_neurons_0_layer * length_x * length_y *
+                                     fp->layers[0]->input_size[2] *
+                                     sizeof(float_type));
+    cudaMalloc((void **)&csts, num_out_neurons_0_layer * sizeof(float_type));
+
+    cudaMemset(coeffs, 0,
+               num_out_neurons_0_layer * length_x * length_y *
+                   fp->layers[0]->input_size[2] * sizeof(float_type));
+    cudaMemset(csts, 0, num_out_neurons_0_layer * sizeof(float_type));
+
+    device_layer_create_sparse_exprs<<<dim3(fp->layers[0]->output_size[0],
+                                            fp->layers[0]->output_size[1],
+                                            fp->layers[0]->output_size[2]),
+                                       1>>>(
+        coeffs, csts, fp->layers[0]->filter_weights, fp->layers[0]->filter_bias,
+        0, fp->layers[0]->input_size[0], fp->layers[0]->input_size[1],
+        fp->layers[0]->input_size[2], fp->layers[0]->filter_size[0],
+        fp->layers[0]->filter_size[1], fp->layers[0]->strides[0],
+        fp->layers[0]->strides[1], fp->layers[0]->pad[0],
+        fp->layers[0]->pad[1]);
+
+    float_type *lcoeff_host =
+        (float_type *)malloc(num_out_neurons_0_layer * length_x * length_y *
+                             fp->layers[0]->input_size[2] * sizeof(float_type));
+    float_type *ucoeff_host =
+        (float_type *)malloc(num_out_neurons_0_layer * length_x * length_y *
+                             fp->layers[0]->input_size[2] * sizeof(float_type));
+
+    cudaMemcpy(lcoeff_host, coeffs,
+               num_out_neurons_0_layer * length_x * length_y *
+                   fp->layers[0]->input_size[2] * sizeof(float_type),
+               cudaMemcpyDeviceToHost);
+    cudaMemcpy(ucoeff_host, coeffs,
+               num_out_neurons_0_layer * length_x * length_y *
+                   fp->layers[0]->input_size[2] * sizeof(float_type),
+               cudaMemcpyDeviceToHost);
+
+    float_type *lcst_host =
+        (float_type *)malloc(num_out_neurons_0_layer * sizeof(float_type));
+    float_type *ucst_host =
+        (float_type *)malloc(num_out_neurons_0_layer * sizeof(float_type));
+
+    cudaMemcpy(lcst_host, csts, num_out_neurons_0_layer * sizeof(float_type),
+               cudaMemcpyDeviceToHost);
+    cudaMemcpy(ucst_host, csts, num_out_neurons_0_layer * sizeof(float_type),
+               cudaMemcpyDeviceToHost);
+
+    cudaFree(coeffs);
+    cudaFree(csts);
+
+    coeffs = nullptr;
+    csts = nullptr;
+
+    const int output_size_x = fp->layers[0]->output_size[0];
+    const int output_size_y = fp->layers[0]->output_size[1];
+    const int output_size_z = fp->layers[0]->output_size[2];
+
+    const int input_size_x = fp->layers[0]->input_size[0];
+    const int input_size_y = fp->layers[0]->input_size[1];
+    const int input_size_z = fp->layers[0]->input_size[2];
+
+    print_coeffs(lcoeff_host, ucoeff_host, output_size_x, output_size_y,
+                 output_size_z, input_size_x, input_size_y, input_size_z,
+                 length_x, length_y, shift_x, shift_y, offset_x, offset_y);
+
+    retain_bounds = false;
+
+    free(lcoeff_host);
+    free(ucoeff_host);
+
+    free(lcst_host);
+    free(ucst_host);
+
+    lcoeff_host = nullptr;
+    ucoeff_host = nullptr;
+
+    lcst_host = nullptr;
+    ucst_host = nullptr;
   }
 }
 
