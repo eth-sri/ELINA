@@ -28,8 +28,6 @@ const size_t maximum_backstep = 2;
 
 const size_t num_threads = 256;
 
-bool retain_bounds = true;
-
 #define FULL_MASK 0xffffffff
 
 bool results[90];
@@ -4424,12 +4422,10 @@ __global__ void create_res_coeffs_csts(float_type *coeffs, float_type *bias,
   bias[local_mat_x] = 0;
 }
 
-void update_state_using_previous_layers_sparse(elina_manager_t *man,
-                                               fppoly_t *fp,
-                                               const size_t layerno,
-                                               const size_t num_chunks,
-                                               const size_t chunk_counter,
-                                               const bool use_area_heuristic) {
+void update_state_using_previous_layers_sparse(
+    elina_manager_t *man, fppoly_t *fp, const size_t layerno,
+    const size_t num_chunks, const size_t chunk_counter,
+    const bool use_area_heuristic, const bool retain_training_data) {
   const auto start = std::chrono::system_clock::now();
 
   size_t backstep_counter = 0;
@@ -5279,7 +5275,7 @@ void update_state_using_previous_layers_sparse(elina_manager_t *man,
     }
   }
 
-  if (retain_bounds) {
+  if (retain_training_data) {
     float_type *lcoeff_host = (float_type *)malloc(
         x_y_size_last_layer * num_filters_last_layer * length_x * length_y *
         fp->layers[0]->input_size[2] * sizeof(float_type));
@@ -5397,16 +5393,15 @@ void update_state_using_previous_layers_sparse(elina_manager_t *man,
             << std::endl;
 }
 
-void update_state_using_previous_layers_sparse(elina_manager_t *man,
-                                               fppoly_t *fp,
-                                               const size_t layerno,
-                                               const bool use_area_heuristic) {
+void update_state_using_previous_layers_sparse(
+    elina_manager_t *man, fppoly_t *fp, const size_t layerno,
+    const bool use_area_heuristic, const bool retain_training_data) {
   const size_t num_chunks = predict_size(fp, layerno);
 
   for (size_t chunk_counter = 0; chunk_counter < num_chunks; chunk_counter++) {
-    update_state_using_previous_layers_sparse(man, fp, fp->numlayers - 1,
-                                              num_chunks, chunk_counter,
-                                              use_area_heuristic);
+    update_state_using_previous_layers_sparse(
+        man, fp, fp->numlayers - 1, num_chunks, chunk_counter,
+        use_area_heuristic, retain_training_data);
   }
 }
 
@@ -6730,7 +6725,7 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
         fp->layers[0]->pad[1]);
   }
 
-  if (retain_bounds) {
+  if (retain_training_data) {
     const int num_out_neurons_0_layer = fp->layers[0]->num_out_neurons;
 
     const int offset_x = -fp->layers[0]->pad[0];
@@ -6858,8 +6853,8 @@ void conv_handle_intermediate_layer(
 
   fp->layers[fp->numlayers - 1]->predecessors = predecessors;
 
-  update_state_using_previous_layers_sparse(man, fp, fp->numlayers - 1,
-                                            use_area_heuristic);
+  update_state_using_previous_layers_sparse(
+      man, fp, fp->numlayers - 1, use_area_heuristic, retain_training_data);
 }
 
 void conv_handle_intermediate_relu_layer(
@@ -6948,7 +6943,7 @@ void handle_residual_layer(elina_manager_t *man, elina_abstract0_t *element,
   fp->layers[fp->numlayers - 1]->predecessors = predecessors;
 
   update_state_using_previous_layers_sparse(man, fp, fp->numlayers - 1,
-                                            use_area_heuristic);
+                                            use_area_heuristic, false);
 }
 
 void handle_residual_relu_layer(elina_manager_t *man,
