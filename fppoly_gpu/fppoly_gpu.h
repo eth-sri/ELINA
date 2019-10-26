@@ -170,7 +170,8 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
                              const size_t *filter_size,
                              const size_t num_filters, const size_t *strides,
                              const bool is_valid_padding, const bool has_bias,
-                             size_t *predecessors);
+                             size_t *predecessors,
+                             const bool retain_training_data);
 
 void conv_handle_intermediate_relu_layer(
     elina_manager_t *man, elina_abstract0_t *element,
@@ -178,7 +179,7 @@ void conv_handle_intermediate_relu_layer(
     const size_t *input_size, const size_t *filter_size,
     const size_t num_filters, const size_t *strides,
     const bool is_valid_padding, const bool has_bias, size_t *predecessors,
-    const bool use_area_heuristic);
+    const bool use_area_heuristic, const bool retain_training_data);
 
 void conv_handle_intermediate_affine_layer(
     elina_manager_t *man, elina_abstract0_t *element,
@@ -186,7 +187,7 @@ void conv_handle_intermediate_affine_layer(
     const size_t *input_size, const size_t *filter_size,
     const size_t num_filters, const size_t *strides,
     const bool is_valid_padding, const bool has_bias, size_t *predecessors,
-    const bool use_area_heuristic);
+    const bool use_area_heuristic, const bool retain_training_data);
 
 void handle_residual_relu_layer(elina_manager_t *man,
                                 elina_abstract0_t *element,
@@ -216,6 +217,20 @@ size_t get_num_neurons_in_layer(elina_manager_t *man, elina_abstract0_t *abs,
 
 elina_interval_t **box_for_layer(elina_manager_t *man, elina_abstract0_t *abs,
                                  size_t layerno);
+
+int get_num_neurons_training_layer();
+
+float_type *get_lcst_array();
+
+float_type *get_ucst_array();
+
+int *get_sizes_array();
+
+int *get_dims_array();
+
+float_type *get_lcoeff_array();
+
+float_type *get_ucoeff_array();
 
 #ifdef __cplusplus
 }

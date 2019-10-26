@@ -46,16 +46,27 @@ __constant__ const float_type min_denormal = 4.940656458412465441766e-324;
 __constant__ const float_type ulp = 2.220446049250313080848e-16;
 #endif
 
-int num_neurons_training_layer;
+int num_neurons_training_layer = 0;
 
-float_type *lcst_host;
-float_type *ucst_host;
+float_type *lcst_host = nullptr;
+float_type *ucst_host = nullptr;
 
-int *sizes;
-int *dims;
+int *sizes = nullptr;
+int *dims = nullptr;
 
-float_type *lcoeff_host_sparse;
-float_type *ucoeff_host_sparse;
+float_type *lcoeff_host_sparse = nullptr;
+float_type *ucoeff_host_sparse = nullptr;
+
+void clean_training_data() {
+  free(lcst_host);
+  free(ucst_host);
+
+  free(sizes);
+  free(dims);
+
+  free(lcoeff_host_sparse);
+  free(ucoeff_host_sparse);
+}
 
 #define gpuErrchk(ans)                                                         \
   { gpuAssert((ans), __FILE__, __LINE__); }
@@ -1360,6 +1371,8 @@ void ffn_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
                             size_t *predecessors,
                             const activation_type_t activation,
                             const bool alloc) {
+  clean_training_data();
+
   fppoly_t *res = fppoly_of_abstract0(abs);
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
@@ -5400,6 +5413,8 @@ void ffn_handle_intermediate_layer(
     const size_t num_in_neurons, size_t *predecessors,
     const activation_type_t activation, const bool alloc,
     const bool use_area_heuristic) {
+  clean_training_data();
+
   fppoly_t *fp = fppoly_of_abstract0(element);
   ffn_add_layer(fp, num_out_neurons, num_in_neurons, FFN, activation);
 
@@ -5442,6 +5457,8 @@ void ffn_handle_last_layer(elina_manager_t *man, elina_abstract0_t *element,
                            const bool has_activation,
                            const activation_type_t activation, const bool alloc,
                            const bool use_area_heuristic) {
+  clean_training_data();
+
   fppoly_t *fp = fppoly_of_abstract0(element);
   fppoly_internal_t *pr =
       fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
@@ -6542,7 +6559,10 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
                              const size_t *filter_size,
                              const size_t num_filters, const size_t *strides,
                              const bool is_valid_padding, const bool has_bias,
-                             size_t *predecessors) {
+                             size_t *predecessors,
+                             const bool retain_training_data) {
+  clean_training_data();
+
   fppoly_t *const fp = fppoly_of_abstract0(element);
   fp->layers = (layer_t **)malloc(2000 * sizeof(layer_t *));
 
@@ -6824,7 +6844,10 @@ void conv_handle_intermediate_layer(
     const size_t *input_size, const size_t *filter_size,
     const size_t num_filters, const size_t *strides,
     const bool is_valid_padding, const bool has_bias, size_t *predecessors,
-    const activation_type_t activation, const bool use_area_heuristic) {
+    const activation_type_t activation, const bool use_area_heuristic,
+    const bool retain_training_data) {
+  clean_training_data();
+
   fppoly_t *const fp = fppoly_of_abstract0(element);
 
   layer_create_sparse_exprs(fp, filter_weights, filter_bias, input_size,
@@ -6843,11 +6866,11 @@ void conv_handle_intermediate_relu_layer(
     const size_t *input_size, const size_t *filter_size,
     const size_t num_filters, const size_t *strides,
     const bool is_valid_padding, const bool has_bias, size_t *predecessors,
-    const bool use_area_heuristic) {
+    const bool use_area_heuristic, const bool retain_training_data) {
   conv_handle_intermediate_layer(man, element, filter_weights, filter_bias,
                                  input_size, filter_size, num_filters, strides,
                                  is_valid_padding, has_bias, predecessors, RELU,
-                                 use_area_heuristic);
+                                 use_area_heuristic, retain_training_data);
 }
 
 void conv_handle_intermediate_affine_layer(
@@ -6856,11 +6879,11 @@ void conv_handle_intermediate_affine_layer(
     const size_t *input_size, const size_t *filter_size,
     const size_t num_filters, const size_t *strides,
     const bool is_valid_padding, const bool has_bias, size_t *predecessors,
-    const bool use_area_heuristic) {
+    const bool use_area_heuristic, const bool retain_training_data) {
   conv_handle_intermediate_layer(man, element, filter_weights, filter_bias,
                                  input_size, filter_size, num_filters, strides,
                                  is_valid_padding, has_bias, predecessors, NONE,
-                                 use_area_heuristic);
+                                 use_area_heuristic, retain_training_data);
 }
 
 void res_add_layer(fppoly_t *const fp, const size_t num_neurons,
@@ -6916,6 +6939,8 @@ void handle_residual_layer(elina_manager_t *man, elina_abstract0_t *element,
                            const size_t num_neurons, size_t *predecessors,
                            const activation_type_t activation,
                            const bool use_area_heuristic) {
+  clean_training_data();
+
   fppoly_t *fp = fppoly_of_abstract0(element);
   res_add_layer(fp, num_neurons, RESIDUAL, activation);
   fp->layers[fp->numlayers - 1]->predecessors = predecessors;
@@ -6999,6 +7024,8 @@ void fppoly_free(elina_manager_t *man, fppoly_t *fp) {
   fp->input_lcst = nullptr;
   fp->input_ucst = nullptr;
 
+  clean_training_data();
+
   free(fp);
   fp = nullptr;
 }
@@ -7068,4 +7095,48 @@ elina_interval_t **box_for_layer(elina_manager_t *man, elina_abstract0_t *abs,
   free(ub_array_host);
 
   return itv_arr;
+}
+
+int get_num_neurons_training_layer() { return num_neurons_training_layer; }
+
+float_type *get_lcst_array() {
+  float_type *tmp = lcst_host;
+  lcst_host = nullptr;
+
+  return tmp;
+}
+
+float_type *get_ucst_array() {
+  float_type *tmp = ucst_host;
+  ucst_host = nullptr;
+
+  return tmp;
+}
+
+int *get_sizes_array() {
+  int *tmp = sizes;
+  sizes = nullptr;
+
+  return tmp;
+}
+
+int *get_dims_array() {
+  int *tmp = dims;
+  dims = nullptr;
+
+  return tmp;
+}
+
+float_type *get_lcoeff_array() {
+  float_type *tmp = lcoeff_host_sparse;
+  lcoeff_host_sparse = nullptr;
+
+  return tmp;
+}
+
+float_type *get_ucoeff_array() {
+  float_type *tmp = ucoeff_host_sparse;
+  ucoeff_host_sparse = nullptr;
+
+  return tmp;
 }
