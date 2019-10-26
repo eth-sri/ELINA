@@ -461,7 +461,7 @@ void block_reduce_sum_csts(T& lval, T& uval, const int number_threads)
 }
 
 
-void fppoly_from_network_input_box(fppoly_t* const res, const size_t intdim, const size_t realdim, const double* inf_array, const double* sup_array)
+void fppoly_from_network_input_box(fppoly_t* const res, const size_t intdim, const size_t realdim, const float_type* inf_array, const float_type* sup_array)
 {
     res->layers = nullptr;
     res->numlayers = 0;
@@ -490,7 +490,7 @@ void fppoly_from_network_input_box(fppoly_t* const res, const size_t intdim, con
 }
 
 
-elina_abstract0_t* fppoly_from_network_input(elina_manager_t* man, const size_t intdim, const size_t realdim, const double* inf_array, const double* sup_array)
+elina_abstract0_t* fppoly_from_network_input(elina_manager_t* man, const size_t intdim, const size_t realdim, const float_type* inf_array, const float_type* sup_array)
 {
     fppoly_t* res = (fppoly_t*) malloc(sizeof(fppoly_t));
 
@@ -506,7 +506,7 @@ elina_abstract0_t* fppoly_from_network_input(elina_manager_t* man, const size_t 
 }
 
 
-elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t* man, const size_t intdim, const size_t realdim, const double* inf_array, const double* sup_array, const double* lexpr_weights, const double* lexpr_cst, const size_t* lexpr_dim, const double* uexpr_weights, const double* uexpr_cst, const size_t* uexpr_dim, const size_t expr_size)
+elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t* man, const size_t intdim, const size_t realdim, const float_type* inf_array, const float_type* sup_array, const float_type* lexpr_weights, const float_type* lexpr_cst, const size_t* lexpr_dim, const float_type* uexpr_weights, const float_type* uexpr_cst, const size_t* uexpr_dim, const size_t expr_size)
 {
     fppoly_t* res = (fppoly_t*) malloc(sizeof(fppoly_t));
 
@@ -905,20 +905,20 @@ void device_layer_create_dense_expr(float_type* __restrict__ coeffs, float_type*
 }
 
 
-void layer_create_dense_exprs(float_type* coeffs, float_type* csts, const double** weights, const double* bias, const size_t num_out_neurons, const size_t num_in_neurons)
+void layer_create_dense_exprs(float_type* coeffs, float_type* csts, const float_type** weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons)
 {
-    double* tmp_weights;
-    cudaMalloc((void**) &tmp_weights, num_out_neurons*num_in_neurons*sizeof(double));
+    float_type* tmp_weights;
+    cudaMalloc((void**) &tmp_weights, num_out_neurons*num_in_neurons*sizeof(float_type));
 
-    double* tmp_bias;
-    cudaMalloc((void**) &tmp_bias, num_out_neurons*sizeof(double));
+    float_type* tmp_bias;
+    cudaMalloc((void**) &tmp_bias, num_out_neurons*sizeof(float_type));
 
     for(size_t i = 0; i < num_out_neurons; i++)
     {
-        cudaMemcpy(tmp_weights + i*num_in_neurons, weights[i], num_in_neurons*sizeof(double), cudaMemcpyHostToDevice);
+        cudaMemcpy(tmp_weights + i*num_in_neurons, weights[i], num_in_neurons*sizeof(float_type), cudaMemcpyHostToDevice);
     }
 
-    cudaMemcpy(tmp_bias, bias, num_out_neurons*sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(tmp_bias, bias, num_out_neurons*sizeof(float_type), cudaMemcpyHostToDevice);
 
     device_layer_create_dense_expr<<<num_out_neurons, 1>>>(coeffs, csts, tmp_weights, tmp_bias, num_out_neurons, num_in_neurons);
 
@@ -1315,7 +1315,7 @@ void ucsts_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const 
 }
 
 
-void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t* abs, const double** weights, const double* bias, const size_t size, const size_t num_pixels, size_t* predecessors, const activation_type_t activation, const bool alloc)
+void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t* abs, const float_type** weights, const float_type* bias, const size_t size, const size_t num_pixels, size_t* predecessors, const activation_type_t activation, const bool alloc)
 {
     clean_training_data();
 
@@ -1388,7 +1388,7 @@ void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t* abs, const 
 }
 
 
-void ffn_handle_first_relu_layer(elina_manager_t* man, elina_abstract0_t* abs, const double** weights, const double* bias, const size_t size, const size_t num_pixels, size_t* predecessors)
+void ffn_handle_first_relu_layer(elina_manager_t* man, elina_abstract0_t* abs, const float_type** weights, const float_type* bias, const size_t size, const size_t num_pixels, size_t* predecessors)
 {
         ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, RELU, true);
 }
@@ -4578,7 +4578,7 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
 }
 
 
-void ffn_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* element, const double** weights, const double* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const activation_type_t activation, const bool alloc, const bool use_area_heuristic)
+void ffn_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type** weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const activation_type_t activation, const bool alloc, const bool use_area_heuristic)
 {
     clean_training_data();
 
@@ -4596,19 +4596,19 @@ void ffn_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* elem
 }
 
 
-void ffn_handle_intermediate_affine_layer(elina_manager_t* man, elina_abstract0_t* element, const double** weights, const double* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool use_area_heuristic)
+void ffn_handle_intermediate_affine_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type** weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool use_area_heuristic)
 {
     ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons, num_in_neurons, predecessors, NONE, true, use_area_heuristic);
 }
 
 
-void ffn_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const double** weights, const double* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool use_area_heuristic)
+void ffn_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type** weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool use_area_heuristic)
 {
     ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons, num_in_neurons, predecessors, RELU, true, use_area_heuristic);
 }
 
 
-void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, const double** weights, const double* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool has_activation, const activation_type_t activation, const bool alloc, const bool use_area_heuristic)
+void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type** weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool has_activation, const activation_type_t activation, const bool alloc, const bool use_area_heuristic)
 {
     clean_training_data();
 
@@ -4658,7 +4658,7 @@ void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, con
     free(ub_array_host);
 }
 
-void ffn_handle_last_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const double** weights, const double* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool has_relu, const bool use_area_heuristic)
+void ffn_handle_last_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type** weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool has_relu, const bool use_area_heuristic)
 {
     ffn_handle_last_layer(man, element, weights, bias, num_out_neurons, num_in_neurons, predecessors, has_relu, RELU, true, use_area_heuristic);
 }
@@ -5481,7 +5481,7 @@ void conv_add_layer(fppoly_t* const fp, const size_t num_out_neurons, const size
 }
 
 
-void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights, const double* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, const activation_type_t activation)
+void layer_create_sparse_exprs(fppoly_t* const fp, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, const activation_type_t activation)
 {
     const size_t num_pixels = input_size[0]*input_size[1]*input_size[2];
 
@@ -5489,13 +5489,13 @@ void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights,
 
     if(is_valid_padding)
     {
-        output_size[0] = ceil((double)(input_size[0] - filter_size[0] + 1)/(double)strides[0]);
-        output_size[1] = ceil((double)(input_size[1] - filter_size[1] + 1)/(double)strides[1]);
+        output_size[0] = ceil((float_type)(input_size[0] - filter_size[0] + 1)/(float_type)strides[0]);
+        output_size[1] = ceil((float_type)(input_size[1] - filter_size[1] + 1)/(float_type)strides[1]);
     }
     else
     {
-        output_size[0] = ceil((double)input_size[0]/(double)strides[0]);
-        output_size[1] = ceil((double)input_size[1]/(double)strides[1]);
+        output_size[0] = ceil((float_type)input_size[0]/(float_type)strides[0]);
+        output_size[1] = ceil((float_type)input_size[1]/(float_type)strides[1]);
     }
 
     output_size[2] = num_filters;
@@ -5581,7 +5581,7 @@ void layer_create_sparse_exprs(fppoly_t* const fp, const double* filter_weights,
 }
 
 
-void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element, const double* filter_weights, const double* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const bool retain_training_data)
+void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const bool retain_training_data)
 {
     clean_training_data();
 
@@ -5748,7 +5748,7 @@ void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element, c
 }
 
 
-void conv_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* element, const double* filter_weights, const double* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const activation_type_t activation, const bool use_area_heuristic, const bool retain_training_data)
+void conv_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const activation_type_t activation, const bool use_area_heuristic, const bool retain_training_data)
 {
     clean_training_data();
 
@@ -5762,13 +5762,13 @@ void conv_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* ele
 }
 
 
-void conv_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const double* filter_weights, const double* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const bool use_area_heuristic, const bool retain_training_data)
+void conv_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const bool use_area_heuristic, const bool retain_training_data)
 {
 	conv_handle_intermediate_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding, has_bias, predecessors, RELU, use_area_heuristic, retain_training_data);
 }
 
 
-void conv_handle_intermediate_affine_layer(elina_manager_t* man, elina_abstract0_t* element, const double* filter_weights, const double* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const bool use_area_heuristic, const bool retain_training_data)
+void conv_handle_intermediate_affine_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const bool use_area_heuristic, const bool retain_training_data)
 {
 	conv_handle_intermediate_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding, has_bias, predecessors, NONE, use_area_heuristic, retain_training_data);
 }

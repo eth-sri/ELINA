@@ -39,7 +39,7 @@ extern "C"
 {
 #endif
 
-#define not_single
+#define single
 
 #ifdef single
 using float_type = float;
