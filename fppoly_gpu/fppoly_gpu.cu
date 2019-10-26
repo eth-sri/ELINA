@@ -34,7 +34,7 @@ bool results[90];
 bool results_calculated;
 size_t output_counter;
 
-constexpr int DIGS = DECIMAL_DIG;
+//constexpr int DIGS = DECIMAL_DIG;
 
 #ifdef single
 __constant__ const float_type min_denormal = 1.40129846e-45;
@@ -342,7 +342,7 @@ fppoly_internal_t* fppoly_init_from_manager(elina_manager_t* man, elina_funid_t 
 
 elina_manager_t* fppoly_manager_alloc()
 {
-    std::cout << std::endl << "This is the GPU version of fppoly!" << std::endl;
+    //std::cout << std::endl << "This is the GPU version of fppoly!" << std::endl;
     results_calculated = false;
     output_counter = 1;
 
@@ -3068,7 +3068,7 @@ void update_state_using_predecessor_layer(fppoly_internal_t* pr, fppoly_t* fp, f
 {
     const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
     const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
-    std::cout << "num_out_neurons_current " << num_out_neurons_current_layer << " num_in_neurons_current " << num_in_neurons_current_layer << std::endl;
+    //std::cout << "num_out_neurons_current " << num_out_neurons_current_layer << " num_in_neurons_current " << num_in_neurons_current_layer << std::endl;
 
     float_type* aux_coeffs;
     float_type* aux_csts;
@@ -3169,7 +3169,7 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
 
     const size_t num_in_neurons_0_layer = fp->layers[0]->num_in_neurons;
 
-    std::cout << "num_out_neurons_last " << num_out_neurons_last_layer << std::endl;
+    //std::cout << "num_out_neurons_last " << num_out_neurons_last_layer << std::endl;
 
     float_type* coeffs = fp->layers[layerno]->coeffs;
     float_type* csts = fp->layers[layerno]->csts;
@@ -3230,7 +3230,7 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
                 expr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(linf_coeff, lsup_coeff, uinf_coeff, usup_coeff, linf_cst, lsup_cst, uinf_cst, usup_cst, fp->layers[k]->lb_array, fp->layers[k]->ub_array, fp->layers[k]->num_out_neurons, use_area_heuristic);
             }
 
-            std::cout << "DENSE RESIDUAL" << std::endl;
+            //std::cout << "DENSE RESIDUAL" << std::endl;
 
             const size_t reslayer_size = fp->layers[k]->num_out_neurons;
 
@@ -3459,35 +3459,35 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
     const auto end = std::chrono::system_clock::now();
 
     const std::chrono::duration<double> elapsed_seconds = end - start;
-    std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl << std::endl;
+    //std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl << std::endl;
 }
 
 void predict_size_of_conv_layer(fppoly_t* fp, size_t& current_size, size_t& last_size, long int& offset_x, long int& offset_y, long int& length_x, long int& length_y, long int& shift_x, long int& shift_y, const size_t k, const size_t num_out_neurons_last_layer)
 {
-    const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
-    std::cout << "num_out_neurons_current " << num_out_neurons_current_layer << std::endl;
+    //const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
+    //std::cout << "num_out_neurons_current " << num_out_neurons_current_layer << std::endl;
 
     offset_x = fp->layers[k]->strides[0]*offset_x - fp->layers[k]->pad[0];
     offset_y = fp->layers[k]->strides[1]*offset_y - fp->layers[k]->pad[1];
 
-    std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
+    //std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
 
     length_x = (length_x - 1)*fp->layers[k]->strides[0] + fp->layers[k]->filter_size[0];
     length_y = (length_y - 1)*fp->layers[k]->strides[1] + fp->layers[k]->filter_size[1];
 
-    std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
+    //std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
 
     shift_x = fp->layers[k]->strides[0]*shift_x;
     shift_y = fp->layers[k]->strides[1]*shift_y;
 
-    std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
+    //std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
 
     last_size = current_size;
     current_size = 4*num_out_neurons_last_layer*length_x*length_y*fp->layers[k]->input_size[2]*sizeof(float_type);
 
-    std::cout << "Size: " << current_size << " bytes" << std::endl;
+    //std::cout << "Size: " << current_size << " bytes" << std::endl;
 
-    std::cout << std::endl;
+    //std::cout << std::endl;
 }
 
 
@@ -3501,32 +3501,32 @@ size_t predict_size(fppoly_t* fp, const size_t layerno)
     cudaMemGetInfo(&free_space, &total_space);
 
     // Make sure GPU still has a few hundred Megabytes left to work with
-    std::cout << "Free RAM " << free_space - (2 << 27) << std::endl << std::endl;
+    //std::cout << "Free RAM " << free_space - (2 << 27) << std::endl << std::endl;
 
     const size_t num_out_neurons_last_layer = fp->layers[layerno]->num_out_neurons;
 
     long int offset_x = -fp->layers[layerno]->pad[0];
     long int offset_y = -fp->layers[layerno]->pad[1];
 
-    std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
+    //std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
 
     long int length_x = fp->layers[layerno]->filter_size[0];
     long int length_y = fp->layers[layerno]->filter_size[1];
 
-    std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
+    //std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
 
     long int shift_x = fp->layers[layerno]->strides[0];
     long int shift_y = fp->layers[layerno]->strides[1];
 
-    std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
+    //std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
 
     size_t current_size = 4*num_out_neurons_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]*sizeof(float_type);
     size_t last_size = 0;
 
     size_t maximum_size = 0;
 
-    std::cout << "Size: " << current_size << " bytes" << std::endl;
-    std::cout << std::endl;
+    //std::cout << "Size: " << current_size << " bytes" << std::endl;
+    //std::cout << std::endl;
 
     int k;
 
@@ -3752,7 +3752,7 @@ size_t predict_size(fppoly_t* fp, const size_t layerno)
 
     if(num_chunks > 1)
     {
-        std::cout << "Number of chunks " << num_chunks << std::endl;
+        //std::cout << "Number of chunks " << num_chunks << std::endl;
     }
 
     return num_chunks;
@@ -3810,7 +3810,7 @@ void print_coeffs(const float_type* lcoeff_host, const float_type* ucoeff_host, 
 
                 sizes[n] = size_counter;
 
-                std::cout << std::endl;
+                //std::cout << std::endl;
             }
         }
     }
@@ -3819,9 +3819,9 @@ void print_coeffs(const float_type* lcoeff_host, const float_type* ucoeff_host, 
 
 void update_state_using_predecessor_layer_sparse(fppoly_internal_t* pr, fppoly_t* fp, float_type** linf_coeff, float_type** lsup_coeff, float_type** linf_cst, float_type** lsup_cst, float_type** uinf_coeff, float_type** usup_coeff, float_type** uinf_cst, float_type** usup_cst, float_type** linf_coeff_tmp, float_type** lsup_coeff_tmp, float_type** linf_cst_tmp, float_type** lsup_cst_tmp, float_type** uinf_coeff_tmp, float_type** usup_coeff_tmp, float_type** uinf_cst_tmp, float_type** usup_cst_tmp, const size_t layerno, const size_t k, const bool use_area_heuristic, const size_t x_y_size_last_layer, const size_t num_filters_last_layer, const size_t num_chunks, long int& offset_x, long int& offset_y, long int& length_x, long int& length_y, long int& shift_x, long int& shift_y)
 {
-    const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
-    const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
-    std::cout << "num_out_neurons_current " << num_out_neurons_current_layer << " num_in_neurons_current " << num_in_neurons_current_layer << std::endl;
+    //const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
+    //const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
+    //std::cout << "num_out_neurons_current " << num_out_neurons_current_layer << " num_in_neurons_current " << num_in_neurons_current_layer << std::endl;
 
     float_type* aux_coeffs;
     float_type* aux_csts;
@@ -3950,17 +3950,17 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
 
     const size_t num_in_neurons_0_layer = fp->layers[0]->num_in_neurons;
 
-    std::cout << "num_out_neurons_last " << x_y_size_last_layer*num_filters_last_layer << std::endl;
+    //std::cout << "num_out_neurons_last " << x_y_size_last_layer*num_filters_last_layer << std::endl;
 
     long int offset_x = -fp->layers[layerno]->pad[0];
     long int offset_y = -fp->layers[layerno]->pad[1];
 
-    std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
+    //std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
 
     long int length_x = fp->layers[layerno]->filter_size[0];
     long int length_y = fp->layers[layerno]->filter_size[1];
 
-    std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
+    //std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
 
     long int shift_x = fp->layers[layerno]->strides[0];
     long int shift_y = fp->layers[layerno]->strides[1];
@@ -4126,11 +4126,11 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
         long int copy_shift_x = shift_x;
         long int copy_shift_y = shift_y;
 
-        std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
+        //std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
 
-        std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
+        //std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
 
-        std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
+        //std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
 
         iter = predecessor1;
 
@@ -4150,12 +4150,12 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
             iter = fp->layers[iter]->predecessors[0] - 1;
         }
 
-        std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
-        std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
-        std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
-        std::cout << "copy_offset_x " << copy_offset_x << " copy_offset_y " << copy_offset_y << std::endl;
-        std::cout << "copy_length_x " << copy_length_x << " copy_length_y " << copy_length_y << std::endl;
-        std::cout << "copy_shift_x " << copy_shift_x << " copy_shift_y " << copy_shift_y << std::endl;
+        //std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
+        //std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
+        //std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
+        //std::cout << "copy_offset_x " << copy_offset_x << " copy_offset_y " << copy_offset_y << std::endl;
+        //std::cout << "copy_length_x " << copy_length_x << " copy_length_y " << copy_length_y << std::endl;
+        //std::cout << "copy_shift_x " << copy_shift_x << " copy_shift_y " << copy_shift_y << std::endl;
 
         if(copy_length_x > length_x)
         {
@@ -4317,11 +4317,11 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
             long int copy_shift_x = shift_x;
             long int copy_shift_y = shift_y;
 
-            std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
+            //std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
 
-            std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
+            //std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
 
-            std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
+            //std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
 
             iter = predecessor1;
 
@@ -4341,12 +4341,12 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
                 iter = fp->layers[iter]->predecessors[0] - 1;
             }
 
-            std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
-            std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
-            std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
-            std::cout << "copy_offset_x " << copy_offset_x << " copy_offset_y " << copy_offset_y << std::endl;
-            std::cout << "copy_length_x " << copy_length_x << " copy_length_y " << copy_length_y << std::endl;
-            std::cout << "copy_shift_x " << copy_shift_x << " copy_shift_y " << copy_shift_y << std::endl;
+            //std::cout << "offset_x " << offset_x << " offset_y " << offset_y << std::endl;
+            //std::cout << "length_x " << length_x << " length_y " << length_y << std::endl;
+            //std::cout << "shift_x " << shift_x << " shift_y " << shift_y << std::endl;
+            //std::cout << "copy_offset_x " << copy_offset_x << " copy_offset_y " << copy_offset_y << std::endl;
+            //std::cout << "copy_length_x " << copy_length_x << " copy_length_y " << copy_length_y << std::endl;
+            //std::cout << "copy_shift_x " << copy_shift_x << " copy_shift_y " << copy_shift_y << std::endl;
 
             if(copy_length_x > length_x)
             {
@@ -4561,7 +4561,7 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
     const auto end = std::chrono::system_clock::now();
 
     const std::chrono::duration<double> elapsed_seconds = end - start;
-    std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl << std::endl;
+    //std::cout << "elapsed time: " << elapsed_seconds.count() << "s" << std::endl << std::endl;
 }
 
 
@@ -4642,15 +4642,15 @@ void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, con
 
     for(size_t i = 0; i < num_out_neurons; i++)
     {
-        printf("out inf number %lu is: %.*e\n", i, DIGS, lb_array_host[i]);
+        //printf("out inf number %lu is: %.*e\n", i, DIGS, lb_array_host[i]);
     }
 
     for(size_t i = 0; i < num_out_neurons; i++)
     {
-        printf("out sup number %lu is: %.*e\n", i, DIGS, ub_array_host[i]);
+        //printf("out sup number %lu is: %.*e\n", i, DIGS, ub_array_host[i]);
     }
 
-    std::cout << std::endl;
+    //std::cout << std::endl;
 
     free(lb_array_host);
     free(ub_array_host);
@@ -5118,7 +5118,7 @@ void update_state_using_predecessor_layer_lower_half(fppoly_internal_t* pr, fppo
 {
     const size_t num_out_neurons_current_layer = fp->layers[k]->num_out_neurons;
     const size_t num_in_neurons_current_layer  = fp->layers[k]->num_in_neurons;
-    std::cout << "num_out_neurons_current " << num_out_neurons_current_layer << " num_in_neurons_current " << num_in_neurons_current_layer << std::endl;
+    //std::cout << "num_out_neurons_current " << num_out_neurons_current_layer << " num_in_neurons_current " << num_in_neurons_current_layer << std::endl;
 
     float_type* aux_coeffs;
     float_type* aux_csts;
@@ -5252,7 +5252,7 @@ void get_lb_using_previous_layers(elina_manager_t* man, fppoly_t* const fp, cons
                 lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(linf_coeff, lsup_coeff, linf_cst, lsup_cst, fp->layers[k]->lb_array, fp->layers[k]->ub_array, fp->layers[k]->num_out_neurons, use_area_heuristic);
             }
 
-            std::cout << "DENSE RESIDUAL" << std::endl;
+            //std::cout << "DENSE RESIDUAL" << std::endl;
 
             const size_t reslayer_size = fp->layers[k]->num_out_neurons;
 
@@ -5595,7 +5595,7 @@ void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element, c
         const size_t num_out_neurons_0_layer = fp->layers[0]->num_out_neurons;
         const size_t num_in_neurons_0_layer = fp->layers[0]->num_in_neurons;
 
-        std::cout << "Number out neurons 0 layer " << num_out_neurons_0_layer << std::endl;
+        //std::cout << "Number out neurons 0 layer " << num_out_neurons_0_layer << std::endl;
 
         const size_t mu = fp->mu;
 
