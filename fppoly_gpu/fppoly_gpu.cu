@@ -64,6 +64,15 @@ void clean_training_data() {
 
   free(lcoeff_host_sparse);
   free(ucoeff_host_sparse);
+
+  lcst_host = nullptr;
+  ucst_host = nullptr;
+
+  sizes = nullptr;
+  dims = nullptr;
+
+  lcoeff_host_sparse = nullptr;
+  ucoeff_host_sparse = nullptr;
 }
 
 #define gpuErrchk(ans)                                                         \
@@ -4140,14 +4149,15 @@ size_t predict_size(fppoly_t *fp, const size_t layerno) {
   return num_chunks;
 }
 
-void print_coeffs(const float_type *lcoeff_host, const float_type *ucoeff_host,
-                  int *sizes, int *dims, float_type *lcoeff_host_sparse,
-                  float_type *ucoeff_host_sparse, const int output_size_x,
-                  const int output_size_y, const int output_size_z,
-                  const int input_size_x, const int input_size_y,
-                  const int input_size_z, const int length_x,
-                  const int length_y, const int shift_x, const int shift_y,
-                  const int offset_x, const int offset_y) {
+void sparsify_coeffs(const float_type *lcoeff_host,
+                     const float_type *ucoeff_host, int *sizes, int *dims,
+                     float_type *lcoeff_host_sparse,
+                     float_type *ucoeff_host_sparse, const int output_size_x,
+                     const int output_size_y, const int output_size_z,
+                     const int input_size_x, const int input_size_y,
+                     const int input_size_z, const int length_x,
+                     const int length_y, const int shift_x, const int shift_y,
+                     const int offset_x, const int offset_y) {
   int *dim_p = dims;
   float_type *lcoeff_p = lcoeff_host_sparse;
   float_type *ucoeff_p = ucoeff_host_sparse;
@@ -4197,8 +4207,6 @@ void print_coeffs(const float_type *lcoeff_host, const float_type *ucoeff_host,
         }
 
         sizes[n] = size_counter;
-
-        // std::cout << std::endl;
       }
     }
   }
@@ -5330,10 +5338,10 @@ void update_state_using_previous_layers_sparse(
         x_y_size_last_layer * num_filters_last_layer * length_x * length_y *
         fp->layers[0]->input_size[2] * sizeof(float_type));
 
-    print_coeffs(lcoeff_host, ucoeff_host, sizes, dims, lcoeff_host_sparse,
-                 ucoeff_host_sparse, output_size_x, output_size_y,
-                 output_size_z, input_size_x, input_size_y, input_size_z,
-                 length_x, length_y, shift_x, shift_y, offset_x, offset_y);
+    sparsify_coeffs(lcoeff_host, ucoeff_host, sizes, dims, lcoeff_host_sparse,
+                    ucoeff_host_sparse, output_size_x, output_size_y,
+                    output_size_z, input_size_x, input_size_y, input_size_z,
+                    length_x, length_y, shift_x, shift_y, offset_x, offset_y);
 
     dims = (int *)realloc(
         dims,
@@ -6814,10 +6822,10 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
         (float_type *)malloc(num_out_neurons_0_layer * length_x * length_y *
                              fp->layers[0]->input_size[2] * sizeof(float_type));
 
-    print_coeffs(lcoeff_host, ucoeff_host, sizes, dims, lcoeff_host_sparse,
-                 ucoeff_host_sparse, output_size_x, output_size_y,
-                 output_size_z, input_size_x, input_size_y, input_size_z,
-                 length_x, length_y, shift_x, shift_y, offset_x, offset_y);
+    sparsify_coeffs(lcoeff_host, ucoeff_host, sizes, dims, lcoeff_host_sparse,
+                    ucoeff_host_sparse, output_size_x, output_size_y,
+                    output_size_z, input_size_x, input_size_y, input_size_z,
+                    length_x, length_y, shift_x, shift_y, offset_x, offset_y);
 
     dims =
         (int *)realloc(dims, sizes[num_out_neurons_0_layer - 1] * sizeof(int));

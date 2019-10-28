@@ -119,40 +119,39 @@ elina_manager_t *fppoly_manager_alloc();
 elina_abstract0_t *fppoly_from_network_input(elina_manager_t *man,
                                              const size_t intdim,
                                              const size_t realdim,
-                                             const double *inf_array,
-                                             const double *sup_array);
+                                             const float_type *inf_array,
+                                             const float_type *sup_array);
 
 elina_abstract0_t *fppoly_from_network_input_poly(
     elina_manager_t *man, const size_t intdim, const size_t realdim,
-    const double *inf_array, const double *sup_array,
-    const double *lexpr_weights, const double *lexpr_cst,
-    const size_t *lexpr_dim, const double *uexpr_weights,
-    const double *uexpr_cst, const size_t *uexpr_dim, const size_t expr_size);
+    const float_type *inf_array, const float_type *sup_array,
+    const float_type *lexpr_weights, const float_type *lexpr_cst,
+    const size_t *lexpr_dim, const float_type *uexpr_weights,
+    const float_type *uexpr_cst, const size_t *uexpr_dim,
+    const size_t expr_size);
 
 void ffn_handle_first_relu_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                                 const double **weights, const double *bias,
-                                 const size_t size, const size_t num_pixels,
-                                 size_t *predecessors);
+                                 const float_type **weights,
+                                 const float_type *bias, const size_t size,
+                                 const size_t num_pixels, size_t *predecessors);
 
 void ffn_handle_intermediate_affine_layer(
-    elina_manager_t *man, elina_abstract0_t *element, const double **weights,
-    const double *bias, const size_t num_out_neurons,
-    const size_t num_in_neurons, size_t *predecessors,
-    const bool use_area_heuristic);
+    elina_manager_t *man, elina_abstract0_t *element,
+    const float_type **weights, const float_type *bias,
+    const size_t num_out_neurons, const size_t num_in_neurons,
+    size_t *predecessors, const bool use_area_heuristic);
 
 void ffn_handle_intermediate_relu_layer(
-    elina_manager_t *man, elina_abstract0_t *element, const double **weights,
-    const double *bias, const size_t num_out_neurons,
-    const size_t num_in_neurons, size_t *predecessors,
-    const bool use_area_heuristic);
+    elina_manager_t *man, elina_abstract0_t *element,
+    const float_type **weights, const float_type *bias,
+    const size_t num_out_neurons, const size_t num_in_neurons,
+    size_t *predecessors, const bool use_area_heuristic);
 
-void ffn_handle_last_relu_layer(elina_manager_t *man,
-                                elina_abstract0_t *element,
-                                const double **weights, const double *bias,
-                                const size_t num_out_neurons,
-                                const size_t num_in_neurons,
-                                size_t *predecessors, const bool has_relu,
-                                const bool use_area_heuristic);
+void ffn_handle_last_relu_layer(
+    elina_manager_t *man, elina_abstract0_t *element,
+    const float_type **weights, const float_type *bias,
+    const size_t num_out_neurons, const size_t num_in_neurons,
+    size_t *predecessors, const bool has_relu, const bool use_area_heuristic);
 
 void fppoly_fprint(FILE *const stream, elina_manager_t *man,
                    const fppoly_t *const fp, const char **name_of_dim);
@@ -164,8 +163,8 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *element,
                 const bool use_area_heuristic);
 
 void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
-                             const double *filter_weights,
-                             const double *filter_bias,
+                             const float_type *filter_weights,
+                             const float_type *filter_bias,
                              const size_t *input_size,
                              const size_t *filter_size,
                              const size_t num_filters, const size_t *strides,
@@ -175,7 +174,7 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
 
 void conv_handle_intermediate_relu_layer(
     elina_manager_t *man, elina_abstract0_t *element,
-    const double *filter_weights, const double *filter_bias,
+    const float_type *filter_weights, const float_type *filter_bias,
     const size_t *input_size, const size_t *filter_size,
     const size_t num_filters, const size_t *strides,
     const bool is_valid_padding, const bool has_bias, size_t *predecessors,
@@ -183,7 +182,7 @@ void conv_handle_intermediate_relu_layer(
 
 void conv_handle_intermediate_affine_layer(
     elina_manager_t *man, elina_abstract0_t *element,
-    const double *filter_weights, const double *filter_bias,
+    const float_type *filter_weights, const float_type *filter_bias,
     const size_t *input_size, const size_t *filter_size,
     const size_t num_filters, const size_t *strides,
     const bool is_valid_padding, const bool has_bias, size_t *predecessors,
