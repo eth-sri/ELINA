@@ -166,6 +166,8 @@ size_t get_num_neurons_in_layer(elina_manager_t* man, elina_abstract0_t * abs, c
 
 elina_interval_t ** box_for_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno);
 
+void clean_training_data();
+
 int get_num_neurons_training_layer();
 
 float_type* get_lcst_array();
