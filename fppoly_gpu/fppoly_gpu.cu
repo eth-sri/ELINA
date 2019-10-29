@@ -73,6 +73,8 @@ void clean_training_data() {
 
   lcoeff_host_sparse = nullptr;
   ucoeff_host_sparse = nullptr;
+
+  num_neurons_training_layer = 0;
 }
 
 #define gpuErrchk(ans)                                                         \
@@ -5287,6 +5289,8 @@ void update_state_using_previous_layers_sparse(
   }
 
   if (retain_training_data) {
+    num_neurons_training_layer = x_y_size_last_layer * num_filters_last_layer;
+
     float_type *lcoeff_host = (float_type *)malloc(
         x_y_size_last_layer * num_filters_last_layer * length_x * length_y *
         fp->layers[0]->input_size[2] * sizeof(float_type));
@@ -6750,6 +6754,8 @@ void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
     float_type *coeffs;
     float_type *csts;
 
+    num_neurons_training_layer = num_out_neurons_0_layer;
+
     cudaMalloc((void **)&coeffs, num_out_neurons_0_layer * length_x * length_y *
                                      fp->layers[0]->input_size[2] *
                                      sizeof(float_type));
@@ -7106,44 +7112,14 @@ elina_interval_t **box_for_layer(elina_manager_t *man, elina_abstract0_t *abs,
 
 int get_num_neurons_training_layer() { return num_neurons_training_layer; }
 
-float_type *get_lcst_array() {
-  float_type *tmp = lcst_host;
-  lcst_host = nullptr;
+float_type *get_lcst_array() { return lcst_host; }
 
-  return tmp;
-}
+float_type *get_ucst_array() { return ucst_host; }
 
-float_type *get_ucst_array() {
-  float_type *tmp = ucst_host;
-  ucst_host = nullptr;
+int *get_sizes_array() { return sizes; }
 
-  return tmp;
-}
+int *get_dims_array() { return dims; }
 
-int *get_sizes_array() {
-  int *tmp = sizes;
-  sizes = nullptr;
+float_type *get_lcoeff_array() { return lcoeff_host_sparse; }
 
-  return tmp;
-}
-
-int *get_dims_array() {
-  int *tmp = dims;
-  dims = nullptr;
-
-  return tmp;
-}
-
-float_type *get_lcoeff_array() {
-  float_type *tmp = lcoeff_host_sparse;
-  lcoeff_host_sparse = nullptr;
-
-  return tmp;
-}
-
-float_type *get_ucoeff_array() {
-  float_type *tmp = ucoeff_host_sparse;
-  ucoeff_host_sparse = nullptr;
-
-  return tmp;
-}
+float_type *get_ucoeff_array() { return ucoeff_host_sparse; }

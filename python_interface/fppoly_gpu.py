@@ -1983,6 +1983,32 @@ def free_non_lstm_layer_expr(man,element,layerno):
         print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t to the function')
 
 
+def clean_training_data():
+    """
+    Frees all training data arrays
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    num_neurons: c_int
+        Number of neurons
+    """
+
+    res = None
+    try:
+        clean_training_data_c = fppoly_gpu_api.clean_training_data
+        clean_training_data_c.restype = None
+        clean_training_data_c.argtypes = None
+        res = clean_training_data_c()
+    except Exception as inst:
+        print('Problem with loading/calling "clean_training_data" from "libfppoly_gpu.so"')
+        print(inst)
+
+    return res
+
+
 def get_num_neurons_training_layer():
     """
     Receive the number of neurons of the layer currently trained
@@ -1996,11 +2022,11 @@ def get_num_neurons_training_layer():
         Number of neurons
     """
 
-    res = None
+    res = 0
     try:
         get_num_neurons_training_layer_c = fppoly_gpu_api.get_num_neurons_training_layer
         get_num_neurons_training_layer_c.restype = c_int
-        fppoly_from_network_input_c.argtypes = None
+        get_num_neurons_training_layer_c.argtypes = None
         res = get_num_neurons_training_layer_c()
     except Exception as inst:
         print('Problem with loading/calling "get_num_neurons_training_layer" from "libfppoly_gpu.so"')
@@ -2025,8 +2051,8 @@ def get_lcst_array():
     res = None
     try:
         get_lcst_array_c = fppoly_gpu_api.get_lcst_array
-        get_lcst_array_c.restype = ndpointer(ctypes.c_float)
-        fppoly_from_network_input_c.argtypes = None
+        get_lcst_array_c.restype = POINTER(ctypes.c_float)
+        get_lcst_array_c.argtypes = None
         res = get_lcst_array_c()
     except Exception as inst:
         print('Problem with loading/calling "get_lcst_array" from "libfppoly_gpu.so"')
@@ -2051,8 +2077,8 @@ def get_ucst_array():
     res = None
     try:
         get_ucst_array_c = fppoly_gpu_api.get_ucst_array
-        get_ucst_array_c.restype = ndpointer(ctypes.c_float)
-        fppoly_from_network_input_c.argtypes = None
+        get_ucst_array_c.restype = POINTER(ctypes.c_float)
+        get_ucst_array_c.argtypes = None
         res = get_ucst_array_c()
     except Exception as inst:
         print('Problem with loading/calling "get_ucst_array" from "libfppoly_gpu.so"')
@@ -2077,8 +2103,8 @@ def get_sizes_array():
     res = None
     try:
         get_sizes_array_c = fppoly_gpu_api.get_sizes_array
-        get_sizes_array_c.restype = ndpointer(ctypes.c_int)
-        fppoly_from_network_input_c.argtypes = None
+        get_sizes_array_c.restype = POINTER(ctypes.c_int)
+        get_sizes_array_c.argtypes = None
         res = get_sizes_array_c()
     except Exception as inst:
         print('Problem with loading/calling "get_sizes_array" from "libfppoly_gpu.so"')
@@ -2103,8 +2129,8 @@ def get_dims_array():
     res = None
     try:
         get_dims_array_c = fppoly_gpu_api.get_dims_array
-        get_dims_array_c.restype = ndpointer(ctypes.c_int)
-        fppoly_from_network_input_c.argtypes = None
+        get_dims_array_c.restype = POINTER(ctypes.c_int)
+        get_dims_array_c.argtypes = None
         res = get_dims_array_c()
     except Exception as inst:
         print('Problem with loading/calling "get_dims_array" from "libfppoly_gpu.so"')
@@ -2129,8 +2155,8 @@ def get_lcoeff_array():
     res = None
     try:
         get_lcoeff_array_c = fppoly_gpu_api.get_lcoeff_array
-        get_lcoeff_array_c.restype = ndpointer(ctypes.c_float)
-        fppoly_from_network_input_c.argtypes = None
+        get_lcoeff_array_c.restype = POINTER(ctypes.c_float)
+        get_lcoeff_array_c.argtypes = None
         res = get_lcoeff_array_c()
     except Exception as inst:
         print('Problem with loading/calling "get_lcoeff_array" from "libfppoly_gpu.so"')
@@ -2155,8 +2181,8 @@ def get_ucoeff_array():
     res = None
     try:
         get_ucoeff_array_c = fppoly_gpu_api.get_ucoeff_array
-        get_ucoeff_array_c.restype = ndpointer(ctypes.c_float)
-        fppoly_from_network_input_c.argtypes = None
+        get_ucoeff_array_c.restype = POINTER(ctypes.c_float)
+        get_ucoeff_array_c.argtypes = None
         res = get_ucoeff_array_c()
     except Exception as inst:
         print('Problem with loading/calling "get_ucoeff_array" from "libfppoly_gpu.so"')
