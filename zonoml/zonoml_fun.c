@@ -104,7 +104,7 @@ elina_abstract0_t * elina_abstract0_from_zonotope(elina_manager_t *man, size_t i
 	res->paf[i]->pby++;
     }
     record_timing(zonoml_network_input_time);
-    zonotope_fprint(stdout, man, res, NULL);
+    //zonotope_fprint(stdout,man,res,NULL);
     return abstract0_of_zonotope(man,res);
 }
 
