@@ -97,8 +97,8 @@ elina_abstract0_t * elina_abstract0_from_zonotope(elina_manager_t *man, size_t i
                 if (res->paf[i]->end) res->paf[i]->end->n = ptr;
 		else res->paf[i]->q = ptr;
 		res->paf[i]->end = ptr;
-		res->paf[i]->l++;
 	}
+	res->paf[i]->l++;
 	res->paf[i]->itv_inf = -sum_inf;
 	res->paf[i]->itv_sup = sum_sup;
 	res->paf[i]->pby++;
