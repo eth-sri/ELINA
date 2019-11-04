@@ -65,6 +65,48 @@ elina_abstract0_t* zonotope_from_network_input(elina_manager_t* man, size_t intd
 }
 
 
+/* cretae zonotope from input zonotope of size intdim+realdim */
+elina_abstract0_t * elina_abstract0_from_zonotope(elina_manager_t *man, size_t intdim, size_t realdim, size_t num_error_terms, double **coeffs){
+    start_timing();
+    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_OF_BOX);
+    zonotope_t* res = zonotope_alloc(man,intdim,realdim);
+    size_t i = 0;
+    int num_errors = (int)(num_error_terms) - 1;
+    zonotope_noise_symbol_t ** epsilon_map = (zonotope_noise_symbol_t **)malloc(num_errors*sizeof(zonotope_noise_symbol_t*));
+    int j;
+    for(j=0; j < num_errors; j++){
+	epsilon_map[j] = zonotope_noise_symbol_add(pr, IN);
+    }
+    
+    for(i=0; i < intdim+realdim; i++){
+	double sum_inf=coeffs[i][0], sum_sup = coeffs[i][0];
+	for(j=0; j< num_errors; j++){
+		sum_inf = sum_inf - fabs(coeffs[i][j+1]);
+		sum_sup = sum_sup + fabs(coeffs[i][j+1]);
+	}	
+	res->box_inf[i] = -sum_inf;
+	res->box_sup[i] = sum_sup;
+	res->paf[i] = zonotope_aff_alloc_init(pr);
+	res->paf[i]->c_inf = -coeffs[i][0];
+	res->paf[i]->c_sup = coeffs[i][0];
+	for(j=0; j < num_errors; j++){
+		zonotope_aaterm_t* ptr = zonotope_aaterm_alloc_init();
+		ptr->inf = -coeffs[i][j+1];
+		ptr->sup = coeffs[i][j+1];
+		ptr->pnsym = epsilon_map[j];
+                if (res->paf[i]->end) res->paf[i]->end->n = ptr;
+		else res->paf[i]->q = ptr;
+		res->paf[i]->end = ptr;
+		res->paf[i]->l++;
+	}
+	res->paf[i]->itv_inf = -sum_inf;
+	res->paf[i]->itv_sup = sum_sup;
+	res->paf[i]->pby++;
+    }
+    record_timing(zonoml_network_input_time);
+    zonotope_fprint(stdout,man,res,NULL);
+    return abstract0_of_zonotope(man,res);
+}
 
 zonotope_aff_t* zonotope_aff_mul_weight(zonotope_internal_t* pr, zonotope_aff_t* src, double lambda)
 {
