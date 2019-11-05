@@ -166,9 +166,9 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	double tmp1, tmp2;
         //printf("start\n");
         //fflush(stdout);
-        if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL)) {
-          expr = replace_input_poly_cons_in_lexpr(pr, expr, fp);
-        }
+	if((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1){
+		expr =  replace_input_poly_cons_in_lexpr(pr, expr, fp);
+	}
         //expr_print(expr);
 	//fflush(stdout);
 	size_t dims = expr->size;
@@ -197,9 +197,9 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	}
 //	printf("inf: %g\n",-res_inf);
 //	fflush(stdout);
-        if (fp->input_lexpr != NULL && fp->input_uexpr != NULL) {
-          free_expr(expr);
-        }
+        if(fp->input_lexpr!=NULL && fp->input_uexpr!=NULL && layerno==-1){
+		free_expr(expr);
+	}
         //printf("finish\n");
         //fflush(stdout);
 	return res_inf;
@@ -209,11 +209,11 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	size_t i,k;
 	double tmp1, tmp2;
 
-        if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL)) {
-          expr = replace_input_poly_cons_in_uexpr(pr, expr, fp);
-        }
+	if((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1){
+		expr =  replace_input_poly_cons_in_uexpr(pr, expr, fp);
+	}
 
-        size_t dims = expr->size;
+	size_t dims = expr->size;
 	double res_sup = expr->sup_cst;
 	if(expr->inf_coeff==NULL || expr->sup_coeff==NULL){
 		return res_sup;
@@ -237,10 +237,10 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	}
 	//printf("sup: %g\n",res_sup);
 	//fflush(stdout);
-        if (fp->input_lexpr != NULL && fp->input_uexpr != NULL) {
-          free_expr(expr);
-        }
-        return res_sup;
+	if(fp->input_lexpr!=NULL && fp->input_uexpr!=NULL && layerno==-1){
+		free_expr(expr);
+	}
+	return res_sup;
 }
 
 double get_lb_using_predecessor_layer(fppoly_internal_t *pr, fppoly_t *fp,
