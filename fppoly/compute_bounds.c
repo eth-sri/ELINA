@@ -158,7 +158,7 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	double tmp1, tmp2;
         //printf("start\n");
         //fflush(stdout);
-	if((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL)){
+	if((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1){
 		expr =  replace_input_poly_cons_in_lexpr(pr, expr, fp);
 	}
         //expr_print(expr);
@@ -189,7 +189,7 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	}
 //	printf("inf: %g\n",-res_inf);
 //	fflush(stdout);
-        if(fp->input_lexpr!=NULL && fp->input_uexpr!=NULL){
+        if(fp->input_lexpr!=NULL && fp->input_uexpr!=NULL && layerno==-1){
 		free_expr(expr);
 	}
         //printf("finish\n");
@@ -201,7 +201,7 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	size_t i,k;
 	double tmp1, tmp2;
 
-	if((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL)){
+	if((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1){
 		expr =  replace_input_poly_cons_in_uexpr(pr, expr, fp);
 	}
 
@@ -229,7 +229,7 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	}
 	//printf("sup: %g\n",res_sup);
 	//fflush(stdout);
-	if(fp->input_lexpr!=NULL && fp->input_uexpr!=NULL){
+	if(fp->input_lexpr!=NULL && fp->input_uexpr!=NULL && layerno==-1){
 		free_expr(expr);
 	}
 	return res_sup;
