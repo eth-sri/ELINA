@@ -1544,15 +1544,10 @@ __global__ void expr_replace_relu_bounds(
       res_lsup_cst += tmp2 + min_denormal;
     } else if (old_linf_coeff > 0) {
       if (use_area_heuristic) {
-        const float_type area1 = -lb * ub;
-        const float_type area2 = 0.5 * ub * width;
-        const float_type area3 = -0.5 * lb * width;
+        const float_type area1 = 0.5 * ub * width;
+        const float_type area2 = -0.5 * lb * width;
 
-        if ((area1 < area2) && (area1 < area3)) {
-          elina_double_interval_mul_expr_coeff(&linf_coeff[a], &lsup_coeff[a],
-                                               lambda_inf, lambda_sup,
-                                               old_linf_coeff, old_lsup_coeff);
-        } else if ((area2 < area1) && (area2 < area3)) {
+        if (area1 < area2) {
           linf_coeff[a] = 0.0;
           lsup_coeff[a] = 0.0;
         } else {
@@ -1600,15 +1595,10 @@ __global__ void expr_replace_relu_bounds(
       res_usup_cst += tmp2 + min_denormal;
     } else if (old_usup_coeff < 0) {
       if (use_area_heuristic) {
-        const float_type area1 = -lb * ub;
-        const float_type area2 = 0.5 * ub * width;
-        const float_type area3 = -0.5 * lb * width;
+        const float_type area1 = 0.5 * ub * width;
+        const float_type area2 = -0.5 * lb * width;
 
-        if ((area1 < area2) && (area1 < area3)) {
-          elina_double_interval_mul_expr_coeff(&uinf_coeff[a], &usup_coeff[a],
-                                               lambda_inf, lambda_sup,
-                                               old_uinf_coeff, old_usup_coeff);
-        } else if ((area2 < area1) && (area2 < area3)) {
+        if (area1 < area2) {
           uinf_coeff[a] = 0.0;
           usup_coeff[a] = 0.0;
         } else {
@@ -1737,15 +1727,10 @@ __global__ void expr_replace_relu_bounds_conv_sparse(
           res_lsup_cst += tmp2 + min_denormal;
         } else if (old_linf_coeff > 0) {
           if (use_area_heuristic) {
-            const float_type area1 = -lb * ub;
-            const float_type area2 = 0.5 * ub * width;
-            const float_type area3 = -0.5 * lb * width;
+            const float_type area1 = 0.5 * ub * width;
+            const float_type area2 = -0.5 * lb * width;
 
-            if ((area1 < area2) && (area1 < area3)) {
-              elina_double_interval_mul_expr_coeff(
-                  &linf_coeff[a], &lsup_coeff[a], lambda_inf, lambda_sup,
-                  old_linf_coeff, old_lsup_coeff);
-            } else if ((area2 < area1) && (area2 < area3)) {
+            if (area1 < area2) {
               linf_coeff[a] = 0.0;
               lsup_coeff[a] = 0.0;
             } else {
@@ -1793,15 +1778,10 @@ __global__ void expr_replace_relu_bounds_conv_sparse(
           res_usup_cst += tmp2 + min_denormal;
         } else if (old_usup_coeff < 0) {
           if (use_area_heuristic) {
-            const float_type area1 = -lb * ub;
-            const float_type area2 = 0.5 * ub * width;
-            const float_type area3 = -0.5 * lb * width;
+            const float_type area1 = 0.5 * ub * width;
+            const float_type area2 = -0.5 * lb * width;
 
-            if ((area1 < area2) && (area1 < area3)) {
-              elina_double_interval_mul_expr_coeff(
-                  &uinf_coeff[a], &usup_coeff[a], lambda_inf, lambda_sup,
-                  old_uinf_coeff, old_usup_coeff);
-            } else if ((area2 < area1) && (area2 < area3)) {
+            if (area1 < area2) {
               uinf_coeff[a] = 0.0;
               usup_coeff[a] = 0.0;
             } else {
@@ -5964,15 +5944,10 @@ __global__ void lexpr_replace_relu_bounds(
       res_sup_cst += tmp2 + min_denormal;
     } else if (old_inf_coeff > 0) {
       if (use_area_heuristic) {
-        const float_type area1 = -lb * ub;
-        const float_type area2 = 0.5 * ub * width;
-        const float_type area3 = -0.5 * lb * width;
+        const float_type area1 = 0.5 * ub * width;
+        const float_type area2 = -0.5 * lb * width;
 
-        if ((area1 < area2) && (area1 < area3)) {
-          elina_double_interval_mul_expr_coeff(&inf_coeff[a], &sup_coeff[a],
-                                               lambda_inf, lambda_sup,
-                                               old_inf_coeff, old_sup_coeff);
-        } else if ((area2 < area1) && (area2 < area3)) {
+        if (area1 < area2) {
           inf_coeff[a] = 0.0;
           sup_coeff[a] = 0.0;
         } else {
