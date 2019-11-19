@@ -65,6 +65,50 @@ elina_abstract0_t* zonotope_from_network_input(elina_manager_t* man, size_t intd
 }
 
 
+/* cretae zonotope from input zonotope of size intdim+realdim */
+elina_abstract0_t * elina_abstract0_from_zonotope(elina_manager_t *man, size_t intdim, size_t realdim, size_t num_error_terms, double **coeffs){
+    start_timing();
+    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_OF_BOX);
+    zonotope_t* res = zonotope_alloc(man,intdim,realdim);
+    size_t i = 0;
+    int num_errors = (int)(num_error_terms) - 1;
+    zonotope_noise_symbol_t ** epsilon_map = (zonotope_noise_symbol_t **)malloc(num_errors*sizeof(zonotope_noise_symbol_t*));
+    int j;
+    for(j=0; j < num_errors; j++){
+	epsilon_map[j] = zonotope_noise_symbol_add(pr, IN);
+    }
+    
+    for(i=0; i < intdim+realdim; i++){
+	double sum_inf=coeffs[i][0], sum_sup = coeffs[i][0];
+	for(j=0; j< num_errors; j++){
+		sum_inf = sum_inf - fabs(coeffs[i][j+1]);
+		sum_sup = sum_sup + fabs(coeffs[i][j+1]);
+	}	
+	res->box_inf[i] = -sum_inf;
+	res->box_sup[i] = sum_sup;
+	res->paf[i] = zonotope_aff_alloc_init(pr);
+	res->paf[i]->c_inf = -coeffs[i][0];
+	res->paf[i]->c_sup = coeffs[i][0];
+	for(j=0; j < num_errors; j++){
+		zonotope_aaterm_t* ptr = zonotope_aaterm_alloc_init();
+		ptr->inf = -coeffs[i][j+1];
+		ptr->sup = coeffs[i][j+1];
+		ptr->pnsym = epsilon_map[j];
+                if (res->paf[i]->end) res->paf[i]->end->n = ptr;
+		else res->paf[i]->q = ptr;
+		res->paf[i]->end = ptr;
+		res->paf[i]->l++;
+	}
+	
+	res->paf[i]->itv_inf = -sum_inf;
+	res->paf[i]->itv_sup = sum_sup;
+	res->paf[i]->pby++;
+    }
+    record_timing(zonoml_network_input_time);
+    //zonotope_fprint(stdout,man,res,NULL);
+    free(epsilon_map);
+    return abstract0_of_zonotope(man,res);
+}
 
 zonotope_aff_t* zonotope_aff_mul_weight(zonotope_internal_t* pr, zonotope_aff_t* src, double lambda)
 {
@@ -272,9 +316,47 @@ elina_abstract0_t* ffn_matmult_without_bias_zono(elina_manager_t * man, bool des
     return abstract0_of_zonotope(man,res);
 }
 
+typedef enum bias_op{
+	ADD,
+        SUB1,
+	SUB2,
+        MUL,
+}bias_op;
 
-elina_abstract0_t* ffn_add_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
-			        double * bias, size_t num_var){
+void create_linexpr_array_with_bias(elina_linexpr0_t ** expr_array, elina_dim_t * tdim_array, size_t offset, double *bias, size_t num_var, bias_op OP){
+	size_t i;
+	for (i=0; i<num_var; i++) {
+		double cst, coeff;
+		if(OP==MUL){
+			cst = 0;
+			coeff = bias[i];
+		}
+		else{
+			if(OP==SUB1){
+				coeff = -1;
+				cst = bias[i];
+			}
+			else if(OP==SUB2) {
+				coeff = 1;
+				cst = -bias[i];
+			}
+			else{
+				coeff = 1;
+				cst = bias[i];
+			}
+		}
+		expr_array[i] = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,1);
+		elina_coeff_set_scalar_double(&expr_array[i]->cst,cst);
+		elina_linterm_t *lterm = &expr_array[i]->p.linterm[0];
+		lterm->dim = offset;
+		elina_coeff_set_interval_double(&lterm->coeff,coeff,coeff); 
+		tdim_array[i] = offset;
+		offset++;
+   	}
+}
+
+elina_abstract0_t * ffn_unary_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
+			        double * bias, size_t num_var, bias_op OP){
    start_timing();
    zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
    zonotope_t *z = zonotope_of_abstract0(element);
@@ -282,16 +364,7 @@ elina_abstract0_t* ffn_add_bias_zono(elina_manager_t * man, bool destructive, el
    size_t i = 0;
    elina_linexpr0_t ** expr_array = (elina_linexpr0_t **)malloc(num_var*sizeof(elina_linexpr0_t *));
    elina_dim_t * tdim_array = (elina_dim_t *)malloc(num_var*sizeof(elina_dim_t));
-   size_t offset = start_offset;
-   for (i=0; i<num_var; i++) {
-	expr_array[i] = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE,1);
-	elina_coeff_set_scalar_double(&expr_array[i]->cst,bias[i]);
-	elina_linterm_t *lterm = &expr_array[i]->p.linterm[0];
-	lterm->dim = offset;
-	elina_coeff_set_interval_double(&lterm->coeff,1,1); 
-	tdim_array[i] = offset;
-	offset++;
-   }
+   create_linexpr_array_with_bias(expr_array, tdim_array, start_offset, bias, num_var, OP);
    res = zonotope_assign_linexpr_array(man,true,res,tdim_array,expr_array,num_var,NULL);
    for(i=0; i < num_var; i++){
 	elina_linexpr0_free(expr_array[i]);
@@ -303,6 +376,31 @@ elina_abstract0_t* ffn_add_bias_zono(elina_manager_t * man, bool destructive, el
     record_timing(zonoml_ffn_matmult_time);
     return abstract0_of_zonotope(man,res);
 }
+
+elina_abstract0_t* ffn_add_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
+			        double * bias, size_t num_var){
+   return ffn_unary_bias_zono(man, destructive, element, start_offset, bias, num_var, ADD);
+}
+
+elina_abstract0_t* ffn_sub_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
+			        double * bias, bool is_minuend, size_t num_var){
+   if(is_minuend==true){
+	return ffn_unary_bias_zono(man, destructive, element, start_offset, bias, num_var, SUB1);
+   }
+   else{
+	return ffn_unary_bias_zono(man, destructive, element, start_offset, bias, num_var, SUB2);
+   }
+}
+
+
+
+elina_abstract0_t* ffn_mul_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
+			        double * bias, size_t num_var){
+   return ffn_unary_bias_zono(man, destructive, element, start_offset, bias, num_var, MUL);
+}
+
+
+
 
 
 void * handle_conv_matmult_zono_parallel(void *args){
@@ -394,7 +492,7 @@ void * handle_conv_matmult_zono_parallel(void *args){
 
 // assumes that the variables for the convolutional matmult have already been added, two dimensional filter, the first assignment is from start_offset
 elina_abstract0_t* conv_matmult_zono(elina_manager_t* man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset, double *filter_weights, double * filter_bias,  
-				      size_t * input_size, size_t expr_offset, size_t *filter_size, size_t num_filters, size_t *strides, bool is_valid_padding, bool has_bias){
+				      size_t * input_size, size_t expr_offset, size_t *filter_size, size_t num_filters, size_t *strides, size_t *output_size, size_t pad_top, size_t pad_left, bool has_bias){
 	start_timing();
 	zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	
@@ -403,42 +501,8 @@ elina_abstract0_t* conv_matmult_zono(elina_manager_t* man, bool destructive, eli
 	elina_dimension_t dims = zonotope_dimension(man,res);
 	size_t i, j;
 	size_t num_pixels = input_size[0]*input_size[1]*input_size[2];
-	size_t output_size[3];
-        if(is_valid_padding){
-		output_size[0] = ceil((double)(input_size[0] - filter_size[0]+1) / (double)strides[0]);
-		output_size[1] = ceil((double)(input_size[1] - filter_size[1]+1) / (double)strides[1]);
-	}
-	else{
-		output_size[0] = ceil((double)input_size[0] / (double)strides[0]);
-		output_size[1] = ceil((double)input_size[1] / (double)strides[1]);
-	}
 	
-	output_size[2] = num_filters;
 	size_t num_out_neurons = output_size[0]*output_size[1]*output_size[2];
-	long int pad_along_height=0, pad_along_width=0;
-	long int pad_top=0,  pad_left=0,  tmp=0;
-	if(!is_valid_padding){
-		if (input_size[0] % strides[0] == 0){
-			long int tmp = filter_size[0] - strides[0];
-	  		pad_along_height = max(tmp, 0);
-		}
-		else{
-			tmp = filter_size[0] - (input_size[0] % strides[0]);
-	  		pad_along_height = max(tmp, 0);
-		}
-		if (input_size[1] % strides[1] == 0){
-			tmp = filter_size[1] - strides[1];
-	  		pad_along_width = max(tmp, 0);
-		}
-		else{
-			tmp = filter_size[1] - (input_size[1] % strides[1]);
-	  		pad_along_width = max(tmp, 0);
-		}
-		pad_top = pad_along_height / 2;
-		
-		pad_left = pad_along_width / 2;
-		
-	}
 	
 
 	conv_matmult_zono_parallel(pr, res, start_offset, filter_weights, filter_bias, num_out_neurons,
@@ -451,8 +515,43 @@ elina_abstract0_t* conv_matmult_zono(elina_manager_t* man, bool destructive, eli
     	return abstract0_of_zonotope(man,res);
 }
 
+elina_abstract0_t *handle_gather_layer(elina_manager_t* man, bool destructive, elina_abstract0_t * abs, size_t *indexes){
+        elina_dimension_t dimension = elina_abstract0_dimension(man,abs);
+        size_t size = dimension.intdim + dimension.realdim;
+	elina_dimperm_t * dimperm = elina_dimperm_alloc(size);
+	size_t i;
+	for(i=0; i < size; i++){
+               
+		dimperm->dim[indexes[i]] = i;
+	}
+	elina_abstract0_t *res = elina_abstract0_permute_dimensions(man,destructive, abs,dimperm);
+	elina_dimperm_free(dimperm);
+	return res;
+}
 
 
-
-
+double * get_affine_form_for_dim(elina_manager_t* man, elina_abstract0_t *abs, size_t dim){
+	zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
+	zonotope_t * z = zonotope_of_abstract0(abs);
+	if(dim>=z->dims){
+		printf("Invalid index, returning NULL\n");
+		fflush(stdout);
+	}
+	zonotope_aff_t *paf = z->paf[dim];
+	size_t size = 0;
+	zonotope_aaterm_t *p;
+	for (p=paf->q; p; p=p->n) {
+		size++;
+	}
+	double * res = (double *)malloc((2*size+2)*sizeof(double));
+	res[0] = (double)(size+1);
+	res[1] = paf->c_sup;
+	size_t i = 2; 
+	for (p=paf->q; p; p=p->n) {
+	     res[i] = p->sup;
+	     res[i+size] = (double)p->pnsym->index; 
+	     i++;
+	}
+	return res;
+}
 
