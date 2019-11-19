@@ -411,6 +411,8 @@ opt_pk_array_t* opt_pk_permute_dimensions(elina_manager_t* man,
 			    opt_pk_array_t* o,
 			    elina_dimperm_t* permutation);
 
+void remove_block_and_factor(opt_pk_array_t *op, comp_list_t *cl);
+
 /* ============================================================ */
 /* III.5 Expansion and folding of dimensions */
 /* ============================================================ */

@@ -47,18 +47,18 @@ elina_abstract0_t *maxpool_zono(elina_manager_t *man, bool destructive,
                                 elina_abstract0_t *abs, size_t *pool_size,
                                 size_t *input_size, size_t src_offset,
                                 size_t *strides, size_t dimensionality,
-                                size_t dst_offset, bool is_valid_padding);
+                                size_t dst_offset, size_t pad_top,
+                                size_t pad_left, size_t *output_size);
 
 elina_abstract0_t *maxpool_zono_refined(elina_manager_t* man, bool destructive, elina_abstract0_t * abs,  elina_dim_t x, double new_inf, double new_sup);
+
+elina_abstract0_t *handle_gather_layer(elina_manager_t* man, bool destructive, elina_abstract0_t * abs, size_t *indexes);
 
 elina_abstract0_t* ffn_matmult_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
 			       double **weights, double * bias,  size_t num_var, size_t expr_offset, size_t expr_size);
 
-elina_abstract0_t *conv_matmult_zono(
-    elina_manager_t *man, bool destructive, elina_abstract0_t *element,
-    elina_dim_t start_offset, double *filter_weights, double *filter_bias,
-    size_t *input_size, size_t expr_offset, size_t *filter_size,
-    size_t num_filters, size_t *strides, bool is_valid_padding, bool has_bias);
+elina_abstract0_t* conv_matmult_zono(elina_manager_t* man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset, double *filter_weights, double * filter_bias,  
+				      size_t * input_size, size_t expr_offset, size_t *filter_size, size_t num_filters, size_t *strides, size_t* output_size, size_t pad_top, size_t pad_left, bool has_bias);
 
 bool is_greater(elina_manager_t *man, elina_abstract0_t *elem, elina_dim_t y, elina_dim_t x);
 
@@ -73,6 +73,8 @@ elina_abstract0_t * sigmoid_zono_layerwise(elina_manager_t* man, bool destructiv
 
 elina_abstract0_t * tanh_zono_layerwise(elina_manager_t* man, bool destructive, elina_abstract0_t * abs,  elina_dim_t start_offset, elina_dim_t num_dim);
 
+elina_abstract0_t * elina_abstract0_from_zonotope(elina_manager_t *man, size_t intdim, size_t realdim, size_t num_error_terms, double **coeffs);
+
 void zono_add(elina_manager_t *man, elina_abstract0_t *elem, size_t dst_offset, size_t src_offset, size_t num_var);
 
 void zono_copy_section(elina_manager_t *man, elina_abstract0_t *elem, size_t dst_offset, size_t src_offset, size_t num_var);
@@ -85,8 +87,16 @@ elina_abstract0_t* ffn_matmult_without_bias_zono(elina_manager_t * man, bool des
 elina_abstract0_t* ffn_add_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
 			        double * bias, size_t num_var);
 
+elina_abstract0_t* ffn_sub_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
+			        double * bias, bool is_minuend, size_t num_var);
+
+elina_abstract0_t* ffn_mul_bias_zono(elina_manager_t * man, bool destructive, elina_abstract0_t* element, elina_dim_t start_offset,
+			        double * bias, size_t num_var);
+
 
 bool affine_form_is_box(elina_manager_t* man, elina_abstract0_t *abs, elina_dim_t x);
+
+double * get_affine_form_for_dim(elina_manager_t* man, elina_abstract0_t *abs, size_t dim);
 
 static inline long int max(long int a, long int b){
 	return a > b ? a : b;

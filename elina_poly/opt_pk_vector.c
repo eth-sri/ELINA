@@ -566,10 +566,12 @@ void opt_vector_combine(opt_pk_internal_t* opk,
 
     ov3[k] = 0;
     if(flag){
-      fprintf(stderr, "exception \n");
-      fflush(stderr);
-      opk->exn = ELINA_EXC_OVERFLOW;
-      return;
+#ifndef NO_WARN_OVERFLOW
+             fprintf(stderr,"overflow exception \n");
+             fflush(stderr);
+#endif /* NO_WARN_OVERFLOW */
+             opk->exn = ELINA_EXC_OVERFLOW;
+             return ;
     }
     /*for (j=0; j<size; j++){
         if (opt_numint_abs(ov3[j]) > (ELINA_INT_MAX/2)){

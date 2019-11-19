@@ -1374,7 +1374,8 @@ elina_abstract0_t *maxpool_zono(elina_manager_t *man, bool destructive,
                                 elina_abstract0_t *abs, size_t *pool_size,
                                 size_t *input_size, size_t src_offset,
                                 size_t *strides, size_t dimensionality,
-                                size_t dst_offset, bool is_valid_padding) {
+                                size_t dst_offset, size_t pad_top,
+                                size_t pad_left, size_t *output_size) {
   assert(dimensionality == 3);
   assert(pool_size[2] == 1);
   // assert(stride[0]==2 && stride[1]==2 && stride[2]==1);
@@ -1382,46 +1383,8 @@ elina_abstract0_t *maxpool_zono(elina_manager_t *man, bool destructive,
   zonotope_internal_t *pr =
       zonotope_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
-  size_t *output_size = (size_t *)malloc(dimensionality * sizeof(size_t));
-  // for(i=0; i < dimensionality; i++){
-  //	output_size[i] = input_size[i]/pool_size[i];
-  //}
-
-  if (is_valid_padding) {
-    output_size[0] =
-        ceil((double)(input_size[0] - pool_size[0] + 1) / (double)strides[0]);
-    output_size[1] =
-        ceil((double)(input_size[1] - pool_size[1] + 1) / (double)strides[1]);
-  } else {
-    output_size[0] = ceil((double)input_size[0] / (double)strides[0]);
-    output_size[1] = ceil((double)input_size[1] / (double)strides[1]);
-  }
-  output_size[2] = input_size[2] / pool_size[2];
-
   size_t num_out_neurons = output_size[0] * output_size[1] * output_size[2];
 
-  long int pad_along_height = 0, pad_along_width = 0;
-  long int pad_top = 0, pad_left = 0, tmp = 0;
-  if (!is_valid_padding) {
-    if (input_size[0] % strides[0] == 0) {
-      long int tmp = pool_size[0] - strides[0];
-      pad_along_height = max(tmp, 0);
-    } else {
-      tmp = pool_size[0] - (input_size[0] % strides[0]);
-      pad_along_height = max(tmp, 0);
-    }
-    if (input_size[1] % strides[1] == 0) {
-      tmp = pool_size[1] - strides[1];
-      pad_along_width = max(tmp, 0);
-    } else {
-      tmp = pool_size[1] - (input_size[1] % strides[1]);
-      pad_along_width = max(tmp, 0);
-    }
-    pad_top = pad_along_height / 2;
-    pad_left = pad_along_width / 2;
-  }
-  // printf("pad top: %ld %ld\n",output_size[0],output_size[1]);
-  // fflush(stdout);
   zonotope_t *input = zonotope_of_abstract0(abs);
 
   zonotope_t *res = destructive ? input : zonotope_copy(man, input);
@@ -1437,7 +1400,7 @@ elina_abstract0_t *maxpool_zono(elina_manager_t *man, bool destructive,
   // num_var = dims.intdim + dims.realdim;
   // printf("end %u\n",num_var);
   // fflush(stdout);
-  free(output_size);
+  // free(output_size);
   return abstract0_of_zonotope(man, res);
 }
 
