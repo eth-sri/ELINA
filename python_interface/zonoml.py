@@ -91,6 +91,42 @@ def zonotope_from_network_input(man, intdim, realdim, inf_array, sup_array):
     return res
 
 
+def elina_abstract0_from_zonotope(man, intdim, realdim, num_error_terms, zonotope):
+    """
+    Create the perturbed zonotope from input
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    intdim : c_size_t
+        Number of integer variables.
+    realdim: c_size_t
+        Number of real variables
+    inf_array: POINTER(double)
+        lower bound array
+    sup_array: POINTER(double)
+        upper bound array
+    
+    Returns
+    -------
+    res: ElinaAbstract0Ptr
+         Pointer to the new abstract object
+
+    """
+
+    try:
+        elina_abstract0_from_zonotope_c = zonoml_api.elina_abstract0_from_zonotope
+        elina_abstract0_from_zonotope_c.restype = ElinaAbstract0Ptr
+        elina_abstract0_from_zonotope_c.argtypes = [ElinaManagerPtr, c_size_t, c_size_t, c_size_t, _doublepp]
+        res = elina_abstract0_from_zonotope_c(man,intdim, realdim, num_error_terms, zonotope)
+    except Exception as inst:
+        print('Problem with loading/calling "elina_abstract0_from_zonotope" from "libzonoml.so"')
+        print(inst)
+    return res
+
+
+
 def ffn_matmult_zono(man, destructive, element, start_offset, weights, bias, num_var, expr_offset, expr_size):
     """
     FFN Matrix multiplication
@@ -211,8 +247,81 @@ def ffn_add_bias_zono(man, destructive, element, start_offset,  bias, num_var):
 
     return res   
 
+def ffn_sub_bias_zono(man, destructive, element, start_offset,  bias, is_minuend, num_var):
+    """
+    FFN bias add
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    destructive: c_bool
+        Boolean flag
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0 which dimensions need to be assigned.
+    start_offset: ElinaDim
+        The start offset from which the dimensions should be assigned.
+    bias: POINTER(double)
+        bias vector
+    num_var: c_size_t
+        number of neurons to be assigned
+    Returns
+    -------
+    res: ElinaAbstract0Ptr
+         Pointer to the new abstract object
 
-def conv_matmult_zono(man, destructive, element, start_offset, filter_weights, filter_bias, input_size, expr_offset, filter_size, num_filters, strides, is_valid_padding, has_bias):
+    """
+
+    try:
+        ffn_sub_bias_zono_c = zonoml_api.ffn_sub_bias_zono
+        ffn_sub_bias_zono_c.restype = ElinaAbstract0Ptr
+        ffn_sub_bias_zono_c.argtypes = [ElinaManagerPtr, c_bool,  ElinaAbstract0Ptr, ElinaDim, ndpointer(ctypes.c_double), c_bool, c_size_t]
+        res = ffn_sub_bias_zono_c(man, destructive, element, start_offset, bias, is_minuend, num_var)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_sub_bias_zono" from "libzonoml.so"')
+        print(inst)
+
+    return res 
+
+
+def ffn_mul_bias_zono(man, destructive, element, start_offset,  bias, num_var):
+    """
+    FFN bias add
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    destructive: c_bool
+        Boolean flag
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0 which dimensions need to be assigned.
+    start_offset: ElinaDim
+        The start offset from which the dimensions should be assigned.
+    bias: POINTER(double)
+        bias vector
+    num_var: c_size_t
+        number of neurons to be assigned
+    Returns
+    -------
+    res: ElinaAbstract0Ptr
+         Pointer to the new abstract object
+
+    """
+
+    try:
+        ffn_mul_bias_zono_c = zonoml_api.ffn_mul_bias_zono
+        ffn_mul_bias_zono_c.restype = ElinaAbstract0Ptr
+        ffn_mul_bias_zono_c.argtypes = [ElinaManagerPtr, c_bool,  ElinaAbstract0Ptr, ElinaDim, ndpointer(ctypes.c_double), c_size_t]
+        res = ffn_mul_bias_zono_c(man, destructive, element, start_offset, bias, num_var)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_mul_bias_zono" from "libzonoml.so"')
+        print(inst)
+
+    return res 
+
+
+def conv_matmult_zono(man, destructive, element, start_offset, filter_weights, filter_bias, input_size, expr_offset, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias):
     """
     Convolutional Matrix multiplication
     
@@ -253,8 +362,8 @@ def conv_matmult_zono(man, destructive, element, start_offset, filter_weights, f
     try:
         conv_matmult_zono_c = zonoml_api.conv_matmult_zono
         conv_matmult_zono_c.restype = ElinaAbstract0Ptr
-        conv_matmult_zono_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, ElinaDim, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_bool, c_bool]
-        res = conv_matmult_zono_c(man, destructive, element, start_offset, filter_weights, filter_bias, input_size, expr_offset, filter_size, num_filters, strides, is_valid_padding, has_bias)
+        conv_matmult_zono_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, ElinaDim, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool]
+        res = conv_matmult_zono_c(man, destructive, element, start_offset, filter_weights, filter_bias, input_size, expr_offset, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias)
     except Exception as inst:
         print('Problem with loading/calling "conv_matmult_zono" from "libzonoml.so"')
         print(inst)
@@ -537,7 +646,7 @@ def tanh_zono_layerwise(man,destructive,elem,start_offset, num_dim):
 
     return res
 
-def maxpool_zono(man, destructive, elem, pool_size, input_size, src_offset, strides, dimensionality, dst_offset, is_valid_padding):
+def maxpool_zono(man, destructive, elem, pool_size, input_size, src_offset, strides, dimensionality, dst_offset, pad_top, pad_left, output_shape):
     """
     Performs the Maxpool operation
     
@@ -574,8 +683,8 @@ def maxpool_zono(man, destructive, elem, pool_size, input_size, src_offset, stri
     try:
         maxpool_zono_c = zonoml_api.maxpool_zono
         maxpool_zono_c.restype = ElinaAbstract0Ptr
-        maxpool_zono_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, POINTER(c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_size_t, c_size_t,c_bool]
-        res = maxpool_zono_c(man,destructive,elem,pool_size,input_size, src_offset, strides, dimensionality, dst_offset,is_valid_padding)
+        maxpool_zono_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, POINTER(c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_size_t, c_size_t, c_size_t, c_size_t,POINTER(c_size_t) ]
+        res = maxpool_zono_c(man,destructive,elem,pool_size,input_size, src_offset, strides, dimensionality, dst_offset, pad_top, pad_left, output_shape)
     except Exception as inst:
         print('Problem with loading/calling "maxpool_zono" from "libzonoml.so"')
         print(inst)
@@ -736,3 +845,65 @@ def get_interval_width_var_zono(man, element, i):
         print(inst)
 
     return width
+
+
+def handle_gather_layer(man, destructive, element, indexes):
+    """
+    handle the gather operation
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    destructive: c_bool
+        whether the returned element is the same as input
+    element : ElinaAbstract0Ptr
+        Abstract element.
+    indexes : POINTER(c_size_t)
+        The indexes for the gather
+    Returns
+    -------
+    width = c_double
+
+    """
+    
+    try:
+        handle_gather_layer_c = zonoml_api.handle_gather_layer
+        handle_gather_layer_c.restype = ElinaAbstract0Ptr
+        handle_gather_layer_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, ndpointer(c_size_t)]
+        res = handle_gather_layer_c(man,destructive, element, indexes)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_gather_layer" from "libzonoml.so"')
+        print(inst)
+
+    return res
+
+
+def get_affine_form_for_dim(man,element,dim):
+    """
+    get the list of coefficients for the given affine form
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Abstract element.
+    dim : c_size_t
+        The dimension of the affine form
+    Returns
+    -------
+    array = POINTER(c_double)
+
+    """
+    
+    try:
+        get_affine_form_for_dim_c = zonoml_api.get_affine_form_for_dim
+        get_affine_form_for_dim_c.restype = POINTER(c_double)
+        get_affine_form_for_dim_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t]
+        array = get_affine_form_for_dim_c(man, element, dim)
+    except Exception as inst:
+        print('Problem with loading/calling "get_affine_form_for_dim" from "libzonoml.so"')
+        print(inst)
+
+    return array   

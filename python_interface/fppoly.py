@@ -1423,7 +1423,7 @@ def is_greater(man, element, y, x, use_area_heuristic):
         print(inst)
     return res
 
-def conv_handle_first_layer(man, element, filter_weights, filter_bias,  input_size, filter_size, num_filters, strides, is_valid_padding, has_bias, predecessors):
+def conv_handle_first_layer(man, element, filter_weights, filter_bias,  input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors):
     """
     Convolutional Matrix multiplication in the first layer
     
@@ -1459,14 +1459,14 @@ def conv_handle_first_layer(man, element, filter_weights, filter_bias,  input_si
     try:
         conv_handle_first_layer_c = fppoly_api.conv_handle_first_layer
         conv_handle_first_layer_c.restype = None
-        conv_handle_first_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_bool, c_bool, POINTER(c_size_t)]
-        conv_handle_first_layer_c(man,element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding, has_bias, predecessors)
+        conv_handle_first_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t),c_size_t, c_size_t, c_bool, POINTER(c_size_t)]
+        conv_handle_first_layer_c(man,element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors)
     except Exception as inst:
         print('Problem with loading/calling "conv_handle_first_layer" from "libfppoly.so"')
         print(inst)
     return
 
-def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding,  has_bias, predecessors, use_area_heuristic):
+def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left,  has_bias, predecessors, use_area_heuristic):
     """
     Convolutional Matrix multiplication in an Intermediate layer
     
@@ -1504,14 +1504,14 @@ def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bia
     try:
         conv_handle_intermediate_relu_layer_c = fppoly_api.conv_handle_intermediate_relu_layer
         conv_handle_intermediate_relu_layer_c.restype = None
-        conv_handle_intermediate_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_bool, c_bool, POINTER(c_size_t), c_bool]
-        conv_handle_intermediate_relu_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding, has_bias, predecessors, use_area_heuristic)
+        conv_handle_intermediate_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_bool]
+        conv_handle_intermediate_relu_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic)
     except Exception as inst:
         print('Problem with loading/calling "conv_handle_intermediate_relu_layer" from "libfppoly.so"')
         print(inst)
 
 
-def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding,  has_bias, predecessors, use_area_heuristic):
+def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left,  has_bias, predecessors, use_area_heuristic):
     """
     Convolutional Matrix multiplication in an Intermediate layer
     
@@ -1549,8 +1549,8 @@ def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_b
     try:
         conv_handle_intermediate_affine_layer_c = fppoly_api.conv_handle_intermediate_affine_layer
         conv_handle_intermediate_affine_layer_c.restype = None
-        conv_handle_intermediate_affine_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_bool, c_bool, POINTER(c_size_t), c_bool]
-        conv_handle_intermediate_affine_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, is_valid_padding, has_bias, predecessors, use_area_heuristic)
+        conv_handle_intermediate_affine_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_bool]
+        conv_handle_intermediate_affine_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic)
     except Exception as inst:
         print('Problem with loading/calling "conv_handle_intermediate_affine_layer" from "libfppoly.so"')
         print(inst)
