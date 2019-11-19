@@ -146,11 +146,11 @@ void fppoly_free(elina_manager_t* man, fppoly_t* fp);
 
 bool is_greater(elina_manager_t* man, elina_abstract0_t* element, const elina_dim_t y, const elina_dim_t x, const bool use_area_heuristic);
 
-void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const bool retain_training_data);
+void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const size_t* output_size, const size_t pad_top, const size_t pad_left, const bool has_bias, size_t* predecessors, const bool retain_training_data);
 
-void conv_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const bool use_area_heuristic, const bool retain_training_data);
+void conv_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const size_t* output_size, const size_t pad_top, const size_t pad_left, const bool has_bias, size_t* predecessors, const bool use_area_heuristic, const bool retain_training_data);
 
-void conv_handle_intermediate_affine_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const bool is_valid_padding, const bool has_bias, size_t* predecessors, const bool use_area_heuristic, const bool retain_training_data);
+void conv_handle_intermediate_affine_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const size_t* output_size, const size_t pad_top, const size_t pad_left, const bool has_bias, size_t* predecessors, const bool use_area_heuristic, const bool retain_training_data);
 
 void handle_residual_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const size_t num_neurons, size_t* predecessors, const bool use_area_heuristic);
 
