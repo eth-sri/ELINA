@@ -1364,7 +1364,7 @@ def is_greater(man, element, y, x, use_area_heuristic):
     return res
 
 
-def conv_handle_first_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, retain_training_data = None):
+def conv_handle_first_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors):
 
     """
     Convolutional Matrix multiplication in the first layer.
@@ -1393,8 +1393,6 @@ def conv_handle_first_layer(man, element, filter_weights, filter_bias, input_siz
            if the filter has bias
         predecessors:
             the layers before the current layer
-        retain_training_data: c_bool
-            if true, method will retain training data
 
     Returns
     -------
@@ -1405,8 +1403,8 @@ def conv_handle_first_layer(man, element, filter_weights, filter_bias, input_siz
     try:
         conv_handle_first_layer_c = fppoly_gpu_api.conv_handle_first_layer
         conv_handle_first_layer_c.restype = None
-        conv_handle_first_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_bool]
-        conv_handle_first_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, retain_training_data)
+        conv_handle_first_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t)]
+        conv_handle_first_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors)
     except Exception as inst:
         print('Problem with loading/calling "conv_handle_first_layer" from "libfppoly_gpu.so".')
         print(inst)
@@ -1414,7 +1412,7 @@ def conv_handle_first_layer(man, element, filter_weights, filter_bias, input_siz
     return
 
 
-def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data = None):
+def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data = None, gradient = np.empty(0)):
 
     """
     Convolutional Matrix multiplication in an Intermediate layer.
@@ -1447,6 +1445,8 @@ def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bia
             whether to use area heuristic
         retain_training_data: c_bool
             if true, method will retain training data
+        gradient: POINTER(c_double)
+            gradient for DeepPoly training
 
     Returns
     -------
@@ -1457,8 +1457,8 @@ def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bia
     try:
         conv_handle_intermediate_relu_layer_c = fppoly_gpu_api.conv_handle_intermediate_relu_layer
         conv_handle_intermediate_relu_layer_c.restype = None
-        conv_handle_intermediate_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_bool, c_bool]
-        conv_handle_intermediate_relu_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data)
+        conv_handle_intermediate_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_bool, c_bool, ndpointer(c_double)]
+        conv_handle_intermediate_relu_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data, gradient)
     except Exception as inst:
         print('Problem with loading/calling "conv_handle_intermediate_relu_layer" from "libfppoly_gpu.so".')
         print(inst)
@@ -1466,7 +1466,7 @@ def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bia
     return
 
 
-def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data = None):
+def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data = None, gradient = np.empty(0)):
 
     """
     Convolutional Matrix multiplication in an Intermediate layer.
@@ -1499,6 +1499,8 @@ def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_b
             whether to use area heuristic
         retain_training_data: c_bool
             if true, method will retain training data
+        gradient: POINTER(c_double)
+            gradient for DeepPoly training
 
     Returns
     -------
@@ -1509,8 +1511,8 @@ def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_b
     try:
         conv_handle_intermediate_affine_layer_c = fppoly_gpu_api.conv_handle_intermediate_affine_layer
         conv_handle_intermediate_affine_layer_c.restype = None
-        conv_handle_intermediate_affine_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_bool, c_bool]
-        conv_handle_intermediate_affine_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data)
+        conv_handle_intermediate_affine_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_bool, c_bool, ndpointer(c_double)]
+        conv_handle_intermediate_affine_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data, gradient)
     except Exception as inst:
         print('Problem with loading/calling "conv_handle_intermediate_affine_layer" from "libfppoly_gpu.so".')
         print(inst)
@@ -1543,7 +1545,7 @@ def handle_maxpool_layer(man, element, pool_size, input_size, predecessors):
 
     """
 
-    res=None
+    res = None
 
     try:
         handle_maxpool_layer_c = fppoly_gpu_api.handle_maxpool_layer
@@ -2023,10 +2025,10 @@ def get_num_neurons_training_layer():
     return res
 
 
-def get_lcst_array():
+def get_adv():
 
     """
-    Receive pointer to lcst array of training data.
+    Receive pointer to adv vector
 
     Parameters
     ----------
@@ -2041,157 +2043,12 @@ def get_lcst_array():
     res = None
 
     try:
-        get_lcst_array_c = fppoly_gpu_api.get_lcst_array
-        get_lcst_array_c.restype = POINTER(ctypes.c_double)
-        get_lcst_array_c.argtypes = None
-        res = get_lcst_array_c()
+        get_adv_c = fppoly_gpu_api.get_adv
+        get_adv_c.restype = POINTER(ctypes.c_double)
+        get_adv_c.argtypes = None
+        res = get_adv_c()
     except Exception as inst:
-        print('Problem with loading/calling "get_lcst_array" from "libfppoly_gpu.so".')
-        print(inst)
-
-    return res
-
-
-def get_ucst_array():
-
-    """
-    Receive pointer to ucst array of training data.
-
-    Parameters
-    ----------
-        None
-
-    Returns
-    -------
-        ucst: POINTER(c_double)
-            Pointer to the array
-    """
-
-    res = None
-
-    try:
-        get_ucst_array_c = fppoly_gpu_api.get_ucst_array
-        get_ucst_array_c.restype = POINTER(ctypes.c_double)
-        get_ucst_array_c.argtypes = None
-        res = get_ucst_array_c()
-    except Exception as inst:
-        print('Problem with loading/calling "get_ucst_array" from "libfppoly_gpu.so".')
-        print(inst)
-
-    return res
-
-
-def get_sizes_array():
-
-    """
-    Receive pointer to sized array of training data.
-
-    Parameters
-    ----------
-        None
-
-    Returns
-    -------
-        sizes: POINTER(c_int)
-            Pointer to the array
-    """
-
-    res = None
-
-    try:
-        get_sizes_array_c = fppoly_gpu_api.get_sizes_array
-        get_sizes_array_c.restype = POINTER(ctypes.c_int)
-        get_sizes_array_c.argtypes = None
-        res = get_sizes_array_c()
-    except Exception as inst:
-        print('Problem with loading/calling "get_sizes_array" from "libfppoly_gpu.so".')
-        print(inst)
-
-    return res
-
-
-def get_dims_array():
-
-    """
-    Receive pointer to sized array of training data.
-
-    Parameters
-    ----------
-        None
-
-    Returns
-    -------
-        dims: POINTER(c_int)
-            Pointer to the array
-    """
-
-    res = None
-
-    try:
-        get_dims_array_c = fppoly_gpu_api.get_dims_array
-        get_dims_array_c.restype = POINTER(ctypes.c_int)
-        get_dims_array_c.argtypes = None
-        res = get_dims_array_c()
-    except Exception as inst:
-        print('Problem with loading/calling "get_dims_array" from "libfppoly_gpu.so".')
-        print(inst)
-
-    return res
-
-
-def get_lcoeff_array():
-
-    """
-    Receive pointer to lcoeff array of training data.
-
-    Parameters
-    ----------
-        None
-
-    Returns
-    -------
-        lcoeff: POINTER(c_double)
-            Pointer to the array
-    """
-
-    res = None
-
-    try:
-        get_lcoeff_array_c = fppoly_gpu_api.get_lcoeff_array
-        get_lcoeff_array_c.restype = POINTER(ctypes.c_double)
-        get_lcoeff_array_c.argtypes = None
-        res = get_lcoeff_array_c()
-    except Exception as inst:
-        print('Problem with loading/calling "get_lcoeff_array" from "libfppoly_gpu.so".')
-        print(inst)
-
-    return res
-
-
-def get_ucoeff_array():
-
-    """
-    Receive pointer to ucoeff array of training data.
-
-    Parameters
-    ----------
-        None
-
-    Returns
-    -------
-        ucoeff: POINTER(c_double)
-            Pointer to the array
-    """
-
-    res = None
-
-    try:
-        get_ucoeff_array_c = fppoly_gpu_api.get_ucoeff_array
-        get_ucoeff_array_c.restype = POINTER(ctypes.c_double)
-        get_ucoeff_array_c.argtypes = None
-        res = get_ucoeff_array_c()
-    except Exception as inst:
-        print('Problem with loading/calling "get_ucoeff_array" from "libfppoly_gpu.so".')
+        print('Problem with loading/calling "get_adv" from "libfppoly_gpu.so"')
         print(inst)
 
     return res

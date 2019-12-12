@@ -48,33 +48,12 @@ __constant__ const float_type ulp = 2.220446049250313080848e-16;
 
 int num_neurons_training_layer = 0;
 
-float_type *lcst_host = nullptr;
-float_type *ucst_host = nullptr;
-
-int *sizes = nullptr;
-int *dims = nullptr;
-
-float_type *lcoeff_host_sparse = nullptr;
-float_type *ucoeff_host_sparse = nullptr;
+float_type *adv_host = nullptr;
 
 void clean_training_data() {
-  free(lcst_host);
-  free(ucst_host);
+  free(adv_host);
 
-  free(sizes);
-  free(dims);
-
-  free(lcoeff_host_sparse);
-  free(ucoeff_host_sparse);
-
-  lcst_host = nullptr;
-  ucst_host = nullptr;
-
-  sizes = nullptr;
-  dims = nullptr;
-
-  lcoeff_host_sparse = nullptr;
-  ucoeff_host_sparse = nullptr;
+  adv_host = nullptr;
 
   num_neurons_training_layer = 0;
 }
@@ -4419,10 +4398,189 @@ __global__ void create_res_coeffs_csts(float_type *coeffs, float_type *bias,
   bias[local_mat_x] = 0;
 }
 
+__global__ void compute_c_array(
+    float_type *__restrict__ c_arrays, const float_type *__restrict__ gradient,
+    const float_type *__restrict__ linf_coeffs,
+    const float_type *__restrict__ usup_coeffs, const int num_chunks,
+    const int chunk_counter, const int output_size_x, const int output_size_y,
+    const int output_size_z, const int offset_x, const int offset_y,
+    const int length_x, const int length_y, const int shift_x,
+    const int shift_y) {
+  const int last_x = blockIdx.x;
+  const int last_y = blockIdx.y;
+  const int last_z = blockIdx.z;
+
+  int out_z = threadIdx.x;
+
+  const int local_n =
+      last_x * gridDim.y * gridDim.z + last_y * gridDim.z + last_z;
+  const int global_n = last_x * gridDim.y * num_chunks * gridDim.z +
+                       last_y * num_chunks * gridDim.z +
+                       chunk_counter * gridDim.z + last_z;
+
+  const int min_out_x = offset_x + last_x * shift_x;
+  const int min_out_y = offset_y + last_y * shift_y;
+
+  const int min_x = (min_out_x < 0) ? -min_out_x : 0;
+  const int min_y = (min_out_y < 0) ? -min_out_y : 0;
+
+  const int max_x = (length_x + min_out_x > output_size_x)
+                        ? output_size_x - min_out_x
+                        : length_x;
+  const int max_y = (length_y + min_out_y > output_size_y)
+                        ? output_size_y - min_out_y
+                        : length_y;
+
+  const float_type grad_entry = gradient[global_n];
+
+  while (out_z < output_size_z) {
+    for (int out_x = min_x; out_x < max_x; out_x++) {
+      for (int out_y = min_y; out_y < max_y; out_y++) {
+        const int j =
+            out_x * length_y * output_size_z + out_y * output_size_z + out_z;
+        const int mat_out = local_n * length_x * length_y * output_size_z + j;
+
+        const int i = (out_x + min_out_x) * output_size_y * output_size_z +
+                      (out_y + min_out_y) * output_size_z + out_z;
+        const int global_out =
+            global_n * output_size_x * output_size_y * output_size_z + i;
+
+        float_type linf_coeff = linf_coeffs[mat_out];
+        float_type usup_coeff = usup_coeffs[mat_out];
+
+        if ((linf_coeff != 0) || (usup_coeff != 0)) {
+          if (grad_entry < 0) {
+            c_arrays[global_out] = grad_entry * linf_coeff;
+          } else {
+            c_arrays[global_out] = grad_entry * usup_coeff;
+          }
+        }
+      }
+    }
+
+    out_z += num_threads;
+  }
+}
+
+__global__ void reduce_c_compute_xval(float_type *__restrict__ xval,
+                                      const float_type *__restrict__ c_arrays,
+                                      const float_type *__restrict__ input_inf,
+                                      const float_type *__restrict__ input_sup,
+                                      const int num_chunks,
+                                      const int chunk_counter,
+                                      const int num_neurons_last_layer,
+                                      const int num_pixels) {
+  int j = threadIdx.x;
+
+  while (j < num_pixels) {
+    for (int i = 0; i < num_neurons_last_layer; i++) {
+      xval[j] += c_arrays[i * num_pixels + j];
+    }
+
+    j += num_threads;
+  }
+
+  j = threadIdx.x;
+
+  while (j < num_pixels) {
+    if (xval[j] < 0) {
+      xval[j] = input_inf[j];
+    } else {
+      xval[j] = input_sup[j];
+    }
+
+    j += num_threads;
+  }
+}
+
+__global__ void compute_adv(float_type *__restrict__ adv,
+                            const float_type *__restrict__ gradient,
+                            const float_type *__restrict__ xval,
+                            const float_type *__restrict__ linf_coeffs,
+                            const float_type *__restrict__ usup_coeffs,
+                            const float_type *__restrict__ linf_csts,
+                            const float_type *__restrict__ usup_csts,
+                            const int num_chunks, const int chunk_counter,
+                            const int output_size_x, const int output_size_y,
+                            const int output_size_z, const int offset_x,
+                            const int offset_y, const int length_x,
+                            const int length_y, const int shift_x,
+                            const int shift_y) {
+  const int last_x = blockIdx.x;
+  const int last_y = blockIdx.y;
+  const int last_z = blockIdx.z;
+
+  int out_z = threadIdx.x;
+
+  const int local_n =
+      last_x * gridDim.y * gridDim.z + last_y * gridDim.z + last_z;
+  const int global_n = last_x * gridDim.y * num_chunks * gridDim.z +
+                       last_y * num_chunks * gridDim.z +
+                       chunk_counter * gridDim.z + last_z;
+
+  const int min_out_x = offset_x + last_x * shift_x;
+  const int min_out_y = offset_y + last_y * shift_y;
+
+  const int min_x = (min_out_x < 0) ? -min_out_x : 0;
+  const int min_y = (min_out_y < 0) ? -min_out_y : 0;
+
+  const int max_x = (length_x + min_out_x > output_size_x)
+                        ? output_size_x - min_out_x
+                        : length_x;
+  const int max_y = (length_y + min_out_y > output_size_y)
+                        ? output_size_y - min_out_y
+                        : length_y;
+
+  if (threadIdx.x == 0) {
+    if (gradient[global_n] < 0) {
+      adv[global_n] = linf_csts[global_n];
+    } else {
+      adv[global_n] = usup_csts[global_n];
+    }
+  }
+
+  __syncthreads();
+
+  float_type advec = 0;
+
+  while (out_z < output_size_z) {
+    for (int out_x = min_x; out_x < max_x; out_x++) {
+      for (int out_y = min_y; out_y < max_y; out_y++) {
+        const int j =
+            out_x * length_y * output_size_z + out_y * output_size_z + out_z;
+        const int mat_out = local_n * length_x * length_y * output_size_z + j;
+
+        const int i = (out_x + min_out_x) * output_size_y * output_size_z +
+                      (out_y + min_out_y) * output_size_z + out_z;
+
+        float_type linf_coeff = linf_coeffs[mat_out];
+        float_type usup_coeff = usup_coeffs[mat_out];
+
+        if ((linf_coeff != 0) || (usup_coeff != 0)) {
+          if (gradient[global_n] < 0) {
+            advec += linf_coeff * xval[i];
+          } else {
+            advec += usup_coeff * xval[i];
+          }
+        }
+      }
+    }
+
+    out_z += num_threads;
+  }
+
+  block_reduce_sum(advec, blockDim.x);
+
+  if (threadIdx.x == 0) {
+    adv[global_n] += advec;
+  }
+}
+
 void update_state_using_previous_layers_sparse(
     elina_manager_t *man, fppoly_t *fp, const size_t layerno,
     const size_t num_chunks, const size_t chunk_counter,
-    const bool use_area_heuristic, const bool retain_training_data) {
+    const bool use_area_heuristic, const bool retain_training_data,
+    const float_type *gradient) {
   const auto start = std::chrono::system_clock::now();
 
   size_t backstep_counter = 0;
@@ -5271,82 +5429,77 @@ void update_state_using_previous_layers_sparse(
   }
 
   if (retain_training_data) {
+    float_type *gradient_dev;
+    cudaMalloc((void **)&gradient_dev, x_y_size_last_layer *
+                                           num_filters_last_layer *
+                                           sizeof(float_type));
+
+    cudaMemcpy(gradient_dev, gradient,
+               x_y_size_last_layer * num_filters_last_layer *
+                   sizeof(float_type),
+               cudaMemcpyHostToDevice);
+
     num_neurons_training_layer = x_y_size_last_layer * num_filters_last_layer;
 
-    float_type *lcoeff_host = (float_type *)malloc(
-        x_y_size_last_layer * num_filters_last_layer * length_x * length_y *
-        fp->layers[0]->input_size[2] * sizeof(float_type));
-    float_type *ucoeff_host = (float_type *)malloc(
-        x_y_size_last_layer * num_filters_last_layer * length_x * length_y *
-        fp->layers[0]->input_size[2] * sizeof(float_type));
-
-    cudaMemcpy(lcoeff_host, linf_coeff,
-               x_y_size_last_layer * num_filters_last_layer * length_x *
-                   length_y * fp->layers[0]->input_size[2] * sizeof(float_type),
-               cudaMemcpyDeviceToHost);
-    cudaMemcpy(ucoeff_host, usup_coeff,
-               x_y_size_last_layer * num_filters_last_layer * length_x *
-                   length_y * fp->layers[0]->input_size[2] * sizeof(float_type),
-               cudaMemcpyDeviceToHost);
-
-    lcst_host = (float_type *)malloc(
-        x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
-    ucst_host = (float_type *)malloc(
-        x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
-
-    cudaMemcpy(lcst_host, linf_cst,
+    float_type *c_array;
+    cudaMalloc((void **)&c_array, x_y_size_last_layer * num_filters_last_layer *
+                                      num_in_neurons_0_layer *
+                                      sizeof(float_type));
+    cudaMemset(c_array, 0,
                x_y_size_last_layer * num_filters_last_layer *
-                   sizeof(float_type),
-               cudaMemcpyDeviceToHost);
-    cudaMemcpy(ucst_host, usup_cst,
-               x_y_size_last_layer * num_filters_last_layer *
-                   sizeof(float_type),
-               cudaMemcpyDeviceToHost);
-
-    const int output_size_x = fp->layers[layerno]->output_size[0];
-    const int output_size_y = fp->layers[layerno]->output_size[1];
-    const int output_size_z = fp->layers[layerno]->output_size[2];
+                   num_in_neurons_0_layer * sizeof(float_type));
 
     const int input_size_x = fp->layers[0]->input_size[0];
     const int input_size_y = fp->layers[0]->input_size[1];
     const int input_size_z = fp->layers[0]->input_size[2];
 
-    sizes = (int *)malloc(x_y_size_last_layer * num_filters_last_layer *
-                          sizeof(int));
-    dims =
-        (int *)malloc(x_y_size_last_layer * num_filters_last_layer * length_x *
-                      length_y * fp->layers[0]->input_size[2] * sizeof(int));
+    compute_c_array<<<dim3(fp->layers[layerno]->output_size[0],
+                           fp->layers[layerno]->output_size[1],
+                           fp->layers[layerno]->output_size[2] / num_chunks),
+                      num_threads>>>(
+        c_array, gradient_dev, linf_coeff, usup_coeff, num_chunks,
+        chunk_counter, input_size_x, input_size_y, input_size_z, offset_x,
+        offset_y, length_x, length_y, shift_x, shift_y);
 
-    lcoeff_host_sparse = (float_type *)malloc(
-        x_y_size_last_layer * num_filters_last_layer * length_x * length_y *
-        fp->layers[0]->input_size[2] * sizeof(float_type));
-    ucoeff_host_sparse = (float_type *)malloc(
-        x_y_size_last_layer * num_filters_last_layer * length_x * length_y *
-        fp->layers[0]->input_size[2] * sizeof(float_type));
+    float_type *xval;
+    cudaMalloc((void **)&xval, num_in_neurons_0_layer * sizeof(float_type));
+    cudaMemset(xval, 0, num_in_neurons_0_layer * sizeof(float_type));
 
-    sparsify_coeffs(lcoeff_host, ucoeff_host, sizes, dims, lcoeff_host_sparse,
-                    ucoeff_host_sparse, output_size_x, output_size_y,
-                    output_size_z, input_size_x, input_size_y, input_size_z,
-                    length_x, length_y, shift_x, shift_y, offset_x, offset_y);
+    reduce_c_compute_xval<<<1, num_threads>>>(
+        xval, c_array, fp->input_inf, fp->input_sup, num_chunks, chunk_counter,
+        x_y_size_last_layer * num_filters_last_layer, num_in_neurons_0_layer);
 
-    dims = (int *)realloc(
-        dims,
-        sizes[x_y_size_last_layer * num_filters_last_layer - 1] * sizeof(int));
+    float_type *adv;
+    cudaMalloc((void **)&adv, x_y_size_last_layer * num_filters_last_layer *
+                                  sizeof(float_type));
+    cudaMemset(adv, 0,
+               x_y_size_last_layer * num_filters_last_layer *
+                   sizeof(float_type));
 
-    lcoeff_host_sparse = (float_type *)realloc(
-        lcoeff_host_sparse,
-        sizes[x_y_size_last_layer * num_filters_last_layer - 1] *
-            sizeof(float_type));
-    ucoeff_host_sparse = (float_type *)realloc(
-        ucoeff_host_sparse,
-        sizes[x_y_size_last_layer * num_filters_last_layer - 1] *
-            sizeof(float_type));
+    compute_adv<<<dim3(fp->layers[layerno]->output_size[0],
+                       fp->layers[layerno]->output_size[1],
+                       fp->layers[layerno]->output_size[2] / num_chunks),
+                  num_threads>>>(
+        adv, gradient_dev, xval, linf_coeff, usup_coeff, linf_cst, usup_cst,
+        num_chunks, chunk_counter, input_size_x, input_size_y, input_size_z,
+        offset_x, offset_y, length_x, length_y, shift_x, shift_y);
 
-    free(lcoeff_host);
-    free(ucoeff_host);
+    adv_host = (float_type *)malloc(
+        x_y_size_last_layer * num_filters_last_layer * sizeof(float_type));
+    cudaMemcpy(adv_host, adv,
+               x_y_size_last_layer * num_filters_last_layer *
+                   sizeof(float_type),
+               cudaMemcpyDeviceToHost);
 
-    lcoeff_host = nullptr;
-    ucoeff_host = nullptr;
+    cudaFree(gradient_dev);
+    cudaFree(c_array);
+    cudaFree(xval);
+    cudaFree(adv);
+
+    gradient_dev = nullptr;
+    c_array = nullptr;
+    xval = nullptr;
+    adv = nullptr;
   }
 
   cudaFree(linf_coeff);
@@ -5390,15 +5543,16 @@ void update_state_using_previous_layers_sparse(
   // std::endl << std::endl;
 }
 
-void update_state_using_previous_layers_sparse(
+void update_state_using_previous_layers_sparse_full(
     elina_manager_t *man, fppoly_t *fp, const size_t layerno,
-    const bool use_area_heuristic, const bool retain_training_data) {
+    const bool use_area_heuristic, const bool retain_training_data,
+    const float_type *gradient) {
   const size_t num_chunks = predict_size(fp, layerno);
 
   for (size_t chunk_counter = 0; chunk_counter < num_chunks; chunk_counter++) {
     update_state_using_previous_layers_sparse(
         man, fp, fp->numlayers - 1, num_chunks, chunk_counter,
-        use_area_heuristic, retain_training_data);
+        use_area_heuristic, retain_training_data, gradient);
   }
 }
 
@@ -6512,15 +6666,15 @@ void layer_create_sparse_exprs(
   free(filter_bias_tmp);
 }
 
-void conv_handle_first_layer(
-    elina_manager_t *man, elina_abstract0_t *element,
-    const float_type *filter_weights, const float_type *filter_bias,
-    const size_t *input_size, const size_t *filter_size,
-    const size_t num_filters, const size_t *strides, const size_t *output_size,
-    const size_t pad_top, const size_t pad_left, const bool has_bias,
-    size_t *predecessors, const bool retain_training_data) {
-  clean_training_data();
-
+void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
+                             const float_type *filter_weights,
+                             const float_type *filter_bias,
+                             const size_t *input_size,
+                             const size_t *filter_size,
+                             const size_t num_filters, const size_t *strides,
+                             const size_t *output_size, const size_t pad_top,
+                             const size_t pad_left, const bool has_bias,
+                             size_t *predecessors) {
   fppoly_t *const fp = fppoly_of_abstract0(element);
   fp->layers = (layer_t **)malloc(2000 * sizeof(layer_t *));
 
@@ -6685,117 +6839,6 @@ void conv_handle_first_layer(
         fp->layers[0]->strides[1], fp->layers[0]->pad[0],
         fp->layers[0]->pad[1]);
   }
-
-  if (retain_training_data) {
-    const int num_out_neurons_0_layer = fp->layers[0]->num_out_neurons;
-
-    const int offset_x = -fp->layers[0]->pad[0];
-    const int offset_y = -fp->layers[0]->pad[1];
-
-    const int length_x = fp->layers[0]->filter_size[0];
-    const int length_y = fp->layers[0]->filter_size[1];
-
-    const int shift_x = fp->layers[0]->strides[0];
-    const int shift_y = fp->layers[0]->strides[1];
-
-    float_type *coeffs;
-    float_type *csts;
-
-    num_neurons_training_layer = num_out_neurons_0_layer;
-
-    cudaMalloc((void **)&coeffs, num_out_neurons_0_layer * length_x * length_y *
-                                     fp->layers[0]->input_size[2] *
-                                     sizeof(float_type));
-    cudaMalloc((void **)&csts, num_out_neurons_0_layer * sizeof(float_type));
-
-    cudaMemset(coeffs, 0,
-               num_out_neurons_0_layer * length_x * length_y *
-                   fp->layers[0]->input_size[2] * sizeof(float_type));
-    cudaMemset(csts, 0, num_out_neurons_0_layer * sizeof(float_type));
-
-    device_layer_create_sparse_exprs<<<dim3(fp->layers[0]->output_size[0],
-                                            fp->layers[0]->output_size[1],
-                                            fp->layers[0]->output_size[2]),
-                                       1>>>(
-        coeffs, csts, fp->layers[0]->filter_weights, fp->layers[0]->filter_bias,
-        0, fp->layers[0]->input_size[0], fp->layers[0]->input_size[1],
-        fp->layers[0]->input_size[2], fp->layers[0]->filter_size[0],
-        fp->layers[0]->filter_size[1], fp->layers[0]->strides[0],
-        fp->layers[0]->strides[1], fp->layers[0]->pad[0],
-        fp->layers[0]->pad[1]);
-
-    float_type *lcoeff_host =
-        (float_type *)malloc(num_out_neurons_0_layer * length_x * length_y *
-                             fp->layers[0]->input_size[2] * sizeof(float_type));
-    float_type *ucoeff_host =
-        (float_type *)malloc(num_out_neurons_0_layer * length_x * length_y *
-                             fp->layers[0]->input_size[2] * sizeof(float_type));
-
-    cudaMemcpy(lcoeff_host, coeffs,
-               num_out_neurons_0_layer * length_x * length_y *
-                   fp->layers[0]->input_size[2] * sizeof(float_type),
-               cudaMemcpyDeviceToHost);
-    cudaMemcpy(ucoeff_host, coeffs,
-               num_out_neurons_0_layer * length_x * length_y *
-                   fp->layers[0]->input_size[2] * sizeof(float_type),
-               cudaMemcpyDeviceToHost);
-
-    lcst_host =
-        (float_type *)malloc(num_out_neurons_0_layer * sizeof(float_type));
-    ucst_host =
-        (float_type *)malloc(num_out_neurons_0_layer * sizeof(float_type));
-
-    cudaMemcpy(lcst_host, csts, num_out_neurons_0_layer * sizeof(float_type),
-               cudaMemcpyDeviceToHost);
-    cudaMemcpy(ucst_host, csts, num_out_neurons_0_layer * sizeof(float_type),
-               cudaMemcpyDeviceToHost);
-
-    cudaFree(coeffs);
-    cudaFree(csts);
-
-    coeffs = nullptr;
-    csts = nullptr;
-
-    const int output_size_x = fp->layers[0]->output_size[0];
-    const int output_size_y = fp->layers[0]->output_size[1];
-    const int output_size_z = fp->layers[0]->output_size[2];
-
-    const int input_size_x = fp->layers[0]->input_size[0];
-    const int input_size_y = fp->layers[0]->input_size[1];
-    const int input_size_z = fp->layers[0]->input_size[2];
-
-    sizes = (int *)malloc(num_out_neurons_0_layer * sizeof(int));
-    dims = (int *)malloc(num_out_neurons_0_layer * length_x * length_y *
-                         fp->layers[0]->input_size[2] * sizeof(int));
-
-    lcoeff_host_sparse =
-        (float_type *)malloc(num_out_neurons_0_layer * length_x * length_y *
-                             fp->layers[0]->input_size[2] * sizeof(float_type));
-    ucoeff_host_sparse =
-        (float_type *)malloc(num_out_neurons_0_layer * length_x * length_y *
-                             fp->layers[0]->input_size[2] * sizeof(float_type));
-
-    sparsify_coeffs(lcoeff_host, ucoeff_host, sizes, dims, lcoeff_host_sparse,
-                    ucoeff_host_sparse, output_size_x, output_size_y,
-                    output_size_z, input_size_x, input_size_y, input_size_z,
-                    length_x, length_y, shift_x, shift_y, offset_x, offset_y);
-
-    dims =
-        (int *)realloc(dims, sizes[num_out_neurons_0_layer - 1] * sizeof(int));
-
-    lcoeff_host_sparse = (float_type *)realloc(
-        lcoeff_host_sparse,
-        sizes[num_out_neurons_0_layer - 1] * sizeof(float_type));
-    ucoeff_host_sparse = (float_type *)realloc(
-        ucoeff_host_sparse,
-        sizes[num_out_neurons_0_layer - 1] * sizeof(float_type));
-
-    free(lcoeff_host);
-    free(ucoeff_host);
-
-    lcoeff_host = nullptr;
-    ucoeff_host = nullptr;
-  }
 }
 
 void conv_handle_intermediate_layer(
@@ -6805,7 +6848,8 @@ void conv_handle_intermediate_layer(
     const size_t num_filters, const size_t *strides, const size_t *output_size,
     const size_t pad_top, const size_t pad_left, const bool has_bias,
     size_t *predecessors, const activation_type_t activation,
-    const bool use_area_heuristic, const bool retain_training_data) {
+    const bool use_area_heuristic, const bool retain_training_data,
+    const float_type *gradient) {
   clean_training_data();
 
   fppoly_t *const fp = fppoly_of_abstract0(element);
@@ -6816,8 +6860,9 @@ void conv_handle_intermediate_layer(
 
   fp->layers[fp->numlayers - 1]->predecessors = predecessors;
 
-  update_state_using_previous_layers_sparse(
-      man, fp, fp->numlayers - 1, use_area_heuristic, retain_training_data);
+  update_state_using_previous_layers_sparse_full(
+      man, fp, fp->numlayers - 1, use_area_heuristic, retain_training_data,
+      gradient);
 }
 
 void conv_handle_intermediate_relu_layer(
@@ -6827,11 +6872,11 @@ void conv_handle_intermediate_relu_layer(
     const size_t num_filters, const size_t *strides, const size_t *output_size,
     const size_t pad_top, const size_t pad_left, const bool has_bias,
     size_t *predecessors, const bool use_area_heuristic,
-    const bool retain_training_data) {
+    const bool retain_training_data, const float_type *gradient) {
   conv_handle_intermediate_layer(
       man, element, filter_weights, filter_bias, input_size, filter_size,
       num_filters, strides, output_size, pad_top, pad_left, has_bias,
-      predecessors, RELU, use_area_heuristic, retain_training_data);
+      predecessors, RELU, use_area_heuristic, retain_training_data, gradient);
 }
 
 void conv_handle_intermediate_affine_layer(
@@ -6841,11 +6886,11 @@ void conv_handle_intermediate_affine_layer(
     const size_t num_filters, const size_t *strides, const size_t *output_size,
     const size_t pad_top, const size_t pad_left, const bool has_bias,
     size_t *predecessors, const bool use_area_heuristic,
-    const bool retain_training_data) {
+    const bool retain_training_data, const float_type *gradient) {
   conv_handle_intermediate_layer(
       man, element, filter_weights, filter_bias, input_size, filter_size,
       num_filters, strides, output_size, pad_top, pad_left, has_bias,
-      predecessors, NONE, use_area_heuristic, retain_training_data);
+      predecessors, NONE, use_area_heuristic, retain_training_data, gradient);
 }
 
 void res_add_layer(fppoly_t *const fp, const size_t num_neurons,
@@ -6907,8 +6952,8 @@ void handle_residual_layer(elina_manager_t *man, elina_abstract0_t *element,
   res_add_layer(fp, num_neurons, RESIDUAL, activation);
   fp->layers[fp->numlayers - 1]->predecessors = predecessors;
 
-  update_state_using_previous_layers_sparse(man, fp, fp->numlayers - 1,
-                                            use_area_heuristic, false);
+  update_state_using_previous_layers_sparse_full(
+      man, fp, fp->numlayers - 1, use_area_heuristic, false, nullptr);
 }
 
 void handle_residual_relu_layer(elina_manager_t *man,
@@ -7061,14 +7106,4 @@ elina_interval_t **box_for_layer(elina_manager_t *man, elina_abstract0_t *abs,
 
 int get_num_neurons_training_layer() { return num_neurons_training_layer; }
 
-float_type *get_lcst_array() { return lcst_host; }
-
-float_type *get_ucst_array() { return ucst_host; }
-
-int *get_sizes_array() { return sizes; }
-
-int *get_dims_array() { return dims; }
-
-float_type *get_lcoeff_array() { return lcoeff_host_sparse; }
-
-float_type *get_ucoeff_array() { return ucoeff_host_sparse; }
+float_type *get_adv() { return adv_host; }
