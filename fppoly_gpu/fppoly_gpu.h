@@ -49,26 +49,26 @@ using float_type = double;
 
 typedef struct fppoly_internal_t
 {
-  /* Name of function */
-  elina_funid_t funid;
+    /* Name of function */
+    elina_funid_t funid;
 
-  /* local parameters for the function */
-  elina_funopt_t* funopt;
-  /* raised when a conversion from/to a user type resulted in an
-     overapproximation
-  */
-  float_type min_denormal;
-  float_type ulp;
-  /* back pointer to elina_manager*/
-  elina_manager_t* man;
+    /* local parameters for the function */
+    elina_funopt_t* funopt;
+
+    /* raised when a conversion from/to a user type resulted in an overapproximation */
+    float_type min_denormal;
+    float_type ulp;
+
+    /* back pointer to elina_manager */
+    elina_manager_t* man;
 } fppoly_internal_t;
 
 
 typedef enum layertype_t
 {
-  FFN, /* FFN layer */
-  CONV,    /* CONV layer */
-  RESIDUAL, /* RESIDUAL layer */
+    FFN, /* FFN layer */
+    CONV,    /* CONV layer */
+    RESIDUAL, /* RESIDUAL layer */
 } layertype_t;
 
 
