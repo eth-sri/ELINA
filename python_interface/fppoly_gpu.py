@@ -29,6 +29,8 @@ from elina_abstract0_h import *
 from elina_interval_h import *
 from elina_linexpr0_h import *
 
+c_float_type = ctypes.c_double
+float_type = np.double
 
 _doublepp = ndpointer(dtype=np.uintp, ndim=1, flags='C')
 
@@ -71,9 +73,9 @@ def fppoly_from_network_input(man, intdim, realdim, inf_array, sup_array):
             Number of integer variables
         realdim: c_size_t
             Number of real variables
-        inf_array: POINTER(c_double)
+        inf_array: POINTER(c_float_type)
             lower bound array
-        sup_array: POINTER(c_double)
+        sup_array: POINTER(c_float_type)
             upper bound array
 
     Returns
@@ -88,7 +90,7 @@ def fppoly_from_network_input(man, intdim, realdim, inf_array, sup_array):
     try:
         fppoly_from_network_input_c = fppoly_gpu_api.fppoly_from_network_input
         fppoly_from_network_input_c.restype = ElinaAbstract0Ptr
-        fppoly_from_network_input_c.argtypes = [ElinaManagerPtr, c_size_t, c_size_t, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double)]
+        fppoly_from_network_input_c.argtypes = [ElinaManagerPtr, c_size_t, c_size_t, ndpointer(c_float_type), ndpointer(c_float_type)]
         res = fppoly_from_network_input_c(man, intdim, realdim, inf_array, sup_array)
     except Exception as inst:
         print('Problem with loading/calling "fppoly_from_network_input" from "libfppoly_gpu.so".')
@@ -112,9 +114,9 @@ def fppoly_set_network_input_box(man, element, intdim, realdim, inf_array, sup_a
             Number of integer variables
         realdim: c_size_t
             Number of real variables
-        inf_array: POINTER(c_double)
+        inf_array: POINTER(c_float_type)
             lower bound array
-        sup_array: POINTER(c_double)
+        sup_array: POINTER(c_float_type)
             upper bound array
 
     Returns
@@ -129,7 +131,7 @@ def fppoly_set_network_input_box(man, element, intdim, realdim, inf_array, sup_a
     try:
         fppoly_set_network_input_box_c = fppoly_gpu_api.fppoly_set_network_input_box
         fppoly_set_network_input_box_c.restype = None
-        fppoly_set_network_input_box_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double)]
+        fppoly_set_network_input_box_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, ndpointer(c_float_type), ndpointer(c_float_type)]
         res = fppoly_set_network_input_box_c(man, element, intdim, realdim, inf_array, sup_array)
     except Exception as inst:
         print('Problem with loading/calling "fppoly_set_network_input_box" from "libfppoly_gpu.so".')
@@ -151,19 +153,19 @@ def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array, l
             Number of integer variables
         realdim: c_size_t
             Number of real variables
-        inf_array: POINTER(c_double)
+        inf_array: POINTER(c_float_type)
             lower bound array
-        sup_array: POINTER(c_double)
+        sup_array: POINTER(c_float_type)
             upper bound array
-        lexpr_weights: POINTER(c_double)
+        lexpr_weights: POINTER(c_float_type)
             coefficients of the lower polyhedra constraints
-        lexpr_cst: POINTER(c_double)
+        lexpr_cst: POINTER(c_float_type)
             constants of the lower polyhedra constraints
         lexpr_dim: POINTER(c_size_t)
             the indexes of the variables in the lower polyhedra constraints
-        uexpr_weights: POINTER(c_double)
+        uexpr_weights: POINTER(c_float_type)
             coefficients of the upper polyhedra constraints
-        uexpr_cst: POINTER(c_double)
+        uexpr_cst: POINTER(c_float_type)
             constants of the upper polyhedra constraints
         uexpr_dim: POINTER(c_size_t)
             the indexes of the variables in the upper polyhedra constraints
@@ -182,7 +184,7 @@ def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array, l
     try:
         fppoly_from_network_input_poly_c = fppoly_gpu_api.fppoly_from_network_input_poly
         fppoly_from_network_input_poly_c.restype = ElinaAbstract0Ptr
-        fppoly_from_network_input_poly_c.argtypes = [ElinaManagerPtr, c_size_t, c_size_t, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), c_size_t]
+        fppoly_from_network_input_poly_c.argtypes = [ElinaManagerPtr, c_size_t, c_size_t, ndpointer(c_float_type), ndpointer(c_float_type), ndpointer(c_float_type), ndpointer(c_float_type), ndpointer(c_size_t), ndpointer(c_float_type), ndpointer(c_float_type), ndpointer(c_size_t), c_size_t]
         res = fppoly_from_network_input_poly_c(man, intdim, realdim, inf_array, sup_array, lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim, expr_size)
     except Exception as inst:
         print('Problem with loading/calling "fppoly_from_network_input_poly" from "libfppoly_gpu.so".')
@@ -202,9 +204,9 @@ def ffn_handle_first_relu_layer(man, element, weights, bias, size, num_pixels, p
             Pointer to the ElinaManager
         element : ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0
-        weights : POINTER(POINTER(c_double))
+        weights : POINTER(POINTER(c_float_type))
             The weight matrix.
-        bias : POINTER(c_double)
+        bias : POINTER(c_float_type)
             The bias vector
         size: c_size_t
             Number of neurons in the first layer
@@ -223,7 +225,7 @@ def ffn_handle_first_relu_layer(man, element, weights, bias, size, num_pixels, p
     try:
         ffn_handle_first_relu_layer_c = fppoly_gpu_api.ffn_handle_first_relu_layer
         ffn_handle_first_relu_layer_c.restype = None
-        ffn_handle_first_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t, POINTER(c_size_t)]
+        ffn_handle_first_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(c_float_type), c_size_t, c_size_t, POINTER(c_size_t)]
         ffn_handle_first_relu_layer_c(man, element, weights, bias, size, num_pixels, predecessors)
     except Exception as inst:
         print('Problem with loading/calling "ffn_handle_first_relu_layer" from "libfppoly_gpu.so".')
@@ -243,9 +245,9 @@ def ffn_handle_first_relu_layer_no_alloc(man, element, weights, bias, size, num_
             Pointer to the ElinaManager
         element : ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0
-        weights : POINTER(POINTER(c_double))
+        weights : POINTER(POINTER(c_float_type))
             The weight matrix.
-        bias : POINTER(c_double)
+        bias : POINTER(c_float_type)
             The bias vector
         size: c_size_t
             Number of neurons in the first layer
@@ -275,9 +277,9 @@ def ffn_handle_first_sigmoid_layer(man, element, weights, bias, size, num_pixels
     ----------
         man : ElinaManagerPtr
             Pointer to the ElinaManager.
-        weights : POINTER(POINTER(c_double))
+        weights : POINTER(POINTER(c_float_type))
             The weight matrix.
-        bias : POINTER(c_double)
+        bias : POINTER(c_float_type)
             The bias vector
         size: c_size_t
             Number of neurons in the first layer
@@ -307,9 +309,9 @@ def ffn_handle_first_sigmoid_layer_no_alloc(man, element, weights, bias, size, n
     ----------
         man : ElinaManagerPtr
             Pointer to the ElinaManager.
-        weights : POINTER(POINTER(c_double))
+        weights : POINTER(POINTER(c_float_type))
             The weight matrix.
-        bias : POINTER(c_double)
+        bias : POINTER(c_float_type)
             The bias vector
         size: c_size_t
             Number of neurons in the first layer
@@ -339,9 +341,9 @@ def ffn_handle_first_tanh_layer(man, element, weights, bias, size, num_pixels, p
     ----------
         man : ElinaManagerPtr
             Pointer to the ElinaManager.
-        weights : POINTER(POINTER(c_double))
+        weights : POINTER(POINTER(c_float_type))
             The weight matrix
-        bias : POINTER(c_double)
+        bias : POINTER(c_float_type)
             The bias vector
         size: c_size_t
             Number of neurons in the first layer
@@ -371,9 +373,9 @@ def ffn_handle_first_tanh_layer_no_alloc(man, element, weights, bias, size, num_
     ----------
         man : ElinaManagerPtr
             Pointer to the ElinaManager.
-        weights : POINTER(POINTER(c_double))
+        weights : POINTER(POINTER(c_float_type))
             The weight matrix
-        bias : POINTER(c_double)
+        bias : POINTER(c_float_type)
             The bias vector
         size: c_size_t
             Number of neurons in the first layer
@@ -403,9 +405,9 @@ def ffn_handle_first_parabola_layer(man, element, weights, bias, size, num_pixel
     ----------
         man : ElinaManagerPtr
             Pointer to the ElinaManager.
-        weights : POINTER(POINTER(c_double))
+        weights : POINTER(POINTER(c_float_type))
             The weight matrix
-        bias : POINTER(c_double)
+        bias : POINTER(c_float_type)
             The bias vector
         size: c_size_t
             Number of neurons in the first layer
@@ -435,9 +437,9 @@ def ffn_handle_first_parabola_layer_no_alloc(man, element, weights, bias, size, 
     ----------
         man : ElinaManagerPtr
             Pointer to the ElinaManager.
-        weights : POINTER(POINTER(c_double))
+        weights : POINTER(POINTER(c_float_type))
             The weight matrix
-        bias : POINTER(c_double)
+        bias : POINTER(c_float_type)
             The bias vector
         size: c_size_t
             Number of neurons in the first layer
@@ -465,9 +467,9 @@ def ffn_handle_first_log_layer(man, element, weights, bias, size, num_pixels, pr
     ----------
         man : ElinaManagerPtr
             Pointer to the ElinaManager.
-        weights : POINTER(POINTER(c_double))
+        weights : POINTER(POINTER(c_float_type))
             The weight matrix
-        bias : POINTER(c_double)
+        bias : POINTER(c_float_type)
             The bias vector
         size: c_size_t
             Number of neurons in the first layer
@@ -497,9 +499,9 @@ def ffn_handle_first_log_layer_no_alloc(man, element, weights, bias, size, num_p
     ----------
         man : ElinaManagerPtr
             Pointer to the ElinaManager.
-        weights : POINTER(POINTER(c_double))
+        weights : POINTER(POINTER(c_float_type))
             The weight matrix
-        bias : POINTER(c_double)
+        bias : POINTER(c_float_type)
             The bias vector
         size: c_size_t
             Number of neurons in the first layer
@@ -531,7 +533,7 @@ def ffn_handle_intermediate_affine_layer(man, element, weights, bias, num_out_ne
             Pointer to the ElinaManager
         element : ElinaAbstract0Ptr
             Pointer to the abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias: POINTER(c_size_t)
             The bias vector
@@ -553,7 +555,7 @@ def ffn_handle_intermediate_affine_layer(man, element, weights, bias, num_out_ne
     try:
         ffn_handle_intermediate_affine_layer_c = fppoly_gpu_api.ffn_handle_intermediate_affine_layer
         ffn_handle_intermediate_affine_layer_c.restype = None
-        ffn_handle_intermediate_affine_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t, POINTER(c_size_t), c_bool]
+        ffn_handle_intermediate_affine_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(c_float_type), c_size_t, c_size_t, POINTER(c_size_t), c_bool]
         ffn_handle_intermediate_affine_layer_c(man, element, weights, bias, num_out_neurons, num_in_neurons, predecessors, use_area_heuristic)
     except Exception as inst:
         print('Problem with loading/calling "ffn_handle_intermediate_affine_layer" from "libfppoly_gpu.so".')
@@ -573,7 +575,7 @@ def ffn_handle_intermediate_affine_layer_no_alloc(man, element, weights, bias, n
             Pointer to the ElinaManager
         element : ElinaAbstract0Ptr
             Pointer to the abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias: POINTER(c_size_t)
             The bias vector
@@ -608,7 +610,7 @@ def ffn_handle_intermediate_relu_layer(man, element, weights, bias, num_out_neur
             Pointer to the ElinaManager
         element: ElinaAbstract0Ptr
             Pointer to the abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias: POINTER(c_size_t)
             The bias vector
@@ -630,7 +632,7 @@ def ffn_handle_intermediate_relu_layer(man, element, weights, bias, num_out_neur
     try:
         ffn_handle_intermediate_relu_layer_c = fppoly_gpu_api.ffn_handle_intermediate_relu_layer
         ffn_handle_intermediate_relu_layer_c.restype = None
-        ffn_handle_intermediate_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t, POINTER(c_size_t), c_bool]
+        ffn_handle_intermediate_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(c_float_type), c_size_t, c_size_t, POINTER(c_size_t), c_bool]
         ffn_handle_intermediate_relu_layer_c(man, element, weights, bias, num_out_neurons, num_in_neurons, predecessors, use_area_heuristic)
     except Exception as inst:
         print('Problem with loading/calling "ffn_handle_intermediate_relu_layer" from "libfppoly_gpu.so".')
@@ -650,7 +652,7 @@ def ffn_handle_intermediate_relu_layer_no_alloc(man, element, weights, bias, num
             Pointer to the ElinaManager
         element: ElinaAbstract0Ptr
             Pointer to the abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias: POINTER(c_size_t)
             The bias vector
@@ -685,7 +687,7 @@ def ffn_handle_intermediate_sigmoid_layer(man, element, weights, bias, num_out_n
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix.
         bias: POINTER(c_size_t)
             The bias vector
@@ -720,7 +722,7 @@ def ffn_handle_intermediate_sigmoid_layer_no_alloc(man, element, weights, bias, 
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix.
         bias: POINTER(c_size_t)
             The bias vector
@@ -755,7 +757,7 @@ def ffn_handle_intermediate_tanh_layer(man, element, weights, bias, num_out_neur
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix.
         bias: POINTER(c_size_t)
             The bias vector
@@ -789,7 +791,7 @@ def ffn_handle_intermediate_tanh_layer_no_alloc(man, element, weights, bias, num
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix.
         bias: POINTER(c_size_t)
             The bias vector
@@ -824,7 +826,7 @@ def ffn_handle_intermediate_parabola_layer(man, element, weights, bias, num_out_
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix.
         bias: POINTER(c_size_t)
             The bias vector
@@ -858,7 +860,7 @@ def ffn_handle_intermediate_parabola_layer_no_alloc(man, element, weights, bias,
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix.
         bias: POINTER(c_size_t)
             The bias vector
@@ -893,7 +895,7 @@ def ffn_handle_intermediate_log_layer(man, element, weights, bias, num_out_neuro
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix.
         bias: POINTER(c_size_t)
             The bias vector
@@ -928,7 +930,7 @@ def ffn_handle_intermediate_log_layer_no_alloc(man, element, weights, bias, num_
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix.
         bias: POINTER(c_size_t)
             The bias vector
@@ -963,7 +965,7 @@ def ffn_handle_last_relu_layer(man, element, weights, bias, num_out_neurons, num
             Pointer to the ElinaManager
         element: ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0 abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias: POINTER(c_size_t)
             The bias vector
@@ -987,7 +989,7 @@ def ffn_handle_last_relu_layer(man, element, weights, bias, num_out_neurons, num
     try:
         ffn_handle_last_relu_layer_c = fppoly_gpu_api.ffn_handle_last_relu_layer
         ffn_handle_last_relu_layer_c.restype = None
-        ffn_handle_last_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double), c_size_t, c_size_t, POINTER(c_size_t), c_bool, c_bool]
+        ffn_handle_last_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(c_float_type), c_size_t, c_size_t, POINTER(c_size_t), c_bool, c_bool]
         ffn_handle_last_relu_layer_c(man, element, weights, bias, num_out_neurons, num_in_neurons, predecessors, has_relu, use_area_heuristic)
     except Exception as inst:
         print('Problem with loading/calling "ffn_handle_last_relu_layer" from "libfppoly_gpu.so".')
@@ -1007,7 +1009,7 @@ def ffn_handle_last_relu_layer_no_alloc(man, element, weights, bias, num_out_neu
             Pointer to the ElinaManager
         element: ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0 abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias: POINTER(c_size_t)
             The bias vector
@@ -1044,7 +1046,7 @@ def ffn_handle_last_sigmoid_layer(man, element, weights, bias, num_out_neurons, 
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0 abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias : POINTER(c_size_t)
             The bias vector
@@ -1081,7 +1083,7 @@ def ffn_handle_last_sigmoid_layer_no_alloc(man, element, weights, bias, num_out_
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0 abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias : POINTER(c_size_t)
             The bias vector
@@ -1118,7 +1120,7 @@ def ffn_handle_last_tanh_layer(man, element, weights, bias, num_out_neurons, num
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0 abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias : POINTER(c_size_t)
             The bias vector
@@ -1155,7 +1157,7 @@ def ffn_handle_last_tanh_layer_no_alloc(man, element, weights, bias, num_out_neu
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0 abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias : POINTER(c_size_t)
             The bias vector
@@ -1192,7 +1194,7 @@ def ffn_handle_last_parabola_layer(man, element, weights, bias, num_out_neurons,
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0 abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias : POINTER(c_size_t)
             The bias vector
@@ -1228,7 +1230,7 @@ def ffn_handle_last_parabola_layer_no_alloc(man, element, weights, bias, num_out
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0 abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias : POINTER(c_size_t)
             The bias vector
@@ -1265,7 +1267,7 @@ def ffn_handle_last_log_layer(man, element, weights, bias, num_out_neurons, num_
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0 abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias : POINTER(c_size_t)
             The bias vector
@@ -1302,7 +1304,7 @@ def ffn_handle_last_log_layer_no_alloc(man, element, weights, bias, num_out_neur
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0 abstract element
-        weights: POINTER(POINTER(c_double))
+        weights: POINTER(POINTER(c_float_type))
             The weight matrix
         bias : POINTER(c_size_t)
             The bias vector
@@ -1375,9 +1377,9 @@ def conv_handle_first_layer(man, element, filter_weights, filter_bias, input_siz
             Pointer to the ElinaManager
         element : ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0 abstract element
-        filter_weights: POINTER(c_double)
+        filter_weights: POINTER(c_float_type)
             filter weights
-        filter_bias: POINTER(c_double)
+        filter_bias: POINTER(c_float_type)
             filter biases
         input_size: POINTER(c_size_t)
             size of the input
@@ -1403,7 +1405,7 @@ def conv_handle_first_layer(man, element, filter_weights, filter_bias, input_siz
     try:
         conv_handle_first_layer_c = fppoly_gpu_api.conv_handle_first_layer
         conv_handle_first_layer_c.restype = None
-        conv_handle_first_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t)]
+        conv_handle_first_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(c_float_type), ndpointer(c_float_type), ndpointer(c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t)]
         conv_handle_first_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors)
     except Exception as inst:
         print('Problem with loading/calling "conv_handle_first_layer" from "libfppoly_gpu.so".')
@@ -1412,7 +1414,7 @@ def conv_handle_first_layer(man, element, filter_weights, filter_bias, input_siz
     return
 
 
-def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data = None, gradient = np.empty(0)):
+def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data = None, gradient = np.empty(0, dtype = float_type)):
 
     """
     Convolutional Matrix multiplication in an Intermediate layer.
@@ -1423,9 +1425,9 @@ def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bia
             Pointer to the ElinaManager
         element : ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0 abstract element
-        filter_weights: POINTER(c_double)
+        filter_weights: POINTER(c_float_type)
             filter weights
-        filter_bias: POINTER(c_double)
+        filter_bias: POINTER(c_float_type)
             filter biases
         input_size: POINTER(c_size_t)
             size of the input
@@ -1445,7 +1447,7 @@ def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bia
             whether to use area heuristic
         retain_training_data: c_bool
             if true, method will retain training data
-        gradient: POINTER(c_double)
+        gradient: POINTER(c_float_type)
             gradient for DeepPoly training
 
     Returns
@@ -1457,7 +1459,7 @@ def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bia
     try:
         conv_handle_intermediate_relu_layer_c = fppoly_gpu_api.conv_handle_intermediate_relu_layer
         conv_handle_intermediate_relu_layer_c.restype = None
-        conv_handle_intermediate_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_bool, c_bool, ndpointer(c_double)]
+        conv_handle_intermediate_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(c_float_type), ndpointer(c_float_type), ndpointer(c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_bool, c_bool, ndpointer(c_float_type)]
         conv_handle_intermediate_relu_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data, gradient)
     except Exception as inst:
         print('Problem with loading/calling "conv_handle_intermediate_relu_layer" from "libfppoly_gpu.so".')
@@ -1466,7 +1468,7 @@ def conv_handle_intermediate_relu_layer(man, element, filter_weights, filter_bia
     return
 
 
-def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data = None, gradient = np.empty(0)):
+def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data = None, gradient = np.empty(0, dtype = float_type)):
 
     """
     Convolutional Matrix multiplication in an Intermediate layer.
@@ -1477,9 +1479,9 @@ def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_b
             Pointer to the ElinaManager
         element: ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0 abstract element
-        filter_weights: POINTER(c_double)
+        filter_weights: POINTER(c_float_type)
             filter weights
-        filter_bias: POINTER(c_double)
+        filter_bias: POINTER(c_float_type)
             filter biases
         input_size: POINTER(c_size_t)
             size of the input
@@ -1499,7 +1501,7 @@ def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_b
             whether to use area heuristic
         retain_training_data: c_bool
             if true, method will retain training data
-        gradient: POINTER(c_double)
+        gradient: POINTER(c_float_type)
             gradient for DeepPoly training
 
     Returns
@@ -1511,7 +1513,7 @@ def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_b
     try:
         conv_handle_intermediate_affine_layer_c = fppoly_gpu_api.conv_handle_intermediate_affine_layer
         conv_handle_intermediate_affine_layer_c.restype = None
-        conv_handle_intermediate_affine_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_bool, c_bool, ndpointer(c_double)]
+        conv_handle_intermediate_affine_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(c_float_type), ndpointer(c_float_type), ndpointer(c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_bool, c_bool, ndpointer(c_float_type)]
         conv_handle_intermediate_affine_layer_c(man, element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, use_area_heuristic, retain_training_data, gradient)
     except Exception as inst:
         print('Problem with loading/calling "conv_handle_intermediate_affine_layer" from "libfppoly_gpu.so".')
@@ -1550,7 +1552,7 @@ def handle_maxpool_layer(man, element, pool_size, input_size, predecessors):
     try:
         handle_maxpool_layer_c = fppoly_gpu_api.handle_maxpool_layer
         handle_maxpool_layer_c.restype = c_size_t
-        handle_maxpool_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_size_t), ndpointer(ctypes.c_size_t), POINTER(c_size_t)]
+        handle_maxpool_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(c_size_t), ndpointer(c_size_t), POINTER(c_size_t)]
         res = handle_maxpool_layer_c(man, element, pool_size, input_size, predecessors)
     except Exception as inst:
         print('Problem with loading/calling "handle_maxpool_layer" from "libfppoly_gpu.so".')
@@ -1749,9 +1751,9 @@ def update_bounds_for_neuron(man, element, layerno, neuron_no, lb, ub):
             the layer number
         neuron_no: c_size_t
             the neuron number in the layer
-        lb: c_double
+        lb: c_float_type
             the updated lower bound
-        ub: c_double
+        ub: c_float_type
             the updated upper bound
 
     Returns
@@ -1763,11 +1765,11 @@ def update_bounds_for_neuron(man, element, layerno, neuron_no, lb, ub):
     try:
         update_bounds_for_neuron_c = fppoly_gpu_api.update_bounds_for_neuron
         update_bounds_for_neuron_c.restype = None
-        update_bounds_for_neuron_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, c_double, c_double]
+        update_bounds_for_neuron_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, c_float_type, c_float_type]
         update_bounds_for_neuron_c(man, element, layerno, neuron_no, lb, ub)
     except:
         print('Problem with loading/calling "update_bounds_for_neuron" from "fppoly_gpu.so".')
-        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, c_double, c_double to the function.')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, c_float_type, c_float_type to the function.')
 
     return
 
@@ -1917,10 +1919,10 @@ def handle_lstm_layer(man, element, weights, bias, d, h, predecessors, use_area_
             Pointer to the ElinaManager.
         element : ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0.
-        weights : POINTER(POINTER(c_double))
+        weights : POINTER(POINTER(c_float_type))
             The weight matrix of size 4*h \times d+h, with h rows each for f_t, i_t, o_t, and c_t in order,
             columnwise the first d entries correspond to x_t and the remaining correspond to h_t
-        bias : POINTER(c_double)
+        bias : POINTER(c_float_type)
             The bias vector of size 4*h, in the same format as weights
         d: c_size_t
            size of x_t
@@ -2036,7 +2038,7 @@ def get_adv():
 
     Returns
     -------
-        lcst: POINTER(c_double)
+        lcst: POINTER(c_float_type)
             Pointer to the array
     """
 
@@ -2044,7 +2046,7 @@ def get_adv():
 
     try:
         get_adv_c = fppoly_gpu_api.get_adv
-        get_adv_c.restype = POINTER(ctypes.c_double)
+        get_adv_c.restype = POINTER(c_float_type)
         get_adv_c.argtypes = None
         res = get_adv_c()
     except Exception as inst:
