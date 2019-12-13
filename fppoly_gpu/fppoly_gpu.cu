@@ -18,11 +18,12 @@
  *
  */
 
-#include "fppoly_gpu.h"
-
 #include <iostream>
 #include <cuda.h>
 #include <chrono>
+
+#include "fppoly_gpu.h"
+#include "util.h"
 
 const size_t maximum_backstep = 2;
 
@@ -468,11 +469,11 @@ void fppoly_from_network_input_box(fppoly_t* const res, const size_t intdim, con
         tmp_input_sup[i] = sup_array[i];
     }
 
-    cudaMalloc((void**) &(res->input_inf), num_pixels*sizeof(float_type));
-    cudaMalloc((void**) &(res->input_sup), num_pixels*sizeof(float_type));
+    res->input_inf = malloc_device<float_type>(num_pixels);
+    res->input_sup = malloc_device<float_type>(num_pixels);
 
-    cudaMemcpy(res->input_inf, tmp_input_inf, num_pixels*sizeof(float_type), cudaMemcpyHostToDevice);
-    cudaMemcpy(res->input_sup, tmp_input_sup, num_pixels*sizeof(float_type), cudaMemcpyHostToDevice);
+    copy_to_device(res->input_inf, tmp_input_inf, num_pixels);
+    copy_to_device(res->input_sup, tmp_input_sup, num_pixels);
 
     free(tmp_input_inf);
     free(tmp_input_sup);
@@ -534,17 +535,17 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t* man, const si
         }
     }
 
-    cudaMalloc((void**) &(res->input_lweights), num_pixels*expr_size*sizeof(float_type));
-    cudaMalloc((void**) &(res->input_uweights), num_pixels*expr_size*sizeof(float_type));
+    res->input_lweights = malloc_device<float_type>(num_pixels*expr_size);
+    res->input_uweights = malloc_device<float_type>(num_pixels*expr_size);
 
-    cudaMalloc((void**) &(res->input_lcst), num_pixels*sizeof(float_type));
-    cudaMalloc((void**) &(res->input_ucst), num_pixels*sizeof(float_type));
+    res->input_lcst = malloc_device<float_type>(num_pixels);
+    res->input_ucst = malloc_device<float_type>(num_pixels);
 
-    cudaMemcpy(res->input_lweights, input_lweights_tmp, num_pixels*expr_size*sizeof(float_type), cudaMemcpyHostToDevice);
-    cudaMemcpy(res->input_uweights, input_uweights_tmp, num_pixels*expr_size*sizeof(float_type), cudaMemcpyHostToDevice);
+    copy_to_device(res->input_lweights, input_lweights_tmp, num_pixels*expr_size);
+    copy_to_device(res->input_uweights, input_uweights_tmp, num_pixels*expr_size);
 
-    cudaMemcpy(res->input_lcst, input_lcst_tmp, num_pixels*sizeof(float_type), cudaMemcpyHostToDevice);
-    cudaMemcpy(res->input_ucst, input_ucst_tmp, num_pixels*sizeof(float_type), cudaMemcpyHostToDevice);
+    copy_to_device(res->input_lcst, input_lcst_tmp, num_pixels);
+    copy_to_device(res->input_ucst, input_ucst_tmp, num_pixels);
 
     free(input_lweights_tmp);
     free(input_uweights_tmp);
@@ -566,11 +567,11 @@ void ffn_add_layer(fppoly_t* const fp, const size_t num_out_neurons, const size_
     layer->type = type;
     layer->activation = activation;
 
-    cudaMalloc((void**) &layer->lb_array, num_out_neurons*sizeof(float_type));
-    cudaMalloc((void**) &layer->ub_array, num_out_neurons*sizeof(float_type));
+    layer->lb_array = malloc_device<float_type>(num_out_neurons);
+    layer->ub_array = malloc_device<float_type>(num_out_neurons);
 
-    cudaMalloc((void**) &layer->coeffs, num_out_neurons*num_in_neurons*sizeof(float_type));
-    cudaMalloc((void**) &layer->csts, num_out_neurons*sizeof(float_type));
+    layer->coeffs = malloc_device<float_type>(num_out_neurons*num_in_neurons);
+    layer->csts = malloc_device<float_type>(num_out_neurons);
 
     layer->filter_weights = nullptr;
     layer->filter_bias = nullptr;
@@ -898,18 +899,15 @@ void device_layer_create_dense_expr(float_type* __restrict__ coeffs, float_type*
 
 void layer_create_dense_exprs(float_type* coeffs, float_type* csts, const float_type** weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons)
 {
-    float_type* tmp_weights;
-    cudaMalloc((void**) &tmp_weights, num_out_neurons*num_in_neurons*sizeof(float_type));
-
-    float_type* tmp_bias;
-    cudaMalloc((void**) &tmp_bias, num_out_neurons*sizeof(float_type));
+    float_type* tmp_weights = malloc_device<float_type>(num_out_neurons*num_in_neurons);
+    float_type* tmp_bias = malloc_device<float_type>(num_out_neurons);
 
     for(size_t i = 0; i < num_out_neurons; i++)
     {
-        cudaMemcpy(tmp_weights + i*num_in_neurons, weights[i], num_in_neurons*sizeof(float_type), cudaMemcpyHostToDevice);
+        copy_to_device(tmp_weights + i*num_in_neurons, weights[i], num_in_neurons);
     }
 
-    cudaMemcpy(tmp_bias, bias, num_out_neurons*sizeof(float_type), cudaMemcpyHostToDevice);
+    copy_to_device(tmp_bias, bias, num_out_neurons);
 
     device_layer_create_dense_expr<<<num_out_neurons, 1>>>(coeffs, csts, tmp_weights, tmp_bias, num_out_neurons, num_in_neurons);
 
@@ -1328,25 +1326,15 @@ void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t* abs, const 
         const size_t num_in_neurons_0_layer = res->layers[0]->num_in_neurons;
         const size_t mu = res->mu;
 
-        float_type* linf_coeff;
-        float_type* lsup_coeff;
-        float_type* uinf_coeff;
-        float_type* usup_coeff;
+        float_type* linf_coeff = malloc_device<float_type>(num_out_neurons_0_layer*mu);
+        float_type* lsup_coeff = malloc_device<float_type>(num_out_neurons_0_layer*mu);
+        float_type* uinf_coeff = malloc_device<float_type>(num_out_neurons_0_layer*mu);
+        float_type* usup_coeff = malloc_device<float_type>(num_out_neurons_0_layer*mu);
 
-        float_type* linf_cst;
-        float_type* lsup_cst;
-        float_type* uinf_cst;
-        float_type* usup_cst;
-
-        cudaMalloc((void**) &linf_coeff, num_out_neurons_0_layer*mu*sizeof(float_type));
-        cudaMalloc((void**) &lsup_coeff, num_out_neurons_0_layer*mu*sizeof(float_type));
-        cudaMalloc((void**) &uinf_coeff, num_out_neurons_0_layer*mu*sizeof(float_type));
-        cudaMalloc((void**) &usup_coeff, num_out_neurons_0_layer*mu*sizeof(float_type));
-
-        cudaMalloc((void**) &linf_cst, num_out_neurons_0_layer*sizeof(float_type));
-        cudaMalloc((void**) &lsup_cst, num_out_neurons_0_layer*sizeof(float_type));
-        cudaMalloc((void**) &uinf_cst, num_out_neurons_0_layer*sizeof(float_type));
-        cudaMalloc((void**) &usup_cst, num_out_neurons_0_layer*sizeof(float_type));
+        float_type* linf_cst = malloc_device<float_type>(num_out_neurons_0_layer);
+        float_type* lsup_cst = malloc_device<float_type>(num_out_neurons_0_layer);
+        float_type* uinf_cst = malloc_device<float_type>(num_out_neurons_0_layer);
+        float_type* usup_cst = malloc_device<float_type>(num_out_neurons_0_layer);
 
         cudaMemset(linf_coeff, 0, num_out_neurons_0_layer*mu*sizeof(float_type));
         cudaMemset(lsup_coeff, 0, num_out_neurons_0_layer*mu*sizeof(float_type));
@@ -3065,10 +3053,10 @@ void update_state_using_predecessor_layer(fppoly_internal_t* pr, fppoly_t* fp, f
         expr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(*linf_coeff, *lsup_coeff, *uinf_coeff, *usup_coeff, *linf_cst, *lsup_cst, *uinf_cst, *usup_cst, aux_lb_array, aux_ub_array, num_out_neurons_current_layer, use_area_heuristic);
     }
 
-    cudaMalloc((void**) &(*linf_coeff_tmp), num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
-    cudaMalloc((void**) &(*lsup_coeff_tmp), num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
-    cudaMalloc((void**) &(*uinf_coeff_tmp), num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
-    cudaMalloc((void**) &(*usup_coeff_tmp), num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
+    *linf_coeff_tmp = malloc_device<float_type>(num_out_neurons_last_layer*num_in_neurons_current_layer);
+    *lsup_coeff_tmp = malloc_device<float_type>(num_out_neurons_last_layer*num_in_neurons_current_layer);
+    *uinf_coeff_tmp = malloc_device<float_type>(num_out_neurons_last_layer*num_in_neurons_current_layer);
+    *usup_coeff_tmp = malloc_device<float_type>(num_out_neurons_last_layer*num_in_neurons_current_layer);
 
     cudaMemset(*linf_coeff_tmp, 0, num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
     cudaMemset(*lsup_coeff_tmp, 0, num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
@@ -3150,27 +3138,15 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
     float_type* lb_array = fp->layers[layerno]->lb_array;
     float_type* ub_array = fp->layers[layerno]->ub_array;
 
-    float_type* linf_coeff;
-    float_type* lsup_coeff;
-    float_type* linf_cst;
-    float_type* lsup_cst;
+    float_type* linf_coeff = malloc_device<float_type>(num_out_neurons_last_layer*num_in_neurons_last_layer);
+    float_type* lsup_coeff = malloc_device<float_type>(num_out_neurons_last_layer*num_in_neurons_last_layer);
+    float_type* uinf_coeff = malloc_device<float_type>(num_out_neurons_last_layer*num_in_neurons_last_layer);
+    float_type* usup_coeff = malloc_device<float_type>(num_out_neurons_last_layer*num_in_neurons_last_layer);
 
-    cudaMalloc((void**) &linf_coeff, num_out_neurons_last_layer*num_in_neurons_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &lsup_coeff, num_out_neurons_last_layer*num_in_neurons_last_layer*sizeof(float_type));
-
-    cudaMalloc((void**) &linf_cst, num_out_neurons_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &lsup_cst, num_out_neurons_last_layer*sizeof(float_type));
-
-    float_type* uinf_coeff;
-    float_type* usup_coeff;
-    float_type* uinf_cst;
-    float_type* usup_cst;
-
-    cudaMalloc((void**) &uinf_coeff, num_out_neurons_last_layer*num_in_neurons_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &usup_coeff, num_out_neurons_last_layer*num_in_neurons_last_layer*sizeof(float_type));
-
-    cudaMalloc((void**) &uinf_cst, num_out_neurons_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &usup_cst, num_out_neurons_last_layer*sizeof(float_type));
+    float_type* linf_cst = malloc_device<float_type>(num_out_neurons_last_layer);
+    float_type* lsup_cst = malloc_device<float_type>(num_out_neurons_last_layer);
+    float_type* uinf_cst = malloc_device<float_type>(num_out_neurons_last_layer);
+    float_type* usup_cst = malloc_device<float_type>(num_out_neurons_last_layer);
 
     copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(linf_coeff, linf_cst, coeffs, csts, num_in_neurons_last_layer);
     copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(lsup_coeff, lsup_cst, coeffs, csts, num_in_neurons_last_layer);
@@ -3179,18 +3155,13 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
 
     float_type* linf_coeff_tmp;
     float_type* lsup_coeff_tmp;
-    float_type* linf_cst_tmp;
-    float_type* lsup_cst_tmp;
-
     float_type* uinf_coeff_tmp;
     float_type* usup_coeff_tmp;
-    float_type* uinf_cst_tmp;
-    float_type* usup_cst_tmp;
 
-    cudaMalloc((void**) &linf_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &lsup_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &uinf_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &usup_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
+    float_type* linf_cst_tmp = malloc_device<float_type>(num_out_neurons_last_layer);
+    float_type* lsup_cst_tmp = malloc_device<float_type>(num_out_neurons_last_layer);
+    float_type* uinf_cst_tmp = malloc_device<float_type>(num_out_neurons_last_layer);
+    float_type* usup_cst_tmp = malloc_device<float_type>(num_out_neurons_last_layer);
 
     int k = fp->layers[layerno]->predecessors[0] - 1;
 
@@ -3236,27 +3207,15 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
 
             free(predecessor_map);
 
-            float_type* copy_linf_coeff;
-            float_type* copy_lsup_coeff;
-            float_type* copy_linf_cst;
-            float_type* copy_lsup_cst;
+            float_type* copy_linf_coeff = malloc_device<float_type>(num_out_neurons_last_layer*reslayer_size);
+            float_type* copy_lsup_coeff = malloc_device<float_type>(num_out_neurons_last_layer*reslayer_size);
+            float_type* copy_uinf_coeff = malloc_device<float_type>(num_out_neurons_last_layer*reslayer_size);
+            float_type* copy_usup_coeff = malloc_device<float_type>(num_out_neurons_last_layer*reslayer_size);
 
-            cudaMalloc((void**) &copy_linf_coeff, num_out_neurons_last_layer*reslayer_size*sizeof(float_type));
-            cudaMalloc((void**) &copy_lsup_coeff, num_out_neurons_last_layer*reslayer_size*sizeof(float_type));
-
-            cudaMalloc((void**) &copy_linf_cst, num_out_neurons_last_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_lsup_cst, num_out_neurons_last_layer*sizeof(float_type));
-
-            float_type* copy_uinf_coeff;
-            float_type* copy_usup_coeff;
-            float_type* copy_uinf_cst;
-            float_type* copy_usup_cst;
-
-            cudaMalloc((void**) &copy_uinf_coeff, num_out_neurons_last_layer*reslayer_size*sizeof(float_type));
-            cudaMalloc((void**) &copy_usup_coeff, num_out_neurons_last_layer*reslayer_size*sizeof(float_type));
-
-            cudaMalloc((void**) &copy_uinf_cst, num_out_neurons_last_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_usup_cst, num_out_neurons_last_layer*sizeof(float_type));
+            float_type* copy_linf_cst = malloc_device<float_type>(num_out_neurons_last_layer);
+            float_type* copy_lsup_cst = malloc_device<float_type>(num_out_neurons_last_layer);
+            float_type* copy_uinf_cst = malloc_device<float_type>(num_out_neurons_last_layer);
+            float_type* copy_usup_cst = malloc_device<float_type>(num_out_neurons_last_layer);
 
             copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(copy_linf_coeff, copy_linf_cst, linf_coeff, linf_cst, reslayer_size);
             copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(copy_lsup_coeff, copy_lsup_cst, lsup_coeff, lsup_cst, reslayer_size);
@@ -3270,18 +3229,13 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
 
             float_type* copy_linf_coeff_tmp;
             float_type* copy_lsup_coeff_tmp;
-            float_type* copy_linf_cst_tmp;
-            float_type* copy_lsup_cst_tmp;
-
             float_type* copy_uinf_coeff_tmp;
             float_type* copy_usup_coeff_tmp;
-            float_type* copy_uinf_cst_tmp;
-            float_type* copy_usup_cst_tmp;
 
-            cudaMalloc((void**) &copy_linf_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_lsup_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_uinf_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_usup_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
+            float_type* copy_linf_cst_tmp = malloc_device<float_type>(num_out_neurons_last_layer);
+            float_type* copy_lsup_cst_tmp = malloc_device<float_type>(num_out_neurons_last_layer);
+            float_type* copy_uinf_cst_tmp = malloc_device<float_type>(num_out_neurons_last_layer);
+            float_type* copy_usup_cst_tmp = malloc_device<float_type>(num_out_neurons_last_layer);
 
             iter = predecessor1;
 
@@ -3350,10 +3304,10 @@ void update_state_using_previous_layers(elina_manager_t* man, fppoly_t* fp, cons
     {
         const size_t mu = fp->mu;
 
-        cudaMalloc((void**) &linf_coeff_tmp, num_out_neurons_last_layer*mu*sizeof(float_type));
-        cudaMalloc((void**) &lsup_coeff_tmp, num_out_neurons_last_layer*mu*sizeof(float_type));
-        cudaMalloc((void**) &uinf_coeff_tmp, num_out_neurons_last_layer*mu*sizeof(float_type));
-        cudaMalloc((void**) &usup_coeff_tmp, num_out_neurons_last_layer*mu*sizeof(float_type));
+        linf_coeff_tmp = malloc_device<float_type>(num_out_neurons_last_layer*mu);
+        lsup_coeff_tmp = malloc_device<float_type>(num_out_neurons_last_layer*mu);
+        uinf_coeff_tmp = malloc_device<float_type>(num_out_neurons_last_layer*mu);
+        usup_coeff_tmp = malloc_device<float_type>(num_out_neurons_last_layer*mu);
 
         cudaMemset(linf_coeff_tmp, 0, num_out_neurons_last_layer*mu*sizeof(float_type));
         cudaMemset(lsup_coeff_tmp, 0, num_out_neurons_last_layer*mu*sizeof(float_type));
@@ -3818,10 +3772,10 @@ void update_state_using_predecessor_layer_sparse(fppoly_internal_t* pr, fppoly_t
 
     size_t missing_length = ((length_x - 1)*fp->layers[k]->strides[0] + fp->layers[k]->filter_size[0])*((length_y - 1)*fp->layers[k]->strides[1] + fp->layers[k]->filter_size[1])*fp->layers[k]->input_size[2];
 
-    cudaMalloc((void**) &(*linf_coeff_tmp), x_y_size_last_layer*num_filters_last_layer*missing_length*sizeof(float_type));
-    cudaMalloc((void**) &(*lsup_coeff_tmp), x_y_size_last_layer*num_filters_last_layer*missing_length*sizeof(float_type));
-    cudaMalloc((void**) &(*uinf_coeff_tmp), x_y_size_last_layer*num_filters_last_layer*missing_length*sizeof(float_type));
-    cudaMalloc((void**) &(*usup_coeff_tmp), x_y_size_last_layer*num_filters_last_layer*missing_length*sizeof(float_type));
+    *linf_coeff_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*missing_length);
+    *lsup_coeff_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*missing_length);
+    *uinf_coeff_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*missing_length);
+    *usup_coeff_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*missing_length);
 
     cudaMemset(*linf_coeff_tmp, 0, x_y_size_last_layer*num_filters_last_layer*missing_length*sizeof(float_type));
     cudaMemset(*lsup_coeff_tmp, 0, x_y_size_last_layer*num_filters_last_layer*missing_length*sizeof(float_type));
@@ -4103,11 +4057,8 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
     long int shift_x = fp->layers[layerno]->strides[0];
     long int shift_y = fp->layers[layerno]->strides[1];
 
-    float_type* coeffs;
-    float_type* csts;
-
-    cudaMalloc((void**) &coeffs, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]*sizeof(float_type));
-    cudaMalloc((void**) &csts, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+    float_type* coeffs = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]);
+    float_type* csts = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
 
     cudaMemset(coeffs, 0, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]*sizeof(float_type));
     cudaMemset(csts, 0, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
@@ -4125,27 +4076,15 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
     float_type* lb_array = fp->layers[layerno]->lb_array;
     float_type* ub_array = fp->layers[layerno]->ub_array;
 
-    float_type* linf_coeff;
-    float_type* lsup_coeff;
-    float_type* linf_cst;
-    float_type* lsup_cst;
+    float_type* linf_coeff = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]);
+    float_type* lsup_coeff = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]);
+    float_type* uinf_coeff = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]);
+    float_type* usup_coeff = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]);
 
-    cudaMalloc((void**) &linf_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]*sizeof(float_type));
-    cudaMalloc((void**) &lsup_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]*sizeof(float_type));
-
-    cudaMalloc((void**) &linf_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &lsup_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-
-    float_type* uinf_coeff;
-    float_type* usup_coeff;
-    float_type* uinf_cst;
-    float_type* usup_cst;
-
-    cudaMalloc((void**) &uinf_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]*sizeof(float_type));
-    cudaMalloc((void**) &usup_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*fp->layers[layerno]->input_size[2]*sizeof(float_type));
-
-    cudaMalloc((void**) &uinf_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &usup_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+    float_type* linf_cst = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+    float_type* lsup_cst = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+    float_type* uinf_cst = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+    float_type* usup_cst = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
 
     copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(linf_coeff, linf_cst, coeffs, csts, length_x*length_y*fp->layers[layerno]->input_size[2]);
     copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(lsup_coeff, lsup_cst, coeffs, csts, length_x*length_y*fp->layers[layerno]->input_size[2]);
@@ -4160,18 +4099,13 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
 
     float_type* linf_coeff_tmp;
     float_type* lsup_coeff_tmp;
-    float_type* linf_cst_tmp;
-    float_type* lsup_cst_tmp;
-
     float_type* uinf_coeff_tmp;
     float_type* usup_coeff_tmp;
-    float_type* uinf_cst_tmp;
-    float_type* usup_cst_tmp;
 
-    cudaMalloc((void**) &linf_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &lsup_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &uinf_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &usup_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+    float_type* linf_cst_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+    float_type* lsup_cst_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+    float_type* uinf_cst_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+    float_type* usup_cst_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
 
     int k;
 
@@ -4208,27 +4142,15 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
 
         const size_t num_filters_current_layer = fp->layers[layerno]->output_size[2];
 
-        float_type* copy_linf_coeff;
-        float_type* copy_lsup_coeff;
-        float_type* copy_linf_cst;
-        float_type* copy_lsup_cst;
+        float_type* copy_linf_coeff = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer);
+        float_type* copy_lsup_coeff = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer);
+        float_type* copy_uinf_coeff = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer);
+        float_type* copy_usup_coeff = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer);
 
-        cudaMalloc((void**) &copy_linf_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer*sizeof(float_type));
-        cudaMalloc((void**) &copy_lsup_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer*sizeof(float_type));
-
-        cudaMalloc((void**) &copy_linf_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-        cudaMalloc((void**) &copy_lsup_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-
-        float_type* copy_uinf_coeff;
-        float_type* copy_usup_coeff;
-        float_type* copy_uinf_cst;
-        float_type* copy_usup_cst;
-
-        cudaMalloc((void**) &copy_uinf_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer*sizeof(float_type));
-        cudaMalloc((void**) &copy_usup_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer*sizeof(float_type));
-
-        cudaMalloc((void**) &copy_uinf_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-        cudaMalloc((void**) &copy_usup_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+        float_type* copy_linf_cst = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+        float_type* copy_lsup_cst = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+        float_type* copy_uinf_cst = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+        float_type* copy_usup_cst = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
 
         copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(copy_linf_coeff, copy_linf_cst, linf_coeff, linf_cst, length_x*length_y*num_filters_current_layer);
         copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(copy_lsup_coeff, copy_lsup_cst, lsup_coeff, lsup_cst, length_x*length_y*num_filters_current_layer);
@@ -4242,18 +4164,13 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
 
         float_type* copy_linf_coeff_tmp;
         float_type* copy_lsup_coeff_tmp;
-        float_type* copy_linf_cst_tmp;
-        float_type* copy_lsup_cst_tmp;
-
         float_type* copy_uinf_coeff_tmp;
         float_type* copy_usup_coeff_tmp;
-        float_type* copy_uinf_cst_tmp;
-        float_type* copy_usup_cst_tmp;
 
-        cudaMalloc((void**) &copy_linf_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-        cudaMalloc((void**) &copy_lsup_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-        cudaMalloc((void**) &copy_uinf_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-        cudaMalloc((void**) &copy_usup_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+        float_type* copy_linf_cst_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+        float_type* copy_lsup_cst_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+        float_type* copy_uinf_cst_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+        float_type* copy_usup_cst_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
 
         long int copy_offset_x = offset_x;
         long int copy_offset_y = offset_y;
@@ -4399,27 +4316,15 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
 
             const size_t num_filters_current_layer = fp->layers[k]->output_size[2];
 
-            float_type* copy_linf_coeff;
-            float_type* copy_lsup_coeff;
-            float_type* copy_linf_cst;
-            float_type* copy_lsup_cst;
+            float_type* copy_linf_coeff = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer);
+            float_type* copy_lsup_coeff = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer);
+            float_type* copy_uinf_coeff = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer);
+            float_type* copy_usup_coeff = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer);
 
-            cudaMalloc((void**) &copy_linf_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_lsup_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer*sizeof(float_type));
-
-            cudaMalloc((void**) &copy_linf_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_lsup_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-
-            float_type* copy_uinf_coeff;
-            float_type* copy_usup_coeff;
-            float_type* copy_uinf_cst;
-            float_type* copy_usup_cst;
-
-            cudaMalloc((void**) &copy_uinf_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_usup_coeff, x_y_size_last_layer*num_filters_last_layer*length_x*length_y*num_filters_current_layer*sizeof(float_type));
-
-            cudaMalloc((void**) &copy_uinf_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_usup_cst, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+            float_type* copy_linf_cst = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+            float_type* copy_lsup_cst = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+            float_type* copy_uinf_cst = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+            float_type* copy_usup_cst = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
 
             copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(copy_linf_coeff, copy_linf_cst, linf_coeff, linf_cst, length_x*length_y*num_filters_current_layer);
             copy_coeffs_and_csts<<<x_y_size_last_layer*num_filters_last_layer, 1>>>(copy_lsup_coeff, copy_lsup_cst, lsup_coeff, lsup_cst, length_x*length_y*num_filters_current_layer);
@@ -4433,18 +4338,13 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
 
             float_type* copy_linf_coeff_tmp;
             float_type* copy_lsup_coeff_tmp;
-            float_type* copy_linf_cst_tmp;
-            float_type* copy_lsup_cst_tmp;
-
             float_type* copy_uinf_coeff_tmp;
             float_type* copy_usup_coeff_tmp;
-            float_type* copy_uinf_cst_tmp;
-            float_type* copy_usup_cst_tmp;
 
-            cudaMalloc((void**) &copy_linf_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_lsup_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_uinf_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_usup_cst_tmp, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+            float_type* copy_linf_cst_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+            float_type* copy_lsup_cst_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+            float_type* copy_uinf_cst_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
+            float_type* copy_usup_cst_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
 
             long int copy_offset_x = offset_x;
             long int copy_offset_y = offset_y;
@@ -4574,10 +4474,10 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
         {
             const size_t mu = fp->mu;
 
-            cudaMalloc((void**) &linf_coeff_tmp, x_y_size_last_layer*num_filters_last_layer*mu*sizeof(float_type));
-            cudaMalloc((void**) &lsup_coeff_tmp, x_y_size_last_layer*num_filters_last_layer*mu*sizeof(float_type));
-            cudaMalloc((void**) &uinf_coeff_tmp, x_y_size_last_layer*num_filters_last_layer*mu*sizeof(float_type));
-            cudaMalloc((void**) &usup_coeff_tmp, x_y_size_last_layer*num_filters_last_layer*mu*sizeof(float_type));
+            linf_coeff_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*mu);
+            lsup_coeff_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*mu);
+            uinf_coeff_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*mu);
+            usup_coeff_tmp = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*mu);
 
             cudaMemset(linf_coeff_tmp, 0, x_y_size_last_layer*num_filters_last_layer*mu*sizeof(float_type));
             cudaMemset(lsup_coeff_tmp, 0, x_y_size_last_layer*num_filters_last_layer*mu*sizeof(float_type));
@@ -4622,16 +4522,13 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
 
     if(retain_training_data)
     {
-        float_type* gradient_dev;
-        cudaMalloc((void**) &gradient_dev, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+        float_type* gradient_dev = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
 
-        cudaMemcpy(gradient_dev, gradient, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type), cudaMemcpyHostToDevice);
-
+        copy_to_device(gradient_dev, gradient, x_y_size_last_layer*num_filters_last_layer);
 
         num_neurons_training_layer = x_y_size_last_layer*num_filters_last_layer;
 
-        float_type* c_array;
-        cudaMalloc((void**) &c_array, x_y_size_last_layer*num_filters_last_layer*num_in_neurons_0_layer*sizeof(float_type));
+        float_type* c_array = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer*num_in_neurons_0_layer);
         cudaMemset(c_array, 0, x_y_size_last_layer*num_filters_last_layer*num_in_neurons_0_layer*sizeof(float_type));
 
         const int input_size_x = fp->layers[0]->input_size[0];
@@ -4640,20 +4537,18 @@ void update_state_using_previous_layers_sparse(elina_manager_t* man, fppoly_t* f
 
         compute_c_array<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), num_threads>>>(c_array, gradient_dev, linf_coeff, usup_coeff, num_chunks, chunk_counter, input_size_x, input_size_y, input_size_z, offset_x, offset_y, length_x, length_y, shift_x, shift_y);
 
-        float_type* xval;
-        cudaMalloc((void**) &xval, num_in_neurons_0_layer*sizeof(float_type));
+        float_type* xval = malloc_device<float_type>(num_in_neurons_0_layer);
         cudaMemset(xval, 0, num_in_neurons_0_layer*sizeof(float_type));
 
         reduce_c_compute_xval<<<1, num_threads>>>(xval, c_array, fp->input_inf, fp->input_sup, num_chunks, chunk_counter, x_y_size_last_layer*num_filters_last_layer, num_in_neurons_0_layer);
 
-        float_type* adv;
-        cudaMalloc((void**) &adv, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
+        float_type* adv = malloc_device<float_type>(x_y_size_last_layer*num_filters_last_layer);
         cudaMemset(adv, 0, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
 
         compute_adv<<<dim3(fp->layers[layerno]->output_size[0], fp->layers[layerno]->output_size[1], fp->layers[layerno]->output_size[2]/num_chunks), num_threads>>>(adv, gradient_dev, xval, linf_coeff, usup_coeff, linf_cst, usup_cst, num_chunks, chunk_counter, input_size_x, input_size_y, input_size_z, offset_x, offset_y, length_x, length_y, shift_x, shift_y);
 
         adv_host = (float_type*) malloc(x_y_size_last_layer*num_filters_last_layer*sizeof(float_type));
-        cudaMemcpy(adv_host, adv, x_y_size_last_layer*num_filters_last_layer*sizeof(float_type), cudaMemcpyDeviceToHost);
+        copy_to_host(adv_host, adv, x_y_size_last_layer*num_filters_last_layer);
 
         cudaFree(gradient_dev);
         cudaFree(c_array);
@@ -4779,8 +4674,8 @@ void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, con
     float_type* lb_array_host = (float_type*) malloc(fp->layers[fp->numlayers - 1]->num_out_neurons*sizeof(float_type));
     float_type* ub_array_host = (float_type*) malloc(fp->layers[fp->numlayers - 1]->num_out_neurons*sizeof(float_type));
 
-    cudaMemcpy(lb_array_host, lb_array, fp->layers[fp->numlayers - 1]->num_out_neurons*sizeof(float_type), cudaMemcpyDeviceToHost);
-    cudaMemcpy(ub_array_host, ub_array, fp->layers[fp->numlayers - 1]->num_out_neurons*sizeof(float_type), cudaMemcpyDeviceToHost);
+    copy_to_host(lb_array_host, lb_array, fp->layers[fp->numlayers - 1]->num_out_neurons);
+    copy_to_host(ub_array_host, ub_array, fp->layers[fp->numlayers - 1]->num_out_neurons);
 
     for(size_t i = 0; i < num_out_neurons; i++)
     {
@@ -5279,8 +5174,8 @@ void update_state_using_predecessor_layer_lower_half(fppoly_internal_t* pr, fppo
         lexpr_replace_relu_bounds<<<num_out_neurons_last_layer, num_threads>>>(*linf_coeff, *lsup_coeff, *linf_cst, *lsup_cst, aux_lb_array, aux_ub_array, num_out_neurons_current_layer, use_area_heuristic);
     }
 
-    cudaMalloc((void**) &(*linf_coeff_tmp), num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
-    cudaMalloc((void**) &(*lsup_coeff_tmp), num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
+    *linf_coeff_tmp = malloc_device<float_type>(num_out_neurons_last_layer*num_in_neurons_current_layer);
+    *lsup_coeff_tmp = malloc_device<float_type>(num_out_neurons_last_layer*num_in_neurons_current_layer);
 
     cudaMemset(*linf_coeff_tmp, 0, num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
     cudaMemset(*lsup_coeff_tmp, 0, num_out_neurons_last_layer*num_in_neurons_current_layer*sizeof(float_type));
@@ -5341,18 +5236,13 @@ void get_lb_using_previous_layers(elina_manager_t* man, fppoly_t* const fp, cons
 
     const size_t num_in_neurons_0_layer = fp->layers[0]->num_in_neurons;
 
-    float_type* lb_dev;
-    cudaMalloc((void**) &lb_dev, num_out_neurons_last_layer*sizeof(float_type));
+    float_type* lb_dev = malloc_device<float_type>(num_out_neurons_last_layer);
 
-    float_type* linf_coeff;
-    float_type* lsup_coeff;
-    float_type* linf_cst;
-    float_type* lsup_cst;
+    float_type* linf_coeff = malloc_device<float_type>(num_out_neurons_last_layer*10);
+    float_type* lsup_coeff = malloc_device<float_type>(num_out_neurons_last_layer*10);
 
-    cudaMalloc((void**) &linf_coeff, num_out_neurons_last_layer*10*sizeof(float_type));
-    cudaMalloc((void**) &lsup_coeff, num_out_neurons_last_layer*10*sizeof(float_type));
-    cudaMalloc((void**) &linf_cst, num_out_neurons_last_layer*10*sizeof(float_type));
-    cudaMalloc((void**) &lsup_cst, num_out_neurons_last_layer*10*sizeof(float_type));
+    float_type* linf_cst = malloc_device<float_type>(num_out_neurons_last_layer);
+    float_type* lsup_cst = malloc_device<float_type>(num_out_neurons_last_layer);
 
     size_t index = 0;
 
@@ -5370,13 +5260,9 @@ void get_lb_using_previous_layers(elina_manager_t* man, fppoly_t* const fp, cons
 
     float_type* linf_coeff_tmp;
     float_type* lsup_coeff_tmp;
-    float_type* linf_cst_tmp;
-    float_type* lsup_cst_tmp;
 
-    cudaMalloc((void**) &linf_coeff_tmp, num_out_neurons_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &lsup_coeff_tmp, num_out_neurons_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &linf_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
-    cudaMalloc((void**) &lsup_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
+    float_type* linf_cst_tmp = malloc_device<float_type>(num_out_neurons_last_layer);
+    float_type* lsup_cst_tmp = malloc_device<float_type>(num_out_neurons_last_layer);
 
     int k = fp->numlayers - 1;
 
@@ -5422,16 +5308,11 @@ void get_lb_using_previous_layers(elina_manager_t* man, fppoly_t* const fp, cons
 
             free(predecessor_map);
 
-            float_type* copy_linf_coeff;
-            float_type* copy_lsup_coeff;
-            float_type* copy_linf_cst;
-            float_type* copy_lsup_cst;
+            float_type* copy_linf_coeff = malloc_device<float_type>(num_out_neurons_last_layer*reslayer_size);
+            float_type* copy_lsup_coeff = malloc_device<float_type>(num_out_neurons_last_layer*reslayer_size);
 
-            cudaMalloc((void**) &copy_linf_coeff, num_out_neurons_last_layer*reslayer_size*sizeof(float_type));
-            cudaMalloc((void**) &copy_lsup_coeff, num_out_neurons_last_layer*reslayer_size*sizeof(float_type));
-
-            cudaMalloc((void**) &copy_linf_cst, num_out_neurons_last_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_lsup_cst, num_out_neurons_last_layer*sizeof(float_type));
+            float_type* copy_linf_cst = malloc_device<float_type>(num_out_neurons_last_layer);
+            float_type* copy_lsup_cst = malloc_device<float_type>(num_out_neurons_last_layer);
 
             copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(copy_linf_coeff, copy_linf_cst, linf_coeff, linf_cst, reslayer_size);
             copy_coeffs_and_csts<<<num_out_neurons_last_layer, 1>>>(copy_lsup_coeff, copy_lsup_cst, lsup_coeff, lsup_cst, reslayer_size);
@@ -5441,11 +5322,9 @@ void get_lb_using_previous_layers(elina_manager_t* man, fppoly_t* const fp, cons
 
             float_type* copy_linf_coeff_tmp;
             float_type* copy_lsup_coeff_tmp;
-            float_type* copy_linf_cst_tmp;
-            float_type* copy_lsup_cst_tmp;
 
-            cudaMalloc((void**) &copy_linf_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
-            cudaMalloc((void**) &copy_lsup_cst_tmp, num_out_neurons_last_layer*sizeof(float_type));
+            float_type* copy_linf_cst_tmp = malloc_device<float_type>(num_out_neurons_last_layer);
+            float_type* copy_lsup_cst_tmp = malloc_device<float_type>(num_out_neurons_last_layer);
 
             iter = predecessor1;
 
@@ -5497,8 +5376,8 @@ void get_lb_using_previous_layers(elina_manager_t* man, fppoly_t* const fp, cons
     {
         const size_t mu = fp->mu;
 
-        cudaMalloc((void**) &linf_coeff_tmp, num_out_neurons_last_layer*mu*sizeof(float_type));
-        cudaMalloc((void**) &lsup_coeff_tmp, num_out_neurons_last_layer*mu*sizeof(float_type));
+        linf_coeff_tmp = malloc_device<float_type>(num_out_neurons_last_layer*mu);
+        lsup_coeff_tmp = malloc_device<float_type>(num_out_neurons_last_layer*mu);
 
         cudaMemset(linf_coeff_tmp, 0, num_out_neurons_last_layer*mu*sizeof(float_type));
         cudaMemset(lsup_coeff_tmp, 0, num_out_neurons_last_layer*mu*sizeof(float_type));
@@ -5542,7 +5421,7 @@ void get_lb_using_previous_layers(elina_manager_t* man, fppoly_t* const fp, cons
     lsup_cst_tmp = nullptr;
 
     float_type lb[num_out_neurons_last_layer];
-    cudaMemcpy(&lb, lb_dev, num_out_neurons_last_layer*sizeof(float_type), cudaMemcpyDeviceToHost);
+    copy_to_host(lb, lb_dev, num_out_neurons_last_layer);
 
     cudaFree(lb_dev);
 
@@ -5615,14 +5494,14 @@ void conv_add_layer(fppoly_t* const fp, const size_t num_out_neurons, const size
     layer->type = type;
     layer->activation = activation;
 
-    cudaMalloc((void**) &layer->lb_array, num_out_neurons*sizeof(float_type));
-    cudaMalloc((void**) &layer->ub_array, num_out_neurons*sizeof(float_type));
+    layer->lb_array = malloc_device<float_type>(num_out_neurons);
+    layer->ub_array = malloc_device<float_type>(num_out_neurons);
 
     layer->coeffs = nullptr;
     layer->csts = nullptr;
 
-    cudaMalloc((void**) &layer->filter_weights, num_nonzero_weights*sizeof(float_type));
-    cudaMalloc((void**) &layer->filter_bias, num_biases*sizeof(float_type));
+    layer->filter_weights = malloc_device<float_type>(num_nonzero_weights);
+    layer->filter_bias = malloc_device<float_type>(num_biases);
     cudaMemset(layer->filter_bias, 0, num_biases*sizeof(float_type));
 
     layer->input_size = (size_t*) malloc(3*sizeof(size_t));
@@ -5671,18 +5550,18 @@ void layer_create_sparse_exprs(fppoly_t* const fp, const float_type* filter_weig
         filter_bias_tmp[out_z] = filter_bias[out_z];
     }
 
-    cudaMemcpy(current_layer->filter_weights, filter_weights_tmp, size*sizeof(float_type), cudaMemcpyHostToDevice);
+    copy_to_device(current_layer->filter_weights, filter_weights_tmp, size);
 
     if(has_bias)
     {
-        cudaMemcpy(current_layer->filter_bias, filter_bias_tmp, output_size[2]*sizeof(float_type), cudaMemcpyHostToDevice);
+        copy_to_device(current_layer->filter_bias, filter_bias_tmp, output_size[2]);
     }
 
-    cudaMemcpy(current_layer->input_size, input_size, 3*sizeof(size_t), cudaMemcpyHostToHost);
-    cudaMemcpy(current_layer->output_size, output_size, 3*sizeof(size_t), cudaMemcpyHostToHost);
-    cudaMemcpy(current_layer->filter_size, filter_size, 2*sizeof(size_t), cudaMemcpyHostToHost);
-    cudaMemcpy(current_layer->strides, strides, 2*sizeof(size_t), cudaMemcpyHostToHost);
-    cudaMemcpy(current_layer->pad, pad, 2*sizeof(long int), cudaMemcpyHostToHost);
+    memcpy(current_layer->input_size, input_size, 3*sizeof(size_t));
+    memcpy(current_layer->output_size, output_size, 3*sizeof(size_t));
+    memcpy(current_layer->filter_size, filter_size, 2*sizeof(size_t));
+    memcpy(current_layer->strides, strides, 2*sizeof(size_t));
+    memcpy(current_layer->pad, pad, 2*sizeof(long int));
 
     free(filter_weights_tmp);
     free(filter_bias_tmp);
@@ -5716,36 +5595,23 @@ void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element, c
         const long int shift_x = fp->layers[0]->strides[0];
         const long int shift_y = fp->layers[0]->strides[1];
 
-        float_type* coeffs;
-        float_type* csts;
-
-        cudaMalloc((void**) &coeffs, num_out_neurons_0_layer*length_x*length_y*fp->layers[0]->input_size[2]*sizeof(float_type));
-        cudaMalloc((void**) &csts, num_out_neurons_0_layer*sizeof(float_type));
+        float_type* coeffs = malloc_device<float_type>(num_out_neurons_0_layer*length_x*length_y*fp->layers[0]->input_size[2]);
+        float_type* csts = malloc_device<float_type>(num_out_neurons_0_layer);
 
         cudaMemset(coeffs, 0, num_out_neurons_0_layer*length_x*length_y*fp->layers[0]->input_size[2]*sizeof(float_type));
         cudaMemset(csts, 0, num_out_neurons_0_layer*sizeof(float_type));
 
         device_layer_create_sparse_exprs<<<dim3(fp->layers[0]->output_size[0], fp->layers[0]->output_size[1], fp->layers[0]->output_size[2]), 1>>>(coeffs, csts, fp->layers[0]->filter_weights, fp->layers[0]->filter_bias, 0, fp->layers[0]->input_size[0], fp->layers[0]->input_size[1], fp->layers[0]->input_size[2], fp->layers[0]->filter_size[0], fp->layers[0]->filter_size[1], fp->layers[0]->strides[0], fp->layers[0]->strides[1], fp->layers[0]->pad[0], fp->layers[0]->pad[1]);
 
-        float_type* linf_coeff;
-        float_type* lsup_coeff;
-        float_type* uinf_coeff;
-        float_type* usup_coeff;
+        float_type* linf_coeff = malloc_device<float_type>(num_out_neurons_0_layer*mu);
+        float_type* lsup_coeff = malloc_device<float_type>(num_out_neurons_0_layer*mu);
+        float_type* uinf_coeff = malloc_device<float_type>(num_out_neurons_0_layer*mu);
+        float_type* usup_coeff = malloc_device<float_type>(num_out_neurons_0_layer*mu);
 
-        float_type* linf_cst;
-        float_type* lsup_cst;
-        float_type* uinf_cst;
-        float_type* usup_cst;
-
-        cudaMalloc((void**) &linf_coeff, num_out_neurons_0_layer*mu*sizeof(float_type));
-        cudaMalloc((void**) &lsup_coeff, num_out_neurons_0_layer*mu*sizeof(float_type));
-        cudaMalloc((void**) &uinf_coeff, num_out_neurons_0_layer*mu*sizeof(float_type));
-        cudaMalloc((void**) &usup_coeff, num_out_neurons_0_layer*mu*sizeof(float_type));
-
-        cudaMalloc((void**) &linf_cst, num_out_neurons_0_layer*sizeof(float_type));
-        cudaMalloc((void**) &lsup_cst, num_out_neurons_0_layer*sizeof(float_type));
-        cudaMalloc((void**) &uinf_cst, num_out_neurons_0_layer*sizeof(float_type));
-        cudaMalloc((void**) &usup_cst, num_out_neurons_0_layer*sizeof(float_type));
+        float_type* linf_cst = malloc_device<float_type>(num_out_neurons_0_layer);
+        float_type* lsup_cst = malloc_device<float_type>(num_out_neurons_0_layer);
+        float_type* uinf_cst = malloc_device<float_type>(num_out_neurons_0_layer);
+        float_type* usup_cst = malloc_device<float_type>(num_out_neurons_0_layer);
 
         cudaMemset(linf_coeff, 0, num_out_neurons_0_layer*mu*sizeof(float_type));
         cudaMemset(lsup_coeff, 0, num_out_neurons_0_layer*mu*sizeof(float_type));
@@ -5823,8 +5689,8 @@ void res_add_layer(fppoly_t* const fp, const size_t num_neurons, const layertype
     layer->coeffs = nullptr;
     layer->csts = nullptr;
 
-    cudaMalloc((void**) &layer->lb_array, layer->num_out_neurons*sizeof(float_type));
-    cudaMalloc((void**) &layer->ub_array, layer->num_out_neurons*sizeof(float_type));
+    layer->lb_array = malloc_device<float_type>(layer->num_out_neurons);
+    layer->ub_array = malloc_device<float_type>(layer->num_out_neurons);
 
     cudaMemset(layer->lb_array, 0, layer->num_out_neurons*sizeof(float_type));
     cudaMemset(layer->ub_array, 0, layer->num_out_neurons*sizeof(float_type));
@@ -6005,8 +5871,8 @@ elina_interval_t** box_for_layer(elina_manager_t* man, elina_abstract0_t* abs, c
     float_type* lb_array_host = (float_type*) malloc(num_neurons*sizeof(float_type));
     float_type* ub_array_host = (float_type*) malloc(num_neurons*sizeof(float_type));
 
-    cudaMemcpy(lb_array_host, lb_array, num_neurons*sizeof(float_type), cudaMemcpyDeviceToHost);
-    cudaMemcpy(ub_array_host, ub_array, num_neurons*sizeof(float_type), cudaMemcpyDeviceToHost);
+    copy_to_host(lb_array_host, lb_array, num_neurons);
+    copy_to_host(ub_array_host, ub_array, num_neurons);
 
     elina_interval_t** itv_arr = (elina_interval_t**) malloc(num_neurons*sizeof(elina_interval_t*));
 
