@@ -340,10 +340,10 @@ void ffn_handle_first_log_layer_no_alloc(elina_manager_t *man,
 
 void ffn_handle_intermediate_layer(elina_manager_t *man,
                                    elina_abstract0_t *element, double **weights,
-                                   double *bias, size_t num_out_neurons,
+                                   double *cst, size_t num_out_neurons,
                                    size_t num_in_neurons, size_t *predecessors,
                                    activation_type_t activation, bool alloc,
-                                   bool use_area_heuristic) {
+                                   bool use_area_heuristic, fnn_op OP) {
   // printf("ReLU start here %zu %zu\n",num_in_neurons,num_out_neurons);
   // fflush(stdout);
   fppoly_t *fp = fppoly_of_abstract0(element);
@@ -356,10 +356,20 @@ void ffn_handle_intermediate_layer(elina_manager_t *man,
 
   size_t i;
   for (i = 0; i < num_out_neurons; i++) {
-    double *weight_i = weights[i];
-    double bias_i = bias[i];
 
-    out_neurons[i]->expr = create_dense_expr(weight_i, bias_i, num_in_neurons);
+    double cst_i = cst[i];
+    if (OP == MUL) {
+      out_neurons[i]->expr = create_sparse_expr(&cst_i, 0, &i, 1);
+    } else if (OP == SUB1) {
+      double coeff = -1;
+      out_neurons[i]->expr = create_sparse_expr(&coeff, cst_i, &i, 1);
+    } else if (OP == SUB2) {
+      double coeff = 1;
+      out_neurons[i]->expr = create_sparse_expr(&coeff, cst_i, &i, 1);
+    } else {
+      double *weight_i = weights[i];
+      out_neurons[i]->expr = create_dense_expr(weight_i, cst_i, num_in_neurons);
+    }
   }
   update_state_using_previous_layers_parallel(man, fp, numlayers,
                                               use_area_heuristic);
@@ -376,7 +386,7 @@ void ffn_handle_intermediate_affine_layer(
     size_t *predecessors, bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
                                 num_in_neurons, predecessors, NONE, true,
-                                use_area_heuristic);
+                                use_area_heuristic, MATMULT);
 }
 
 void ffn_handle_intermediate_relu_layer(
@@ -385,7 +395,7 @@ void ffn_handle_intermediate_relu_layer(
     size_t *predecessors, bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
                                 num_in_neurons, predecessors, RELU, true,
-                                use_area_heuristic);
+                                use_area_heuristic, MATMULT);
 }
 
 void ffn_handle_intermediate_sigmoid_layer(
@@ -394,7 +404,7 @@ void ffn_handle_intermediate_sigmoid_layer(
     size_t *predecessors, bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
                                 num_in_neurons, predecessors, SIGMOID, true,
-                                use_area_heuristic);
+                                use_area_heuristic, MATMULT);
 }
 
 void ffn_handle_intermediate_tanh_layer(
@@ -403,7 +413,33 @@ void ffn_handle_intermediate_tanh_layer(
     size_t *predecessors, bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
                                 num_in_neurons, predecessors, TANH, true,
-                                use_area_heuristic);
+                                use_area_heuristic, MATMULT);
+}
+
+void ffn_handle_intermediate_sub_layer(elina_manager_t *man,
+                                       elina_abstract0_t *element, double *cst,
+                                       bool is_minuend, size_t num_in_neurons,
+                                       size_t *predecessors,
+                                       bool use_area_heuristic) {
+  if (is_minuend == true) {
+    ffn_handle_intermediate_layer(man, element, NULL, cst, num_in_neurons,
+                                  num_in_neurons, predecessors, NONE, true,
+                                  use_area_heuristic, SUB1);
+  } else {
+    ffn_handle_intermediate_layer(man, element, NULL, cst, num_in_neurons,
+                                  num_in_neurons, predecessors, NONE, true,
+                                  use_area_heuristic, SUB2);
+  }
+}
+
+void ffn_handle_intermediate_mul_layer(elina_manager_t *man,
+                                       elina_abstract0_t *element, double *bias,
+                                       size_t num_in_neurons,
+                                       size_t *predecessors,
+                                       bool use_area_heuristic) {
+  ffn_handle_intermediate_layer(man, element, NULL, bias, num_in_neurons,
+                                num_in_neurons, predecessors, NONE, true,
+                                use_area_heuristic, MUL);
 }
 
 void ffn_handle_intermediate_parabola_layer(
@@ -413,7 +449,7 @@ void ffn_handle_intermediate_parabola_layer(
 
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
                                 num_in_neurons, predecessors, PARABOLA, true,
-                                use_area_heuristic);
+                                use_area_heuristic, MATMULT);
 }
 
 void ffn_handle_intermediate_log_layer(
@@ -422,7 +458,7 @@ void ffn_handle_intermediate_log_layer(
     size_t *predecessors, bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
                                 num_in_neurons, predecessors, LOG, true,
-                                use_area_heuristic);
+                                use_area_heuristic, MATMULT);
 }
 
 void ffn_handle_intermediate_affine_layer_no_alloc(
@@ -431,7 +467,7 @@ void ffn_handle_intermediate_affine_layer_no_alloc(
     size_t *predecessors, bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
                                 num_in_neurons, predecessors, NONE, false,
-                                use_area_heuristic);
+                                use_area_heuristic, MATMULT);
 }
 
 void ffn_handle_intermediate_relu_layer_no_alloc(
@@ -440,7 +476,7 @@ void ffn_handle_intermediate_relu_layer_no_alloc(
     size_t *predecessors, bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
                                 num_in_neurons, predecessors, RELU, false,
-                                use_area_heuristic);
+                                use_area_heuristic, MATMULT);
 }
 
 void ffn_handle_intermediate_sigmoid_layer_no_alloc(
@@ -449,7 +485,7 @@ void ffn_handle_intermediate_sigmoid_layer_no_alloc(
     size_t *predecessors, bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
                                 num_in_neurons, predecessors, SIGMOID, false,
-                                use_area_heuristic);
+                                use_area_heuristic, MATMULT);
 }
 
 void ffn_handle_intermediate_tanh_layer_no_alloc(
@@ -458,7 +494,7 @@ void ffn_handle_intermediate_tanh_layer_no_alloc(
     size_t *predecessors, bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
                                 num_in_neurons, predecessors, TANH, false,
-                                use_area_heuristic);
+                                use_area_heuristic, MATMULT);
 }
 
 void ffn_handle_intermediate_parabola_layer_no_alloc(
@@ -468,7 +504,7 @@ void ffn_handle_intermediate_parabola_layer_no_alloc(
 
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
                                 num_in_neurons, predecessors, PARABOLA, false,
-                                use_area_heuristic);
+                                use_area_heuristic, MATMULT);
 }
 
 void ffn_handle_intermediate_log_layer_no_alloc(
@@ -477,7 +513,7 @@ void ffn_handle_intermediate_log_layer_no_alloc(
     size_t *predecessors, bool use_area_heuristic) {
   ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons,
                                 num_in_neurons, predecessors, LOG, false,
-                                use_area_heuristic);
+                                use_area_heuristic, MATMULT);
 }
 
 void handle_final_relu_layer(fppoly_internal_t *pr, output_abstract_t *out,
