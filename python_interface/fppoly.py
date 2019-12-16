@@ -812,6 +812,77 @@ def ffn_handle_intermediate_tanh_layer(man, element, weights, bias, num_out_neur
         print('Problem with loading/calling "ffn_handle_intermediate_tanh_layer" from "libfppoly.so"')
         print(inst)
 
+
+
+def ffn_handle_intermediate_sub_layer(man, element, bias, is_minuend, num_in_neurons, predecessors, use_area_heuristic):
+    """
+    handle the intermediate FFN Sub layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the abstract element
+    bias: POINTER(c_size_t)
+        The bias vector
+    is_minuend: c_bool
+        whether it is y = x-b pr b-x
+    num_in_neurons: c_size_t
+	number of input neurons
+    predecessors:
+        the layers before the current layer
+    use_area_heuristic: c_bool
+        whether to use area heuristic 
+    Returns
+    -------
+    None
+
+    """
+    
+    try:
+        ffn_handle_intermediate_sub_layer_c = fppoly_api.ffn_handle_intermediate_sub_layer
+        ffn_handle_intermediate_sub_layer_c.restype = None
+        ffn_handle_intermediate_sub_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), c_bool, c_size_t, POINTER(c_size_t),c_bool]
+        ffn_handle_intermediate_sub_layer_c(man,element, bias, is_minuend, num_in_neurons, predecessors, use_area_heuristic)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_intermediate_sub_layer" from "libfppoly.so"')
+        print(inst)
+
+def ffn_handle_intermediate_mul_layer(man, element, bias, num_in_neurons, predecessors, use_area_heuristic):
+    """
+    handle the intermediate FFN Mul layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the abstract element
+    bias: POINTER(c_size_t)
+        The bias vector
+    num_in_neurons: c_size_t
+	number of input neurons
+    predecessors:
+        the layers before the current layer
+    use_area_heuristic: c_bool
+        whether to use area heuristic 
+    Returns
+    -------
+    None
+
+    """
+    
+    try:
+        ffn_handle_intermediate_mul_layer_c = fppoly_api.ffn_handle_intermediate_mul_layer
+        ffn_handle_intermediate_mul_layer_c.restype = None
+        ffn_handle_intermediate_mul_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), c_size_t, POINTER(c_size_t),c_bool]
+        ffn_handle_intermediate_mul_layer_c(man,element, bias, num_in_neurons, predecessors, use_area_heuristic)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_intermediate_mul_layer" from "libfppoly.so"')
+        print(inst)
+
+
 def ffn_handle_intermediate_tanh_layer_no_alloc(man, element, weights, bias, num_out_neurons, num_in_neurons, predecessors, use_area_heuristic):
     """
         handle the intermediate FFN Tanh layer
