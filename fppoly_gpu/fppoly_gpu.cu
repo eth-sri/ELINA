@@ -34,6 +34,7 @@ __constant__ const float_type ulp = 2.220446049250313080848e-16;
 
 #include "affine_transform.h"
 #include "relu_approx.h"
+#include "rounding.h"
 #include "util.h"
 
 const size_t maximum_backstep = 2;
@@ -146,7 +147,7 @@ elina_manager_t *fppoly_manager_alloc() {
 
 template <typename T> __inline__ __device__ void warp_reduce_sum(T &val) {
   for (int offset = warpSize / 2; offset > 0; offset /= 2) {
-    val += __shfl_down_sync(FULL_MASK, val, offset);
+    val = val + __shfl_down_sync(FULL_MASK, val, offset);
   }
 }
 
@@ -170,6 +171,68 @@ __inline__ __device__ void block_reduce_sum(T &val, const int number_threads) {
 
     if (wid == 0) {
       warp_reduce_sum(val);
+    }
+  }
+}
+
+template <typename T> __inline__ __device__ void warp_reduce_sum_rd(T &val) {
+  for (int offset = warpSize / 2; offset > 0; offset /= 2) {
+    val = add_rd(val, __shfl_down_sync(FULL_MASK, val, offset));
+  }
+}
+
+template <typename T>
+__inline__ __device__ void block_reduce_sum_rd(T &val,
+                                               const int number_threads) {
+  if (number_threads <= warpSize) {
+    warp_reduce_sum_rd(val);
+  } else {
+    static __shared__ T shared[32];
+    const int lane = threadIdx.x % warpSize;
+    const int wid = threadIdx.x / warpSize;
+
+    warp_reduce_sum_rd(val);
+
+    if (lane == 0)
+      shared[wid] = val;
+
+    __syncthreads();
+
+    val = (threadIdx.x < (blockDim.x / warpSize)) ? shared[lane] : 0;
+
+    if (wid == 0) {
+      warp_reduce_sum_rd(val);
+    }
+  }
+}
+
+template <typename T> __inline__ __device__ void warp_reduce_sum_ru(T &val) {
+  for (int offset = warpSize / 2; offset > 0; offset /= 2) {
+    val = add_ru(val, __shfl_down_sync(FULL_MASK, val, offset));
+  }
+}
+
+template <typename T>
+__inline__ __device__ void block_reduce_sum_ru(T &val,
+                                               const int number_threads) {
+  if (number_threads <= warpSize) {
+    warp_reduce_sum_ru(val);
+  } else {
+    static __shared__ T shared[32];
+    const int lane = threadIdx.x % warpSize;
+    const int wid = threadIdx.x / warpSize;
+
+    warp_reduce_sum_ru(val);
+
+    if (lane == 0)
+      shared[wid] = val;
+
+    __syncthreads();
+
+    val = (threadIdx.x < (blockDim.x / warpSize)) ? shared[lane] : 0;
+
+    if (wid == 0) {
+      warp_reduce_sum_ru(val);
     }
   }
 }
@@ -384,10 +447,10 @@ __global__ void compute_lb_from_expr(float_type *__restrict__ lb_array,
     i += blockDim.x;
   }
 
-  block_reduce_sum(res_inf, blockDim.x);
+  block_reduce_sum_rd(res_inf, blockDim.x);
 
   if (threadIdx.x == 0) {
-    lb_array[n] = res_inf + inf_csts[n];
+    lb_array[n] = add_rd(res_inf, inf_csts[n]);
   }
 }
 
@@ -412,10 +475,10 @@ __global__ void compute_ub_from_expr(float_type *__restrict__ ub_array,
     i += blockDim.x;
   }
 
-  block_reduce_sum(res_sup, blockDim.x);
+  block_reduce_sum_ru(res_sup, blockDim.x);
 
   if (threadIdx.x == 0) {
-    ub_array[n] = res_sup + sup_csts[n];
+    ub_array[n] = add_ru(res_sup, sup_csts[n]);
   }
 }
 
@@ -482,10 +545,10 @@ __global__ void compute_lb_from_expr_conv_sparse(
     out_z += blockDim.x;
   }
 
-  block_reduce_sum(res_inf, blockDim.x);
+  block_reduce_sum_rd(res_inf, blockDim.x);
 
   if (threadIdx.x == 0) {
-    lb_array[global_n] = res_inf + inf_csts[local_n];
+    lb_array[global_n] = add_rd(res_inf, inf_csts[local_n]);
   }
 }
 
@@ -552,10 +615,10 @@ __global__ void compute_ub_from_expr_conv_sparse(
     out_z += blockDim.x;
   }
 
-  block_reduce_sum(res_sup, blockDim.x);
+  block_reduce_sum_ru(res_sup, blockDim.x);
 
   if (threadIdx.x == 0) {
-    ub_array[global_n] = res_sup + sup_csts[local_n];
+    ub_array[global_n] = add_ru(res_sup, sup_csts[local_n]);
   }
 }
 
@@ -1073,16 +1136,16 @@ __global__ void expr_replace_relu_bounds(
     i += blockDim.x;
   }
 
-  block_reduce_sum(res_linf_cst, blockDim.x);
-  block_reduce_sum(res_lsup_cst, blockDim.x);
-  block_reduce_sum(res_uinf_cst, blockDim.x);
-  block_reduce_sum(res_usup_cst, blockDim.x);
+  block_reduce_sum_rd(res_linf_cst, blockDim.x);
+  block_reduce_sum_ru(res_lsup_cst, blockDim.x);
+  block_reduce_sum_rd(res_uinf_cst, blockDim.x);
+  block_reduce_sum_ru(res_usup_cst, blockDim.x);
 
   if (threadIdx.x == 0) {
-    linf_cst[n] = res_linf_cst + linf_cst[n];
-    lsup_cst[n] = res_lsup_cst + lsup_cst[n];
-    uinf_cst[n] = res_uinf_cst + uinf_cst[n];
-    usup_cst[n] = res_usup_cst + usup_cst[n];
+    linf_cst[n] = add_rd(res_linf_cst, linf_cst[n]);
+    lsup_cst[n] = add_ru(res_lsup_cst, lsup_cst[n]);
+    uinf_cst[n] = add_rd(res_uinf_cst, uinf_cst[n]);
+    usup_cst[n] = add_ru(res_usup_cst, usup_cst[n]);
   }
 }
 
@@ -1157,16 +1220,16 @@ __global__ void expr_replace_relu_bounds_conv_sparse(
     out_z += blockDim.x;
   }
 
-  block_reduce_sum(res_linf_cst, blockDim.x);
-  block_reduce_sum(res_lsup_cst, blockDim.x);
-  block_reduce_sum(res_uinf_cst, blockDim.x);
-  block_reduce_sum(res_usup_cst, blockDim.x);
+  block_reduce_sum_rd(res_linf_cst, blockDim.x);
+  block_reduce_sum_ru(res_lsup_cst, blockDim.x);
+  block_reduce_sum_rd(res_uinf_cst, blockDim.x);
+  block_reduce_sum_ru(res_usup_cst, blockDim.x);
 
   if (threadIdx.x == 0) {
-    linf_cst[n] = res_linf_cst + linf_cst[n];
-    lsup_cst[n] = res_lsup_cst + lsup_cst[n];
-    uinf_cst[n] = res_uinf_cst + uinf_cst[n];
-    usup_cst[n] = res_usup_cst + usup_cst[n];
+    linf_cst[n] = add_rd(res_linf_cst, linf_cst[n]);
+    lsup_cst[n] = add_ru(res_lsup_cst, lsup_cst[n]);
+    uinf_cst[n] = add_rd(res_uinf_cst, uinf_cst[n]);
+    usup_cst[n] = add_ru(res_usup_cst, usup_cst[n]);
   }
 }
 
@@ -2117,10 +2180,10 @@ csts_from_previous_layer(const float_type *__restrict__ expr_linf_coeff,
   block_reduce_sum_csts(uinf_cst, usup_cst, blockDim.x);
 
   if (threadIdx.x == 0) {
-    res_linf_cst[n] = linf_cst + expr_linf_cst[n];
-    res_lsup_cst[n] = lsup_cst + expr_lsup_cst[n];
-    res_uinf_cst[n] = uinf_cst + expr_uinf_cst[n];
-    res_usup_cst[n] = usup_cst + expr_usup_cst[n];
+    res_linf_cst[n] = add_rd(linf_cst, expr_linf_cst[n]);
+    res_lsup_cst[n] = add_ru(lsup_cst, expr_lsup_cst[n]);
+    res_uinf_cst[n] = add_rd(uinf_cst, expr_uinf_cst[n]);
+    res_usup_cst[n] = add_ru(usup_cst, expr_usup_cst[n]);
   }
 }
 
@@ -2171,10 +2234,10 @@ __global__ void csts_from_previous_layer_conv(
   block_reduce_sum_csts(uinf_cst, usup_cst, blockDim.x);
 
   if (threadIdx.x == 0) {
-    res_linf_cst[n] = linf_cst + expr_linf_cst[n];
-    res_lsup_cst[n] = lsup_cst + expr_lsup_cst[n];
-    res_uinf_cst[n] = uinf_cst + expr_uinf_cst[n];
-    res_usup_cst[n] = usup_cst + expr_usup_cst[n];
+    res_linf_cst[n] = add_rd(linf_cst, expr_linf_cst[n]);
+    res_lsup_cst[n] = add_ru(lsup_cst, expr_lsup_cst[n]);
+    res_uinf_cst[n] = add_rd(uinf_cst, expr_uinf_cst[n]);
+    res_usup_cst[n] = add_ru(usup_cst, expr_usup_cst[n]);
   }
 }
 
@@ -2261,10 +2324,10 @@ __global__ void csts_from_previous_layer_conv_sparse(
   block_reduce_sum_csts(uinf_cst, usup_cst, blockDim.x);
 
   if (threadIdx.x == 0) {
-    res_linf_cst[n] = linf_cst + expr_linf_cst[n];
-    res_lsup_cst[n] = lsup_cst + expr_lsup_cst[n];
-    res_uinf_cst[n] = uinf_cst + expr_uinf_cst[n];
-    res_usup_cst[n] = usup_cst + expr_usup_cst[n];
+    res_linf_cst[n] = add_rd(linf_cst, expr_linf_cst[n]);
+    res_lsup_cst[n] = add_ru(lsup_cst, expr_lsup_cst[n]);
+    res_uinf_cst[n] = add_rd(uinf_cst, expr_uinf_cst[n]);
+    res_usup_cst[n] = add_ru(usup_cst, expr_usup_cst[n]);
   }
 }
 
@@ -4951,8 +5014,8 @@ csts_from_previous_layer(const float_type *__restrict__ expr_inf_coeff,
   block_reduce_sum_csts(inf_cst, sup_cst, blockDim.x);
 
   if (threadIdx.x == 0) {
-    res_inf_cst[n] = inf_cst + expr_inf_cst[n];
-    res_sup_cst[n] = sup_cst + expr_sup_cst[n];
+    res_inf_cst[n] = add_rd(inf_cst, expr_inf_cst[n]);
+    res_sup_cst[n] = add_ru(sup_cst, expr_sup_cst[n]);
   }
 }
 
@@ -4990,8 +5053,8 @@ __global__ void csts_from_previous_layer_conv(
   block_reduce_sum_csts(inf_cst, sup_cst, blockDim.x);
 
   if (threadIdx.x == 0) {
-    res_inf_cst[n] = inf_cst + expr_inf_cst[n];
-    res_sup_cst[n] = sup_cst + expr_sup_cst[n];
+    res_inf_cst[n] = add_rd(inf_cst, expr_inf_cst[n]);
+    res_sup_cst[n] = add_ru(sup_cst, expr_sup_cst[n]);
   }
 }
 
@@ -5018,12 +5081,12 @@ __global__ void lexpr_replace_relu_bounds(
     i += blockDim.x;
   }
 
-  block_reduce_sum(res_inf_cst, blockDim.x);
-  block_reduce_sum(res_sup_cst, blockDim.x);
+  block_reduce_sum_rd(res_inf_cst, blockDim.x);
+  block_reduce_sum_ru(res_sup_cst, blockDim.x);
 
   if (threadIdx.x == 0) {
-    inf_cst[n] = res_inf_cst + inf_cst[n];
-    sup_cst[n] = res_sup_cst + sup_cst[n];
+    inf_cst[n] = add_rd(res_inf_cst, inf_cst[n]);
+    sup_cst[n] = add_ru(res_sup_cst, sup_cst[n]);
   }
 }
 
