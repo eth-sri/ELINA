@@ -15,40 +15,40 @@ void interval_mul(float_type& a_inf, float_type& a_sup, const float_type b_inf, 
        {
            if(inf_inf < sup_inf)
            {
-               a_inf = inf_inf;
+               a_inf = mul_rd(b_inf, c_inf);
            }
            else
            {
-               a_inf = sup_inf;
+               a_inf = mul_rd(b_sup, c_inf);
            }
 
            if(inf_sup < sup_sup)
            {
-               a_sup = sup_sup;
+               a_sup = mul_ru(b_sup, c_sup);
            }
            else
            {
-               a_sup = inf_sup;
+               a_sup = mul_ru(b_inf, c_sup);
            }
        }
        else
        {
            if(inf_inf < sup_sup)
            {
-               a_inf = inf_inf;
+               a_inf = mul_rd(b_inf, c_inf);
            }
            else
            {
-               a_inf = sup_sup;
+               a_inf = mul_rd(b_sup, c_sup);
            }
 
            if(inf_sup < sup_inf)
            {
-               a_sup = sup_inf;
+               a_sup = mul_ru(b_sup, c_inf);
            }
            else
            {
-               a_sup = inf_sup;
+               a_sup = mul_ru(b_inf, c_sup);
            }
        }
    }
@@ -58,40 +58,40 @@ void interval_mul(float_type& a_inf, float_type& a_sup, const float_type b_inf, 
        {
            if(inf_sup < sup_inf)
            {
-               a_inf = inf_sup;
+               a_inf = mul_rd(b_inf, c_sup);
            }
            else
            {
-               a_inf = sup_inf;
+               a_inf = mul_rd(b_sup, c_inf);
            }
 
            if(inf_inf < sup_sup)
            {
-               a_sup = sup_sup;
+               a_sup = mul_ru(b_sup, c_sup);
            }
            else
            {
-               a_sup = inf_inf;
+               a_sup = mul_ru(b_inf, c_inf);
            }
        }
        else
        {
            if(inf_sup < sup_sup)
            {
-               a_inf = inf_sup;
+               a_inf = mul_rd(b_inf, c_sup);
            }
            else
            {
-               a_inf = sup_sup;
+               a_inf = mul_rd(b_sup, c_sup);
            }
 
            if(inf_inf < sup_inf)
            {
-               a_sup = sup_inf;
+               a_sup = mul_ru(b_sup, c_inf);
            }
            else
            {
-               a_sup = inf_inf;
+               a_sup = mul_ru(b_inf, c_inf);
            }
        }
    }
@@ -103,13 +103,13 @@ void interval_mul_symmetric_c(float_type& a_inf, float_type& a_sup, const float_
 {
     if(-b_inf < b_sup)
     {
-        a_inf = b_sup*-c;
-        a_sup = b_sup*c;
+        a_inf = mul_rd(b_sup, -c);
+        a_sup = mul_ru(b_sup,  c);
     }
     else
     {
-        a_inf = b_inf*c;
-        a_sup = b_inf*-c;
+        a_inf = mul_rd(b_inf,  c);
+        a_sup = mul_ru(b_inf, -c);
     }
 }
 
@@ -119,13 +119,13 @@ void interval_mul_const_c(float_type& a_inf, float_type& a_sup, const float_type
 {
     if(c >= 0)
     {
-        a_inf = b_inf*c;
-        a_sup = b_sup*c;
+        a_inf = mul_rd(b_inf, c);
+        a_sup = mul_ru(b_sup, c);
     }
     else
     {
-        a_inf = b_sup*c;
-        a_sup = b_inf*c;
+        a_inf = mul_rd(b_sup, c);
+        a_sup = mul_ru(b_inf, c);
     }
 }
 
@@ -140,8 +140,8 @@ void interval_mul_expr_coeff(float_type& res_inf, float_type& res_sup, const flo
 
     interval_mul_symmetric_c(tmp1, tmp2, inf, sup, maxA*ulp);
 
-    res_inf += tmp1;
-    res_sup += tmp2;
+    res_inf = add_rd(res_inf, tmp1);
+    res_sup = add_ru(res_sup, tmp2);
 }
 
 
@@ -150,8 +150,8 @@ void interval_mul_cst_coeff(float_type& res_inf, float_type& res_sup, const floa
 {
     interval_mul_expr_coeff(res_inf, res_sup, inf, sup, inf_expr, sup_expr);
 
-    res_inf -= min_denormal;
-    res_sup += min_denormal;
+    res_inf = add_rd(res_inf, -min_denormal);
+    res_sup = add_ru(res_sup,  min_denormal);
 }
 
 
@@ -164,8 +164,8 @@ void interval_mul_expr_coeff_const_expr(float_type& res_inf, float_type& res_sup
 
     interval_mul_symmetric_c(tmp1, tmp2, inf, sup, abs(expr)*ulp);
 
-    res_inf += tmp1;
-    res_sup += tmp2;
+    res_inf = add_rd(res_inf, tmp1);
+    res_sup = add_ru(res_sup, tmp2);
 }
 
 
@@ -174,6 +174,6 @@ void interval_mul_cst_coeff_const_expr(float_type& res_inf, float_type& res_sup,
 {
     interval_mul_expr_coeff_const_expr(res_inf, res_sup, inf, sup, expr);
 
-    res_inf -= min_denormal;
-    res_sup += min_denormal;
+    res_inf = add_rd(res_inf, -min_denormal);
+    res_sup = add_ru(res_sup,  min_denormal);
 }

@@ -8,8 +8,8 @@ void add_coeff(float_type& lhs_inf_coeff, float_type& lhs_sup_coeff, float_type&
     maxRes = max(abs(lhs_inf_coeff), abs(lhs_sup_coeff));
     maxMul = max(abs(rhs_inf_coeff), abs(rhs_sup_coeff));
 
-    lhs_inf_coeff = lhs_inf_coeff + rhs_inf_coeff - (maxRes + maxMul)*ulp;
-    lhs_sup_coeff = lhs_sup_coeff + rhs_sup_coeff + (maxRes + maxMul)*ulp;
+    lhs_inf_coeff = add_rd(lhs_inf_coeff, add_rd(rhs_inf_coeff, -mul_ru(add_ru(maxRes, maxMul), ulp)));
+    lhs_sup_coeff = add_ru(lhs_sup_coeff, add_ru(rhs_sup_coeff,  mul_ru(add_ru(maxRes, maxMul), ulp)));
 }
 
 
@@ -19,8 +19,8 @@ void add_cst(float_type& lhs_inf_cst, float_type& lhs_sup_cst, float_type& maxRe
     maxRes = max(abs(lhs_inf_cst), abs(lhs_sup_cst));
     maxMul = max(abs(rhs_inf_cst), abs(rhs_sup_cst));
 
-    lhs_inf_cst = lhs_inf_cst + rhs_inf_cst - (maxRes + maxMul)*ulp - min_denormal;
-    lhs_sup_cst = lhs_sup_cst + rhs_sup_cst + (maxRes + maxMul)*ulp + min_denormal;
+    lhs_inf_cst = add_rd(lhs_inf_cst, add_rd(rhs_inf_cst, -add_rd(mul_ru(add_ru(maxRes, maxMul), ulp), -min_denormal)));
+    lhs_sup_cst = add_ru(lhs_sup_cst, add_ru(rhs_sup_cst,  add_ru(mul_ru(add_ru(maxRes, maxMul), ulp),  min_denormal)));
 }
 
 
@@ -32,8 +32,8 @@ void affine_trans_coeff(float_type& inf_coeff, float_type& sup_coeff, float_type
     maxRes = max(abs(inf_coeff), abs(sup_coeff));
     maxMul = max(abs(tmp1), abs(tmp2));
 
-    inf_coeff = inf_coeff + tmp1 - (maxRes + maxMul)*ulp;
-    sup_coeff = sup_coeff + tmp2 + (maxRes + maxMul)*ulp;
+    inf_coeff = add_rd(inf_coeff, add_rd(tmp1, -mul_ru(add_ru(maxRes, maxMul), ulp)));
+    sup_coeff = add_ru(sup_coeff, add_ru(tmp2,  mul_ru(add_ru(maxRes, maxMul), ulp)));
 }
 
 
@@ -45,8 +45,8 @@ void affine_trans_cst(float_type& inf_cst, float_type& sup_cst, float_type& tmp1
     maxRes = max(abs(inf_cst), abs(sup_cst));
     maxMul = max(abs(tmp1), abs(tmp2));
 
-    inf_cst = inf_cst + tmp1 - (maxRes + maxMul)*ulp - min_denormal;
-    sup_cst = sup_cst + tmp2 + (maxRes + maxMul)*ulp + min_denormal;
+    inf_cst = add_rd(inf_cst, add_rd(tmp1, -add_rd(mul_ru(add_ru(maxRes, maxMul), ulp), -min_denormal)));
+    sup_cst = add_ru(sup_cst, add_ru(tmp2,  add_ru(mul_ru(add_ru(maxRes, maxMul), ulp),  min_denormal)));
 }
 
 
@@ -55,7 +55,7 @@ void lb_component(float_type& res_inf, float_type& tmp1, float_type& tmp2, const
 {
     interval_mul(tmp1, tmp2, inf_coeff, sup_coeff, input_inf, input_sup);
 
-    res_inf = res_inf + tmp1;
+    res_inf = add_rd(res_inf, tmp1);
 }
 
 
@@ -64,7 +64,7 @@ void ub_component(float_type& res_sup, float_type& tmp1, float_type& tmp2, const
 {
     interval_mul(tmp1, tmp2, inf_coeff, sup_coeff, input_inf, input_sup);
 
-    res_sup = res_sup + tmp2;
+    res_sup = add_ru(res_sup, tmp2);
 }
 
 
@@ -76,8 +76,8 @@ void lcst_input_poly_neutral(float_type& inf_cst, float_type& sup_cst, float_typ
     maxRes = max(abs(inf_cst), abs(sup_cst));
     maxMul = max(abs(-tmp1), abs(-tmp1));
 
-    inf_cst = inf_cst - tmp1 - (maxRes + maxMul)*ulp - min_denormal;
-    sup_cst = sup_cst - tmp1 + (maxRes + maxMul)*ulp + min_denormal;
+    inf_cst = add_rd(inf_cst, -add_rd(tmp1, -add_rd(mul_ru(add_ru(maxRes, maxMul), ulp), -min_denormal)));
+    sup_cst = add_ru(sup_cst, -add_ru(tmp1,  add_ru(mul_ru(add_ru(maxRes, maxMul), ulp),  min_denormal)));
 }
 
 
@@ -89,6 +89,6 @@ void ucst_input_poly_neutral(float_type& inf_cst, float_type& sup_cst, float_typ
     maxRes = max(abs(inf_cst), abs(sup_cst));
     maxMul = max(abs(tmp2), abs(tmp2));
 
-    inf_cst = inf_cst + tmp2 - (maxRes + maxMul)*ulp - min_denormal;
-    sup_cst = inf_cst + tmp2 + (maxRes + maxMul)*ulp + min_denormal;
+    inf_cst = add_rd(inf_cst, add_rd(tmp2, -add_rd(mul_ru(add_ru(maxRes, maxMul), ulp), -min_denormal)));
+    sup_cst = add_ru(inf_cst, add_ru(tmp2,  add_ru(mul_ru(add_ru(maxRes, maxMul), ulp),  min_denormal)));
 }
