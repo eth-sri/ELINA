@@ -213,7 +213,8 @@ void fppoly_add_new_layer(fppoly_t *fp, size_t size, layertype_t type, activatio
 
 
 
-void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias, size_t size, size_t num_pixels, size_t *predecessors, activation_type_t activation, bool alloc){
+void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *cst, size_t size, size_t num_pixels, size_t *predecessors, activation_type_t activation, bool alloc,
+			    fnn_op OP){
 	//printf("start \n");
 	//fflush(stdout);
 	fppoly_t *res = fppoly_of_abstract0(abs);
@@ -237,8 +238,23 @@ void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t * abs, doubl
 	for(i=0; i < size; i++){
 		neuron_t *neuron = neurons[i];
 		double * weight_i = weights[i];
-		double bias_i = bias[i];
-		neuron->expr = create_dense_expr(weight_i,bias_i,num_pixels);
+		double cst_i = cst[i];
+                if(OP==MUL){
+			neuron->expr = create_sparse_expr(&cst_i, 0, &i, 1);
+        	}
+		else if(OP==SUB1){
+			double coeff = -1;
+			neuron->expr = create_sparse_expr(&coeff, cst_i, &i, 1);
+		}
+		else if(OP==SUB2){
+			double coeff = 1;
+			neuron->expr = create_sparse_expr(&coeff, cst_i, &i, 1);
+		}
+        	else{
+			double * weight_i = weights[i];
+        		neuron->expr = create_dense_expr(weight_i,cst_i,num_pixels);
+		}
+		
 		neuron->lb = compute_lb_from_expr(pr, neuron->expr,res,-1);
 		neuron->ub = compute_ub_from_expr(pr, neuron->expr,res,-1);
 	}
@@ -251,47 +267,60 @@ void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t * abs, doubl
 
 
 void ffn_handle_first_relu_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,   size_t size, size_t num_pixels, size_t *predecessors){
-        ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, RELU, true);
+        ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, RELU, true, MATMULT);
 }
 
 void ffn_handle_first_sigmoid_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors){
-        ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, SIGMOID, true);
+        ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, SIGMOID, true, MATMULT);
 }
 
 
 void ffn_handle_first_tanh_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors){
-        ffn_handle_first_layer(man, abs, weights, bias,  size, num_pixels, predecessors, TANH, true);
+        ffn_handle_first_layer(man, abs, weights, bias,  size, num_pixels, predecessors, TANH, true, MATMULT);
 }
 
 
 void ffn_handle_first_parabola_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors){
-        ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, PARABOLA, true);
+        ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, PARABOLA, true, MATMULT);
 }
 
 void ffn_handle_first_log_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors){
-        ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, LOG, true);
+        ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, LOG, true, MATMULT);
+}
+
+void ffn_handle_first_sub_layer(elina_manager_t* man, elina_abstract0_t * abs,  double *cst, bool is_minuend, size_t size, size_t *predecessors){
+	if(is_minuend==true){
+		ffn_handle_first_layer(man, abs, NULL, cst, size, size, predecessors, NONE, true, SUB1);
+	}
+	else{
+        	ffn_handle_first_layer(man, abs, NULL, cst, size, size, predecessors, LOG, true, SUB2);
+	}
+}
+
+void ffn_handle_first_mul_layer(elina_manager_t* man, elina_abstract0_t * abs, double *bias,  size_t size, size_t *predecessors){
+        ffn_handle_first_layer(man, abs, NULL, bias, size, size, predecessors, NONE, true, MUL);
 }
 
 void ffn_handle_first_relu_layer_no_alloc(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,   size_t size, size_t num_pixels, size_t *predecessors){
-    ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, RELU, false);
+    ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, RELU, false, MATMULT);
 }
 
 void ffn_handle_first_sigmoid_layer_no_alloc(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors){
-    ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, SIGMOID, false);
+    ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, SIGMOID, false, MATMULT);
 }
 
 
 void ffn_handle_first_tanh_layer_no_alloc(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors){
-    ffn_handle_first_layer(man, abs, weights, bias,  size, num_pixels, predecessors, TANH, false);
+    ffn_handle_first_layer(man, abs, weights, bias,  size, num_pixels, predecessors, TANH, false, MATMULT);
 }
 
 
 void ffn_handle_first_parabola_layer_no_alloc(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors){
-    ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, PARABOLA, false);
+    ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, PARABOLA, false, MATMULT);
 }
 
 void ffn_handle_first_log_layer_no_alloc(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors){
-    ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, LOG, false);
+    ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, LOG, false, MATMULT);
 }
 
 void ffn_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * cst, size_t num_out_neurons, size_t num_in_neurons, size_t * predecessors, activation_type_t activation, bool alloc, bool use_area_heuristic, fnn_op OP){

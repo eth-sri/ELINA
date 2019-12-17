@@ -175,7 +175,11 @@ void ffn_handle_first_tanh_layer(elina_manager_t* man, elina_abstract0_t * abs, 
 void ffn_handle_first_parabola_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias, size_t size, size_t num_pixels, size_t *predecessors);
 
 void ffn_handle_first_log_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors);
-    
+
+void ffn_handle_first_sub_layer(elina_manager_t* man, elina_abstract0_t * abs,  double *cst, bool is_minuend, size_t size, size_t *predecessors);
+
+void ffn_handle_first_mul_layer(elina_manager_t* man, elina_abstract0_t * abs,  double *cst, size_t size, size_t *predecessors);    
+
 void ffn_handle_first_relu_layer_no_alloc(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors);
     
 void ffn_handle_first_sigmoid_layer_no_alloc(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors);
