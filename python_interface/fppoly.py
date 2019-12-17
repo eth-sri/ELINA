@@ -513,6 +513,69 @@ def ffn_handle_first_log_layer(man, element,weights, bias,  size, num_pixels, pr
     
     return
 
+def ffn_handle_first_sub_layer(man, element, cst, is_minuend, size, predecessors):
+    """
+    handle the first FFN log layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    cst : POINTER(c_double)
+        The cst vector
+    is_minuend: c_bool
+        whether the assignment is y=x-cst or y=cst-x
+    size: c_size_t
+	Number of neurons in the first layer
+    predecessors:
+        the layers before the current layer
+    Returns
+    -------
+    res : None
+
+    """
+    
+    try:
+        ffn_handle_first_sub_layer_c = fppoly_api.ffn_handle_first_sub_layer
+        ffn_handle_first_sub_layer_c.restype = None
+        ffn_handle_first_sub_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double),  c_bool, c_size_t, POINTER(c_size_t)]
+        ffn_handle_first_sub_layer_c(man, element, cst, is_minuend, size, predecessors)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_first_sub_layer" from "libfppoly.so"')
+        print(inst)	
+    
+    return
+
+def ffn_handle_first_mul_layer(man, element, cst,  size, predecessors):
+    """
+    handle the first FFN log layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    cst : POINTER(c_double)
+        The cst vector
+    size: c_size_t
+	Number of neurons in the first layer
+    predecessors:
+        the layers before the current layer
+    Returns
+    -------
+    res : None
+
+    """
+    
+    try:
+        ffn_handle_first_mul_layer_c = fppoly_api.ffn_handle_first_mul_layer
+        ffn_handle_first_mul_layer_c.restype = None
+        ffn_handle_first_mul_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double),  c_size_t, POINTER(c_size_t)]
+        ffn_handle_first_mul_layer_c(man, element, cst, size, predecessors)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_first_mul_layer" from "libfppoly.so"')
+        print(inst)	
+    
+    return
 
 def ffn_handle_first_log_layer_no_alloc(man, element,weights, bias,  size, num_pixels, predecessors):
     """

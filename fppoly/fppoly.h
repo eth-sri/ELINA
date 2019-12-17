@@ -188,6 +188,13 @@ void ffn_handle_first_log_layer(elina_manager_t *man, elina_abstract0_t *abs,
                                 double **weights, double *bias, size_t size,
                                 size_t num_pixels, size_t *predecessors);
 
+void ffn_handle_first_sub_layer(elina_manager_t *man, elina_abstract0_t *abs,
+                                double *cst, bool is_minuend, size_t size,
+                                size_t *predecessors);
+
+void ffn_handle_first_mul_layer(elina_manager_t *man, elina_abstract0_t *abs,
+                                double *cst, size_t size, size_t *predecessors);
+
 void ffn_handle_first_relu_layer_no_alloc(elina_manager_t *man,
                                           elina_abstract0_t *abs,
                                           double **weights, double *bias,
@@ -290,8 +297,7 @@ void ffn_handle_intermediate_log_layer_no_alloc(
     double *bias, size_t num_out_neurons, size_t num_in_neurons,
     size_t *predecessors, bool use_area_heuristic);
 
-void fppoly_fprint(FILE *stream, elina_manager_t *man, fppoly_t *fp,
-                   char **name_of_dim);
+void fppoly_fprint(FILE* stream, elina_manager_t* man, fppoly_t* fp, char** name_of_dim);
 
 void ffn_handle_last_relu_layer(elina_manager_t *man,
                                 elina_abstract0_t *element, double **weights,
