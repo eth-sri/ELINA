@@ -162,9 +162,11 @@ elina_linexpr0_t* get_lexpr_for_output_neuron(elina_manager_t* man, elina_abstra
 
 elina_linexpr0_t* get_uexpr_for_output_neuron(elina_manager_t* man, elina_abstract0_t* abs, const size_t i);
 
-size_t get_num_neurons_in_layer(elina_manager_t* man, elina_abstract0_t * abs, const size_t layerno);
+size_t get_num_neurons_in_layer(elina_manager_t* man, elina_abstract0_t* abs, const size_t layerno);
 
-elina_interval_t ** box_for_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno);
+elina_interval_t** box_for_layer(elina_manager_t* man, elina_abstract0_t* abs, const size_t layerno);
+
+void update_bounds_for_neuron(elina_manager_t* man, elina_abstract0_t* abs, const size_t layerno, const size_t neuron_no, const float_type lb, const float_type ub);
 
 void clean_training_data();
 
