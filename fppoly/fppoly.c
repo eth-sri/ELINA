@@ -244,7 +244,7 @@ void ffn_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
 
   for (i = 0; i < size; i++) {
     neuron_t *neuron = neurons[i];
-    double *weight_i = weights[i];
+    // double * weight_i = weights[i];
     double cst_i = cst[i];
     if (OP == MUL) {
       neuron->expr = create_sparse_expr(&cst_i, 0, &i, 1);
@@ -253,7 +253,7 @@ void ffn_handle_first_layer(elina_manager_t *man, elina_abstract0_t *abs,
       neuron->expr = create_sparse_expr(&coeff, cst_i, &i, 1);
     } else if (OP == SUB2) {
       double coeff = 1;
-      neuron->expr = create_sparse_expr(&coeff, cst_i, &i, 1);
+      neuron->expr = create_sparse_expr(&coeff, -cst_i, &i, 1);
     } else {
       double *weight_i = weights[i];
       neuron->expr = create_dense_expr(weight_i, cst_i, num_pixels);
@@ -313,7 +313,7 @@ void ffn_handle_first_sub_layer(elina_manager_t *man, elina_abstract0_t *abs,
     ffn_handle_first_layer(man, abs, NULL, cst, size, size, predecessors, NONE,
                            true, SUB1);
   } else {
-    ffn_handle_first_layer(man, abs, NULL, cst, size, size, predecessors, LOG,
+    ffn_handle_first_layer(man, abs, NULL, cst, size, size, predecessors, NONE,
                            true, SUB2);
   }
 }
@@ -397,7 +397,7 @@ void ffn_handle_intermediate_layer(elina_manager_t *man,
       out_neurons[i]->expr = create_sparse_expr(&coeff, cst_i, &i, 1);
     } else if (OP == SUB2) {
       double coeff = 1;
-      out_neurons[i]->expr = create_sparse_expr(&coeff, cst_i, &i, 1);
+      out_neurons[i]->expr = create_sparse_expr(&coeff, -cst_i, &i, 1);
     } else {
       double *weight_i = weights[i];
       out_neurons[i]->expr = create_dense_expr(weight_i, cst_i, num_in_neurons);
