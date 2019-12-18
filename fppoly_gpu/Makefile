@@ -53,7 +53,7 @@ libfppoly_gpu.so : $(OBJS) $(FPPOLYH)
 	nvcc -ccbin g++ -shared $(CC_ELINA_DYLIB) --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 
-fppoly_gpu.o : util.h rounding.h interval.h affine_transform.h relu_approx.h fppoly_gpu.h fppoly_gpu.cu
+fppoly_gpu.o : cuda_util.h rounding.h interval.h linear.h relu_approx.h fppoly_gpu.h fppoly_gpu.cu
 	nvcc -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o fppoly_gpu.o fppoly_gpu.cu $(LIBS)
 
 

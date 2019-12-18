@@ -52,11 +52,6 @@ typedef struct fppoly_internal_t {
   /* local parameters for the function */
   elina_funopt_t *funopt;
 
-  /* raised when a conversion from/to a user type resulted in an
-   * overapproximation */
-  float_type min_denormal;
-  float_type ulp;
-
   /* back pointer to elina_manager */
   elina_manager_t *man;
 } fppoly_internal_t;
