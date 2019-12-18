@@ -6001,6 +6001,31 @@ elina_interval_t **box_for_layer(elina_manager_t *man, elina_abstract0_t *abs,
   return itv_arr;
 }
 
+__global__ void update_bounds_for_neuron_dev(float_type *lb_array,
+                                             float_type *ub_array,
+                                             const float_type lb,
+                                             const float_type ub,
+                                             const size_t neuron_no) {
+  lb_array[neuron_no] = lb;
+  ub_array[neuron_no] = ub;
+}
+
+void update_bounds_for_neuron(elina_manager_t *man, elina_abstract0_t *abs,
+                              const size_t layerno, const size_t neuron_no,
+                              const float_type lb, const float_type ub) {
+  fppoly_t *fp = fppoly_of_abstract0(abs);
+
+  if (layerno >= fp->numlayers) {
+    fprintf(stdout, "the layer does not exist\n");
+
+    return;
+  }
+
+  update_bounds_for_neuron_dev<<<1, 1>>>(fp->layers[layerno]->lb_array,
+                                         fp->layers[layerno]->ub_array, lb, ub,
+                                         neuron_no);
+}
+
 int get_num_neurons_training_layer() { return num_neurons_training_layer; }
 
 float_type *get_adv() { return adv_host; }
