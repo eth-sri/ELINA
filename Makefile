@@ -51,7 +51,9 @@ endif
 	(cd elina_zonotope; make all) 
 	(cd zonoml; make all)
 	(cd fppoly; make all)
+ifneq ($(IS_CUDA),)
 	(cd fppoly_gpu; make all)
+endif
 
 
 install:
@@ -66,7 +68,9 @@ endif
 	(cd elina_zonotope; make install)
 	(cd zonoml; make install)
 	(cd fppoly; make install)
+ifneq ($(IS_CUDA),)
 	(cd fppoly_gpu; make install)
+endif
 	(cd apron_interface; make install)
 ifneq ($(HAS_OCAML),) 
 	(cd ocaml_interface; make install)
@@ -91,6 +95,9 @@ endif
 	(cd elina_zonotope; make clean)
 	(cd zonoml; make clean)
 	(cd fppoly; make clean)
+ifneq ($(IS_CUDA),)
+	(cd fppoly_gpu; make clean)
+endif
 ifneq ($(HAS_OCAML),) 
 	(cd ocaml_interface; make clean)
 endif
