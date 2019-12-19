@@ -28,6 +28,7 @@ where options include:
   -use-java            enable Java support (only available with APRON)
   -use-opam            use opam to install ELINA
   -no-warn-overflow    Silence all output relating to sound overflow
+  -use-cuda            compile gpu version of DeepPoly
 
 Environment variables that affect configuration:
   CC                   C compiler to use (default: gcc)
@@ -56,6 +57,7 @@ has_java=0
 use_opam=0
 has_apron=0
 has_vector=0
+has_cuda=0
 extra_elina_options=""
 force_absolute_dylib_install_names=0;
 while : ; do
@@ -93,6 +95,8 @@ while : ; do
          has_apron=1;;
         -use-vector|--use-vector)
          has_vector=1;;
+        -use-cuda|--use-cuda)
+         has_cuda=1;;
         -use-opam|--use-opam)
             has_ocaml=1
             has_ocamlfind=1
@@ -479,6 +483,7 @@ if test "$has_ocaml" -eq 0; then has_ocaml=; fi
 if test "$has_java" -eq 0; then has_java=; fi
 if test "$has_apron" -eq 0; then has_apron=; else has_apron=-DHAS_APRON; fi
 if test "$has_vector" -eq 0; then is_vector=; else is_vector=-DVECTOR; fi
+if test "$has_cuda" -eq 0; then is_cuda=; else is_cuda=-DCUDA; fi
 if test "$use_opam" -eq 0; then use_opam=; fi
 
 cat > Makefile.config <<EOF
@@ -498,6 +503,9 @@ IS_APRON = $has_apron
 
 # if defined to VECTOR, uses SIMD instructions for the Octagon library
 IS_VECTOR = $is_vector
+
+# if defined to VECTOR, compile GPUPoly (the GPU version of DeepPoly)
+IS_CUDA = $is_cuda
 
 
 ELINA_PREFIX = $elina_prefix
