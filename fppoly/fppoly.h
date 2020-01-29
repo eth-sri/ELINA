@@ -80,6 +80,14 @@ typedef enum activation_type_t{
     NONE,
 }activation_type_t;
     
+typedef enum fnn_op{
+	MATMULT,
+        SUB1,
+	SUB2,
+        MUL,
+}fnn_op;
+
+
 typedef enum exprtype_t{
  DENSE,
  SPARSE,
@@ -167,7 +175,11 @@ void ffn_handle_first_tanh_layer(elina_manager_t* man, elina_abstract0_t * abs, 
 void ffn_handle_first_parabola_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias, size_t size, size_t num_pixels, size_t *predecessors);
 
 void ffn_handle_first_log_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors);
-    
+
+void ffn_handle_first_sub_layer(elina_manager_t* man, elina_abstract0_t * abs,  double *cst, bool is_minuend, size_t size, size_t *predecessors);
+
+void ffn_handle_first_mul_layer(elina_manager_t* man, elina_abstract0_t * abs,  double *cst, size_t size, size_t *predecessors);    
+
 void ffn_handle_first_relu_layer_no_alloc(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors);
     
 void ffn_handle_first_sigmoid_layer_no_alloc(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,  size_t size, size_t num_pixels, size_t *predecessors);
@@ -190,6 +202,10 @@ void ffn_handle_intermediate_parabola_layer(elina_manager_t* man, elina_abstract
 
 void ffn_handle_intermediate_log_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons, size_t *predecessors, bool use_area_heuristic);
     
+void ffn_handle_intermediate_sub_layer(elina_manager_t* man, elina_abstract0_t* element,  double * cst, bool is_minuend, size_t num_in_neurons, size_t *predecessors, bool use_area_heuristic);
+
+void ffn_handle_intermediate_mul_layer(elina_manager_t* man, elina_abstract0_t* element,  double * bias,  size_t num_in_neurons, size_t *predecessors, bool use_area_heuristic);
+
 void ffn_handle_intermediate_affine_layer_no_alloc(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons, size_t *predecessors, bool use_area_heuristic);
     
 void ffn_handle_intermediate_relu_layer_no_alloc(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons, size_t *predecessors, bool use_area_heuristic);
