@@ -67,6 +67,13 @@ typedef enum activation_type_t {
   NONE,
 } activation_type_t;
 
+typedef enum fnn_op {
+  MATMULT,
+  SUB1,
+  SUB2,
+  MUL,
+} fnn_op;
+
 typedef struct layer_t {
   size_t num_out_neurons;
   size_t num_in_neurons;
@@ -127,30 +134,50 @@ elina_abstract0_t *fppoly_from_network_input_poly(
     const size_t expr_size);
 
 void ffn_handle_first_relu_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                                 const float_type **weights,
+                                 const float_type *const *weights,
                                  const float_type *bias, const size_t size,
                                  const size_t num_pixels, size_t *predecessors);
 
+void ffn_handle_first_sub_layer(elina_manager_t *man, elina_abstract0_t *abs,
+                                const float_type *cst, const bool is_minuend,
+                                const size_t size, size_t *predecessors);
+
+void ffn_handle_first_mul_layer(elina_manager_t *man, elina_abstract0_t *abs,
+                                const float_type *cst, const size_t size,
+                                size_t *predecessors);
+
 void ffn_handle_intermediate_affine_layer(
     elina_manager_t *man, elina_abstract0_t *element,
-    const float_type **weights, const float_type *bias,
+    const float_type *const *weights, const float_type *bias,
     const size_t num_out_neurons, const size_t num_in_neurons,
     size_t *predecessors, const bool use_area_heuristic);
 
 void ffn_handle_intermediate_relu_layer(
     elina_manager_t *man, elina_abstract0_t *element,
-    const float_type **weights, const float_type *bias,
+    const float_type *const *weights, const float_type *bias,
     const size_t num_out_neurons, const size_t num_in_neurons,
     size_t *predecessors, const bool use_area_heuristic);
 
+void ffn_handle_intermediate_sub_layer(
+    elina_manager_t *man, elina_abstract0_t *element, const float_type *cst,
+    const bool is_minuend, const size_t num_in_neurons, size_t *predecessors,
+    const bool use_area_heuristic);
+
+void ffn_handle_intermediate_mul_layer(elina_manager_t *man,
+                                       elina_abstract0_t *element,
+                                       const float_type *bias,
+                                       const size_t num_in_neurons,
+                                       size_t *predecessors,
+                                       const bool use_area_heuristic);
+
 void ffn_handle_last_relu_layer(
     elina_manager_t *man, elina_abstract0_t *element,
-    const float_type **weights, const float_type *bias,
+    const float_type *const *weights, const float_type *bias,
     const size_t num_out_neurons, const size_t num_in_neurons,
     size_t *predecessors, const bool has_relu, const bool use_area_heuristic);
 
 void fppoly_fprint(FILE *const stream, elina_manager_t *man,
-                   const fppoly_t *const fp, const char **name_of_dim);
+                   const fppoly_t *const fp, const char *const *name_of_dim);
 
 void fppoly_free(elina_manager_t *man, fppoly_t *fp);
 
