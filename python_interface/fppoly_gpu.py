@@ -522,6 +522,76 @@ def ffn_handle_first_log_layer_no_alloc(man, element, weights, bias, size, num_p
     return
 
 
+def ffn_handle_first_sub_layer(man, element, cst, is_minuend, size, predecessors):
+
+    """
+    Handle the first FFN sub layer
+
+    Parameters
+    ----------
+        man : ElinaManagerPtr
+            Pointer to the ElinaManager
+        cst : POINTER(c_double)
+            The cst vector
+        is_minuend: c_bool
+            Whether the assignment is y=x-cst or y=cst-x
+        size: c_size_t
+            Number of neurons in the first layer
+        predecessors:
+            The layers before the current layer
+
+    Returns
+    -------
+        res : None
+
+    """
+
+    try:
+        ffn_handle_first_sub_layer_c = fppoly_gpu_api.ffn_handle_first_sub_layer
+        ffn_handle_first_sub_layer_c.restype = None
+        ffn_handle_first_sub_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double),  c_bool, c_size_t, POINTER(c_size_t)]
+        ffn_handle_first_sub_layer_c(man, element, cst, is_minuend, size, predecessors)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_first_sub_layer" from "libfppoly_gpu.so"')
+        print(inst)
+
+    return
+
+
+def ffn_handle_first_mul_layer(man, element, cst, size, predecessors):
+
+    """
+    Handle the first FFN mul layer
+
+    Parameters
+    ----------
+        man : ElinaManagerPtr
+            Pointer to the ElinaManager
+        cst : POINTER(c_double)
+            The cst vector
+        size: c_size_t
+            Number of neurons in the first layer
+        predecessors:
+            The layers before the current layer
+
+    Returns
+    -------
+        res : None
+
+    """
+
+    try:
+        ffn_handle_first_mul_layer_c = fppoly_gpu_api.ffn_handle_first_mul_layer
+        ffn_handle_first_mul_layer_c.restype = None
+        ffn_handle_first_mul_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double),  c_size_t, POINTER(c_size_t)]
+        ffn_handle_first_mul_layer_c(man, element, cst, size, predecessors)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_first_mul_layer" from "libfppoly_gpu.so"')
+        print(inst)
+
+    return
+
+
 def ffn_handle_intermediate_affine_layer(man, element, weights, bias, num_out_neurons, num_in_neurons, predecessors, use_area_heuristic):
 
     """
@@ -950,6 +1020,84 @@ def ffn_handle_intermediate_log_layer_no_alloc(man, element, weights, bias, num_
     """
 
     print('"ffn_handle_intermediate_log_layer_no_alloc" is not implemented in "libfppoly_gpu.so". It only exists in the CPU version of fppoly.')
+
+    return
+
+
+def ffn_handle_intermediate_sub_layer(man, element, bias, is_minuend, num_in_neurons, predecessors, use_area_heuristic):
+
+    """
+    Handle the intermediate FFN Sub layer
+
+    Parameters
+    ----------
+        man : ElinaManagerPtr
+            Pointer to the ElinaManager
+        element : ElinaAbstract0Ptr
+            Pointer to the abstract element
+        bias: POINTER(c_size_t)
+            The bias vector
+        is_minuend: c_bool
+            Whether it is y = x-b pr b-x
+        num_in_neurons: c_size_t
+            Number of input neurons
+        predecessors:
+            The layers before the current layer
+        use_area_heuristic: c_bool
+            Whether to use area heuristic
+
+    Returns
+    -------
+        None
+
+    """
+
+    try:
+        ffn_handle_intermediate_sub_layer_c = fppoly_gpu_api.ffn_handle_intermediate_sub_layer
+        ffn_handle_intermediate_sub_layer_c.restype = None
+        ffn_handle_intermediate_sub_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), c_bool, c_size_t, POINTER(c_size_t),c_bool]
+        ffn_handle_intermediate_sub_layer_c(man,element, bias, is_minuend, num_in_neurons, predecessors, use_area_heuristic)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_intermediate_sub_layer" from "libfppoly_gpu.so"')
+        print(inst)
+
+    return
+
+
+def ffn_handle_intermediate_mul_layer(man, element, bias, num_in_neurons, predecessors, use_area_heuristic):
+
+    """
+    Handle the intermediate FFN Mul layer
+
+    Parameters
+    ----------
+        man : ElinaManagerPtr
+            Pointer to the ElinaManager
+        element : ElinaAbstract0Ptr
+            Pointer to the abstract element
+        bias: POINTER(c_size_t)
+            The bias vector
+        num_in_neurons: c_size_t
+            Number of input neurons
+        predecessors:
+            The layers before the current layer
+        use_area_heuristic: c_bool
+            Whether to use area heuristic
+
+    Returns
+    -------
+        None
+
+    """
+
+    try:
+        ffn_handle_intermediate_mul_layer_c = fppoly_gpu_api.ffn_handle_intermediate_mul_layer
+        ffn_handle_intermediate_mul_layer_c.restype = None
+        ffn_handle_intermediate_mul_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), c_size_t, POINTER(c_size_t),c_bool]
+        ffn_handle_intermediate_mul_layer_c(man,element, bias, num_in_neurons, predecessors, use_area_heuristic)
+    except Exception as inst:
+        print('Problem with loading/calling "ffn_handle_intermediate_mul_layer" from "libfppoly_gpu.so"')
+        print(inst)
 
     return
 

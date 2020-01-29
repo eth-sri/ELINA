@@ -699,7 +699,7 @@ void device_layer_create_dense_expr(float_type* __restrict__ coeffs, float_type*
 }
 
 
-void layer_create_dense_exprs(float_type* coeffs, float_type* csts, const float_type** weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons)
+void layer_create_dense_exprs(float_type* coeffs, float_type* csts, const float_type* const * weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons)
 {
     float_type* tmp_weights = malloc_device<float_type>(num_out_neurons*num_in_neurons);
     float_type* tmp_bias = malloc_device<float_type>(num_out_neurons);
@@ -944,10 +944,8 @@ void ucsts_from_input_poly(const float_type* __restrict__ expr_inf_coeff, const 
 }
 
 
-void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t* abs, const float_type** weights, const float_type* bias, const size_t size, const size_t num_pixels, size_t* predecessors, const activation_type_t activation, const bool alloc)
+void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t* abs, const float_type* const * weights, const float_type* cst, const size_t size, const size_t num_pixels, size_t* predecessors, const activation_type_t activation, const bool alloc, fnn_op OP)
 {
-    clean_training_data();
-
     fppoly_t* res = fppoly_of_abstract0(abs);
     fppoly_internal_t* pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
@@ -958,7 +956,67 @@ void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t* abs, const 
     float_type* coeffs = res->layers[0]->coeffs;
     float_type* csts = res->layers[0]->csts;
 
-    layer_create_dense_exprs(coeffs, csts, weights, bias, size, num_pixels);
+    if(OP == MUL || OP == SUB1 || OP == SUB2)
+    {
+        float_type** dense_weights = (float_type**) malloc(num_pixels*sizeof(float_type*));
+
+        for(size_t j = 0; j < num_pixels; j++)
+        {
+            dense_weights[j] = (float_type*) calloc(num_pixels, sizeof(float_type));
+        }
+
+        if(OP == MUL)
+        {
+            float_type* dense_cst = (float_type*) calloc(num_pixels, sizeof(float_type));
+
+            for(size_t j = 0; j < num_pixels; j++)
+            {
+                dense_weights[j][j] = cst[j];
+            }
+
+            layer_create_dense_exprs(coeffs, csts, dense_weights, dense_cst, num_pixels, num_pixels);
+
+            free(dense_cst);
+        }
+        else if(OP == SUB1)
+        {
+            for(size_t j = 0; j < num_pixels; j++)
+            {
+                dense_weights[j][j] = -1;
+            }
+
+            layer_create_dense_exprs(coeffs, csts, dense_weights, cst, num_pixels, num_pixels);
+        }
+        else if(OP == SUB2)
+        {
+            float_type* dense_cst = (float_type*) calloc(num_pixels, sizeof(float_type));
+
+            for(size_t j = 0; j < num_pixels; j++)
+            {
+                dense_weights[j][j] = 1;
+            }
+
+            for(size_t j = 0; j < num_pixels; j++)
+            {
+                dense_cst[j] = -cst[j];
+            }
+
+            layer_create_dense_exprs(coeffs, csts, dense_weights, dense_cst, num_pixels, num_pixels);
+
+            free(dense_cst);
+        }
+
+        for(size_t j = 0; j < num_pixels; j++)
+        {
+            free(dense_weights[j]);
+        }
+
+        free(dense_weights);
+    }
+    else
+    {
+        layer_create_dense_exprs(coeffs, csts, weights, cst, size, num_pixels);
+    }
 
     if((res->input_lweights != nullptr) && (res->input_uweights != nullptr) && (res->input_lcst != nullptr) && (res->input_ucst != nullptr))
     {
@@ -1008,9 +1066,28 @@ void ffn_handle_first_layer(elina_manager_t* man, elina_abstract0_t* abs, const 
 }
 
 
-void ffn_handle_first_relu_layer(elina_manager_t* man, elina_abstract0_t* abs, const float_type** weights, const float_type* bias, const size_t size, const size_t num_pixels, size_t* predecessors)
+void ffn_handle_first_relu_layer(elina_manager_t* man, elina_abstract0_t* abs, const float_type* const * weights, const float_type* bias, const size_t size, const size_t num_pixels, size_t* predecessors)
 {
-        ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, RELU, true);
+    ffn_handle_first_layer(man, abs, weights, bias, size, num_pixels, predecessors, RELU, true, MATMULT);
+}
+
+
+void ffn_handle_first_sub_layer(elina_manager_t* man, elina_abstract0_t* abs, const float_type* cst, const bool is_minuend, const size_t size, size_t* predecessors)
+{
+	if(is_minuend==true)
+    {
+        ffn_handle_first_layer(man, abs, NULL, cst, size, size, predecessors, NONE, true, SUB1);
+	}
+	else
+    {
+        ffn_handle_first_layer(man, abs, NULL, cst, size, size, predecessors, NONE, true, SUB2);
+	}
+}
+
+
+void ffn_handle_first_mul_layer(elina_manager_t* man, elina_abstract0_t* abs, const float_type* bias, const size_t size, size_t* predecessors)
+{
+    ffn_handle_first_layer(man, abs, NULL, bias, size, size, predecessors, NONE, true, MUL);
 }
 
 
@@ -3664,10 +3741,8 @@ void update_state_using_previous_layers_sparse_full(elina_manager_t* man, fppoly
 }
 
 
-void ffn_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type** weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const activation_type_t activation, const bool alloc, const bool use_area_heuristic)
+void ffn_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* const * weights, const float_type* cst, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const activation_type_t activation, const bool alloc, const bool use_area_heuristic, fnn_op OP)
 {
-    clean_training_data();
-
     fppoly_t* fp = fppoly_of_abstract0(element);
     ffn_add_layer(fp, num_out_neurons, num_in_neurons, FFN, activation);
 
@@ -3676,28 +3751,104 @@ void ffn_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* elem
     float_type* coeffs = fp->layers[fp->numlayers - 1]->coeffs;
     float_type* csts = fp->layers[fp->numlayers - 1]->csts;
 
-    layer_create_dense_exprs(coeffs, csts, weights, bias, num_out_neurons, num_in_neurons);
+    if(OP == MUL || OP == SUB1 || OP == SUB2)
+    {
+        float_type** dense_weights = (float_type**) malloc(num_in_neurons*sizeof(float_type*));
+
+        for(size_t j = 0; j < num_in_neurons; j++)
+        {
+            dense_weights[j] = (float_type*) calloc(num_in_neurons, sizeof(float_type));
+        }
+
+        if(OP == MUL)
+        {
+            float_type* dense_cst = (float_type*) calloc(num_in_neurons, sizeof(float_type));
+
+            for(size_t j = 0; j < num_in_neurons; j++)
+            {
+                dense_weights[j][j] = cst[j];
+            }
+
+            layer_create_dense_exprs(coeffs, csts, dense_weights, dense_cst, num_in_neurons, num_in_neurons);
+
+            free(dense_cst);
+        }
+        else if(OP == SUB1)
+        {
+            for(size_t j = 0; j < num_in_neurons; j++)
+            {
+                dense_weights[j][j] = -1;
+            }
+
+            layer_create_dense_exprs(coeffs, csts, dense_weights, cst, num_in_neurons, num_in_neurons);
+        }
+        else if(OP == SUB2)
+        {
+            float_type* dense_cst = (float_type*) calloc(num_in_neurons, sizeof(float_type));
+
+            for(size_t j = 0; j < num_in_neurons; j++)
+            {
+                dense_weights[j][j] = 1;
+            }
+
+            for(size_t j = 0; j < num_in_neurons; j++)
+            {
+                dense_cst[j] = -cst[j];
+            }
+
+            layer_create_dense_exprs(coeffs, csts, dense_weights, dense_cst, num_in_neurons, num_in_neurons);
+
+            free(dense_cst);
+        }
+
+        for(size_t j = 0; j < num_in_neurons; j++)
+        {
+            free(dense_weights[j]);
+        }
+
+        free(dense_weights);
+    }
+    else
+    {
+        layer_create_dense_exprs(coeffs, csts, weights, cst, num_out_neurons, num_in_neurons);
+    }
 
     update_state_using_previous_layers(man, fp, fp->numlayers - 1, use_area_heuristic);
 }
 
 
-void ffn_handle_intermediate_affine_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type** weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool use_area_heuristic)
+void ffn_handle_intermediate_affine_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* const * weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool use_area_heuristic)
 {
-    ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons, num_in_neurons, predecessors, NONE, true, use_area_heuristic);
+    ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons, num_in_neurons, predecessors, NONE, true, use_area_heuristic, MATMULT);
 }
 
 
-void ffn_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type** weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool use_area_heuristic)
+void ffn_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* const * weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool use_area_heuristic)
 {
-    ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons, num_in_neurons, predecessors, RELU, true, use_area_heuristic);
+    ffn_handle_intermediate_layer(man, element, weights, bias, num_out_neurons, num_in_neurons, predecessors, RELU, true, use_area_heuristic, MATMULT);
 }
 
 
-void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type** weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool has_activation, const activation_type_t activation, const bool alloc, const bool use_area_heuristic)
+void ffn_handle_intermediate_sub_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* cst, const bool is_minuend, const size_t num_in_neurons, size_t* predecessors, const bool use_area_heuristic)
 {
-    clean_training_data();
+    if(is_minuend == true)
+    {
+        ffn_handle_intermediate_layer(man, element, nullptr, cst, num_in_neurons, num_in_neurons, predecessors, NONE, true, use_area_heuristic, SUB1);
+    }
+    else
+    {
+        ffn_handle_intermediate_layer(man, element, nullptr, cst, num_in_neurons, num_in_neurons, predecessors, NONE, true, use_area_heuristic, SUB2);
+    }
+}
 
+void ffn_handle_intermediate_mul_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* bias, const size_t num_in_neurons, size_t* predecessors, const bool use_area_heuristic)
+{
+    ffn_handle_intermediate_layer(man, element, nullptr, bias, num_in_neurons, num_in_neurons, predecessors, NONE, true, use_area_heuristic, MUL);
+}
+
+
+void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* const * weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool has_activation, const activation_type_t activation, const bool alloc, const bool use_area_heuristic)
+{
     fppoly_t* fp = fppoly_of_abstract0(element);
     fppoly_internal_t* pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 
@@ -3720,7 +3871,7 @@ void ffn_handle_last_layer(elina_manager_t* man, elina_abstract0_t* element, con
     update_state_using_previous_layers(man, fp, fp->numlayers - 1, use_area_heuristic);
 }
 
-void ffn_handle_last_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type** weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool has_relu, const bool use_area_heuristic)
+void ffn_handle_last_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* const * weights, const float_type* bias, const size_t num_out_neurons, const size_t num_in_neurons, size_t* predecessors, const bool has_relu, const bool use_area_heuristic)
 {
     ffn_handle_last_layer(man, element, weights, bias, num_out_neurons, num_in_neurons, predecessors, has_relu, RELU, true, use_area_heuristic);
 }
@@ -4575,8 +4726,6 @@ void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element, c
 
 void conv_handle_intermediate_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const size_t* output_size, const size_t pad_top, const size_t pad_left, const bool has_bias, size_t* predecessors, const activation_type_t activation, const bool use_area_heuristic, const bool retain_training_data, const float_type* gradient)
 {
-    clean_training_data();
-
     fppoly_t* const fp = fppoly_of_abstract0(element);
 
     layer_create_sparse_exprs(fp, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, activation);
@@ -4650,8 +4799,6 @@ void res_add_layer(fppoly_t* const fp, const size_t num_neurons, const layertype
 
 void handle_residual_layer(elina_manager_t* man, elina_abstract0_t* element, const size_t num_neurons, size_t* predecessors, const activation_type_t activation, const bool use_area_heuristic)
 {
-    clean_training_data();
-
 	fppoly_t* fp = fppoly_of_abstract0(element);
 	res_add_layer(fp, num_neurons, RESIDUAL, activation);
 	fp->layers[fp->numlayers - 1]->predecessors = predecessors;
@@ -4734,8 +4881,6 @@ void fppoly_free(elina_manager_t* man, fppoly_t* fp)
     fp->input_lcst = nullptr;
     fp->input_ucst = nullptr;
 
-    clean_training_data();
-
     free(fp);
     fp = nullptr;
 }
@@ -4747,7 +4892,7 @@ void layer_print(const layer_t* layer)
 }
 
 
-void fppoly_fprint(FILE* const stream, elina_manager_t* man, const fppoly_t* const fp, const char** name_of_dim)
+void fppoly_fprint(FILE* const stream, elina_manager_t* man, const fppoly_t* const fp, const char* const * name_of_dim)
 {
     for(size_t i = 0; i < fp->numlayers; i++)
     {
