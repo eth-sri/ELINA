@@ -120,7 +120,8 @@ typedef struct fppoly_t {
   size_t num_pixels;
 } fppoly_t;
 
-elina_manager_t *fppoly_manager_alloc();
+elina_manager_t *fppoly_manager_alloc(const size_t gpu_number,
+                                      const size_t backstep_depth);
 
 elina_abstract0_t *fppoly_from_network_input(elina_manager_t *man,
                                              const size_t intdim,
