@@ -531,7 +531,7 @@ def ffn_handle_first_sub_layer(man, element, cst, is_minuend, size, predecessors
     ----------
         man : ElinaManagerPtr
             Pointer to the ElinaManager
-        cst : POINTER(c_double)
+        cst : POINTER(c_float_type)
             The cst vector
         is_minuend: c_bool
             Whether the assignment is y=x-cst or y=cst-x
@@ -549,7 +549,7 @@ def ffn_handle_first_sub_layer(man, element, cst, is_minuend, size, predecessors
     try:
         ffn_handle_first_sub_layer_c = fppoly_gpu_api.ffn_handle_first_sub_layer
         ffn_handle_first_sub_layer_c.restype = None
-        ffn_handle_first_sub_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double),  c_bool, c_size_t, POINTER(c_size_t)]
+        ffn_handle_first_sub_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(c_float_type),  c_bool, c_size_t, POINTER(c_size_t)]
         ffn_handle_first_sub_layer_c(man, element, cst, is_minuend, size, predecessors)
     except Exception as inst:
         print('Problem with loading/calling "ffn_handle_first_sub_layer" from "libfppoly_gpu.so"')
@@ -567,7 +567,7 @@ def ffn_handle_first_mul_layer(man, element, cst, size, predecessors):
     ----------
         man : ElinaManagerPtr
             Pointer to the ElinaManager
-        cst : POINTER(c_double)
+        cst : POINTER(c_float_type)
             The cst vector
         size: c_size_t
             Number of neurons in the first layer
@@ -583,7 +583,7 @@ def ffn_handle_first_mul_layer(man, element, cst, size, predecessors):
     try:
         ffn_handle_first_mul_layer_c = fppoly_gpu_api.ffn_handle_first_mul_layer
         ffn_handle_first_mul_layer_c.restype = None
-        ffn_handle_first_mul_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double),  c_size_t, POINTER(c_size_t)]
+        ffn_handle_first_mul_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(c_float_type),  c_size_t, POINTER(c_size_t)]
         ffn_handle_first_mul_layer_c(man, element, cst, size, predecessors)
     except Exception as inst:
         print('Problem with loading/calling "ffn_handle_first_mul_layer" from "libfppoly_gpu.so"')
@@ -1055,7 +1055,7 @@ def ffn_handle_intermediate_sub_layer(man, element, bias, is_minuend, num_in_neu
     try:
         ffn_handle_intermediate_sub_layer_c = fppoly_gpu_api.ffn_handle_intermediate_sub_layer
         ffn_handle_intermediate_sub_layer_c.restype = None
-        ffn_handle_intermediate_sub_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), c_bool, c_size_t, POINTER(c_size_t),c_bool]
+        ffn_handle_intermediate_sub_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(c_float_type), c_bool, c_size_t, POINTER(c_size_t),c_bool]
         ffn_handle_intermediate_sub_layer_c(man,element, bias, is_minuend, num_in_neurons, predecessors, use_area_heuristic)
     except Exception as inst:
         print('Problem with loading/calling "ffn_handle_intermediate_sub_layer" from "libfppoly_gpu.so"')
@@ -1093,7 +1093,7 @@ def ffn_handle_intermediate_mul_layer(man, element, bias, num_in_neurons, predec
     try:
         ffn_handle_intermediate_mul_layer_c = fppoly_gpu_api.ffn_handle_intermediate_mul_layer
         ffn_handle_intermediate_mul_layer_c.restype = None
-        ffn_handle_intermediate_mul_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), c_size_t, POINTER(c_size_t),c_bool]
+        ffn_handle_intermediate_mul_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(c_float_type), c_size_t, POINTER(c_size_t),c_bool]
         ffn_handle_intermediate_mul_layer_c(man,element, bias, num_in_neurons, predecessors, use_area_heuristic)
     except Exception as inst:
         print('Problem with loading/calling "ffn_handle_intermediate_mul_layer" from "libfppoly_gpu.so"')
@@ -1695,18 +1695,9 @@ def handle_maxpool_layer(man, element, pool_size, input_size, predecessors):
 
     """
 
-    res = None
+    print('"handle_maxpool_layer" is not implemented in "libfppoly_gpu.so". It only exists in the CPU version of fppoly.')
 
-    try:
-        handle_maxpool_layer_c = fppoly_gpu_api.handle_maxpool_layer
-        handle_maxpool_layer_c.restype = c_size_t
-        handle_maxpool_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(c_size_t), ndpointer(c_size_t), POINTER(c_size_t)]
-        res = handle_maxpool_layer_c(man, element, pool_size, input_size, predecessors)
-    except Exception as inst:
-        print('Problem with loading/calling "handle_maxpool_layer" from "libfppoly_gpu.so".')
-        print(inst)
-
-    return res
+    return 0
 
 
 def handle_residual_relu_layer(man, element, num_neurons, predecessors, use_area_heuristic):
@@ -1947,14 +1938,7 @@ def get_bounds_for_linexpr0(man, element, linexpr0, layerno):
 
     interval = None
 
-    try:
-        get_bounds_for_linexpr0_c = fppoly_gpu_api.get_bounds_for_linexpr0
-        get_bounds_for_linexpr0_c.restype = ElinaIntervalPtr
-        get_bounds_for_linexpr0_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaLinexpr0Ptr, c_size_t]
-        interval = get_bounds_for_linexpr0_c(man, element, linexpr0, layerno)
-    except:
-        print('Problem with loading/calling "get_bounds_for_linexpr0" from "fppoly_gpu.so".')
-        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, ElinaLinexpr0Ptr, c_size_t to the function.')
+    print('"get_bounds_for_linexpr0" is not implemented in "libfppoly_gpu.so". It only exists in the CPU version of fppoly.')
 
     return interval
 
@@ -1971,7 +1955,7 @@ def get_lexpr_for_output_neuron(man, element, i):
         element: ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0
         i: c_size_t
-            output neuron number
+            Output neuron number
 
     Returns
     -------
@@ -1982,14 +1966,7 @@ def get_lexpr_for_output_neuron(man, element, i):
 
     linexpr0 = None
 
-    try:
-        get_lexpr_for_output_neuron_c = fppoly_gpu_api.get_lexpr_for_output_neuron
-        get_lexpr_for_output_neuron_c.restype = ElinaLinexpr0Ptr
-        get_lexpr_for_output_neuron_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t]
-        linexpr0 = get_lexpr_for_output_neuron_c(man, element, i)
-    except:
-        print('Problem with loading/calling "get_lexpr_for_output_neuron" from "fppoly_gpu.so".')
-        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t to the function.')
+    print('"get_lexpr_for_output_neuron" is not implemented in "libfppoly_gpu.so". It only exists in the CPU version of fppoly.')
 
     return linexpr0
 
@@ -2006,7 +1983,7 @@ def get_uexpr_for_output_neuron(man, element, i):
         element: ElinaAbstract0Ptr
             Pointer to the ElinaAbstract0.
         i: c_size_t
-            output neuron number
+            Output neuron number
 
     Returns
     -------
@@ -2017,14 +1994,7 @@ def get_uexpr_for_output_neuron(man, element, i):
 
     linexpr0 = None
 
-    try:
-        get_uexpr_for_output_neuron_c = fppoly_gpu_api.get_uexpr_for_output_neuron
-        get_uexpr_for_output_neuron_c.restype = ElinaLinexpr0Ptr
-        get_uexpr_for_output_neuron_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t]
-        linexpr0 = get_uexpr_for_output_neuron_c(man, element, i)
-    except:
-        print('Problem with loading/calling "get_uexpr_for_output_neuron" from "fppoly_gpu.so".')
-        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t to the function.')
+    print('"get_uexpr_for_output_neuron" is not implemented in "libfppoly_gpu.so". It only exists in the CPU version of fppoly.')
 
     return linexpr0
 
