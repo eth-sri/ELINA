@@ -39,7 +39,7 @@ __constant__ const float_type ulp =          2.220446049250313080848e-16;
 #include "relu_approx.h"
 #include "linear.h"
 
-const size_t maximum_backstep = 2;
+size_t maximum_backstep = 2;
 
 const size_t num_threads = 256;
 
@@ -119,9 +119,25 @@ fppoly_internal_t* fppoly_init_from_manager(elina_manager_t* man, elina_funid_t 
 }
 
 
-elina_manager_t* fppoly_manager_alloc()
+elina_manager_t* fppoly_manager_alloc(const size_t gpu_number, const size_t backstep_depth)
 {
     results_calculated = false;
+
+    auto status = cudaSetDevice(gpu_number);
+
+    if(status == cudaErrorInvalidDevice)
+    {
+        std::cerr << "error: CUDA API call : " << cudaGetErrorString(status) << std::endl;
+        exit(1);
+    }
+
+    if(status == cudaErrorSetOnActiveProcess)
+    {
+        std::cerr << "error: CUDA API call : " << cudaGetErrorString(status) << std::endl;
+        exit(1);
+    }
+
+    maximum_backstep = backstep_depth;
 
     output_counter_x = 0;
     output_counter_y = 0;

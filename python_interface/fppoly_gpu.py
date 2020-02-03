@@ -35,7 +35,7 @@ float_type = np.double
 _doublepp = ndpointer(dtype=np.uintp, ndim=1, flags='C')
 
 
-def fppoly_manager_alloc():
+def fppoly_manager_alloc(gpu_number, backstep_depth):
 
     """
     Allocates an ElinaManager.
@@ -52,8 +52,8 @@ def fppoly_manager_alloc():
     try:
         fppoly_manager_alloc_c = fppoly_gpu_api.fppoly_manager_alloc
         fppoly_manager_alloc_c.restype = ElinaManagerPtr
-        fppoly_manager_alloc_c.argtypes = None
-        man = fppoly_manager_alloc_c()
+        fppoly_manager_alloc_c.argtypes = [c_size_t, c_size_t]
+        man = fppoly_manager_alloc_c(gpu_number, backstep_depth)
     except:
         print('Problem with loading/calling "fppoly_manager_alloc" from "libfppoly_gpu.so".')
 
