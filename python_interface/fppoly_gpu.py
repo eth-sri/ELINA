@@ -546,14 +546,7 @@ def ffn_handle_first_sub_layer(man, element, cst, is_minuend, size, predecessors
 
     """
 
-    try:
-        ffn_handle_first_sub_layer_c = fppoly_gpu_api.ffn_handle_first_sub_layer
-        ffn_handle_first_sub_layer_c.restype = None
-        ffn_handle_first_sub_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(c_float_type),  c_bool, c_size_t, POINTER(c_size_t)]
-        ffn_handle_first_sub_layer_c(man, element, cst, is_minuend, size, predecessors)
-    except Exception as inst:
-        print('Problem with loading/calling "ffn_handle_first_sub_layer" from "libfppoly_gpu.so"')
-        print(inst)
+    print('"ffn_handle_first_sub_layer" is not implemented in "libfppoly_gpu.so". It only exists in the CPU version of fppoly.')
 
     return
 
@@ -580,14 +573,7 @@ def ffn_handle_first_mul_layer(man, element, cst, size, predecessors):
 
     """
 
-    try:
-        ffn_handle_first_mul_layer_c = fppoly_gpu_api.ffn_handle_first_mul_layer
-        ffn_handle_first_mul_layer_c.restype = None
-        ffn_handle_first_mul_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(c_float_type),  c_size_t, POINTER(c_size_t)]
-        ffn_handle_first_mul_layer_c(man, element, cst, size, predecessors)
-    except Exception as inst:
-        print('Problem with loading/calling "ffn_handle_first_mul_layer" from "libfppoly_gpu.so"')
-        print(inst)
+    print('"ffn_handle_first_mul_layer" is not implemented in "libfppoly_gpu.so". It only exists in the CPU version of fppoly.')
 
     return
 
@@ -1052,14 +1038,7 @@ def ffn_handle_intermediate_sub_layer(man, element, bias, is_minuend, num_in_neu
 
     """
 
-    try:
-        ffn_handle_intermediate_sub_layer_c = fppoly_gpu_api.ffn_handle_intermediate_sub_layer
-        ffn_handle_intermediate_sub_layer_c.restype = None
-        ffn_handle_intermediate_sub_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(c_float_type), c_bool, c_size_t, POINTER(c_size_t),c_bool]
-        ffn_handle_intermediate_sub_layer_c(man,element, bias, is_minuend, num_in_neurons, predecessors, use_area_heuristic)
-    except Exception as inst:
-        print('Problem with loading/calling "ffn_handle_intermediate_sub_layer" from "libfppoly_gpu.so"')
-        print(inst)
+    print('"ffn_handle_intermediate_sub_layer" is not implemented in "libfppoly_gpu.so". It only exists in the CPU version of fppoly.')
 
     return
 
@@ -1090,14 +1069,7 @@ def ffn_handle_intermediate_mul_layer(man, element, bias, num_in_neurons, predec
 
     """
 
-    try:
-        ffn_handle_intermediate_mul_layer_c = fppoly_gpu_api.ffn_handle_intermediate_mul_layer
-        ffn_handle_intermediate_mul_layer_c.restype = None
-        ffn_handle_intermediate_mul_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(c_float_type), c_size_t, POINTER(c_size_t),c_bool]
-        ffn_handle_intermediate_mul_layer_c(man,element, bias, num_in_neurons, predecessors, use_area_heuristic)
-    except Exception as inst:
-        print('Problem with loading/calling "ffn_handle_intermediate_mul_layer" from "libfppoly_gpu.so"')
-        print(inst)
+    print('"ffn_handle_intermediate_mul_layer" is not implemented in "libfppoly_gpu.so". It only exists in the CPU version of fppoly.')
 
     return
 
