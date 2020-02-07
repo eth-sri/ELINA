@@ -21,7 +21,8 @@
  *  @brief Provides a templated wrapper around the CUDA rounding intrinsics.
  */
 
-#pragma once
+#ifndef __ROUNDING_H_INCLUDED__
+#define __ROUNDING_H_INCLUDED__
 
 
 template <typename T>
@@ -178,3 +179,5 @@ double div_rd<double>(const double lhs, const double rhs)
 {
     return __ddiv_rd(lhs, rhs);
 }
+
+#endif //__ROUNDING_H_INCLUDED__

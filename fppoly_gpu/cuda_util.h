@@ -21,7 +21,8 @@
  *  @brief Provides convenient C++ wrappers around CUDA functions.
  */
 
-#pragma once
+#ifndef __CUDA_UTIL_H_INCLUDED__
+#define __CUDA_UTIL_H_INCLUDED__
 
 #include <iostream>
 
@@ -67,5 +68,6 @@ void copy_to_host(T* to, const T* from, const size_t n)
     cuda_check_status(status);
 }
 
-
 #endif
+
+#endif //__CUDA_UTIL_H_INCLUDED__

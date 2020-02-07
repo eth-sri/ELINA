@@ -21,9 +21,11 @@
  *  @brief Provides all linear and affine transformation functions.
  */
 
-#pragma once
+#ifndef __LINEAR_H_INCLUDED__
+#define __LINEAR_H_INCLUDED__
 
 #include "interval.h"
+
 
 __device__
 void add_coeff(float_type& lhs_inf_coeff, float_type& lhs_sup_coeff, float_type& maxRes, float_type& maxMul, const float_type rhs_inf_coeff, const float_type rhs_sup_coeff)
@@ -115,3 +117,5 @@ void ucst_input_poly_neutral(float_type& inf_cst, float_type& sup_cst, float_typ
     inf_cst = add_rd(inf_cst, add_rd(tmp2, -add_rd(mul_ru(add_ru(maxRes, maxMul), ulp), -min_denormal)));
     sup_cst = add_ru(inf_cst, add_ru(tmp2,  add_ru(mul_ru(add_ru(maxRes, maxMul), ulp),  min_denormal)));
 }
+
+#endif //__LINEAR_H_INCLUDED__

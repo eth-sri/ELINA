@@ -21,9 +21,11 @@
  *  @brief Provides the kernels for the relu approximation.
  */
 
-#pragma once
+#ifndef __RELU_APPROX_H_INCLUDED__
+#define __RELU_APPROX_H_INCLUDED__
 
 #include "interval.h"
+
 
 __device__
 void lcoeff_replace_relu_bounds(float_type& inf_coeff, float_type& sup_coeff, float_type& res_inf_cst, float_type& res_sup_cst, const float_type lb, const float_type ub, const bool use_area_heuristic)
@@ -171,3 +173,5 @@ void ucoeff_replace_relu_bounds(float_type& inf_coeff, float_type& sup_coeff, fl
         res_sup_cst = add_ru(res_sup_cst, tmp2);
     }
 }
+
+#endif //__RELU_APPROX_H_INCLUDED__
