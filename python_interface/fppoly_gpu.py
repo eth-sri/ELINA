@@ -35,7 +35,7 @@ float_type = np.double
 _doublepp = ndpointer(dtype=np.uintp, ndim=1, flags='C')
 
 
-def fppoly_manager_alloc(gpu_number, backstep_depth):
+def fppoly_manager_alloc(gpu_number = 0, backstep_depth = 2):
 
     """
     Allocates an ElinaManager.

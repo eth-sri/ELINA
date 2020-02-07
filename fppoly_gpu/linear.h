@@ -21,7 +21,8 @@
  *  @brief Provides all linear and affine transformation functions.
  */
 
-#pragma once
+#ifndef __LINEAR_H_INCLUDED__
+#define __LINEAR_H_INCLUDED__
 
 #include "interval.h"
 
@@ -151,3 +152,5 @@ __device__ void ucst_input_poly_neutral(
       inf_cst,
       add_ru(tmp2, add_ru(mul_ru(add_ru(maxRes, maxMul), ulp), min_denormal)));
 }
+
+#endif //__LINEAR_H_INCLUDED__

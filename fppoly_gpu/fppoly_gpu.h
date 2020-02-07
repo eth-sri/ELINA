@@ -260,4 +260,4 @@ float_type *get_adv();
 }
 #endif
 
-#endif
+#endif //__FPPOLY_GPU_H_INCLUDED__

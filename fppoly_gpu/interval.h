@@ -21,7 +21,8 @@
  *  @brief Provides basic interval-interval or interval-scalar operations.
  */
 
-#pragma once
+#ifndef __INTERVAL_H_INCLUDED__
+#define __INTERVAL_H_INCLUDED__
 
 __device__ void interval_mul(float_type &a_inf, float_type &a_sup,
                              const float_type b_inf, const float_type b_sup,
@@ -163,3 +164,5 @@ __device__ void interval_mul_cst_coeff_const_expr(float_type &res_inf,
   res_inf = add_rd(res_inf, -min_denormal);
   res_sup = add_ru(res_sup, min_denormal);
 }
+
+#endif //__INTERVAL_H_INCLUDED__

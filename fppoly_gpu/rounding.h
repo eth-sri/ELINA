@@ -21,7 +21,8 @@
  *  @brief Provides a templated wrapper around the CUDA rounding intrinsics.
  */
 
-#pragma once
+#ifndef __ROUNDING_H_INCLUDED__
+#define __ROUNDING_H_INCLUDED__
 
 template <typename T> __inline__ __device__ T add_ru(const T lhs, const T rhs) {
   std::cerr << "This function should not be called for types other than float "
@@ -136,3 +137,5 @@ __inline__ __device__ double div_rd<double>(const double lhs,
                                             const double rhs) {
   return __ddiv_rd(lhs, rhs);
 }
+
+#endif //__ROUNDING_H_INCLUDED__

@@ -21,7 +21,8 @@
  *  @brief Provides the kernels for the relu approximation.
  */
 
-#pragma once
+#ifndef __RELU_APPROX_H_INCLUDED__
+#define __RELU_APPROX_H_INCLUDED__
 
 #include "interval.h"
 
@@ -144,3 +145,5 @@ ucoeff_replace_relu_bounds(float_type &inf_coeff, float_type &sup_coeff,
     res_sup_cst = add_ru(res_sup_cst, tmp2);
   }
 }
+
+#endif //__RELU_APPROX_H_INCLUDED__
