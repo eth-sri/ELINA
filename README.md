@@ -1,5 +1,5 @@
 # ELINA
-ETH Library for Numerical Analyis (ELINA) contains optimized implementations of popular numerical abstract domains such as Polyhedra, Octagons, Zonoes, Zonotopes, DeepPoly (CPU and GPU versions) for static analysis. 
+ETH Library for Numerical Analyis (ELINA) contains optimized implementations of popular numerical abstract domains such as Polyhedra, Octagons, Zones, Zonotopes for static program analysis. Further, ELINA also provides specialized numerical domains for neural network analysis such as DeepZ and DeepPoly (CPU and GPU versions).
 
 The library uses improved algorithms, online decomposition as well as state of the art performance optimizations from linear algebra such as vectorization, locality of reference, scalar replacement etc. to significantly improve the performance of static analysis with the numerical domains.
 
