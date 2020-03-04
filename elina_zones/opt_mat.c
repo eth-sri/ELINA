@@ -788,14 +788,14 @@ bool is_equal_zones_mat(opt_zones_mat_t *oz1, opt_zones_mat_t *oz2, unsigned sho
 					if(!ci){
 						if(m2[i1]!=INFINITY){
 							free(ca);
-                                                        free(arr_map2);
-                                                        free_array_comp_list(acl);
+							free(arr_map1);
+							free_array_comp_list(acl);
 							return false;
 						}
 						if(m2[n*i1]!=INFINITY){
 							free(ca);
-                                                        free(arr_map2);
-                                                        free_array_comp_list(acl);
+							free(arr_map1);
+							free_array_comp_list(acl);
 							return false;
 						}
 					}
