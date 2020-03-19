@@ -235,7 +235,7 @@ void * handle_relu_zono_parallel(void *args){
 	size_t start_offset = data->start_offset;
 	size_t idx_start = data->start;
 	size_t idx_end = data->end;
-	
+	bool create_new_noise_symbol = data->create_new_noise_symbol;
 	zonotope_noise_symbol_t **epsilon_map = data->epsilon_map;
 	zonotope_noise_symbol_t **epsilon_map_extra = data->epsilon_map_extra;
 	size_t offset = start_offset + idx_start;
@@ -286,7 +286,7 @@ void * handle_relu_zono_parallel(void *args){
 			
 			
 			
-			if((-inf>sup)&&-bound_l>1){
+			if(false){
 				
 				double alpha_l, alpha_u;
 				elina_double_interval_div(&alpha_l,&alpha_u,-1,1,bound_l,bound_u);
@@ -372,26 +372,29 @@ void * handle_relu_zono_parallel(void *args){
 				zonotope_aff_t * res = zonotope_aff_mul_itv(pr, zo->paf[offset], lambda);
 				zonotope_aff_check_free(pr, zo->paf[offset]);
 				elina_interval_free(lambda);
-
-				double mid_inf = 0.0;
-    				double mid_sup = 0.0;
-    				double dev_inf = 0.0;
-    				double dev_sup = 0.0;
-				elina_interval_middev(&mid_inf, &mid_sup, &dev_inf, &dev_sup, 0,bound_u);
-				res->c_inf = res->c_inf + mid_inf;
-				res->c_sup = res->c_sup + mid_sup;
-				
-   				if (dev_inf!=0 || dev_sup!=0) {
-					zonotope_aaterm_t* ptr = zonotope_aaterm_alloc_init();
-					ptr->inf = dev_inf;
-					ptr->sup = dev_sup;
-					ptr->pnsym = epsilon_map[i];
-                     			if (res->end) res->end->n = ptr;
-					else res->q = ptr;
-					res->end = ptr;
-					res->l++;
-    				}				           
-
+				if(create_new_noise_symbol){
+					double mid_inf = 0.0;
+	    				double mid_sup = 0.0;
+	    				double dev_inf = 0.0;
+	    				double dev_sup = 0.0;
+					elina_interval_middev(&mid_inf, &mid_sup, &dev_inf, &dev_sup, 0,bound_u);
+					res->c_inf = res->c_inf + mid_inf;
+					res->c_sup = res->c_sup + mid_sup;
+					
+	   				if (dev_inf!=0 || dev_sup!=0) {
+						zonotope_aaterm_t* ptr = zonotope_aaterm_alloc_init();
+						ptr->inf = dev_inf;
+						ptr->sup = dev_sup;
+						ptr->pnsym = epsilon_map[i];
+		             			if (res->end) res->end->n = ptr;
+						else res->q = ptr;
+						res->end = ptr;
+						res->l++;
+	    				}
+				}				           
+				else{
+					res->c_sup = res->c_sup + bound_u;
+				}
 				//res->itv_inf+= ;
 				res->itv_sup+= bound_u;
 				zo->paf[offset] = res;
@@ -573,7 +576,7 @@ elina_abstract0_t *maxpool_zono_refined(elina_manager_t* man, bool destructive, 
 	return abstract0_of_zonotope(man,zo);
 }
 
-elina_abstract0_t * relu_zono_layerwise(elina_manager_t* man, bool destructive, elina_abstract0_t * abs,  elina_dim_t start_offset, elina_dim_t num_dim){
+elina_abstract0_t * relu_zono_layerwise(elina_manager_t* man, bool destructive, elina_abstract0_t * abs,  elina_dim_t start_offset, elina_dim_t num_dim, bool create_new_noise_symbol){
 	//elina_dim_t i;
 	//elina_dim_t end = start_offset + num_dim;
 	elina_dimension_t dimension = elina_abstract0_dimension(man,abs);
@@ -584,7 +587,7 @@ elina_abstract0_t * relu_zono_layerwise(elina_manager_t* man, bool destructive, 
 	//	res= relu_zono(man,true,res,i);
 	//}
         zonotope_t *zo = zonotope_of_abstract0(res);
-        relu_zono_parallel(man, zo, start_offset, num_dim, handle_relu_zono_parallel);
+        relu_zono_parallel(man, zo, start_offset, num_dim, create_new_noise_symbol, handle_relu_zono_parallel);
         res = abstract0_of_zonotope(man,zo);
        
     return res;
