@@ -197,13 +197,7 @@ elina_box_t* elina_box_forget_array(elina_manager_t* man,
 elina_box_t* elina_box_widening(elina_manager_t* man,
                                 elina_box_t* a1, elina_box_t* a2);
 
-/* =========================================================== */
-/* ReLU */
-/* =========================================================== */
-elina_abstract0_t *relu_zono_layerwise(elina_manager_t *man, bool destructive,
-                                       elina_abstract0_t *abs,
-                                       elina_dim_t start_offset,
-                                       elina_dim_t num_dim);
+
 
 #ifdef __cplusplus
 }

@@ -64,10 +64,7 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *elem, elina_dim_t y, el
 
 elina_abstract0_t* zonotope_from_network_input(elina_manager_t* man, size_t intdim, size_t realdim, double* inf_array, double * sup_array);
 
-elina_abstract0_t *relu_zono_layerwise(elina_manager_t *man, bool destructive,
-                                       elina_abstract0_t *abs,
-                                       elina_dim_t start_offset,
-                                       elina_dim_t num_dim);
+elina_abstract0_t * relu_zono_layerwise(elina_manager_t* man, bool destructive, elina_abstract0_t * abs,  elina_dim_t start_offset, elina_dim_t num_dim, bool create_new_noise_symbol);
 
 elina_abstract0_t * sigmoid_zono_layerwise(elina_manager_t* man, bool destructive, elina_abstract0_t * abs,  elina_dim_t start_offset, elina_dim_t num_dim);
 

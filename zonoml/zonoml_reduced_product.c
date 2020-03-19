@@ -235,8 +235,8 @@ void * handle_relu_zono_parallel(void *args){
 	size_t start_offset = data->start_offset;
 	size_t idx_start = data->start;
 	size_t idx_end = data->end;
-
-        zonotope_noise_symbol_t **epsilon_map = data->epsilon_map;
+	bool create_new_noise_symbol = data->create_new_noise_symbol;
+	zonotope_noise_symbol_t **epsilon_map = data->epsilon_map;
 	zonotope_noise_symbol_t **epsilon_map_extra = data->epsilon_map_extra;
 	size_t offset = start_offset + idx_start;
 	size_t i;
@@ -283,134 +283,125 @@ void * handle_relu_zono_parallel(void *args){
 		
 			double lambda_l, lambda_u;
 			elina_double_interval_div(&lambda_l, &lambda_u, sup_l, sup_u, width_l, width_u);
+			
+			
+			
+			if(false){
+				
+				double alpha_l, alpha_u;
+				elina_double_interval_div(&alpha_l,&alpha_u,-1,1,bound_l,bound_u);
+				
+				double beta_l = -1 + alpha_u;
+				double beta_u = 1 + alpha_l;
+				
+				double mid_inf = 0.0;
+    				double mid_sup = 0.0;
+    				double dev_inf = 0.0;
+    				double dev_sup = 0.0;
+				zonotope_aff_t * res_box = zonotope_aff_alloc_init(pr);
+				elina_interval_middev(&mid_inf, &mid_sup, &dev_inf, &dev_sup, 0,sup_u);
+				res_box->c_inf = res_box->c_inf + mid_inf;
+				res_box->c_sup = res_box->c_sup + mid_sup;
+				res_box->itv_inf = 0.0;
+				res_box->itv_sup = sup_u;
+				
+   				 if (dev_inf!=0 || dev_sup!=0) {
+					zonotope_aaterm_t* ptr = zonotope_aaterm_alloc_init();
+					ptr->inf = dev_inf;
+					ptr->sup = dev_sup;
+					ptr->pnsym = epsilon_map_extra[i];
+                     			if (res_box->end) res_box->end->n = ptr;
+					else res_box->q = ptr;
+					res_box->end = ptr;
+					res_box->l++;
+    				}
+				
+				elina_interval_t *beta = elina_interval_alloc();
+				elina_interval_set_double(beta,-beta_l,beta_u);
+            			zonotope_aff_t *tmp = res_box;
+				res_box = zonotope_aff_mul_itv(pr, tmp, beta);
+				zonotope_aff_check_free(pr, tmp);
+				elina_interval_free(beta);
 
-                        if ((-inf > sup) && -bound_l > 1) {
 
-                          double alpha_l, alpha_u;
-                          elina_double_interval_div(&alpha_l, &alpha_u, -1, 1,
-                                                    bound_l, bound_u);
+				elina_interval_t *lambda = elina_interval_alloc();
+				elina_interval_set_double(lambda,-lambda_l,lambda_u);
+				zonotope_aff_t * res_zono = zonotope_aff_mul_itv(pr, zo->paf[offset], lambda);
+				zonotope_aff_check_free(pr, zo->paf[offset]);
+				elina_interval_free(lambda);
+				
+				elina_interval_middev(&mid_inf, &mid_sup, &dev_inf, &dev_sup, 0,bound_u);
+				res_zono->c_inf = res_zono->c_inf + mid_inf;
+				res_zono->c_sup = res_zono->c_sup + mid_sup;
+				
+				
+   				 if (dev_inf!=0 || dev_sup!=0) {
+					zonotope_aaterm_t* ptr = zonotope_aaterm_alloc_init();
+					ptr->inf = dev_inf;
+					ptr->sup = dev_sup;
+					ptr->pnsym = epsilon_map[i];
+                     			if (res_zono->end) res_zono->end->n = ptr;
+					else res_zono->q = ptr;
+					res_zono->end = ptr;
+					res_zono->l++;
+    				}
+								
+				res_zono->itv_sup+= bound_u;
 
-                          double beta_l = -1 + alpha_u;
-                          double beta_u = 1 + alpha_l;
+				elina_interval_t *alpha = elina_interval_alloc();
+				elina_interval_set_double(alpha,-alpha_l,alpha_u);
+            			tmp = res_zono;
+				res_zono = zonotope_aff_mul_itv(pr, tmp, alpha);
+				zonotope_aff_check_free(pr, tmp);
+				elina_interval_free(alpha);
 
-                          double mid_inf = 0.0;
-                          double mid_sup = 0.0;
-                          double dev_inf = 0.0;
-                          double dev_sup = 0.0;
-                          zonotope_aff_t *res_box = zonotope_aff_alloc_init(pr);
-                          elina_interval_middev(&mid_inf, &mid_sup, &dev_inf,
-                                                &dev_sup, 0, sup_u);
-                          res_box->c_inf = res_box->c_inf + mid_inf;
-                          res_box->c_sup = res_box->c_sup + mid_sup;
-                          res_box->itv_inf = 0.0;
-                          res_box->itv_sup = sup_u;
-
-                          if (dev_inf != 0 || dev_sup != 0) {
-                            zonotope_aaterm_t *ptr =
-                                zonotope_aaterm_alloc_init();
-                            ptr->inf = dev_inf;
-                            ptr->sup = dev_sup;
-                            ptr->pnsym = epsilon_map_extra[i];
-                            if (res_box->end)
-                              res_box->end->n = ptr;
-                            else
-                              res_box->q = ptr;
-                            res_box->end = ptr;
-                            res_box->l++;
-                          }
-
-                          elina_interval_t *beta = elina_interval_alloc();
-                          elina_interval_set_double(beta, -beta_l, beta_u);
-                          zonotope_aff_t *tmp = res_box;
-                          res_box = zonotope_aff_mul_itv(pr, tmp, beta);
-                          zonotope_aff_check_free(pr, tmp);
-                          elina_interval_free(beta);
-
-                          elina_interval_t *lambda = elina_interval_alloc();
-                          elina_interval_set_double(lambda, -lambda_l,
-                                                    lambda_u);
-                          zonotope_aff_t *res_zono =
-                              zonotope_aff_mul_itv(pr, zo->paf[offset], lambda);
-                          zonotope_aff_check_free(pr, zo->paf[offset]);
-                          elina_interval_free(lambda);
-
-                          elina_interval_middev(&mid_inf, &mid_sup, &dev_inf,
-                                                &dev_sup, 0, bound_u);
-                          res_zono->c_inf = res_zono->c_inf + mid_inf;
-                          res_zono->c_sup = res_zono->c_sup + mid_sup;
-
-                          if (dev_inf != 0 || dev_sup != 0) {
-                            zonotope_aaterm_t *ptr =
-                                zonotope_aaterm_alloc_init();
-                            ptr->inf = dev_inf;
-                            ptr->sup = dev_sup;
-                            ptr->pnsym = epsilon_map[i];
-                            if (res_zono->end)
-                              res_zono->end->n = ptr;
-                            else
-                              res_zono->q = ptr;
-                            res_zono->end = ptr;
-                            res_zono->l++;
-                          }
-
-                          res_zono->itv_sup += bound_u;
-
-                          elina_interval_t *alpha = elina_interval_alloc();
-                          elina_interval_set_double(alpha, -alpha_l, alpha_u);
-                          tmp = res_zono;
-                          res_zono = zonotope_aff_mul_itv(pr, tmp, alpha);
-                          zonotope_aff_check_free(pr, tmp);
-                          elina_interval_free(alpha);
-
-                          zonotope_aff_t *res =
-                              zonotope_aff_add(pr, res_box, res_zono, zo);
-                          zo->paf[offset] = res;
-                          zo->box_inf[offset] = zo->paf[offset]->itv_inf;
-                          zo->box_sup[offset] = zo->paf[offset]->itv_sup;
-                          zonotope_aff_check_free(pr, res_box);
-                          zonotope_aff_check_free(pr, res_zono);
-
-                        } else {
-
-                          elina_interval_t *lambda = elina_interval_alloc();
-                          elina_interval_set_double(lambda, -lambda_l,
-                                                    lambda_u);
-
-                          zonotope_aff_t *res =
-                              zonotope_aff_mul_itv(pr, zo->paf[offset], lambda);
-                          zonotope_aff_check_free(pr, zo->paf[offset]);
-                          elina_interval_free(lambda);
-
-                          double mid_inf = 0.0;
-                          double mid_sup = 0.0;
-                          double dev_inf = 0.0;
-                          double dev_sup = 0.0;
-                          elina_interval_middev(&mid_inf, &mid_sup, &dev_inf,
-                                                &dev_sup, 0, bound_u);
-                          res->c_inf = res->c_inf + mid_inf;
-                          res->c_sup = res->c_sup + mid_sup;
-
-                          if (dev_inf != 0 || dev_sup != 0) {
-                            zonotope_aaterm_t *ptr =
-                                zonotope_aaterm_alloc_init();
-                            ptr->inf = dev_inf;
-                            ptr->sup = dev_sup;
-                            ptr->pnsym = epsilon_map[i];
-                            if (res->end)
-                              res->end->n = ptr;
-                            else
-                              res->q = ptr;
-                            res->end = ptr;
-                            res->l++;
-                          }
-
-                          // res->itv_inf+= ;
-                          res->itv_sup += bound_u;
-                          zo->paf[offset] = res;
-                          zo->box_inf[offset] = zo->paf[offset]->itv_inf;
-                          zo->box_sup[offset] = zo->paf[offset]->itv_sup;
-                        }
-                        //zo->paf[offset] = res;
+				zonotope_aff_t *res = zonotope_aff_add(pr, res_box, res_zono, zo);
+				zo->paf[offset] = res;
+				zo->box_inf[offset] = zo->paf[offset]->itv_inf;
+				zo->box_sup[offset] = zo->paf[offset]->itv_sup;
+				zonotope_aff_check_free(pr, res_box);
+				zonotope_aff_check_free(pr, res_zono);
+				
+			
+			}
+			else{	
+    			
+				elina_interval_t *lambda = elina_interval_alloc();
+				elina_interval_set_double(lambda,-lambda_l,lambda_u);
+            		
+				zonotope_aff_t * res = zonotope_aff_mul_itv(pr, zo->paf[offset], lambda);
+				zonotope_aff_check_free(pr, zo->paf[offset]);
+				elina_interval_free(lambda);
+				if(create_new_noise_symbol){
+					double mid_inf = 0.0;
+	    				double mid_sup = 0.0;
+	    				double dev_inf = 0.0;
+	    				double dev_sup = 0.0;
+					elina_interval_middev(&mid_inf, &mid_sup, &dev_inf, &dev_sup, 0,bound_u);
+					res->c_inf = res->c_inf + mid_inf;
+					res->c_sup = res->c_sup + mid_sup;
+					
+	   				if (dev_inf!=0 || dev_sup!=0) {
+						zonotope_aaterm_t* ptr = zonotope_aaterm_alloc_init();
+						ptr->inf = dev_inf;
+						ptr->sup = dev_sup;
+						ptr->pnsym = epsilon_map[i];
+		             			if (res->end) res->end->n = ptr;
+						else res->q = ptr;
+						res->end = ptr;
+						res->l++;
+	    				}
+				}				           
+				else{
+					res->c_sup = res->c_sup + bound_u;
+				}
+				//res->itv_inf+= ;
+				res->itv_sup+= bound_u;
+				zo->paf[offset] = res;
+				zo->box_inf[offset] = zo->paf[offset]->itv_inf;
+				zo->box_sup[offset] = zo->paf[offset]->itv_sup;
+			}
+			//zo->paf[offset] = res;
 			zo->paf[offset]->pby++;
 			
 		}
@@ -585,25 +576,23 @@ elina_abstract0_t *maxpool_zono_refined(elina_manager_t* man, bool destructive, 
 	return abstract0_of_zonotope(man,zo);
 }
 
-elina_abstract0_t *relu_zono_layerwise(elina_manager_t *man, bool destructive,
-                                       elina_abstract0_t *abs,
-                                       elina_dim_t start_offset,
-                                       elina_dim_t num_dim) {
-  // elina_dim_t i;
-  // elina_dim_t end = start_offset + num_dim;
-  elina_dimension_t dimension = elina_abstract0_dimension(man, abs);
-
-  elina_abstract0_t *res = destructive ? abs : elina_abstract0_copy(man, abs);
-
-  // for(i=start_offset; i < end; i++){
-  //	res= relu_zono(man,true,res,i);
-  //}
-  zonotope_t *zo = zonotope_of_abstract0(res);
-  relu_zono_parallel(man, zo, start_offset, num_dim, handle_relu_zono_parallel);
-  res = abstract0_of_zonotope(man, zo);
-
-  return res;
+elina_abstract0_t * relu_zono_layerwise(elina_manager_t* man, bool destructive, elina_abstract0_t * abs,  elina_dim_t start_offset, elina_dim_t num_dim, bool create_new_noise_symbol){
+	//elina_dim_t i;
+	//elina_dim_t end = start_offset + num_dim;
+	elina_dimension_t dimension = elina_abstract0_dimension(man,abs);
+	
+	elina_abstract0_t *res = destructive? abs : elina_abstract0_copy(man,abs);
+   
+	//for(i=start_offset; i < end; i++){
+	//	res= relu_zono(man,true,res,i);
+	//}
+        zonotope_t *zo = zonotope_of_abstract0(res);
+        relu_zono_parallel(man, zo, start_offset, num_dim, create_new_noise_symbol, handle_relu_zono_parallel);
+        res = abstract0_of_zonotope(man,zo);
+       
+    return res;
 }
+
 
 elina_abstract0_t * relu_zono_layerwise_split(elina_manager_t* man, bool destructive, elina_abstract0_t * abs,  elina_dim_t start_offset, elina_dim_t num_dim, 
 			elina_dim_t* split_index, int *split_path, size_t split_size){

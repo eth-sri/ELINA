@@ -468,8 +468,7 @@ void * handle_conv_matmult_zono_parallel(void *args){
 	     }
 			
 	     double cst = has_bias ? filter_bias[out_z] : 0.0;
-
-             z->paf[start_offset+mat_x] = zonotope_aff_from_sparse_weights_bias(pr, coeff, cst, dim, actual_coeff, z);
+	     z->paf[start_offset+mat_x] = zonotope_aff_from_sparse_weights_bias(pr, coeff, cst, dim, actual_coeff, z);
 			
              if (zonotope_aff_is_top(pr, z->paf[start_offset+mat_x])) {
 	    	 zonotope_aff_check_free(pr, z->paf[start_offset+mat_x]);

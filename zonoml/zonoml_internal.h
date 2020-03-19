@@ -84,6 +84,7 @@ typedef struct zonoml_relu_thread_t{
 	size_t start_offset;
     	zonotope_t *z;
 	elina_manager_t *man;
+	bool create_new_noise_symbol;
 	zonotope_noise_symbol_t ** epsilon_map;
 	zonotope_noise_symbol_t ** epsilon_map_extra;
 }zonoml_relu_thread_t;
@@ -238,108 +239,118 @@ static inline void ffn_matmult_zono_parallel(zonotope_internal_t* pr, zonotope_t
 	
 }
 
-static inline void relu_zono_parallel(elina_manager_t *man, zonotope_t *z,
-                                      elina_dim_t start_offset,
-                                      elina_dim_t num_out_neurons,
-                                      void *(*function)(void *)) {
-  // int num_threads = get_nprocs();
-  int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
-  if (num_threads < 1) {
-    num_threads = 1;
-  }
-  int i;
+static inline void relu_zono_parallel(elina_manager_t* man, zonotope_t *z, elina_dim_t start_offset, elina_dim_t num_out_neurons, bool create_new_noise_symbol, void *(*function)(void *)){
+	//int num_threads = get_nprocs();
+	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+	if(num_threads <1){
+		num_threads = 1;
+	}
+	int i;
+	
+	zonotope_internal_t* pr = zonotope_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
+	size_t offset = start_offset;
+	zonotope_noise_symbol_t ** epsilon_map = NULL;
+	zonotope_noise_symbol_t ** epsilon_map_extra = NULL;
 
-  zonotope_internal_t *pr =
-      zonotope_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
-  size_t offset = start_offset;
+	if(create_new_noise_symbol){
+		epsilon_map = (zonotope_noise_symbol_t **)malloc(num_out_neurons*sizeof(zonotope_noise_symbol_t*));
+		epsilon_map_extra = (zonotope_noise_symbol_t **)malloc(num_out_neurons*sizeof(zonotope_noise_symbol_t*));
+	}
 
-  zonotope_noise_symbol_t **epsilon_map = (zonotope_noise_symbol_t **)malloc(
-      num_out_neurons * sizeof(zonotope_noise_symbol_t *));
-  zonotope_noise_symbol_t **epsilon_map_extra =
-      (zonotope_noise_symbol_t **)malloc(num_out_neurons *
-                                         sizeof(zonotope_noise_symbol_t *));
-  for (i = 0; i < (int)num_out_neurons; i++) {
-    elina_interval_t *itv = zonotope_bound_dimension(man, z, offset);
-    double inf = itv->inf->val.dbl;
-    double sup = itv->sup->val.dbl;
-    double inf_l = -inf;
-    double inf_u = inf;
-    double sup_l = -sup;
-    double sup_u = sup;
+	for(i=0; i < (int)num_out_neurons; i++){
+		elina_interval_t *itv = zonotope_bound_dimension(man,z,offset);
+		double inf = itv->inf->val.dbl;
+		double sup = itv->sup->val.dbl;
+		double inf_l = -inf;
+		double inf_u = inf;
+		double sup_l = -sup;
+		double sup_u = sup;
+		
+			
+		double width_l = sup_l + inf_u;
+		double width_u = sup_u + inf_l;
+		
+		double bound_l, bound_u;
+		elina_double_interval_mul(&bound_l, &bound_u, inf_l, inf_u, sup_l, sup_u);
+		double tmp = bound_l;
+		bound_l = bound_u;
+		bound_u = tmp;
+		elina_double_interval_div(&bound_l, &bound_u, bound_l, bound_u, width_l, width_u);
+		if(create_new_noise_symbol){
+			if((inf<0) && (sup>0)){
+				epsilon_map[i] = zonotope_noise_symbol_add(pr, IN);
+				if((-inf>sup) && (-bound_l>1)){
+					epsilon_map_extra[i] = zonotope_noise_symbol_add(pr, IN);
+				}	
+			}
+			else{
+				epsilon_map[i] = NULL;
+			}
+		}
+		elina_interval_free(itv);
+		offset++;
+	}
+	
+	zonoml_relu_thread_t args[num_threads];
+	pthread_t threads[num_threads];
+	
+	//printf("start %zu\n",num_out_neurons);
+	//fflush(stdout);
+	if((int)num_out_neurons < num_threads){
+		for (i = 0; i < (int)num_out_neurons; i++){
+	    		args[i].start = i; 
+	    		args[i].end = i+1;
+			args[i].man = man;
+			args[i].z = z;
+            		args[i].start_offset = start_offset;
+			args[i].epsilon_map = epsilon_map;	
+			args[i].epsilon_map_extra = epsilon_map_extra;
+			args[i].create_new_noise_symbol = create_new_noise_symbol;
+	    		pthread_create(&threads[i], NULL,function, (void*)&args[i]);
+			
+	  	}
+		for (i = 0; i < (int)num_out_neurons; i = i + 1){
+			pthread_join(threads[i], NULL);
+		}
+	}
+	else{
+		size_t idx_start = 0;
+		size_t idx_n = num_out_neurons / num_threads;
+		size_t idx_end = idx_start + idx_n;
+		
+		
+	  	for (i = 0; i < num_threads; i++){
+	    		args[i].start = idx_start; 
+	    		args[i].end = idx_end;
+			args[i].man = man;
+			args[i].z = z;
+			args[i].start_offset = start_offset;
+			args[i].epsilon_map = epsilon_map;
+			args[i].epsilon_map_extra = epsilon_map_extra;
+			args[i].create_new_noise_symbol = create_new_noise_symbol;
+	    		pthread_create(&threads[i], NULL,function, (void*)&args[i]);
+			idx_start = idx_end;
+			idx_end = idx_start + idx_n;
+	    		if(idx_end>num_out_neurons){
+				idx_end = num_out_neurons;
+			}
+			if((i==num_threads-2)){
+				idx_end = num_out_neurons;
+				
+			}
+	  	}
 
-    double width_l = sup_l + inf_u;
-    double width_u = sup_u + inf_l;
-
-    double bound_l, bound_u;
-    elina_double_interval_mul(&bound_l, &bound_u, inf_l, inf_u, sup_l, sup_u);
-    double tmp = bound_l;
-    bound_l = bound_u;
-    bound_u = tmp;
-    elina_double_interval_div(&bound_l, &bound_u, bound_l, bound_u, width_l,
-                              width_u);
-    if ((inf < 0) && (sup > 0)) {
-      epsilon_map[i] = zonotope_noise_symbol_add(pr, IN);
-      if ((-inf > sup) && (-bound_l > 1)) {
-        epsilon_map_extra[i] = zonotope_noise_symbol_add(pr, IN);
-      }
-    } else {
-      epsilon_map[i] = NULL;
-    }
-    elina_interval_free(itv);
-    offset++;
-  }
-
-  zonoml_relu_thread_t args[num_threads];
-  pthread_t threads[num_threads];
-
-  // printf("start %zu\n",num_out_neurons);
-  // fflush(stdout);
-  if ((int)num_out_neurons < num_threads) {
-    for (i = 0; i < (int)num_out_neurons; i++) {
-      args[i].start = i;
-      args[i].end = i + 1;
-      args[i].man = man;
-      args[i].z = z;
-      args[i].start_offset = start_offset;
-      args[i].epsilon_map = epsilon_map;
-      args[i].epsilon_map_extra = epsilon_map_extra;
-      pthread_create(&threads[i], NULL, function, (void *)&args[i]);
-    }
-    for (i = 0; i < (int)num_out_neurons; i = i + 1) {
-      pthread_join(threads[i], NULL);
-    }
-  } else {
-    size_t idx_start = 0;
-    size_t idx_n = num_out_neurons / num_threads;
-    size_t idx_end = idx_start + idx_n;
-
-    for (i = 0; i < num_threads; i++) {
-      args[i].start = idx_start;
-      args[i].end = idx_end;
-      args[i].man = man;
-      args[i].z = z;
-      args[i].start_offset = start_offset;
-      args[i].epsilon_map = epsilon_map;
-      args[i].epsilon_map_extra = epsilon_map_extra;
-      pthread_create(&threads[i], NULL, function, (void *)&args[i]);
-      idx_start = idx_end;
-      idx_end = idx_start + idx_n;
-      if (idx_end > num_out_neurons) {
-        idx_end = num_out_neurons;
-      }
-      if ((i == num_threads - 2)) {
-        idx_end = num_out_neurons;
-      }
-    }
-
-    for (i = 0; i < num_threads; i = i + 1) {
-      pthread_join(threads[i], NULL);
-    }
-  }
-
-  free(epsilon_map);
-  free(epsilon_map_extra);
+		for (i = 0; i < num_threads; i = i + 1){
+			pthread_join(threads[i], NULL);
+		}
+	}
+	if(create_new_noise_symbol){
+		free(epsilon_map);
+		free(epsilon_map_extra);
+	}
+	
 }
+	
 
 static inline void s_curve_zono_parallel(elina_manager_t* man, zonotope_t *z, elina_dim_t start_offset, elina_dim_t num_out_neurons, void *(*function)(void *), bool is_sigmoid){
 	//int num_threads = get_nprocs();

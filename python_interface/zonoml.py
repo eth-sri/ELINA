@@ -476,7 +476,7 @@ def maxpool_zono_refined(man,destructive,elem,x, new_inf, new_sup):
     return res
 
 
-def relu_zono_layerwise(man,destructive,elem,start_offset, num_dim):
+def relu_zono_layerwise(man,destructive,elem,start_offset, num_dim, create_new_noise_symbol):
     """
     Performs the ReLU operation
     
@@ -492,6 +492,8 @@ def relu_zono_layerwise(man,destructive,elem,start_offset, num_dim):
         The starting dimension.
     num_dim : ElinaDim
         The number of variables on which relu should be applied
+    create_new_noise_symbol : c_bool
+        whether to create new noise symbol
 
     Returns
     -------
@@ -504,8 +506,8 @@ def relu_zono_layerwise(man,destructive,elem,start_offset, num_dim):
     try:
         relu_zono_layerwise_c = zonoml_api.relu_zono_layerwise
         relu_zono_layerwise_c.restype = ElinaAbstract0Ptr
-        relu_zono_layerwise_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, ElinaDim, ElinaDim]
-        res = relu_zono_layerwise_c(man,destructive,elem,start_offset, num_dim)
+        relu_zono_layerwise_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, ElinaDim, ElinaDim, c_bool]
+        res = relu_zono_layerwise_c(man,destructive,elem,start_offset, num_dim, create_new_noise_symbol)
     except:
         print('Problem with loading/calling "relu_zono_layerwise" from "libzonoml.so"')
 
