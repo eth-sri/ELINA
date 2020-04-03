@@ -131,6 +131,11 @@ void fppoly_from_network_input_box(fppoly_t *res, size_t intdim, size_t realdim,
 		res->input_sup[i] = sup_array[i];
 	}
 	res->num_pixels = num_pixels;
+    res->spatial_indices = NULL;
+    res->spatial_neighbors = NULL;
+    res->spatial_lower_bounds = NULL;
+    res->spatial_upper_bounds = NULL;
+    res->spatial_constraints_size = 0;
 }
 
 
@@ -192,6 +197,27 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t i
 
 }
 
+elina_abstract0_t* fppoly_from_network_input_spatial(
+        elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array,
+        double *sup_array, size_t *indices, size_t *neighbors,
+        double *lower_bounds, double *upper_bounds, size_t constraints_size) {
+
+    fppoly_t *res = (fppoly_t *)malloc(sizeof(fppoly_t));
+    fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array);
+
+    res->spatial_constraints_size = constraints_size;
+    res->spatial_indices = malloc (constraints_size * sizeof(size_t));
+    res->spatial_neighbors = malloc (constraints_size * sizeof(size_t));
+    res->spatial_lower_bounds = malloc (constraints_size * sizeof(double));
+    res->spatial_upper_bounds = malloc (constraints_size * sizeof(double));
+
+    memcpy(res->spatial_indices, indices, constraints_size * sizeof(size_t));
+    memcpy(res->spatial_neighbors, neighbors, constraints_size * sizeof(size_t));
+    memcpy(res->spatial_lower_bounds, lower_bounds, constraints_size * sizeof(double));
+    memcpy(res->spatial_upper_bounds, upper_bounds, constraints_size * sizeof(double));
+
+    return abstract0_of_fppoly(man, res);
+}
 
 void fppoly_add_new_layer(fppoly_t *fp, size_t size, size_t *predecessors, size_t num_predecessors, bool is_activation){
 	size_t numlayers = fp->numlayers;
@@ -673,6 +699,16 @@ void fppoly_free(elina_manager_t *man, fppoly_t *fp){
         }
 	free(fp->input_sup);
 	fp->input_sup = NULL;
+
+    free(fp->spatial_indices);
+    fp->spatial_indices = NULL;
+    free(fp->spatial_neighbors);
+    fp->spatial_neighbors = NULL;
+    free(fp->spatial_lower_bounds);
+    fp->spatial_lower_bounds = NULL;
+    free(fp->spatial_upper_bounds);
+    fp->spatial_upper_bounds = NULL;
+
 	free(fp);
 	fp = NULL;
 }

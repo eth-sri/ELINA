@@ -1,4 +1,5 @@
 #include "compute_bounds.h"
+#include "math.h"
 
 expr_t * replace_input_poly_cons_in_lexpr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp){
 	size_t dims = expr->size;
@@ -168,6 +169,15 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	if(expr->inf_coeff==NULL || expr->sup_coeff==NULL){
 		return res_inf;
 	}
+
+    double *expr_coeffs;
+    const size_t num_pixels = fp->num_pixels;
+    bool spatial_constraints = (fp->constraints_size > 0) && (layerno == -1);
+
+    if (spatial_constraints) {
+        expr_coeffs = malloc(dims * sizeof(double));
+    }
+
 	for(i=0; i < dims; i++){
 		//if(expr->inf_coeff[i]<0){
 		if(expr->type==DENSE){
@@ -178,6 +188,9 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 		}
 			if(layerno==-1){
 				elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],fp->input_inf[k],fp->input_sup[k]);
+                if (spatial_constraints) {
+                    expr_coeffs[i] = expr->inf_coeff[i];
+                }
 			}
 			else{
 				elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],fp->layers[layerno]->neurons[k]->lb,fp->layers[layerno]->neurons[k]->ub);
@@ -193,6 +206,106 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	}
         //printf("finish\n");
         //fflush(stdout);
+
+    if (spatial_constraints) {
+        size_t index, neighbor, k_index, k_neighbor;
+        double res_inf_spatial = expr->inf_cst;
+
+        for (size_t i = 0; i < fp->constraints_size; ++i) {
+            index = fp->indices[i];
+            neighbor = fp->neighbors[i];
+
+            if (expr->type == DENSE) {
+                k_index = index;
+                k_neighbor = neighbor;
+            } else {
+                k_index = k_neighbor = num_pixels;
+
+                for (size_t j = 0; j < dims; ++j) {
+                    if (expr->dim[j] == index) {
+                        k_index = j;
+                    }
+                    if (expr->dim[j] == neighbor) {
+                        k_neighbor = j;
+                    }
+                }
+
+                if (k_index == num_pixels || k_neighbor == num_pixels) {
+                    continue;
+                }
+            }
+
+            // expr_coeffs are inverted as they contain lower bounds
+            if (expr_coeffs[k_index] < 0 && expr_coeffs[k_neighbor] > 0) {
+                // factor is -expr_coeffs[k_index]
+                double factor_index = -expr_coeffs[k_index];
+                double rest_neighbor = expr_coeffs[k_neighbor] - factor_index;
+
+                elina_double_interval_mul(
+                        &tmp1, &tmp2, rest_neighbor, -rest_neighbor,
+                        fp->input_inf[k_neighbor], fp->input_sup[k_neighbor]
+                        );
+
+                double lb_index = tmp1 - factor_index * fp->lower_bounds[i];
+
+                // factor is expr_coeffs[k_neighbor]
+                double factor_neighbor = expr_coeffs[k_neighbor];
+                double rest_index = expr_coeffs[k_index] + factor_neighbor;
+
+                elina_double_interval_mul(
+                        &tmp1, &tmp2, rest_index, -rest_index,
+                        fp->input_inf[k_index], fp->input_sup[k_index]
+                        );
+
+                double lb_neighbor = tmp1 - factor_neighbor * fp->lower_bounds[i];
+
+
+                if (lb_index < lb_neighbor) {
+                    expr_coeffs[k_index] = 0;
+                    expr_coeffs[k_neighbor] -= factor_index;
+                    res_inf_spatial -= factor_index * fp->lower_bounds[i];
+                } else {
+                    expr_coeffs[k_neighbor] = 0;
+                    expr_coeffs[k_index] += factor_neighbor;
+                    res_inf_spatial -= factor_neighbor * fp->lower_bounds[i];
+                }
+
+                /*
+                   double constraint_coeff = fmin(
+                   -expr_coeffs[k_index], expr_coeffs[k_neighbor]
+                   );
+
+                   if (constraint_coeff == expr_coeffs[k_neighbor]) {
+                   expr_coeffs[k_neighbor] = 0;
+                   expr_coeffs[k_index] += constraint_coeff;
+                   } else {
+                   expr_coeffs[k_index] = 0;
+                   expr_coeffs[k_neighbor] -= constraint_coeff;
+                   }
+
+                   res_inf_spatial -= constraint_coeff * fp->lower_bounds[i];
+                   */
+            }
+        }
+
+        // compute lower bounds for variables with nonzero coefficients
+        for (size_t i = 0; i < dims; ++i) {
+            k = expr->type == DENSE ? i : expr->dim[i];
+
+            if (expr_coeffs[i] != 0) {
+                elina_double_interval_mul(
+                        &tmp1, &tmp2, expr_coeffs[i], -expr_coeffs[i],
+                        fp->input_inf[k], fp->input_sup[k]
+                        );
+                res_inf_spatial += tmp1;
+            }
+        }
+
+        free(expr_coeffs);
+
+        return res_inf_spatial;
+    }
+
 	return res_inf;
 }
 
@@ -209,6 +322,15 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	if(expr->inf_coeff==NULL || expr->sup_coeff==NULL){
 		return res_sup;
 	}
+
+    const size_t num_pixels = fp->num_pixels;
+    double *expr_coeffs;
+    bool spatial_constraints = (fp->constraints_size > 0) && (layerno == -1);
+
+    if (spatial_constraints) {
+        expr_coeffs = malloc(dims * sizeof(double));
+    }
+
 	for(i=0; i < dims; i++){
 		//if(expr->inf_coeff[i]<0){
 		if(expr->type==DENSE){
@@ -219,6 +341,10 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 		}		
 		if(layerno==-1){
 			elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],fp->input_inf[k],fp->input_sup[k]);
+
+            if (spatial_constraints) {
+                expr_coeffs[i] = expr->sup_coeff[i];
+            }
 		}
 		else{
 			elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],fp->layers[layerno]->neurons[k]->lb,fp->layers[layerno]->neurons[k]->ub);
@@ -231,6 +357,104 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	if(fp->input_lexpr!=NULL && fp->input_uexpr!=NULL && layerno==-1){
 		free_expr(expr);
 	}
+
+    if (spatial_constraints) {
+        size_t index, neighbor, k_index, k_neighbor;
+        double res_sup_spatial = expr->sup_cst;
+
+        for (size_t i = 0; i < fp->constraints_size; ++i) {
+            index = fp->indices[i];
+            neighbor = fp->neighbors[i];
+
+            if (expr->type == DENSE) {
+                k_index = index;
+                k_neighbor = neighbor;
+            } else {
+                k_index = k_neighbor = num_pixels;
+
+                for (size_t j = 0; j < dims; ++j) {
+                    if (expr->dim[j] == index) {
+                        k_index = j;
+                    }
+                    if (expr->dim[j] == neighbor) {
+                        k_neighbor = j;
+                    }
+                }
+
+                if (k_index == num_pixels || k_neighbor == num_pixels) {
+                    continue;
+                }
+            }
+
+            if (expr_coeffs[k_index] > 0 && expr_coeffs[k_neighbor] < 0) {
+                // factor is expr_coeffs[k_index]
+                double factor_index = expr_coeffs[k_index];
+                double rest_neighbor = expr_coeffs[k_neighbor] + factor_index;
+
+                elina_double_interval_mul(
+                        &tmp1, &tmp2, -rest_neighbor, rest_neighbor,
+                        fp->input_inf[k_neighbor], fp->input_sup[k_neighbor]
+                        );
+
+                double ub_index = tmp2 + factor_index * fp->upper_bounds[i];
+
+                // factor is -expr_coeffs[k_neighbor]
+                double factor_neighbor = -expr_coeffs[k_neighbor];
+                double rest_index = expr_coeffs[k_index] - factor_neighbor;
+
+                elina_double_interval_mul(
+                        &tmp1, &tmp2, -rest_index, rest_index,
+                        fp->input_inf[k_index], fp->input_sup[k_index]
+                        );
+
+                double ub_neighbor = tmp2 + factor_neighbor * fp->upper_bounds[i];
+
+                if (ub_index < ub_neighbor) {
+                    expr_coeffs[k_index] = 0;
+                    expr_coeffs[k_neighbor] += factor_index;
+                    res_sup_spatial += factor_index * fp->upper_bounds[i];
+                } else {
+                    expr_coeffs[k_neighbor] = 0;
+                    expr_coeffs[k_index] -= factor_neighbor;
+                    res_sup_spatial += factor_neighbor * fp->upper_bounds[i];
+                }
+
+                /*
+                   double constraint_coeff = fmin(
+                   expr_coeffs[k_index], -expr_coeffs[k_neighbor]
+                   );
+
+                   if (constraint_coeff == expr_coeffs[k_index]) {
+                   expr_coeffs[k_index] = 0;
+                   expr_coeffs[k_neighbor] += constraint_coeff;
+                   } else {
+                   expr_coeffs[k_neighbor] = 0;
+                   expr_coeffs[k_index] -= constraint_coeff;
+                   }
+
+                   res_sup_spatial += constraint_coeff * fp->upper_bounds[i];
+                   */
+            }
+        }
+
+        // compute upper bounds for variables with nonzero coefficients
+        for (size_t i = 0; i < dims; ++i) {
+            k = expr->type == DENSE ? i : expr->dim[i];
+
+            if (expr_coeffs[i] != 0) {
+                elina_double_interval_mul(
+                        &tmp1, &tmp2, -expr_coeffs[i], expr_coeffs[i],
+                        fp->input_inf[k], fp->input_sup[k]
+                        );
+                res_sup_spatial += tmp2;
+            }
+        }
+
+        free(expr_coeffs);
+
+        return res_sup_spatial;
+    }
+
 	return res_sup;
 }
 
