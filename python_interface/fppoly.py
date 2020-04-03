@@ -179,7 +179,64 @@ def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array, l
     return res
 
 
+def fppoly_from_network_input_spatial(man, intdim, realdim, inf_array, 
+                                      sup_array, indices, neighbors, 
+                                      lower_bounds, upper_bounds,
+                                      constraints_size):
+    """
+    Create an abstract element from perturbed input
 
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    intdim : c_size_t
+        Number of integer variables.
+    realdim: c_size_t
+        Number of real variables
+    inf_array: POINTER(double)
+        lower bound array
+    sup_array: POINTER(double)
+        upper bound array
+    indices: POINTER(c_size_t)
+        pixel indices of constraints
+    neighbors: POINTER(c_size_t)
+        pixel neighbor indices of constraints
+    lower_bounds: POINTER(double)
+        coefficients of the lower constraints
+    upper_bounds: POINTER(double)
+        coefficients of the upper constraints
+    constraints_size: c_size_t
+        size of constraints
+    Returns
+    -------
+    res: ElinaAbstract0Ptr
+         Pointer to the new abstract object
+
+    """
+
+    res = None
+
+    try:
+        fppoly_from_network_input_spatial_c = fppoly_api.fppoly_from_network_input_spatial
+        fppoly_from_network_input_spatial_c.restype = ElinaAbstract0Ptr
+        fppoly_from_network_input_spatial_c.argtypes = [
+            ElinaManagerPtr, c_size_t, c_size_t,
+            ndpointer(ctypes.c_double), ndpointer(ctypes.c_double),
+            ndpointer(ctypes.c_size_t), ndpointer(ctypes.c_size_t),
+            ndpointer(ctypes.c_double), ndpointer(ctypes.c_double),
+            c_size_t
+        ]
+        res = fppoly_from_network_input_spatial_c(
+            man, intdim, realdim, inf_array, sup_array, indices, neighbors,
+            lower_bounds, upper_bounds, constraints_size
+        )
+
+    except Exception as e:
+        print('Problem with loading/calling "fppoly_from_network_input_spatial" from "libfppoly.so"')
+        print(e)
+
+    return res
 
 
 def handle_fully_connected_layer(man, element,weights, bias,  size, num_pixels, predecessors, num_predecessors):
