@@ -443,6 +443,7 @@ opt_pk_array_t* opt_pk_remove_dimensions(elina_manager_t* man,
 	#if defined(TIMING)
  	 	record_timing(remove_dimension_time);
   	#endif
+	free(map);  
 	return oa;
   }
   else{
@@ -513,6 +514,7 @@ opt_pk_array_t* opt_pk_remove_dimensions(elina_manager_t* man,
 	#if defined(TIMING)
  	 	record_timing(remove_dimension_time);
    	#endif
+	free(map);  
 	return op;
   }
   
