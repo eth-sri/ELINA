@@ -182,7 +182,7 @@ def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array, l
 def fppoly_from_network_input_spatial(man, intdim, realdim, inf_array, 
                                       sup_array, indices, neighbors, 
                                       lower_bounds, upper_bounds,
-                                      constraints_size):
+                                      constraints_size, use_gurobi):
     """
     Create an abstract element from perturbed input
 
@@ -208,6 +208,8 @@ def fppoly_from_network_input_spatial(man, intdim, realdim, inf_array,
         coefficients of the upper constraints
     constraints_size: c_size_t
         size of constraints
+    use_gurobi: c_bool
+        whether to use gurobi for substitution or not
     Returns
     -------
     res: ElinaAbstract0Ptr
@@ -225,11 +227,11 @@ def fppoly_from_network_input_spatial(man, intdim, realdim, inf_array,
             ndpointer(ctypes.c_double), ndpointer(ctypes.c_double),
             ndpointer(ctypes.c_size_t), ndpointer(ctypes.c_size_t),
             ndpointer(ctypes.c_double), ndpointer(ctypes.c_double),
-            c_size_t
+            c_size_t, c_bool
         ]
         res = fppoly_from_network_input_spatial_c(
             man, intdim, realdim, inf_array, sup_array, indices, neighbors,
-            lower_bounds, upper_bounds, constraints_size
+            lower_bounds, upper_bounds, constraints_size, use_gurobi
         )
 
     except Exception as e:

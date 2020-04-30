@@ -1,3 +1,10 @@
+#ifdef GUROBI
+#include <stdlib.h>
+#include <stdio.h>
+
+#include "gurobi_c.h"
+#endif
+
 #include "compute_bounds.h"
 #include "math.h"
 
