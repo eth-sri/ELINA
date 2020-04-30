@@ -136,6 +136,7 @@ void fppoly_from_network_input_box(fppoly_t *res, size_t intdim, size_t realdim,
     res->spatial_lower_bounds = NULL;
     res->spatial_upper_bounds = NULL;
     res->spatial_constraints_size = 0;
+    res->spatial_use_gurobi = 0;
 }
 
 
@@ -200,7 +201,8 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t i
 elina_abstract0_t* fppoly_from_network_input_spatial(
         elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array,
         double *sup_array, size_t *indices, size_t *neighbors,
-        double *lower_bounds, double *upper_bounds, size_t constraints_size) {
+        double *lower_bounds, double *upper_bounds, size_t constraints_size,
+        bool use_gurobi) {
 
     fppoly_t *res = (fppoly_t *)malloc(sizeof(fppoly_t));
     fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array);
@@ -210,6 +212,7 @@ elina_abstract0_t* fppoly_from_network_input_spatial(
     res->spatial_neighbors = malloc (constraints_size * sizeof(size_t));
     res->spatial_lower_bounds = malloc (constraints_size * sizeof(double));
     res->spatial_upper_bounds = malloc (constraints_size * sizeof(double));
+    res->spatial_use_gurobi = use_gurobi;
 
     memcpy(res->spatial_indices, indices, constraints_size * sizeof(size_t));
     memcpy(res->spatial_neighbors, neighbors, constraints_size * sizeof(size_t));

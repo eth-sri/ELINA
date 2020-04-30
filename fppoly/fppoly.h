@@ -121,6 +121,7 @@ typedef struct fppoly_t{
     double *spatial_lower_bounds;
     double *spatial_upper_bounds;
     size_t spatial_constraints_size;
+    bool spatial_use_gurobi;
 }fppoly_t;
 
 
@@ -148,7 +149,8 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t i
 elina_abstract0_t* fppoly_from_network_input_spatial(
         elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array,
         double *sup_array, size_t *indices, size_t *neighbors,
-        double *lower_bounds, double *upper_bounds, size_t constraints_size);
+        double *lower_bounds, double *upper_bounds, size_t constraints_size,
+        bool use_gurobi);
 
 fppoly_internal_t* fppoly_init_from_manager(elina_manager_t* man, elina_funid_t funid);
 
