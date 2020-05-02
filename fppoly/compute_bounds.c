@@ -244,55 +244,32 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
             }
 
             // expr_coeffs are inverted as they contain lower bounds
-            // TODO: implement reversed bounds
-            if (expr_coeffs[sparse_index] < 0 && expr_coeffs[sparse_neighbor] > 0) {
-                // factor is expr_coeffs[sparse_index]
+            if (expr_coeffs[sparse_index] != 0 && expr_coeffs[sparse_neighbor] != 0) {
                 double factor_index = expr_coeffs[sparse_index];
-                double rest_neighbor = expr_coeffs[sparse_neighbor] + factor_index;
-
+                double rest_neighbor = expr_coeffs[sparse_index] + expr_coeffs[sparse_neighbor];
                 elina_double_interval_mul(
                     &tmp1, &tmp2, rest_neighbor, -rest_neighbor,
                     fp->input_inf[neighbor], fp->input_sup[neighbor]
                 );
-
                 double lb_index = tmp1 + factor_index * fp->spatial_lower_bounds[i];
 
-                // factor is -expr_coeffs[sparse_neighbor]
-                double factor_neighbor = -expr_coeffs[sparse_neighbor];
-                double rest_index = expr_coeffs[sparse_index] - factor_neighbor;
-
+                double factor_neighbor = expr_coeffs[sparse_neighbor];
+                double rest_index = expr_coeffs[sparse_index] + expr_coeffs[sparse_neighbor];
                 elina_double_interval_mul(
                     &tmp1, &tmp2, rest_index, -rest_index,
                     fp->input_inf[index], fp->input_sup[index]
                 );
-
-                double lb_neighbor = tmp1 + factor_neighbor * fp->spatial_lower_bounds[i];
+                double lb_neighbor = tmp1 - factor_neighbor * fp->spatial_upper_bounds[i];
 
                 if (lb_index < lb_neighbor) {
                     expr_coeffs[sparse_index] = 0;
-                    expr_coeffs[sparse_neighbor] += factor_index;
+                    expr_coeffs[sparse_neighbor] = rest_neighbor;
                     res_inf_spatial += factor_index * fp->spatial_lower_bounds[i];
                 } else {
+                    expr_coeffs[sparse_index] = rest_index;
                     expr_coeffs[sparse_neighbor] = 0;
-                    expr_coeffs[sparse_index] -= factor_neighbor;
-                    res_inf_spatial += factor_neighbor * fp->spatial_lower_bounds[i];
+                    res_inf_spatial -= factor_neighbor * fp->spatial_upper_bounds[i];
                 }
-
-                /*
-                double constraint_coeff = fmin(
-                   -expr_coeffs[sparse_index], expr_coeffs[sparse_neighbor]
-                );
-
-                if (constraint_coeff == expr_coeffs[sparse_neighbor]) {
-                   expr_coeffs[sparse_neighbor] = 0;
-                   expr_coeffs[sparse_index] += constraint_coeff;
-                } else {
-                   expr_coeffs[sparse_index] = 0;
-                   expr_coeffs[sparse_neighbor] -= constraint_coeff;
-                }
-
-                res_inf_spatial -= constraint_coeff * fp->lower_bounds[i];
-               */
             }
         }
 
@@ -394,55 +371,32 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
                 }
             }
 
-            // TODO: implement reversed bounds
-            if (expr_coeffs[sparse_index] > 0 && expr_coeffs[sparse_neighbor] < 0) {
-                // factor is expr_coeffs[sparse_index]
+            if (expr_coeffs[sparse_index] != 0 && expr_coeffs[sparse_neighbor] != 0) {
                 double factor_index = expr_coeffs[sparse_index];
-                double rest_neighbor = expr_coeffs[sparse_neighbor] + factor_index;
-
+                double rest_neighbor = expr_coeffs[sparse_index] + expr_coeffs[sparse_neighbor];
                 elina_double_interval_mul(
                     &tmp1, &tmp2, -rest_neighbor, rest_neighbor,
                     fp->input_inf[neighbor], fp->input_sup[neighbor]
                 );
-
                 double ub_index = tmp2 + factor_index * fp->spatial_upper_bounds[i];
 
-                // factor is -expr_coeffs[sparse_neighbor]
-                double factor_neighbor = -expr_coeffs[sparse_neighbor];
-                double rest_index = expr_coeffs[sparse_index] - factor_neighbor;
-
+                double factor_neighbor = expr_coeffs[sparse_neighbor];
+                double rest_index = expr_coeffs[sparse_index] + expr_coeffs[sparse_neighbor];
                 elina_double_interval_mul(
                     &tmp1, &tmp2, -rest_index, rest_index,
                     fp->input_inf[index], fp->input_sup[index]
                 );
-
-                double ub_neighbor = tmp2 + factor_neighbor * fp->spatial_upper_bounds[i];
+                double ub_neighbor = tmp2 - factor_neighbor * fp->spatial_lower_bounds[i];
 
                 if (ub_index < ub_neighbor) {
                     expr_coeffs[sparse_index] = 0;
-                    expr_coeffs[sparse_neighbor] += factor_index;
+                    expr_coeffs[sparse_neighbor] = rest_neighbor;
                     res_sup_spatial += factor_index * fp->spatial_upper_bounds[i];
                 } else {
+                    expr_coeffs[sparse_index] = rest_index;
                     expr_coeffs[sparse_neighbor] = 0;
-                    expr_coeffs[sparse_index] -= factor_neighbor;
-                    res_sup_spatial += factor_neighbor * fp->spatial_upper_bounds[i];
+                    res_sup_spatial -= factor_neighbor * fp->spatial_lower_bounds[i];
                 }
-
-                /*
-                double constraint_coeff = fmin(
-                    expr_coeffs[sparse_index], -expr_coeffs[sparse_neighbor]
-                );
-
-                if (constraint_coeff == expr_coeffs[sparse_index]) {
-                    expr_coeffs[sparse_index] = 0;
-                    expr_coeffs[sparse_neighbor] += constraint_coeff;
-                } else {
-                    expr_coeffs[sparse_neighbor] = 0;
-                    expr_coeffs[sparse_index] -= constraint_coeff;
-                }
-
-                res_sup_spatial += constraint_coeff * fp->upper_bounds[i];
-                */
             }
         }
 
