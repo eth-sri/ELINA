@@ -261,6 +261,22 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
                 );
                 double lb_neighbor = tmp1 - factor_neighbor * fp->spatial_upper_bounds[i];
 
+                elina_double_interval_mul(
+                    &tmp1, &tmp2, expr_coeffs[sparse_index], -expr_coeffs[sparse_index],
+                    fp->input_inf[index], fp->input_sup[index]
+                );
+                double lb_original = tmp1;
+                elina_double_interval_mul(
+                    &tmp1, &tmp2, expr_coeffs[sparse_neighbor], -expr_coeffs[sparse_neighbor],
+                    fp->input_inf[neighbor], fp->input_sup[neighbor]
+                );
+                lb_original += tmp1;
+
+                // flow constraints don't improve the bound
+                if (lb_original < fmin(lb_index, lb_neighbor)) {
+                    continue;
+                }
+
                 if (lb_index < lb_neighbor) {
                     expr_coeffs[sparse_index] = 0;
                     expr_coeffs[sparse_neighbor] = rest_neighbor;
@@ -387,6 +403,22 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
                     fp->input_inf[index], fp->input_sup[index]
                 );
                 double ub_neighbor = tmp2 - factor_neighbor * fp->spatial_lower_bounds[i];
+
+                elina_double_interval_mul(
+                    &tmp1, &tmp2, -expr_coeffs[sparse_index], expr_coeffs[sparse_index],
+                    fp->input_inf[index], fp->input_sup[index]
+                );
+                double ub_original = tmp2;
+                elina_double_interval_mul(
+                    &tmp1, &tmp2, -expr_coeffs[sparse_neighbor], expr_coeffs[sparse_neighbor],
+                    fp->input_inf[neighbor], fp->input_sup[neighbor]
+                );
+                ub_original += tmp2;
+
+                // flow constraints don't improve the bound
+                if (ub_original < fmin(ub_index, ub_neighbor)) {
+                    continue;
+                }
 
                 if (ub_index < ub_neighbor) {
                     expr_coeffs[sparse_index] = 0;
