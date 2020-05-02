@@ -64,7 +64,7 @@ typedef struct fppoly_internal_t{
 typedef enum layertype_t {
   FFN,      /* FFN layer */
   CONV,     /* CONV layer */
-  MAXPOOL,  /* MAXPOOL layer */
+  POOL,     /* MAXPOOL/AVERAGEPOOL layer */
   LSTM,     /* LSTM layer */
   RESIDUAL, /* RESIDUAL layer */
 } layertype_t;
@@ -382,9 +382,11 @@ void conv_handle_intermediate_affine_layer(
     size_t pad_left, bool has_bias, size_t *predecessors,
     bool use_area_heuristic);
 
-size_t handle_maxpool_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                            size_t *pool_size, size_t *input_size,
-                            size_t *predecessors);
+size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
+                         size_t *pool_size, size_t *input_size, size_t *strides,
+                         size_t dimensionality, size_t pad_top, size_t pad_left,
+                         size_t *output_size, size_t *predecessors,
+                         bool is_maxpool);
 
 void create_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, size_t h,
                        size_t *predecessors);

@@ -1690,9 +1690,9 @@ def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_b
         print(inst)
 
 
-def handle_maxpool_layer(man, element, pool_size, input_size, predecessors):
+def handle_pool_layer(man, element, pool_size, input_size, strides, dimensionality, pad_top, pad_left, output_size, predecessors, is_maxpool):
     """
-    handle the Maxpool layer
+    handle the pooling layer
     
     Parameters
     ----------
@@ -1701,11 +1701,23 @@ def handle_maxpool_layer(man, element, pool_size, input_size, predecessors):
     element : ElinaAbstract0Ptr
         Pointer to the ElinaAbstract0 abstract element.
     pool_size: POINTER(c_size_t)
-        The size of the Maxpool filter 
-    input_size : POINTER(c_size_t)
-        The number of variables on which Maxpool will be applied.
+        The size of the pooling filter
+    input_size: POINTER(c_size_t)
+        the size of the input
+    strides: POINTER(c_size_t)
+        Strides for the pooling layer
+    dimensionality: c_size_t
+        dimensionality
+    pad_top: c_size_t
+        padding at top
+    pad_left: c_size_t
+        padding at left
+    output_size : POINTER(c_size_t)
+        The size of the output
     predecessors:
         the layers before the current layer
+    is_maxpool : c_bool
+        whether it is maxpool or averagepool    
     Returns
     -------
     res : c_size_t
@@ -1714,12 +1726,12 @@ def handle_maxpool_layer(man, element, pool_size, input_size, predecessors):
     """
     res=None
     try:
-        handle_maxpool_layer_c = fppoly_api.handle_maxpool_layer
-        handle_maxpool_layer_c.restype = c_size_t
-        handle_maxpool_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_size_t), ndpointer(ctypes.c_size_t), POINTER(c_size_t)]
-        res = handle_maxpool_layer_c(man, element, pool_size, input_size, predecessors)
+        handle_pool_layer_c = fppoly_api.handle_pool_layer
+        handle_pool_layer_c.restype = c_size_t
+        handle_pool_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, POINTER(c_size_t), POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_bool]
+        res = handle_pool_layer_c(man, element, pool_size, input_size, strides, dimensionality, pad_left, pad_top, output_size, predecessors, is_maxpool)
     except Exception as inst:
-        print('Problem with loading/calling "handle_maxpool_layer" from "libfppoly.so"')
+        print('Problem with loading/calling "handle_pool_layer" from "libfppoly.so"')
         print(inst)
     return res
 

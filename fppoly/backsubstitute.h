@@ -33,8 +33,8 @@ extern "C" {
 #include "fppoly.h"
 #include "log_approx.h"
 #include "lstm_approx.h"
-#include "maxpool_approx.h"
 #include "parabola_approx.h"
+#include "pool_approx.h"
 #include "relu_approx.h"
 #include "s_curve_approx.h"
 

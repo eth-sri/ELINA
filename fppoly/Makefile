@@ -29,14 +29,14 @@ INCLDIR = $(ELINA_PREFIX)/include
 INSTALL = install
 INSTALLd = install -d
 
-OBJS = fppoly.o backsubstitute.o compute_bounds.o expr.o relu_approx.o s_curve_approx.o parabola_approx.o log_approx.o maxpool_approx.o lstm_approx.o affine_transform.o
+OBJS = fppoly.o backsubstitute.o compute_bounds.o expr.o relu_approx.o s_curve_approx.o parabola_approx.o log_approx.o pool_approx.o lstm_approx.o affine_transform.o  maxpool_convex_hull.o
 
 ifeq ($(IS_APRON),)
-LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize  -L../elina_zonotope -lzonotope $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -lpthread
-INCLUDES = -I../elina_auxiliary -I../elina_linearize -I../elina_zonotope -I../partitions_api $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
+LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize  -L../elina_zonotope -lzonotope $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -lpthread -lcdd
+INCLUDES = -I../elina_auxiliary -I../elina_linearize -I../elina_zonotope -I../partitions_api  -I/usr/local/include/cddlib $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
 else
-LIBS = -L../partitions_api -lpartitions -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize  -L../elina_zonotope -lzonotope $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -lpthread
-INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize -I../elina_zonotope -I../partitions_api $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
+LIBS = -L../partitions_api -lpartitions -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize  -L../elina_zonotope -lzonotope $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -lpthread -lcdd
+INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize -I../elina_zonotope -I../partitions_api  -I/usr/local/include/cddlib $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
 endif
 
 INSTALL = install
@@ -76,14 +76,18 @@ parabola_approx.o : parabola_approx.h parabola_approx.c
 log_approx.o : log_approx.h log_approx.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o log_approx.o log_approx.c $(LIBS)
 
-maxpool_approx.o : maxpool_approx.h maxpool_approx.c
-	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o maxpool_approx.o maxpool_approx.c $(LIBS)
+pool_approx.o : pool_approx.h pool_approx.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o pool_approx.o pool_approx.c $(LIBS)
 
 lstm_approx.o : lstm_approx.h lstm_approx.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o lstm_approx.o lstm_approx.c $(LIBS)
 
 affine_transform.o : affine_transform.h affine_transform.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o affine_transform.o affine_transform.c $(LIBS)
+
+maxpool_convex_hull.o : maxpool_convex_hull.h maxpool_convex_hull.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o maxpool_convex_hull.o maxpool_convex_hull.c $(LIBS)
+
 
 install:
 	$(INSTALLd) $(LIBDIR); \

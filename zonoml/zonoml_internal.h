@@ -54,7 +54,7 @@ counter += cycles
     extern double zonoml_relu_time;
     extern double zonoml_sigmoid_time;
     extern double zonoml_tanh_time;
-    extern double zonoml_maxpool_time;
+    extern double zonoml_pool_time;
     extern double zonoml_network_input_time;
     extern double zonoml_conv_matmult_time;
     extern double zonoml_ffn_matmult_time;
@@ -119,22 +119,25 @@ typedef struct zonoml_conv_matmult_thread_t{
 	bool has_bias;	
 }zonoml_conv_matmult_thread_t;
 
-typedef struct zonoml_maxpool_thread_t {
-  size_t start;
-  size_t end;
-  zonotope_internal_t *pr;
-  zonotope_t *z;
-  size_t src_offset;
-  size_t *pool_size;
-  size_t *input_size;
-  size_t dst_offset;
-  size_t *strides;
-  long int pad_top;
-  long int pad_left;
-  size_t *output_size;
-  zonotope_noise_symbol_t **epsilon_map;
-  char *is_used;
-} zonoml_maxpool_thread_t;
+
+typedef struct zonoml_pool_thread_t{
+	size_t start;
+	size_t end;
+	zonotope_internal_t* pr;
+	zonotope_t *z;
+	size_t src_offset;
+	size_t * pool_size;
+	size_t * input_size;
+	size_t dst_offset;
+	size_t *strides;
+	long int pad_top;
+	long int pad_left;
+	size_t *output_size;
+	zonotope_noise_symbol_t ** epsilon_map;
+	char * is_used;
+	bool is_maxpool;
+}zonoml_pool_thread_t;
+
 
 static inline zonotope_t* zonotope_of_abstract0(elina_abstract0_t* a)
 {
@@ -515,102 +518,107 @@ static inline void conv_matmult_zono_parallel(zonotope_internal_t* pr, zonotope_
 	
 }
 
-static inline void maxpool_zono_parallel(zonotope_internal_t *pr, zonotope_t *z,
-                                         size_t src_offset, size_t *pool_size,
-                                         size_t num_out_neurons,
-                                         size_t dst_offset, size_t *input_size,
-                                         size_t *strides, size_t *output_size,
-                                         long int pad_top, long int pad_left,
-                                         void *(*function)(void *)) {
-  // int num_threads = get_nprocs();
-  int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
-  if (num_threads < 1) {
-    num_threads = 1;
-  }
 
-  zonoml_maxpool_thread_t args[num_threads];
-  pthread_t threads[num_threads];
-  int i;
-  zonotope_noise_symbol_t **epsilon_map = (zonotope_noise_symbol_t **)malloc(
-      num_out_neurons * sizeof(zonotope_noise_symbol_t *));
-  elina_dimchange_t dimadd;
-  elina_dimchange_init(&dimadd, 0, num_out_neurons);
-  // elina_dimension_t dims = zonotope_dimension(pr->man,z);
-  // elina_dim_t num_var = dims.intdim + dims.realdim;
-  char *is_used = (char *)calloc(num_out_neurons, sizeof(char));
-  for (i = 0; i < (int)num_out_neurons; i++) {
-    epsilon_map[i] = zonotope_noise_symbol_add(pr, IN);
-    dimadd.dim[i] = dst_offset;
-  }
-  z = zonotope_add_dimensions(pr->man, true, z, &dimadd, false);
+static inline void pool_zono_parallel(zonotope_internal_t* pr, zonotope_t *z, size_t src_offset, size_t *pool_size,
+			       	           size_t num_out_neurons, size_t dst_offset, size_t *input_size, size_t *strides,
+					  size_t *output_size, long int pad_top, long int pad_left, bool is_maxpool, void *(*function)(void *)){
+	//int num_threads = get_nprocs();
+	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+	if(num_threads <1){
+		num_threads = 1;
+	}
+	
+	zonoml_pool_thread_t args[num_threads];
+	pthread_t threads[num_threads];
+	int i;
+	zonotope_noise_symbol_t ** epsilon_map = (zonotope_noise_symbol_t **)malloc(num_out_neurons*sizeof(zonotope_noise_symbol_t*));
+	elina_dimchange_t dimadd;
+    	elina_dimchange_init(&dimadd, 0, num_out_neurons);
+	//elina_dimension_t dims = zonotope_dimension(pr->man,z);
+        //elina_dim_t num_var = dims.intdim + dims.realdim;
+	char * is_used = (char*)calloc(num_out_neurons,sizeof(char));
+	for(i=0; i < (int)num_out_neurons; i++){
+		epsilon_map[i] = zonotope_noise_symbol_add(pr, IN);
+		dimadd.dim[i] = dst_offset;		
+		
+	}
+	z = zonotope_add_dimensions(pr->man,true,z,&dimadd,false);
+	
+	//printf("start %zu\n",num_out_neurons);
+	//fflush(stdout);
+	if((int)num_out_neurons < num_threads){
+		for (i = 0; i < (int)num_out_neurons; i++){
+	    		args[i].start = i; 
+	    		args[i].end = i+1;
+			args[i].pr = pr;
+			args[i].z = z;
+			args[i].src_offset = src_offset;
+			args[i].pool_size = pool_size;
+			args[i].dst_offset = dst_offset;
+			args[i].input_size = input_size;
+			args[i].strides = strides;
+			args[i].output_size = output_size;
+			args[i].pad_top = pad_top;
+			args[i].pad_left = pad_left;
+			args[i].epsilon_map = epsilon_map;
+			args[i].is_used = is_used;   
+			args[i].is_maxpool = is_maxpool;
+	    		pthread_create(&threads[i], NULL,function, (void*)&args[i]);
+			
+	  	}
+		for (i = 0; i < (int)num_out_neurons; i = i + 1){
+			pthread_join(threads[i], NULL);
+		}
+	}
+	else{
+		size_t idx_start = 0;
+		size_t idx_n = num_out_neurons / num_threads;
+		size_t idx_end = idx_start + idx_n;
+		
+		
+	  	for (i = 0; i < num_threads; i++){
+	    		args[i].start = idx_start; 
+	    		args[i].end = idx_end;
+			args[i].pr = pr;
+			args[i].z = z;
+			args[i].src_offset = src_offset;
+			args[i].pool_size = pool_size;
+			args[i].dst_offset = dst_offset;
+			args[i].input_size = input_size;
+			args[i].strides = strides;
+			args[i].output_size = output_size;
+			args[i].pad_top = pad_top;
+			args[i].pad_left = pad_left;  
+			args[i].epsilon_map = epsilon_map;
+			args[i].is_used = is_used;
+		        args[i].is_maxpool = is_maxpool;	
+	    		pthread_create(&threads[i], NULL,function, (void*)&args[i]);
+			idx_start = idx_end;
+			idx_end = idx_start + idx_n;
+	    		if(idx_end>num_out_neurons){
+				idx_end = num_out_neurons;
+			}
+			if((i==num_threads-2)){
+				idx_end = num_out_neurons;
+				
+			}
+	  	}
 
-  // printf("start %zu\n",num_out_neurons);
-  // fflush(stdout);
-  if ((int)num_out_neurons < num_threads) {
-    for (i = 0; i < (int)num_out_neurons; i++) {
-      args[i].start = i;
-      args[i].end = i + 1;
-      args[i].pr = pr;
-      args[i].z = z;
-      args[i].src_offset = src_offset;
-      args[i].pool_size = pool_size;
-      args[i].dst_offset = dst_offset;
-      args[i].input_size = input_size;
-      args[i].strides = strides;
-      args[i].output_size = output_size;
-      args[i].pad_top = pad_top;
-      args[i].pad_left = pad_left;
-      args[i].epsilon_map = epsilon_map;
-      args[i].is_used = is_used;
-      pthread_create(&threads[i], NULL, function, (void *)&args[i]);
-    }
-    for (i = 0; i < (int)num_out_neurons; i = i + 1) {
-      pthread_join(threads[i], NULL);
-    }
-  } else {
-    size_t idx_start = 0;
-    size_t idx_n = num_out_neurons / num_threads;
-    size_t idx_end = idx_start + idx_n;
-
-    for (i = 0; i < num_threads; i++) {
-      args[i].start = idx_start;
-      args[i].end = idx_end;
-      args[i].pr = pr;
-      args[i].z = z;
-      args[i].src_offset = src_offset;
-      args[i].pool_size = pool_size;
-      args[i].dst_offset = dst_offset;
-      args[i].input_size = input_size;
-      args[i].strides = strides;
-      args[i].output_size = output_size;
-      args[i].pad_top = pad_top;
-      args[i].pad_left = pad_left;
-      args[i].epsilon_map = epsilon_map;
-      args[i].is_used = is_used;
-      pthread_create(&threads[i], NULL, function, (void *)&args[i]);
-      idx_start = idx_end;
-      idx_end = idx_start + idx_n;
-      if (idx_end > num_out_neurons) {
-        idx_end = num_out_neurons;
-      }
-      if ((i == num_threads - 2)) {
-        idx_end = num_out_neurons;
-      }
-    }
-
-    for (i = 0; i < num_threads; i = i + 1) {
-      pthread_join(threads[i], NULL);
-    }
-  }
-  for (i = 0; i < (int)num_out_neurons; i++) {
-
-    if (!is_used[i]) {
-
-      zonotope_delete_constrained_noise_symbol(pr, epsilon_map[i]->index, z);
-    }
-  }
-  free(epsilon_map);
-  free(is_used);
+		for (i = 0; i < num_threads; i = i + 1){
+			pthread_join(threads[i], NULL);
+		}
+	}
+	for(i=0; i < (int)num_out_neurons; i++){
+		
+		if(!is_used[i]){
+			
+			zonotope_delete_constrained_noise_symbol(pr, epsilon_map[i]->index, z);
+			
+		}
+	}
+	free(epsilon_map);
+	free(is_used);
+	
 }
 
 #ifdef __cplusplus
