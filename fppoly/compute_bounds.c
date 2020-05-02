@@ -160,6 +160,18 @@ expr_t * replace_input_poly_cons_in_uexpr(fppoly_internal_t *pr, expr_t * expr, 
 	return res;
 }
 
+void substitute_spatial(double *lb, double *ub, double *sub_lb, double *sub_ub,
+        double ftr, double ftr_lb, double ftr_ub, double rem, double rem_lb, double rem_ub) {
+    double tmp1, tmp2;
+
+    elina_double_interval_mul(&tmp1, &tmp2, -ftr, ftr, ftr_lb, ftr_ub);
+    *sub_lb = tmp1;
+    *sub_ub = tmp2;
+
+    elina_double_interval_mul(&tmp1, &tmp2, -rem, rem, rem_lb, rem_ub);
+    *lb = *sub_lb + tmp1;
+    *ub = *sub_ub + tmp2;
+}
 
 double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno){
 	size_t k;
@@ -216,75 +228,68 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
         //fflush(stdout);
 
     if (has_spatial_constraints) {
-        size_t index, neighbor, sparse_index, sparse_neighbor;
+        size_t idx, nbr, s_idx, s_nbr;
+        double lb_idx, lb_nbr, lb_org, sub_lb_idx, sub_lb_nbr;
+        double ub_idx, ub_nbr, ub_org, sub_ub_idx, sub_ub_nbr;
+
         double res_inf_spatial = expr->inf_cst;
 
         for (size_t i = 0; i < fp->spatial_constraints_size; ++i) {
-            index = fp->spatial_indices[i];
-            neighbor = fp->spatial_neighbors[i];
+            idx = fp->spatial_indices[i];
+            nbr = fp->spatial_neighbors[i];
 
             if (expr->type == DENSE) {
-                sparse_index = index;
-                sparse_neighbor = neighbor;
+                s_idx = idx;
+                s_nbr = nbr;
             } else {
-                sparse_index = sparse_neighbor = num_pixels;
+                s_idx = s_nbr = num_pixels;
 
                 for (size_t j = 0; j < dims; ++j) {
-                    if (expr->dim[j] == index) {
-                        sparse_index = j;
+                    if (expr->dim[j] == idx) {
+                        s_idx = j;
                     }
-                    if (expr->dim[j] == neighbor) {
-                        sparse_neighbor = j;
+                    if (expr->dim[j] == nbr) {
+                        s_nbr = j;
                     }
                 }
 
-                if (sparse_index == num_pixels || sparse_neighbor == num_pixels) {
+                if (s_idx == num_pixels || s_nbr == num_pixels) {
                     continue;
                 }
             }
 
-            // expr_coeffs are inverted as they contain lower bounds
-            if (expr_coeffs[sparse_index] != 0 && expr_coeffs[sparse_neighbor] != 0) {
-                double factor_index = expr_coeffs[sparse_index];
-                double rest_neighbor = expr_coeffs[sparse_index] + expr_coeffs[sparse_neighbor];
-                elina_double_interval_mul(
-                    &tmp1, &tmp2, rest_neighbor, -rest_neighbor,
-                    fp->input_inf[neighbor], fp->input_sup[neighbor]
-                );
-                double lb_index = tmp1 + factor_index * fp->spatial_lower_bounds[i];
+            if (expr_coeffs[s_idx] != 0 && expr_coeffs[s_nbr] != 0) {
+                double remainder = expr_coeffs[s_idx] + expr_coeffs[s_nbr];
 
-                double factor_neighbor = expr_coeffs[sparse_neighbor];
-                double rest_index = expr_coeffs[sparse_index] + expr_coeffs[sparse_neighbor];
-                elina_double_interval_mul(
-                    &tmp1, &tmp2, rest_index, -rest_index,
-                    fp->input_inf[index], fp->input_sup[index]
+                substitute_spatial(
+                    &lb_idx, &ub_idx, &sub_lb_idx, &sub_ub_idx,
+                    -expr_coeffs[s_idx], -fp->spatial_lower_bounds[i], fp->spatial_upper_bounds[i],
+                    -remainder, fp->input_inf[nbr], fp->input_sup[nbr]
                 );
-                double lb_neighbor = tmp1 - factor_neighbor * fp->spatial_upper_bounds[i];
-
-                elina_double_interval_mul(
-                    &tmp1, &tmp2, expr_coeffs[sparse_index], -expr_coeffs[sparse_index],
-                    fp->input_inf[index], fp->input_sup[index]
+                substitute_spatial(
+                    &lb_nbr, &ub_nbr, &sub_lb_nbr, &sub_ub_nbr,
+                    -expr_coeffs[s_nbr], fp->spatial_upper_bounds[i], -fp->spatial_lower_bounds[i],
+                    -remainder, fp->input_inf[idx], fp->input_sup[idx]
                 );
-                double lb_original = tmp1;
-                elina_double_interval_mul(
-                    &tmp1, &tmp2, expr_coeffs[sparse_neighbor], -expr_coeffs[sparse_neighbor],
-                    fp->input_inf[neighbor], fp->input_sup[neighbor]
+                substitute_spatial(
+                    &lb_org, &ub_org, &tmp1, &tmp2,
+                    -expr_coeffs[s_idx], fp->input_inf[idx], fp->input_sup[idx],
+                    -expr_coeffs[s_nbr], fp->input_inf[nbr], fp->input_sup[nbr]
                 );
-                lb_original += tmp1;
 
                 // flow constraints don't improve the bound
-                if (lb_original < fmin(lb_index, lb_neighbor)) {
+                if (lb_org < fmin(lb_idx, lb_nbr)) {
                     continue;
                 }
 
-                if (lb_index < lb_neighbor) {
-                    expr_coeffs[sparse_index] = 0;
-                    expr_coeffs[sparse_neighbor] = rest_neighbor;
-                    res_inf_spatial += factor_index * fp->spatial_lower_bounds[i];
+                if (lb_idx < lb_nbr) {
+                    expr_coeffs[s_idx] = 0;
+                    expr_coeffs[s_nbr] = remainder;
+                    res_inf_spatial += sub_lb_idx;
                 } else {
-                    expr_coeffs[sparse_index] = rest_index;
-                    expr_coeffs[sparse_neighbor] = 0;
-                    res_inf_spatial -= factor_neighbor * fp->spatial_upper_bounds[i];
+                    expr_coeffs[s_idx] = remainder;
+                    expr_coeffs[s_nbr] = 0;
+                    res_inf_spatial += sub_lb_nbr;
                 }
             }
         }
@@ -360,74 +365,68 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 	}
 
     if (has_spatial_constraints) {
-        size_t index, neighbor, sparse_index, sparse_neighbor;
+        size_t idx, nbr, s_idx, s_nbr;
+        double lb_idx, lb_nbr, lb_org, sub_lb_idx, sub_lb_nbr;
+        double ub_idx, ub_nbr, ub_org, sub_ub_idx, sub_ub_nbr;
+
         double res_sup_spatial = expr->sup_cst;
 
         for (size_t i = 0; i < fp->spatial_constraints_size; ++i) {
-            index = fp->spatial_indices[i];
-            neighbor = fp->spatial_neighbors[i];
+            idx = fp->spatial_indices[i];
+            nbr = fp->spatial_neighbors[i];
 
             if (expr->type == DENSE) {
-                sparse_index = index;
-                sparse_neighbor = neighbor;
+                s_idx = idx;
+                s_nbr = nbr;
             } else {
-                sparse_index = sparse_neighbor = num_pixels;
+                s_idx = s_nbr = num_pixels;
 
                 for (size_t j = 0; j < dims; ++j) {
-                    if (expr->dim[j] == index) {
-                        sparse_index = j;
+                    if (expr->dim[j] == idx) {
+                        s_idx = j;
                     }
-                    if (expr->dim[j] == neighbor) {
-                        sparse_neighbor = j;
+                    if (expr->dim[j] == nbr) {
+                        s_nbr = j;
                     }
                 }
 
-                if (sparse_index == num_pixels || sparse_neighbor == num_pixels) {
+                if (s_idx == num_pixels || s_nbr == num_pixels) {
                     continue;
                 }
             }
 
-            if (expr_coeffs[sparse_index] != 0 && expr_coeffs[sparse_neighbor] != 0) {
-                double factor_index = expr_coeffs[sparse_index];
-                double rest_neighbor = expr_coeffs[sparse_index] + expr_coeffs[sparse_neighbor];
-                elina_double_interval_mul(
-                    &tmp1, &tmp2, -rest_neighbor, rest_neighbor,
-                    fp->input_inf[neighbor], fp->input_sup[neighbor]
-                );
-                double ub_index = tmp2 + factor_index * fp->spatial_upper_bounds[i];
+            if (expr_coeffs[s_idx] != 0 && expr_coeffs[s_nbr] != 0) {
+                double remainder = expr_coeffs[s_idx] + expr_coeffs[s_nbr];
 
-                double factor_neighbor = expr_coeffs[sparse_neighbor];
-                double rest_index = expr_coeffs[sparse_index] + expr_coeffs[sparse_neighbor];
-                elina_double_interval_mul(
-                    &tmp1, &tmp2, -rest_index, rest_index,
-                    fp->input_inf[index], fp->input_sup[index]
+                substitute_spatial(
+                    &lb_idx, &ub_idx, &sub_lb_idx, &sub_ub_idx,
+                    expr_coeffs[s_idx], -fp->spatial_lower_bounds[i], fp->spatial_upper_bounds[i],
+                    remainder, fp->input_inf[nbr], fp->input_sup[nbr]
                 );
-                double ub_neighbor = tmp2 - factor_neighbor * fp->spatial_lower_bounds[i];
-
-                elina_double_interval_mul(
-                    &tmp1, &tmp2, -expr_coeffs[sparse_index], expr_coeffs[sparse_index],
-                    fp->input_inf[index], fp->input_sup[index]
+                substitute_spatial(
+                    &lb_nbr, &ub_nbr, &sub_lb_nbr, &sub_ub_nbr,
+                    expr_coeffs[s_nbr], fp->spatial_upper_bounds[i], -fp->spatial_lower_bounds[i],
+                    remainder, fp->input_inf[idx], fp->input_sup[idx]
                 );
-                double ub_original = tmp2;
-                elina_double_interval_mul(
-                    &tmp1, &tmp2, -expr_coeffs[sparse_neighbor], expr_coeffs[sparse_neighbor],
-                    fp->input_inf[neighbor], fp->input_sup[neighbor]
+                substitute_spatial(
+                    &lb_org, &ub_org, &tmp1, &tmp2,
+                    expr_coeffs[s_idx], fp->input_inf[idx], fp->input_sup[idx],
+                    expr_coeffs[s_nbr], fp->input_inf[nbr], fp->input_sup[nbr]
                 );
-                ub_original += tmp2;
 
                 // flow constraints don't improve the bound
-                if (ub_original < fmin(ub_index, ub_neighbor)) {
+                if (ub_org < fmin(ub_idx, ub_nbr)) {
                     continue;
                 }
 
-                if (ub_index < ub_neighbor) {
-                    expr_coeffs[sparse_index] = 0;
-                    expr_coeffs[sparse_neighbor] = rest_neighbor;
-                    res_sup_spatial += factor_index * fp->spatial_upper_bounds[i];
+                if (ub_idx < ub_nbr) {
+                    expr_coeffs[s_idx] = 0;
+                    expr_coeffs[s_nbr] = remainder;
+                    res_sup_spatial += sub_ub_idx;
                 } else {
-                    expr_coeffs[sparse_index] = rest_index;
-                    expr_coeffs[sparse_neighbor] = 0;
-                    res_sup_spatial -= factor_neighbor * fp->spatial_lower_bounds[i];
+                    expr_coeffs[s_idx] = remainder;
+                    expr_coeffs[s_nbr] = 0;
+                    res_sup_spatial += sub_ub_nbr;
                 }
             }
         }
