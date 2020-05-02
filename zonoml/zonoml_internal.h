@@ -54,7 +54,7 @@ counter += cycles
     extern double zonoml_relu_time;
     extern double zonoml_sigmoid_time;
     extern double zonoml_tanh_time;
-    extern double zonoml_maxpool_time;
+    extern double zonoml_pool_time;
     extern double zonoml_network_input_time;
     extern double zonoml_conv_matmult_time;
     extern double zonoml_ffn_matmult_time;
@@ -120,7 +120,7 @@ typedef struct zonoml_conv_matmult_thread_t{
 }zonoml_conv_matmult_thread_t;
 
 
-typedef struct zonoml_maxpool_thread_t{
+typedef struct zonoml_pool_thread_t{
 	size_t start;
 	size_t end;
 	zonotope_internal_t* pr;
@@ -135,7 +135,8 @@ typedef struct zonoml_maxpool_thread_t{
 	size_t *output_size;
 	zonotope_noise_symbol_t ** epsilon_map;
 	char * is_used;
-}zonoml_maxpool_thread_t;
+	bool is_maxpool;
+}zonoml_pool_thread_t;
 
 
 static inline zonotope_t* zonotope_of_abstract0(elina_abstract0_t* a)
@@ -518,16 +519,16 @@ static inline void conv_matmult_zono_parallel(zonotope_internal_t* pr, zonotope_
 }
 
 
-static inline void maxpool_zono_parallel(zonotope_internal_t* pr, zonotope_t *z, size_t src_offset, size_t *pool_size,
+static inline void pool_zono_parallel(zonotope_internal_t* pr, zonotope_t *z, size_t src_offset, size_t *pool_size,
 			       	           size_t num_out_neurons, size_t dst_offset, size_t *input_size, size_t *strides,
-					  size_t *output_size, long int pad_top, long int pad_left, void *(*function)(void *)){
+					  size_t *output_size, long int pad_top, long int pad_left, bool is_maxpool, void *(*function)(void *)){
 	//int num_threads = get_nprocs();
 	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
 	if(num_threads <1){
 		num_threads = 1;
 	}
 	
-	zonoml_maxpool_thread_t args[num_threads];
+	zonoml_pool_thread_t args[num_threads];
 	pthread_t threads[num_threads];
 	int i;
 	zonotope_noise_symbol_t ** epsilon_map = (zonotope_noise_symbol_t **)malloc(num_out_neurons*sizeof(zonotope_noise_symbol_t*));
@@ -561,6 +562,7 @@ static inline void maxpool_zono_parallel(zonotope_internal_t* pr, zonotope_t *z,
 			args[i].pad_left = pad_left;
 			args[i].epsilon_map = epsilon_map;
 			args[i].is_used = is_used;   
+			args[i].is_maxpool = is_maxpool;
 	    		pthread_create(&threads[i], NULL,function, (void*)&args[i]);
 			
 	  	}
@@ -588,7 +590,8 @@ static inline void maxpool_zono_parallel(zonotope_internal_t* pr, zonotope_t *z,
 			args[i].pad_top = pad_top;
 			args[i].pad_left = pad_left;  
 			args[i].epsilon_map = epsilon_map;
-			args[i].is_used = is_used;  
+			args[i].is_used = is_used;
+		        args[i].is_maxpool = is_maxpool;	
 	    		pthread_create(&threads[i], NULL,function, (void*)&args[i]);
 			idx_start = idx_end;
 			idx_end = idx_start + idx_n;

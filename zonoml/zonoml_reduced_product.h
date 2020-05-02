@@ -41,9 +41,9 @@ elina_abstract0_t * sigmoid_zono(elina_manager_t *man, bool destructive,
 elina_abstract0_t * tanh_zono(elina_manager_t *man, bool destructive,
 				 elina_abstract0_t *abs, elina_dim_t x);
 
-elina_abstract0_t* maxpool_zono(elina_manager_t *man, bool destructive, elina_abstract0_t *abs, 
+elina_abstract0_t* pool_zono(elina_manager_t *man, bool destructive, elina_abstract0_t *abs, 
 			   size_t *pool_size, size_t *input_size, size_t src_offset, size_t* strides, 
-			   size_t dimensionality, size_t dst_offset, size_t pad_top, size_t pad_left, size_t *output_size);
+			   size_t dimensionality, size_t dst_offset, size_t pad_top, size_t pad_left, size_t *output_size, bool is_maxpool);
 //void reduced_product_zono_to_oct(elina_manager_t* man, zonoml_t *zo, elina_dim_t *tdim,elina_linexpr0_t ** lexpr_arr, size_t size, elina_abstract0_t* dest);
 
 //void reduced_product_oct_to_zono(elina_manager_t *man, zonoml_t *zo, elina_dim_t y, elina_dim_t x);

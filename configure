@@ -37,6 +37,7 @@ Environment variables that affect configuration:
   LDFLAGS              extra link flags
   GMP_PREFIX           where to find the GMP library
   MPFR_PREFIX          where to find the MPFR library
+  CDD_PREFIX           where to find the CDD library
   PPL_PREFIX           where to find tye PPL library
   JAVA_HOME            where to find Java
 
@@ -51,6 +52,7 @@ EOF
 
 elina_prefix=/usr/local
 apron_prefix=/usr/local
+cdd_prefix=/usr/local/include/cddlib
 has_ocaml=0
 has_ocamlfind=0
 has_java=0
@@ -78,6 +80,9 @@ while : ; do
             shift;;
         -mpfr-prefix|--mpfr-prefix)
             mpfr_prefix="$2"
+            shift;;
+        -cdd-prefix|--cdd-prefix)
+            cdd_prefix="$2"
             shift;;
         -java-prefix|--java-prefix)
             java_prefix="$2"
@@ -197,7 +202,7 @@ checkprefix()
     then
         echo "looking for $testlib without prefix"
         prefix=""
-        checkinc "$testcc" "$testinc"
+        checkinc "$testcc" "$testinc" 
         if test $r -eq 1
         then
             checklib "$testcc" "$testlib"
@@ -213,6 +218,7 @@ checkprefix()
     do
         echo "looking for $testlib in prefix $prefix"
         checkinc "$testcc -I$prefix/include" "$testinc"
+	checkinc "$testcc -I$prefix" "$testinc"
         if test $r -eq 1
         then
             checklib "$testcc -L$prefix/lib" "$testlib"
@@ -322,6 +328,12 @@ if test "x$mpfr_prefix" != "x"; then MPFR_PREFIX="$mpfr_prefix"; fi
 checkprefix "$cc $cflags" mpfr.h mpfr "$MPFR_PREFIX"
 if test $? -eq 0; then echo "MPFR not found, set MPFR_PREFIX"; exit 1; fi
 mpfr_prefix="$prefix"
+
+if test "x$cdd_prefix" != "x"; then CDD_PREFIX="$cdd_prefix"; fi
+checkprefix "$cc $cflags" setoper.h cdd "$CDD_PREFIX"
+if test $? -eq 0; then echo "CDD not found, set CDD_PREFIX"; exit 1; fi
+cdd_prefix="$prefix"
+
 
 
 # OCaml environment

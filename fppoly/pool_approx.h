@@ -18,28 +18,22 @@
  *
  */
 
-#include <stdlib.h>
-#include <unistd.h>
-
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <string.h>
-#include <sys/mman.h>
 
 
-#include "zonoml_internal.h"
+#ifndef __POOL_APPROX_H_INCLUDED__
+#define __POOL_APPROX_H_INCLUDED__
 
-#include "zonoml_fun.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-double zonoml_relu_time=0;
-double zonoml_sigmoid_time=0;
-double zonoml_tanh_time=0;
-double zonoml_pool_time=0;
-double zonoml_network_input_time=0;
-double zonoml_conv_matmult_time=0;
-double zonoml_ffn_matmult_time=0;
+#include "backsubstitute.h"
 
+size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
+                           size_t *pool_size, size_t *input_size, size_t *strides, size_t dimensionality, size_t pad_top, size_t pad_left, size_t * output_size,size_t *predecessors, bool is_maxpool);
 
-elina_manager_t* zonoml_manager_alloc(void){
-	return zonotope_manager_alloc();
-}
+#ifdef __cplusplus
+ }
+#endif
+
+#endif

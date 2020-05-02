@@ -49,12 +49,12 @@ void update_state_using_predecessor_layer(fppoly_internal_t *pr,fppoly_t *fp, ex
 		free_expr(tmp_l);
 		free_expr(tmp_u);
 	}
-	else if(fp->layers[k]->type==MAXPOOL || fp->layers[k]->type==LSTM){
+	else if(fp->layers[k]->type==POOL || fp->layers[k]->type==LSTM){
 		expr_t * tmp_l = lexpr;
 		expr_t * tmp_u = uexpr;
-		*lexpr_ptr = lexpr_replace_maxpool_or_lstm_bounds(pr,lexpr,aux_neurons);
+		*lexpr_ptr = lexpr_replace_pool_or_lstm_bounds(pr,lexpr,aux_neurons);
 				
-		*uexpr_ptr = uexpr_replace_maxpool_or_lstm_bounds(pr,uexpr,aux_neurons);
+		*uexpr_ptr = uexpr_replace_pool_or_lstm_bounds(pr,uexpr,aux_neurons);
 		free_expr(tmp_l);
 				
 		free_expr(tmp_u);

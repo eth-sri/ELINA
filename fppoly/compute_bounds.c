@@ -280,7 +280,7 @@ double get_lb_using_predecessor_layer(fppoly_internal_t * pr,fppoly_t *fp, expr_
 			}
 		else{
 			expr_t * tmp_l = lexpr;
-			*lexpr_ptr = lexpr_replace_maxpool_or_lstm_bounds(pr,lexpr,aux_neurons);	
+			*lexpr_ptr = lexpr_replace_pool_or_lstm_bounds(pr,lexpr,aux_neurons);	
 			free_expr(tmp_l);
 		}
 		return res;
@@ -328,7 +328,7 @@ double get_ub_using_predecessor_layer(fppoly_internal_t * pr,fppoly_t *fp, expr_
 			}
 		else{
 			expr_t * tmp_u = uexpr;
-			*uexpr_ptr = uexpr_replace_maxpool_or_lstm_bounds(pr,uexpr,aux_neurons);	
+			*uexpr_ptr = uexpr_replace_pool_or_lstm_bounds(pr,uexpr,aux_neurons);	
 			free_expr(tmp_u);
 		}
 		return res;

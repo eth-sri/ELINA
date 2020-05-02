@@ -648,9 +648,9 @@ def tanh_zono_layerwise(man,destructive,elem,start_offset, num_dim):
 
     return res
 
-def maxpool_zono(man, destructive, elem, pool_size, input_size, src_offset, strides, dimensionality, dst_offset, pad_top, pad_left, output_shape):
+def pool_zono(man, destructive, elem, pool_size, input_size, src_offset, strides, dimensionality, dst_offset, pad_top, pad_left, output_shape, is_maxpool):
     """
-    Performs the Maxpool operation
+    Performs Pooling operations
     
     Parameters
     ----------
@@ -674,6 +674,8 @@ def maxpool_zono(man, destructive, elem, pool_size, input_size, src_offset, stri
         The destination offset in the abstract element for Maxpool
     is_valid_padding: c_bool
         whether the padding is valid or same
+    is_maxpool: c_bool
+        whether the pooling is maxpool based
     Returns
     -------
     res : ElinaAbstract0Ptr
@@ -683,10 +685,10 @@ def maxpool_zono(man, destructive, elem, pool_size, input_size, src_offset, stri
 
     res = None
     try:
-        maxpool_zono_c = zonoml_api.maxpool_zono
-        maxpool_zono_c.restype = ElinaAbstract0Ptr
-        maxpool_zono_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, POINTER(c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_size_t, c_size_t, c_size_t, c_size_t,POINTER(c_size_t) ]
-        res = maxpool_zono_c(man,destructive,elem,pool_size,input_size, src_offset, strides, dimensionality, dst_offset, pad_top, pad_left, output_shape)
+        pool_zono_c = zonoml_api.pool_zono
+        pool_zono_c.restype = ElinaAbstract0Ptr
+        pool_zono_c.argtypes = [ElinaManagerPtr, c_bool, ElinaAbstract0Ptr, POINTER(c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), c_size_t, c_size_t, c_size_t, c_size_t,POINTER(c_size_t), c_bool ]
+        res = pool_zono_c(man,destructive,elem,pool_size,input_size, src_offset, strides, dimensionality, dst_offset, pad_top, pad_left, output_shape, is_maxpool)
     except Exception as inst:
         print('Problem with loading/calling "maxpool_zono" from "libzonoml.so"')
         print(inst)

@@ -1180,8 +1180,8 @@ bool is_greater(elina_manager_t *man, elina_abstract0_t *elem, elina_dim_t y, el
 }
 
 
-void * handle_maxpool_zono_parallel(void *args){
-	zonoml_maxpool_thread_t * data = (zonoml_maxpool_thread_t *)args;
+void * handle_pool_zono_parallel(void *args){
+	zonoml_pool_thread_t * data = (zonoml_pool_thread_t *)args;
 	zonotope_internal_t * pr = data->pr;
 	zonotope_t * z = data->z;
 	size_t src_offset = data->src_offset;
@@ -1197,9 +1197,10 @@ void * handle_maxpool_zono_parallel(void *args){
 	size_t *output_size = data->output_size;		
 	long int pad_top = data->pad_top;
 	long int pad_left = data->pad_left;  
-	
+     	
 	zonotope_noise_symbol_t ** epsilon_map = data->epsilon_map;
 	char * is_used = data->is_used;	
+        bool is_maxpool = data->is_maxpool;
 
 	size_t o12 = output_size[1]*output_size[2];
    	size_t i12 = input_size[1]*input_size[2];
@@ -1268,93 +1269,124 @@ void * handle_maxpool_zono_parallel(void *args){
 		}
 	    }
 		
-	    bool flag = false;
-	    elina_dim_t var = 0;
-	    for(j=0; j < l; j++){
-		bool g_flag = true;
-		for(k = 0;  k < l; k++){
-		    if(k==j)continue;
-		    if((inf[k]==sup[k]) && (inf[j]>=sup[k])){
-			continue;
-		    }
-		    else if((inf[j]==inf[k]) && (sup[j]==sup[k]) && (inf[j]==sup[j])){
-			continue;
-		    }
-		    
-		    zonotope_aff_t * x = z->paf[pool_map[j]];
-		    zonotope_aff_t * y = z->paf[pool_map[k]];
-		    elina_scalar_t *scalar = elina_scalar_alloc();
-		    elina_scalar_set_double(scalar,-1);		
-		    zonotope_aff_t *tmp = zonotope_aff_mul_scalar(pr, y, scalar);
-		    zonotope_aff_t * res= zonotope_aff_add(pr, x, tmp, z);	
-		    
-		    g_flag = (res->itv_inf<0);
-		    elina_scalar_free(scalar);
-		    zonotope_aff_check_free(pr,tmp);
-		    zonotope_aff_check_free(pr,res);	 
-		    if(!g_flag){
-			break;
-		    }
-				
-		}
-		if(g_flag){
-			flag = true;
-			var =(elina_dim_t)pool_map[j];
-			break;
-		}
-	  }
 	  elina_coeff_t *coeff, *cst;
 	  elina_linexpr0_t * linexpr0;
 	  elina_linterm_t *linterm;
 	  out_pos = mat_x + dst_offset;
           zonotope_aff_check_free(pr,z->paf[out_pos]);
-	 
-	  if(flag){
-	     //x_new = x_var
-	     elina_scalar_t *scalar = elina_scalar_alloc();
-	     elina_scalar_set_double(scalar,1);		
-	     z->paf[out_pos] = zonotope_aff_mul_scalar(pr, z->paf[var], scalar);
+	  if(is_maxpool){
+		bool flag = false;
+            	elina_dim_t var = 0;
+            	for(j=0; j < l; j++){
+                	bool g_flag = true;
+                	for(k = 0;  k < l; k++){
+                    		if(k==j)continue;
+                    		if((inf[k]==sup[k]) && (inf[j]>=sup[k])){
+                        		continue;
+                    		}
+                    		else if((inf[j]==inf[k]) && (sup[j]==sup[k]) && (inf[j]==sup[j])){
+                        		continue;
+                    		}
+
+                    		zonotope_aff_t * x = z->paf[pool_map[j]];
+                    		zonotope_aff_t * y = z->paf[pool_map[k]];
+                    		elina_scalar_t *scalar = elina_scalar_alloc();
+                    		elina_scalar_set_double(scalar,-1);
+                    		zonotope_aff_t *tmp = zonotope_aff_mul_scalar(pr, y, scalar);
+                    		zonotope_aff_t * res= zonotope_aff_add(pr, x, tmp, z);
+
+                    		g_flag = (res->itv_inf<0);
+				elina_scalar_free(scalar);
+                    		zonotope_aff_check_free(pr,tmp);
+                    		zonotope_aff_check_free(pr,res);
+                    		if(!g_flag){
+                        		break;
+                    		}
+
+                	}
+                	if(g_flag){
+                        	flag = true;
+                        	var =(elina_dim_t)pool_map[j];
+                        	break;
+                	}
+          	}
+
+  
+	  	if(flag){
+	     		//x_new = x_var
+	     		elina_scalar_t *scalar = elina_scalar_alloc();
+	     		elina_scalar_set_double(scalar,1);		
+	     		z->paf[out_pos] = zonotope_aff_mul_scalar(pr, z->paf[var], scalar);
 		
-	     z->box_inf[out_pos] = z->paf[out_pos]->itv_inf; 
-	     z->box_sup[out_pos] = z->paf[out_pos]->itv_sup; 
+	     		z->box_inf[out_pos] = z->paf[out_pos]->itv_inf; 
+	     		z->box_sup[out_pos] = z->paf[out_pos]->itv_sup; 
 	    
-	     elina_scalar_free(scalar);
-	     z->paf[out_pos]->pby++;
-	  }
-	  else{
-	     //max_l<= x_new <= max_u
+	     		elina_scalar_free(scalar);
+	     		z->paf[out_pos]->pby++;
+	  	}
+	  	else{
+	     		//max_l<= x_new <= max_u
 		
-	     size_t noise_index = out_pos - dst_offset;
+	     		size_t noise_index = out_pos - dst_offset;
 	     
-	     is_used[noise_index] = 1;
-	     double mid_inf = 0.0;
-    	     double mid_sup = 0.0;
-    	     double dev_inf = 0.0;
-    	     double dev_sup = 0.0;
-	     zonotope_aff_t * res_box = zonotope_aff_alloc_init(pr);
-	     elina_interval_middev(&mid_inf, &mid_sup, &dev_inf, &dev_sup, -max_l,max_u);
-	     res_box->c_inf = res_box->c_inf + mid_inf;
-	     res_box->c_sup = res_box->c_sup + mid_sup;
-	     res_box->itv_inf = -max_l;
-	     res_box->itv_sup = max_u;
+	     		is_used[noise_index] = 1;
+	     		double mid_inf = 0.0;
+    	     		double mid_sup = 0.0;
+    	     		double dev_inf = 0.0;
+    	     		double dev_sup = 0.0;
+	     		zonotope_aff_t * res_box = zonotope_aff_alloc_init(pr);
+	     		elina_interval_middev(&mid_inf, &mid_sup, &dev_inf, &dev_sup, -max_l,max_u);
+	     		res_box->c_inf = res_box->c_inf + mid_inf;
+	     		res_box->c_sup = res_box->c_sup + mid_sup;
+	     		res_box->itv_inf = -max_l;
+	     		res_box->itv_sup = max_u;
 				
-   	     if (dev_inf!=0 || dev_sup!=0) {
-		 zonotope_aaterm_t* ptr = zonotope_aaterm_alloc_init();
-		 ptr->inf = dev_inf;
-		 ptr->sup = dev_sup;
-		 ptr->pnsym = epsilon_map[noise_index];
-                 if (res_box->end) res_box->end->n = ptr;
-		     else res_box->q = ptr;
-		     res_box->end = ptr;
-		     res_box->l++;
-    		 }
-	     z->paf[out_pos] = res_box;
-             z->box_inf[out_pos] = -max_l;
-	     z->box_sup[out_pos] = max_u;
-	     z->paf[out_pos]->pby++;		
+   	     		if (dev_inf!=0 || dev_sup!=0) {
+		 		zonotope_aaterm_t* ptr = zonotope_aaterm_alloc_init();
+		 		ptr->inf = dev_inf;
+		 		ptr->sup = dev_sup;
+		 		ptr->pnsym = epsilon_map[noise_index];
+                 		if (res_box->end) res_box->end->n = ptr;
+		     		else res_box->q = ptr;
+		     		res_box->end = ptr;
+		     		res_box->l++;
+    		 	}
+	     		z->paf[out_pos] = res_box;
+             		z->box_inf[out_pos] = -max_l;
+	     		z->box_sup[out_pos] = max_u;
+	     		z->paf[out_pos]->pby++;		
+	  	}
+	   }
+	  else{
+		  double coeff_l, coeff_u;
+		  fesetround(FE_DOWNWARD);
+		  coeff_u = 1.0/(double)l;
+		  fesetround(FE_UPWARD);
+		  coeff_l = 1.0/(double)l;
+		  size_t i;
+		  zonotope_aff_t * res = zonotope_aff_alloc_init(pr);
+		  double avg_l = 0.0, avg_u = 0.0;
+		  elina_interval_t *lambda = elina_interval_alloc();
+		  elina_interval_set_double(lambda,-coeff_l,coeff_u);
+		  for(i=0; i < l; i++){
+			zonotope_aff_t *res_zono = zonotope_aff_mul_itv(pr, z->paf[pool_map[i]], lambda);
+			zonotope_aff_t *tmp = res;
+			res = zonotope_aff_add(pr,tmp,res_zono,z);
+			avg_l = avg_l + inf[i]*coeff_l;
+			avg_u = avg_u + sup[i]*coeff_u;
+			zonotope_aff_free(pr, res_zono);
+			zonotope_aff_free(pr,tmp);
+		  }
+		  elina_interval_free(lambda);
+		  z->paf[out_pos] = res;
+		  z->box_inf[out_pos] = z->paf[out_pos]->itv_inf;
+		  z->box_sup[out_pos] = z->paf[out_pos]->itv_sup;
+
+		}
+
 	  }
 		
-	}
+	
 	
 	free(inf);
 	free(sup);
@@ -1363,9 +1395,9 @@ void * handle_maxpool_zono_parallel(void *args){
 }
 
 
-elina_abstract0_t* maxpool_zono(elina_manager_t *man, bool destructive, elina_abstract0_t *abs, 
+elina_abstract0_t* pool_zono(elina_manager_t *man, bool destructive, elina_abstract0_t *abs, 
 			   size_t *pool_size, size_t *input_size, size_t src_offset, size_t* strides, 
-			   size_t dimensionality, size_t dst_offset, size_t pad_top, size_t pad_left, size_t *output_size){
+			   size_t dimensionality, size_t dst_offset, size_t pad_top, size_t pad_left, size_t *output_size, bool is_maxpool){
 	assert(dimensionality==3);
 	assert(pool_size[2]==1);
 	//assert(stride[0]==2 && stride[1]==2 && stride[2]==1);
@@ -1385,7 +1417,7 @@ elina_abstract0_t* maxpool_zono(elina_manager_t *man, bool destructive, elina_ab
  	//printf("start %u\n",num_var);
 	
 	//fflush(stdout);
-        maxpool_zono_parallel(pr, res, src_offset, pool_size, num_out_neurons, dst_offset, input_size, strides, output_size, pad_top, pad_left, handle_maxpool_zono_parallel);
+        pool_zono_parallel(pr, res, src_offset, pool_size, num_out_neurons, dst_offset, input_size, strides, output_size, pad_top, pad_left, is_maxpool, handle_pool_zono_parallel);
 	//dims = zonotope_dimension(pr->man,res);
 	//num_var = dims.intdim + dims.realdim;
 	//printf("end %u\n",num_var);

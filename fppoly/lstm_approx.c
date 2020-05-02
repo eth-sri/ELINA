@@ -1,7 +1,7 @@
 #include "lstm_approx.h"
 
 
-expr_t * lexpr_replace_maxpool_or_lstm_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons){
+expr_t * lexpr_replace_pool_or_lstm_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons){
 	//printf("begin\n");
 	//fflush(stdout);
 	size_t num_neurons = expr->size;
@@ -148,7 +148,7 @@ expr_t * lexpr_replace_maxpool_or_lstm_bounds(fppoly_internal_t * pr, expr_t * e
 	return res;
 }
 
-expr_t * uexpr_replace_maxpool_or_lstm_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons){
+expr_t * uexpr_replace_pool_or_lstm_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons){
 	size_t num_neurons = expr->size;
 	size_t i,k;
 	expr_t *res;

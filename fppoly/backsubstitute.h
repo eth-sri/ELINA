@@ -35,7 +35,7 @@ extern "C" {
 #include "s_curve_approx.h"
 #include "parabola_approx.h"
 #include "log_approx.h"
-#include "maxpool_approx.h"
+#include "pool_approx.h"
 #include "lstm_approx.h"
 
 void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t *fp, size_t layerno, bool use_area_heuristic);
