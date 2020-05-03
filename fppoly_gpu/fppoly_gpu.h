@@ -67,6 +67,7 @@ typedef enum layertype_t
 {
     FFN, /* FFN layer */
     CONV,    /* CONV layer */
+    POOL,   /* MAXPOOL/AVERAGEPOOL layer */
     RESIDUAL, /* RESIDUAL layer */
 } layertype_t;
 
@@ -110,6 +111,12 @@ typedef struct layer_t
     size_t* filter_size;
     size_t* strides;
     long int* pad;
+
+    float_type* pool_lcoeffs;
+    float_type* pool_ucoeffs;
+
+    float_type* pool_lcsts;
+    float_type* pool_ucsts;
 } layer_t;
 
 
@@ -166,6 +173,8 @@ void conv_handle_first_layer(elina_manager_t* man, elina_abstract0_t* element, c
 void conv_handle_intermediate_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const size_t* output_size, const size_t pad_top, const size_t pad_left, const bool has_bias, size_t* predecessors, const bool use_area_heuristic, const bool retain_training_data, const float_type* gradient);
 
 void conv_handle_intermediate_affine_layer(elina_manager_t* man, elina_abstract0_t* element, const float_type* filter_weights, const float_type* filter_bias, const size_t* input_size, const size_t* filter_size, const size_t num_filters, const size_t* strides, const size_t* output_size, const size_t pad_top, const size_t pad_left, const bool has_bias, size_t* predecessors, const bool use_area_heuristic, const bool retain_training_data, const float_type* gradient);
+
+size_t handle_pool_layer(elina_manager_t* man, elina_abstract0_t* element, const size_t* pool_size, const size_t* input_size, const size_t* strides, const size_t dimensionality, const size_t pad_top, const size_t pad_left, const size_t* output_size, size_t* predecessors, const bool is_maxpool);
 
 void handle_residual_relu_layer(elina_manager_t* man, elina_abstract0_t* element, const size_t num_neurons, size_t* predecessors, const bool use_area_heuristic);
 
