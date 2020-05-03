@@ -160,7 +160,7 @@ expr_t * replace_input_poly_cons_in_uexpr(fppoly_internal_t *pr, expr_t * expr, 
 	return res;
 }
 
-void substitute_spatial_heuristic(double *lb, double *ub, double *sub_lb, double *sub_ub,
+void spatial_two_double_interval_mul(double *lb, double *ub, double *sub_lb, double *sub_ub,
         double ftr, double ftr_lb, double ftr_ub, double rem, double rem_lb, double rem_ub) {
     double tmp1, tmp2;
 
@@ -173,6 +173,118 @@ void substitute_spatial_heuristic(double *lb, double *ub, double *sub_lb, double
     *ub = *sub_ub + tmp2;
 }
 
+double substitute_spatial_heuristic(expr_t *expr, fppoly_t *fp, double *obj, bool LOWER) {
+    size_t idx, nbr, s_idx, s_nbr;
+    double lb_idx, lb_nbr, lb_org, sub_lb_idx, sub_lb_nbr;
+    double ub_idx, ub_nbr, ub_org, sub_ub_idx, sub_ub_nbr;
+
+    const size_t dims = expr->size;
+    const size_t num_pixels = fp->num_pixels;
+    double tmp1, tmp2;
+
+    double result = 0;
+    bool change = true;
+
+    while (change) {
+        change = false;
+
+        for (size_t i = 0; i < fp->spatial_constraints_size; ++i) {
+            idx = fp->spatial_indices[i];
+            nbr = fp->spatial_neighbors[i];
+
+            if (expr->type == DENSE) {
+                s_idx = idx;
+                s_nbr = nbr;
+            } else {
+                s_idx = s_nbr = num_pixels;
+
+                for (size_t j = 0; j < dims; ++j) {
+                    if (expr->dim[j] == idx) {
+                        s_idx = j;
+                    }
+                    if (expr->dim[j] == nbr) {
+                        s_nbr = j;
+                    }
+                }
+
+                if (s_idx == num_pixels || s_nbr == num_pixels) {
+                    continue;
+                }
+            }
+
+            if (obj[s_idx] != 0 && obj[s_nbr] != 0) {
+                double remainder = obj[s_idx] + obj[s_nbr];
+
+                spatial_two_double_interval_mul(
+                    &lb_idx, &ub_idx, &sub_lb_idx, &sub_ub_idx,
+                    obj[s_idx], -fp->spatial_lower_bounds[i], fp->spatial_upper_bounds[i],
+                    remainder, fp->input_inf[nbr], fp->input_sup[nbr]
+                );
+                spatial_two_double_interval_mul(
+                    &lb_nbr, &ub_nbr, &sub_lb_nbr, &sub_ub_nbr,
+                    obj[s_nbr], fp->spatial_upper_bounds[i], -fp->spatial_lower_bounds[i],
+                    remainder, fp->input_inf[idx], fp->input_sup[idx]
+                );
+                spatial_two_double_interval_mul(
+                    &lb_org, &ub_org, &tmp1, &tmp2,
+                    obj[s_idx], fp->input_inf[idx], fp->input_sup[idx],
+                    obj[s_nbr], fp->input_inf[nbr], fp->input_sup[nbr]
+                );
+
+                if (LOWER) {
+                    // flow constraints don't improve the bound
+                    if (lb_org < fmin(lb_idx, lb_nbr)) {
+                        continue;
+                    }
+
+                    change = true;
+
+                    if (lb_idx < lb_nbr) {
+                        obj[s_idx] = 0;
+                        obj[s_nbr] = remainder;
+                        result += sub_lb_idx;
+                    } else {
+                        obj[s_idx] = remainder;
+                        obj[s_nbr] = 0;
+                        result += sub_lb_nbr;
+                    }
+                } else {
+                    // flow constraints don't improve the bound
+                    if (ub_org < fmin(ub_idx, ub_nbr)) {
+                        continue;
+                    }
+
+                    change = true;
+
+                    if (ub_idx < ub_nbr) {
+                        obj[s_idx] = 0;
+                        obj[s_nbr] = remainder;
+                        result += sub_ub_idx;
+                    } else {
+                        obj[s_idx] = remainder;
+                        obj[s_nbr] = 0;
+                        result += sub_ub_nbr;
+                    }
+                }
+            }
+        }
+    }
+
+    // compute bounds for variables with nonzero coefficients
+    for (size_t i = 0; i < dims; ++i) {
+        size_t k = expr->type == DENSE ? i : expr->dim[i];
+
+        if (obj[i] != 0) {
+            elina_double_interval_mul(
+                &tmp1, &tmp2, -obj[i], obj[i], fp->input_inf[k], fp->input_sup[k]
+            );
+            result += LOWER ? tmp1 : tmp2;
+        }
+    }
+
+    return result;
+}
+
 void handle_gurobi_error(int error, GRBenv *env) {
     if (error) {
         printf("Gurobi error: %s\n", GRBgeterrormsg(env));
@@ -180,7 +292,7 @@ void handle_gurobi_error(int error, GRBenv *env) {
     }
 }
 
-double substitute_spatial_gurobi(expr_t * expr, fppoly_t * fp, double *obj, int opt_sense) {
+double substitute_spatial_gurobi(expr_t *expr, fppoly_t *fp, double *obj, int opt_sense) {
     GRBenv *env = NULL;
     GRBmodel *model = NULL;
 
@@ -193,7 +305,7 @@ double substitute_spatial_gurobi(expr_t * expr, fppoly_t * fp, double *obj, int 
     error = GRBstartenv(env);
     handle_gurobi_error(error, env);
 
-    size_t dims = expr->size;
+    const size_t dims = expr->size;
     double *lb, *ub;
 
     lb = malloc(dims * sizeof(double));
@@ -336,90 +448,9 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
                 expr, fp, expr_coeffs, GRB_MAXIMIZE
             );
         } else {
-            size_t idx, nbr, s_idx, s_nbr;
-            double lb_idx, lb_nbr, lb_org, sub_lb_idx, sub_lb_nbr;
-            double ub_idx, ub_nbr, ub_org, sub_ub_idx, sub_ub_nbr;
-
-            bool change = true;
-
-            while (change) {
-                change = false;
-
-                for (size_t i = 0; i < fp->spatial_constraints_size; ++i) {
-                    idx = fp->spatial_indices[i];
-                    nbr = fp->spatial_neighbors[i];
-
-                    if (expr->type == DENSE) {
-                        s_idx = idx;
-                        s_nbr = nbr;
-                    } else {
-                        s_idx = s_nbr = num_pixels;
-
-                        for (size_t j = 0; j < dims; ++j) {
-                            if (expr->dim[j] == idx) {
-                                s_idx = j;
-                            }
-                            if (expr->dim[j] == nbr) {
-                                s_nbr = j;
-                            }
-                        }
-
-                        if (s_idx == num_pixels || s_nbr == num_pixels) {
-                            continue;
-                        }
-                    }
-
-                    if (expr_coeffs[s_idx] != 0 && expr_coeffs[s_nbr] != 0) {
-                        double remainder = expr_coeffs[s_idx] + expr_coeffs[s_nbr];
-
-                        substitute_spatial_heuristic(
-                            &lb_idx, &ub_idx, &sub_lb_idx, &sub_ub_idx,
-                            expr_coeffs[s_idx], -fp->spatial_lower_bounds[i], fp->spatial_upper_bounds[i],
-                            remainder, fp->input_inf[nbr], fp->input_sup[nbr]
-                        );
-                        substitute_spatial_heuristic(
-                            &lb_nbr, &ub_nbr, &sub_lb_nbr, &sub_ub_nbr,
-                            expr_coeffs[s_nbr], fp->spatial_upper_bounds[i], -fp->spatial_lower_bounds[i],
-                            remainder, fp->input_inf[idx], fp->input_sup[idx]
-                        );
-                        substitute_spatial_heuristic(
-                            &lb_org, &ub_org, &tmp1, &tmp2,
-                            expr_coeffs[s_idx], fp->input_inf[idx], fp->input_sup[idx],
-                            expr_coeffs[s_nbr], fp->input_inf[nbr], fp->input_sup[nbr]
-                        );
-
-                        // flow constraints don't improve the bound
-                        if (lb_org < fmin(lb_idx, lb_nbr)) {
-                            continue;
-                        }
-
-                        change = true;
-
-                        if (lb_idx < lb_nbr) {
-                            expr_coeffs[s_idx] = 0;
-                            expr_coeffs[s_nbr] = remainder;
-                            res_inf_spatial += sub_lb_idx;
-                        } else {
-                            expr_coeffs[s_idx] = remainder;
-                            expr_coeffs[s_nbr] = 0;
-                            res_inf_spatial += sub_lb_nbr;
-                        }
-                    }
-                }
-            }
-
-            // compute lower bounds for variables with nonzero coefficients
-            for (size_t i = 0; i < dims; ++i) {
-                k = expr->type == DENSE ? i : expr->dim[i];
-
-                if (expr_coeffs[i] != 0) {
-                    elina_double_interval_mul(
-                        &tmp1, &tmp2, -expr_coeffs[i], expr_coeffs[i],
-                        fp->input_inf[k], fp->input_sup[k]
-                    );
-                    res_inf_spatial += tmp1;
-                }
-            }
+            res_inf_spatial += substitute_spatial_heuristic(
+                expr, fp, expr_coeffs, true
+            );
         }
 
         free(expr_coeffs);
@@ -495,90 +526,9 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
                 expr, fp, expr_coeffs, GRB_MINIMIZE
             );
         } else {
-            size_t idx, nbr, s_idx, s_nbr;
-            double lb_idx, lb_nbr, lb_org, sub_lb_idx, sub_lb_nbr;
-            double ub_idx, ub_nbr, ub_org, sub_ub_idx, sub_ub_nbr;
-
-            bool change = true;
-
-            while (change) {
-                change = false;
-
-                for (size_t i = 0; i < fp->spatial_constraints_size; ++i) {
-                    idx = fp->spatial_indices[i];
-                    nbr = fp->spatial_neighbors[i];
-
-                    if (expr->type == DENSE) {
-                        s_idx = idx;
-                        s_nbr = nbr;
-                    } else {
-                        s_idx = s_nbr = num_pixels;
-
-                        for (size_t j = 0; j < dims; ++j) {
-                            if (expr->dim[j] == idx) {
-                                s_idx = j;
-                            }
-                            if (expr->dim[j] == nbr) {
-                                s_nbr = j;
-                            }
-                        }
-
-                        if (s_idx == num_pixels || s_nbr == num_pixels) {
-                            continue;
-                        }
-                    }
-
-                    if (expr_coeffs[s_idx] != 0 && expr_coeffs[s_nbr] != 0) {
-                        double remainder = expr_coeffs[s_idx] + expr_coeffs[s_nbr];
-
-                        substitute_spatial_heuristic(
-                            &lb_idx, &ub_idx, &sub_lb_idx, &sub_ub_idx,
-                            expr_coeffs[s_idx], -fp->spatial_lower_bounds[i], fp->spatial_upper_bounds[i],
-                            remainder, fp->input_inf[nbr], fp->input_sup[nbr]
-                        );
-                        substitute_spatial_heuristic(
-                            &lb_nbr, &ub_nbr, &sub_lb_nbr, &sub_ub_nbr,
-                            expr_coeffs[s_nbr], fp->spatial_upper_bounds[i], -fp->spatial_lower_bounds[i],
-                            remainder, fp->input_inf[idx], fp->input_sup[idx]
-                        );
-                        substitute_spatial_heuristic(
-                            &lb_org, &ub_org, &tmp1, &tmp2,
-                            expr_coeffs[s_idx], fp->input_inf[idx], fp->input_sup[idx],
-                            expr_coeffs[s_nbr], fp->input_inf[nbr], fp->input_sup[nbr]
-                        );
-
-                        // flow constraints don't improve the bound
-                        if (ub_org < fmin(ub_idx, ub_nbr)) {
-                            continue;
-                        }
-
-                        change = true;
-
-                        if (ub_idx < ub_nbr) {
-                            expr_coeffs[s_idx] = 0;
-                            expr_coeffs[s_nbr] = remainder;
-                            res_sup_spatial += sub_ub_idx;
-                        } else {
-                            expr_coeffs[s_idx] = remainder;
-                            expr_coeffs[s_nbr] = 0;
-                            res_sup_spatial += sub_ub_nbr;
-                        }
-                    }
-                }
-            }
-
-            // compute upper bounds for variables with nonzero coefficients
-            for (size_t i = 0; i < dims; ++i) {
-                k = expr->type == DENSE ? i : expr->dim[i];
-
-                if (expr_coeffs[i] != 0) {
-                    elina_double_interval_mul(
-                        &tmp1, &tmp2, -expr_coeffs[i], expr_coeffs[i],
-                        fp->input_inf[k], fp->input_sup[k]
-                    );
-                    res_sup_spatial += tmp2;
-                }
-            }
+            res_sup_spatial += substitute_spatial_heuristic(
+                expr, fp, expr_coeffs, false
+            );
         }
 
         free(expr_coeffs);
