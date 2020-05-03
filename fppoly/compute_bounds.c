@@ -285,6 +285,7 @@ double substitute_spatial_heuristic(expr_t *expr, fppoly_t *fp, double *obj, boo
     return result;
 }
 
+#ifdef GUROBI
 void handle_gurobi_error(int error, GRBenv *env) {
     if (error) {
         printf("Gurobi error: %s\n", GRBgeterrormsg(env));
@@ -385,6 +386,7 @@ double substitute_spatial_gurobi(expr_t *expr, fppoly_t *fp, double *obj, int op
 
     return obj_val;
 }
+#endif
 
 double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno){
 	size_t k;
@@ -443,15 +445,19 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
     if (has_spatial_constraints) {
         double res_inf_spatial = expr->inf_cst;
 
+#ifdef GUROBI
         if (fp->spatial_use_gurobi) {
             res_inf_spatial -= substitute_spatial_gurobi(
                 expr, fp, expr_coeffs, GRB_MAXIMIZE
             );
         } else {
+#endif
             res_inf_spatial += substitute_spatial_heuristic(
                 expr, fp, expr_coeffs, true
             );
+#ifdef GUROBI
         }
+#endif
 
         free(expr_coeffs);
 
@@ -521,15 +527,19 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
     if (has_spatial_constraints) {
         double res_sup_spatial = expr->sup_cst;
 
+#ifdef GUROBI
         if (fp->spatial_use_gurobi) {
             res_sup_spatial += substitute_spatial_gurobi(
                 expr, fp, expr_coeffs, GRB_MINIMIZE
             );
         } else {
+#endif
             res_sup_spatial += substitute_spatial_heuristic(
                 expr, fp, expr_coeffs, false
             );
+#ifdef GUROBI
         }
+#endif
 
         free(expr_coeffs);
 
