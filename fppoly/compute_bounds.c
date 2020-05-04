@@ -448,7 +448,7 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 #ifdef GUROBI
         if (fp->spatial_use_gurobi) {
             res_inf_spatial -= substitute_spatial_gurobi(
-                expr, fp, expr_coeffs, GRB_MAXIMIZE
+                expr, fp, expr_coeffs, GRB_MINIMIZE
             );
         } else {
 #endif
@@ -530,7 +530,7 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 #ifdef GUROBI
         if (fp->spatial_use_gurobi) {
             res_sup_spatial += substitute_spatial_gurobi(
-                expr, fp, expr_coeffs, GRB_MINIMIZE
+                expr, fp, expr_coeffs, GRB_MAXIMIZE
             );
         } else {
 #endif
