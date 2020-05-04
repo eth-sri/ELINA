@@ -464,14 +464,6 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 
           free(expr_coeffs);
 
-          if (res_inf_spatial > res_inf) {
-            // TODO: remove
-            printf("\nLOWER\n");
-            printf("spatial : %.20f\n", -res_inf_spatial);
-            printf("original: %.20f\n", -res_inf);
-            printf("difference: %.20f\n", res_inf_spatial - res_inf);
-          }
-
           return res_inf_spatial;
         }
 
@@ -547,14 +539,6 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp,
 #endif
 
     free(expr_coeffs);
-
-    if (res_sup_spatial > res_sup) {
-      // TODO: remove
-      printf("\nUPPER\n");
-      printf("spatial : %.20f\n", res_sup_spatial);
-      printf("original: %.20f\n", res_sup);
-      printf("difference: %.20f\n", res_sup_spatial - res_sup);
-    }
 
     return res_sup_spatial;
   }
