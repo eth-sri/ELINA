@@ -50,7 +50,9 @@ endif
 	(cd elina_zones; make all)
 	(cd elina_zonotope; make all) 
 	(cd zonoml; make all)
+ifneq ($(HAS_CDD),)
 	(cd fppoly; make all)
+endif
 ifneq ($(IS_CUDA),)
 	(cd fppoly_gpu; make all)
 endif
@@ -67,7 +69,9 @@ endif
 	(cd elina_zones; make install)
 	(cd elina_zonotope; make install)
 	(cd zonoml; make install)
+ifneq ($(HAS_CDD),)
 	(cd fppoly; make install)
+endif
 ifneq ($(IS_CUDA),)
 	(cd fppoly_gpu; make install)
 endif
@@ -94,7 +98,9 @@ endif
 	(cd elina_zones; make clean)
 	(cd elina_zonotope; make clean)
 	(cd zonoml; make clean)
+ifneq ($(HAS_CDD),)
 	(cd fppoly; make clean)
+endif
 ifneq ($(IS_CUDA),)
 	(cd fppoly_gpu; make clean)
 endif

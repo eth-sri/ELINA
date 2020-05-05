@@ -59,6 +59,7 @@ has_java=0
 use_opam=0
 has_apron=0
 has_vector=0
+has_cdd=0
 has_cuda=0
 extra_elina_options=""
 force_absolute_dylib_install_names=0;
@@ -100,6 +101,8 @@ while : ; do
          has_apron=1;;
         -use-vector|--use-vector)
          has_vector=1;;
+	-use-deeppoly|--use-deeppoly)
+	 has_cdd=1;;
         -use-cuda|--use-cuda)
          has_cuda=1;;
         -use-opam|--use-opam)
@@ -329,9 +332,11 @@ checkprefix "$cc $cflags" mpfr.h mpfr "$MPFR_PREFIX"
 if test $? -eq 0; then echo "MPFR not found, set MPFR_PREFIX"; exit 1; fi
 mpfr_prefix="$prefix"
 
+if test $has_cdd -eq 1; then
 if test "x$cdd_prefix" != "x"; then CDD_PREFIX="$cdd_prefix"; fi
 checkprefix "$cc $cflags" setoper.h cdd "$CDD_PREFIX"
 if test $? -eq 0; then echo "CDD not found, set CDD_PREFIX"; exit 1; fi
+fi
 cdd_prefix="$prefix"
 
 
@@ -495,6 +500,7 @@ if test "$has_ocaml" -eq 0; then has_ocaml=; fi
 if test "$has_java" -eq 0; then has_java=; fi
 if test "$has_apron" -eq 0; then has_apron=; else has_apron=-DHAS_APRON; fi
 if test "$has_vector" -eq 0; then is_vector=; else is_vector=-DVECTOR; fi
+if test "$has_cdd" -eq 0; then has_cdd=; else has_cdd=-DHAS_CDD; fi
 if test "$has_cuda" -eq 0; then is_cuda=; else is_cuda=-DCUDA; fi
 if test "$use_opam" -eq 0; then use_opam=; fi
 
@@ -515,6 +521,9 @@ IS_APRON = $has_apron
 
 # if defined to VECTOR, uses SIMD instructions for the Octagon library
 IS_VECTOR = $is_vector
+
+# if define to HAS_CDD, compile DeepPoly
+HAS_CDD = $has_cdd
 
 # if defined to VECTOR, compile GPUPoly (the GPU version of DeepPoly)
 IS_CUDA = $is_cuda
