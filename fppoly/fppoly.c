@@ -1353,16 +1353,26 @@ void fppoly_free(elina_manager_t *man, fppoly_t *fp){
 	for(i=0; i < fp->numlayers; i++){
 		layer_free(fp->layers[i]);
 	}
-
-        for (i = 0; i < output_size; i++) {
-          if (fp->out->lexpr[i]) {
-            free_expr(fp->out->lexpr[i]);
+        if (fp->out != NULL) {
+          for (i = 0; i < output_size; i++) {
+            if (fp->out->lexpr[i]) {
+              free_expr(fp->out->lexpr[i]);
+            }
+            if (fp->out->uexpr[i]) {
+              free_expr(fp->out->uexpr[i]);
+            }
           }
-          if (fp->out->uexpr[i]) {
-            free_expr(fp->out->uexpr[i]);
-          }
+          free(fp->out->output_inf);
+          fp->out->output_inf = NULL;
+          free(fp->out->output_sup);
+          fp->out->output_sup = NULL;
+          free(fp->out->lexpr);
+          fp->out->lexpr = NULL;
+          free(fp->out->uexpr);
+          fp->out->uexpr = NULL;
+          free(fp->out);
+          fp->out = NULL;
         }
-
         free(fp->layers);
 	fp->layers = NULL;
 	free(fp->input_inf);
@@ -1380,17 +1390,7 @@ void fppoly_free(elina_manager_t *man, fppoly_t *fp){
         }
 	free(fp->input_sup);
 	fp->input_sup = NULL;
-        free(fp->out->output_inf);
-        fp->out->output_inf = NULL;
-        free(fp->out->output_sup);
-        fp->out->output_sup = NULL;
-        free(fp->out->lexpr);
-        fp->out->lexpr = NULL;
-        free(fp->out->uexpr);
-        fp->out->uexpr = NULL;
-        free(fp->out);
-        fp->out = NULL;
-        free(fp);
+	free(fp);
 	fp = NULL;
 }
 
