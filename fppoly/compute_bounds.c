@@ -67,11 +67,9 @@ expr_t * replace_input_poly_cons_in_lexpr(fppoly_internal_t *pr, expr_t * expr, 
 			}
 		}
 		else{
-                  elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                            expr->sup_coeff[i],
-                                            fp->input_inf[k], fp->input_sup[k]);
-                  res->inf_cst = res->inf_cst + tmp1;
-                  res->sup_cst = res->sup_cst - tmp1;
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],fp->input_inf[k],fp->input_sup[k]);
+			res->inf_cst = res->inf_cst + tmp1;
+			res->sup_cst = res->sup_cst - tmp1;
 		}
 	}
 		
