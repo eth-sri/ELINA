@@ -54,6 +54,11 @@ dd_MatrixPtr maxpool_deeppoly_approx(double *lb, double *ub,size_t pool_size){
 	dd_rowrange m = 3*pool_size + 1;
 	dd_colrange d = pool_size+2;
 	size_t i ;
+	for(i=0; i < pool_size; i++) {
+	    H[i] = NULL;
+	    V[i] = NULL;
+	    Poly[i] = NULL;
+	}
 	for(i=0; i < pool_size; i++){
 		H[i] = dd_CreateMatrix(m,d);
 		populate_matrix_maxpool(H[i],lb,ub,pool_size,i);
