@@ -30,7 +30,7 @@ expr_t * replace_input_poly_cons_in_lexpr(fppoly_internal_t *pr, expr_t * expr, 
 	}
 		
 	else{
-		elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[0],expr->sup_coeff[0],fp->input_inf[k],fp->input_sup[k]);
+		elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,expr->inf_coeff[0],expr->sup_coeff[0],fp->input_inf[k],fp->input_sup[k]);
 		res = create_cst_expr(tmp1, -tmp1);
 	}
 	for(i=1; i < dims; i++){
@@ -106,7 +106,7 @@ expr_t * replace_input_poly_cons_in_uexpr(fppoly_internal_t *pr, expr_t * expr, 
 		}
 	}
 	else{
-		elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[0],expr->sup_coeff[0],fp->input_inf[k],fp->input_sup[k]);
+		elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,expr->inf_coeff[0],expr->sup_coeff[0],fp->input_inf[k],fp->input_sup[k]);
 		res = create_cst_expr(-tmp2, tmp2);
 	}
                 //printf("finish\n");
@@ -142,7 +142,7 @@ expr_t * replace_input_poly_cons_in_uexpr(fppoly_internal_t *pr, expr_t * expr, 
 			}
 		}
 		else{
-			elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],fp->input_inf[k],fp->input_sup[k]);
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],fp->input_inf[k],fp->input_sup[k]);
 			res->inf_cst = res->inf_cst - tmp2;
 			res->sup_cst = res->sup_cst + tmp2;
 		}
