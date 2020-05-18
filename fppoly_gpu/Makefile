@@ -33,11 +33,11 @@ INSTALLd = install -d
 OBJS = fppoly_gpu.o
 
 ifeq ($(IS_APRON),)
-LIBS = -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize
-INCLUDES = -I../elina_auxiliary -I../elina_linearize
+LIBS = -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize -lcdd
+INCLUDES = -I../elina_auxiliary -I../elina_linearize -I/usr/local/include/cddlib
 else
-LIBS = -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize
-INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize
+LIBS = -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize -lcdd
+INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize -I/usr/local/include/cddlib
 endif
 
 INSTALL = install
@@ -53,7 +53,7 @@ libfppoly_gpu.so : $(OBJS) $(FPPOLYH)
 	nvcc -ccbin g++ -shared $(CC_ELINA_DYLIB) --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 
-fppoly_gpu.o : cuda_util.h rounding.h interval.h linear.h relu_approx.h fppoly_gpu.h fppoly_gpu.cu
+fppoly_gpu.o : cuda_util.h rounding.h interval.h linear.h relu_approx.h maxpool_convex_hull.h fppoly_gpu.h fppoly_gpu.cu
 	nvcc -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o fppoly_gpu.o fppoly_gpu.cu $(LIBS)
 
 
