@@ -38,6 +38,7 @@ __constant__ const float_type ulp =          2.220446049250313080848e-16;
 #include "rounding.h"
 #include "relu_approx.h"
 #include "linear.h"
+#include "maxpool_convex_hull.h"
 
 size_t maximum_backstep = 2;
 
@@ -5149,7 +5150,7 @@ size_t handle_pool_layer(elina_manager_t* man, elina_abstract0_t* element, const
                 size_t inp_z = out_z;
                 size_t inp_pos = inp_x*input_size[1]*input_size[2] + inp_y*input_size[2] + inp_z;
 
-                size_t l = 0;
+                size_t counter = 0;
 
                 float_type max_u = -INFINITY;
                 float_type max_l = -INFINITY;
@@ -5161,16 +5162,26 @@ size_t handle_pool_layer(elina_manager_t* man, elina_abstract0_t* element, const
                 {
                     for(size_t y_shift = 0; y_shift < pool_size[1]; y_shift++)
                     {
+                        const size_t l = x_shift*pool_size[1] + y_shift;
+
                         const int x_val = out_x*strides[0] + x_shift - pad_top;
                         const int y_val = out_y*strides[1] + y_shift - pad_left;
 
                         if((x_val < 0) || (x_val >= input_size[0]))
                         {
+                            // Set inconsistent inf/sup so convex hull is not affected
+                            inf[l] =  1.0;
+                            sup[l] = -1.0;
+
                             continue;
                         }
 
                         if((y_val < 0) || (y_val >= input_size[1]))
                         {
+                            // Set inconsistent inf/sup so convex hull is not affected
+                            inf[l] =  1.0;
+                            sup[l] = -1.0;
+
                             continue;
                         }
 
@@ -5180,8 +5191,6 @@ size_t handle_pool_layer(elina_manager_t* man, elina_abstract0_t* element, const
                         {
                             continue;
                         }
-
-                        l = x_shift*pool_size[1] + y_shift;
 
                         float_type lb = lb_in_array[pool_cur_dim];
                         float_type ub = ub_in_array[pool_cur_dim];
@@ -5213,6 +5222,8 @@ size_t handle_pool_layer(elina_manager_t* man, elina_abstract0_t* element, const
                             max_l = inf[l];
                             max_l_var = l;
                         }
+
+                        counter++;
                     }
                 }
 
@@ -5230,6 +5241,10 @@ size_t handle_pool_layer(elina_manager_t* man, elina_abstract0_t* element, const
                             continue;
                         }
 
+                        if((inf[j] > sup[j]) || (inf[k] >= sup[k]))
+                        {
+                            continue;
+                        }
                         if((inf[k] == sup[k]) && (inf[j] >= sup[k]))
                         {
                             continue;
@@ -5266,10 +5281,75 @@ size_t handle_pool_layer(elina_manager_t* man, elina_abstract0_t* element, const
                 else
                 {
                     pool_lcoeffs_host[out_x*output_size[1]*pool_size[0]*pool_size[1]*output_size[2] + out_y*pool_size[0]*pool_size[1]*output_size[2] + max_l_var*output_size[2] + out_z] = 1.0;
-                    pool_ucoeffs_host[out_x*output_size[1]*pool_size[0]*pool_size[1]*output_size[2] + out_y*pool_size[0]*pool_size[1]*output_size[2] + max_u_var*output_size[2] + out_z] = 0.0;
-
                     pool_lcsts_host[out_pos] = 0.0;
-                    pool_ucsts_host[out_pos] = max_u;
+
+                    dd_MatrixPtr M = nullptr;
+
+                    if(counter <= 10)
+                    {
+                        M = maxpool_deeppoly_approx(inf, sup, pool_size[0]*pool_size[1]);
+                    }
+
+                    bool rel_flag = false;
+                    size_t rel_index = 0;
+                    double best_val = INFINITY;
+
+                    if(M != NULL)
+                    {
+                        for(size_t i = 0; i < M->rowsize; i++)
+                        {
+                            const double Miy = dd_get_d(M->matrix[i][pool_size[0]*pool_size[1] + 1]);
+
+                            if(Miy < 0)
+                            {
+                                const double div = -Miy;
+                                double val = dd_get_d(M->matrix[i][0])/div;
+                                bool rel_cons = false;
+
+                                for(size_t j = 0; j < pool_size[0]*pool_size[1]; j++)
+                                {
+                                    const double Mij = dd_get_d(M->matrix[i][j + 1])/div;
+
+                                    if(Mij < 0)
+                                    {
+                                        rel_cons = true;
+                                        val = val + Mij*inf[j];
+                                    }
+                                    else if (Mij > 0)
+                                    {
+                                        rel_cons = true;
+                                        val = val + Mij*sup[j];
+                                    }
+                                }
+
+                                if(rel_cons && (val < best_val))
+                                {
+                                    rel_flag = true;
+                                    rel_index = i;
+                                    best_val = val;
+                                }
+                            }
+                        }
+                    }
+                    if((rel_flag == true) && (fabs(best_val - max_u) < 0.01))
+                    {
+                        const double div = -dd_get_d(M->matrix[rel_index][pool_size[0]*pool_size[1] + 1]);
+
+                        for(size_t j = 0; j < pool_size[0]*pool_size[1]; j++)
+                        {
+                            const double Mij = dd_get_d(M->matrix[rel_index][j + 1]);
+                            pool_ucoeffs_host[out_x*output_size[1]*pool_size[0]*pool_size[1]*output_size[2] + out_y*pool_size[0]*pool_size[1]*output_size[2] + j*output_size[2] + out_z] = Mij/div;
+                        }
+
+                        pool_ucsts_host[out_pos] = dd_get_d(M->matrix[rel_index][0])/div;
+                    }
+                    else
+                    {
+                        pool_ucoeffs_host[out_x*output_size[1]*pool_size[0]*pool_size[1]*output_size[2] + out_y*pool_size[0]*pool_size[1]*output_size[2] + max_u_var*output_size[2] + out_z] = 0.0;
+                        pool_ucsts_host[out_pos] = max_u;
+                    }
+
+                    dd_FreeMatrix(M);
                 }
 
                 lb_out_array[out_pos] = max_l;
