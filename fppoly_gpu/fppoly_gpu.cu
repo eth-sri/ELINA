@@ -21,6 +21,7 @@
  *  @brief Main file of GPUPoly, all control logic is here.
  */
 
+#include <cfenv>
 #include <cuda.h>
 #include <iostream>
 
@@ -6406,130 +6407,176 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
           }
         }
 
-        bool flag = false;
-        size_t var = 0;
+        if (is_maxpool) {
+          bool flag = false;
+          size_t var = 0;
 
-        for (size_t j = 0; j < pool_size[0] * pool_size[1]; j++) {
-          bool is_greater = true;
+          for (size_t j = 0; j < pool_size[0] * pool_size[1]; j++) {
+            bool is_greater = true;
 
-          for (size_t k = 0; k < pool_size[0] * pool_size[1]; k++) {
-            if (k == j) {
-              continue;
+            for (size_t k = 0; k < pool_size[0] * pool_size[1]; k++) {
+              if (k == j) {
+                continue;
+              }
+
+              if ((inf[j] > sup[j]) || (inf[k] >= sup[k])) {
+                continue;
+              }
+              if ((inf[k] == sup[k]) && (inf[j] >= sup[k])) {
+                continue;
+              } else if ((inf[j] == inf[k]) && (sup[j] == sup[k]) &&
+                         (inf[j] == sup[j])) {
+                continue;
+              } else if (inf[j] <= sup[k]) {
+                is_greater = false;
+
+                break;
+              }
             }
 
-            if ((inf[j] > sup[j]) || (inf[k] >= sup[k])) {
-              continue;
-            }
-            if ((inf[k] == sup[k]) && (inf[j] >= sup[k])) {
-              continue;
-            } else if ((inf[j] == inf[k]) && (sup[j] == sup[k]) &&
-                       (inf[j] == sup[j])) {
-              continue;
-            } else if (inf[j] <= sup[k]) {
-              is_greater = false;
+            if (is_greater) {
+              flag = true;
+              var = j;
 
               break;
             }
           }
 
-          if (is_greater) {
-            flag = true;
-            var = j;
-
-            break;
-          }
-        }
-
-        if (flag) {
-          pool_lcoeffs_host[out_x * output_size[1] * pool_size[0] *
-                                pool_size[1] * output_size[2] +
-                            out_y * pool_size[0] * pool_size[1] *
-                                output_size[2] +
-                            var * output_size[2] + out_z] = 1.0;
-          pool_ucoeffs_host[out_x * output_size[1] * pool_size[0] *
-                                pool_size[1] * output_size[2] +
-                            out_y * pool_size[0] * pool_size[1] *
-                                output_size[2] +
-                            var * output_size[2] + out_z] = 1.0;
-
-          pool_lcsts_host[out_pos] = 0.0;
-          pool_ucsts_host[out_pos] = 0.0;
-        } else {
-          pool_lcoeffs_host[out_x * output_size[1] * pool_size[0] *
-                                pool_size[1] * output_size[2] +
-                            out_y * pool_size[0] * pool_size[1] *
-                                output_size[2] +
-                            max_l_var * output_size[2] + out_z] = 1.0;
-          pool_lcsts_host[out_pos] = 0.0;
-
-          dd_MatrixPtr M = nullptr;
-
-          if (counter <= 10) {
-            M = maxpool_deeppoly_approx(inf, sup, pool_size[0] * pool_size[1]);
-          }
-
-          bool rel_flag = false;
-          size_t rel_index = 0;
-          double best_val = INFINITY;
-
-          if (M != NULL) {
-            for (size_t i = 0; i < M->rowsize; i++) {
-              const double Miy =
-                  dd_get_d(M->matrix[i][pool_size[0] * pool_size[1] + 1]);
-
-              if (Miy < 0) {
-                const double div = -Miy;
-                double val = dd_get_d(M->matrix[i][0]) / div;
-                bool rel_cons = false;
-
-                for (size_t j = 0; j < pool_size[0] * pool_size[1]; j++) {
-                  const double Mij = dd_get_d(M->matrix[i][j + 1]) / div;
-
-                  if (Mij < 0) {
-                    rel_cons = true;
-                    val = val + Mij * inf[j];
-                  } else if (Mij > 0) {
-                    rel_cons = true;
-                    val = val + Mij * sup[j];
-                  }
-                }
-
-                if (rel_cons && (val < best_val)) {
-                  rel_flag = true;
-                  rel_index = i;
-                  best_val = val;
-                }
-              }
-            }
-          }
-          if ((rel_flag == true) && (fabs(best_val - max_u) < 0.01)) {
-            const double div = -dd_get_d(
-                M->matrix[rel_index][pool_size[0] * pool_size[1] + 1]);
-
-            for (size_t j = 0; j < pool_size[0] * pool_size[1]; j++) {
-              const double Mij = dd_get_d(M->matrix[rel_index][j + 1]);
-              pool_ucoeffs_host[out_x * output_size[1] * pool_size[0] *
-                                    pool_size[1] * output_size[2] +
-                                out_y * pool_size[0] * pool_size[1] *
-                                    output_size[2] +
-                                j * output_size[2] + out_z] = Mij / div;
-            }
-
-            pool_ucsts_host[out_pos] = dd_get_d(M->matrix[rel_index][0]) / div;
-          } else {
+          if (flag) {
+            pool_lcoeffs_host[out_x * output_size[1] * pool_size[0] *
+                                  pool_size[1] * output_size[2] +
+                              out_y * pool_size[0] * pool_size[1] *
+                                  output_size[2] +
+                              var * output_size[2] + out_z] = 1.0;
             pool_ucoeffs_host[out_x * output_size[1] * pool_size[0] *
                                   pool_size[1] * output_size[2] +
                               out_y * pool_size[0] * pool_size[1] *
                                   output_size[2] +
-                              max_u_var * output_size[2] + out_z] = 0.0;
-            pool_ucsts_host[out_pos] = max_u;
+                              var * output_size[2] + out_z] = 1.0;
+
+            pool_lcsts_host[out_pos] = 0.0;
+            pool_ucsts_host[out_pos] = 0.0;
+          } else {
+            pool_lcoeffs_host[out_x * output_size[1] * pool_size[0] *
+                                  pool_size[1] * output_size[2] +
+                              out_y * pool_size[0] * pool_size[1] *
+                                  output_size[2] +
+                              max_l_var * output_size[2] + out_z] = 1.0;
+            pool_lcsts_host[out_pos] = 0.0;
+
+            dd_MatrixPtr M = nullptr;
+
+            if (counter <= 10) {
+              M = maxpool_deeppoly_approx(inf, sup,
+                                          pool_size[0] * pool_size[1]);
+            }
+
+            bool rel_flag = false;
+            size_t rel_index = 0;
+            float_type best_val = INFINITY;
+
+            if (M != NULL) {
+              for (size_t i = 0; i < M->rowsize; i++) {
+                const float_type Miy =
+                    dd_get_d(M->matrix[i][pool_size[0] * pool_size[1] + 1]);
+
+                if (Miy < 0) {
+                  const float_type div = -Miy;
+                  float_type val = dd_get_d(M->matrix[i][0]) / div;
+                  bool rel_cons = false;
+
+                  for (size_t j = 0; j < pool_size[0] * pool_size[1]; j++) {
+                    const float_type Mij = dd_get_d(M->matrix[i][j + 1]) / div;
+
+                    if (Mij < 0) {
+                      rel_cons = true;
+                      val = val + Mij * inf[j];
+                    } else if (Mij > 0) {
+                      rel_cons = true;
+                      val = val + Mij * sup[j];
+                    }
+                  }
+
+                  if (rel_cons && (val < best_val)) {
+                    rel_flag = true;
+                    rel_index = i;
+                    best_val = val;
+                  }
+                }
+              }
+            }
+            if ((rel_flag == true) && (fabs(best_val - max_u) < 0.01)) {
+              const float_type div = -dd_get_d(
+                  M->matrix[rel_index][pool_size[0] * pool_size[1] + 1]);
+
+              for (size_t j = 0; j < pool_size[0] * pool_size[1]; j++) {
+                const float_type Mij = dd_get_d(M->matrix[rel_index][j + 1]);
+                pool_ucoeffs_host[out_x * output_size[1] * pool_size[0] *
+                                      pool_size[1] * output_size[2] +
+                                  out_y * pool_size[0] * pool_size[1] *
+                                      output_size[2] +
+                                  j * output_size[2] + out_z] = Mij / div;
+              }
+
+              pool_ucsts_host[out_pos] =
+                  dd_get_d(M->matrix[rel_index][0]) / div;
+            } else {
+              pool_ucoeffs_host[out_x * output_size[1] * pool_size[0] *
+                                    pool_size[1] * output_size[2] +
+                                out_y * pool_size[0] * pool_size[1] *
+                                    output_size[2] +
+                                max_u_var * output_size[2] + out_z] = 0.0;
+              pool_ucsts_host[out_pos] = max_u;
+            }
+
+            dd_FreeMatrix(M);
           }
 
-          dd_FreeMatrix(M);
-        }
+          lb_out_array[out_pos] = max_l;
+          ub_out_array[out_pos] = max_u;
+        } else {
+          float_type avg_l = 0.0;
+          float_type avg_u = 0.0;
 
-        lb_out_array[out_pos] = max_l;
-        ub_out_array[out_pos] = max_u;
+          fesetround(FE_UPWARD);
+          float_type coeff_l = (float_type)1.0 / (float_type)(counter);
+
+          fesetround(FE_DOWNWARD);
+          float_type coeff_u = (float_type)1.0 / (float_type)(counter);
+
+          for (size_t j = 0; j < pool_size[0] * pool_size[1]; j++) {
+            pool_lcoeffs_host[out_x * output_size[1] * pool_size[0] *
+                                  pool_size[1] * output_size[2] +
+                              out_y * pool_size[0] * pool_size[1] *
+                                  output_size[2] +
+                              j * output_size[2] + out_z] = coeff_l;
+
+            if (inf[j] <= sup[j]) {
+              avg_l = avg_l + inf[j] * coeff_l;
+            }
+          }
+
+          fesetround(FE_UPWARD);
+          for (size_t j = 0; j < pool_size[0] * pool_size[1]; j++) {
+            pool_ucoeffs_host[out_x * output_size[1] * pool_size[0] *
+                                  pool_size[1] * output_size[2] +
+                              out_y * pool_size[0] * pool_size[1] *
+                                  output_size[2] +
+                              j * output_size[2] + out_z] = coeff_u;
+
+            if (inf[j] <= sup[j]) {
+              avg_u = avg_u + sup[j] * coeff_u;
+            }
+          }
+
+          fesetround(FE_TONEAREST);
+
+          pool_lcsts_host[out_pos] = 0.0;
+          pool_ucsts_host[out_pos] = 0.0;
+
+          lb_out_array[out_pos] = avg_l;
+          ub_out_array[out_pos] = avg_u;
+        }
       }
     }
   }
