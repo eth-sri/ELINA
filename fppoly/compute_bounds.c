@@ -296,10 +296,8 @@ double substitute_spatial_gurobi(expr_t *expr, fppoly_t *fp, const int opt_sense
 
 double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno){
 
-    double res_inf_spatial;
-
-    if ((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1) {
-        res_inf_spatial = expr->inf_cst - substitute_spatial_gurobi(expr, fp, GRB_MINIMIZE);
+    if ((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1 && fp->spatial_size > 0) {
+        return expr->inf_cst - substitute_spatial_gurobi(expr, fp, GRB_MINIMIZE);
     }
 
     size_t k;
@@ -340,10 +338,8 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 
 double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno){
 
-    double res_sup_spatial;
-
-    if ((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1) {
-        res_sup_spatial = expr->sup_cst + substitute_spatial_gurobi(expr, fp, GRB_MAXIMIZE);
+    if ((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1 && fp->spatial_size > 0) {
+        return expr->sup_cst + substitute_spatial_gurobi(expr, fp, GRB_MAXIMIZE);
     }
 
     size_t k;
