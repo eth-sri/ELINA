@@ -160,130 +160,6 @@ expr_t * replace_input_poly_cons_in_uexpr(fppoly_internal_t *pr, expr_t * expr, 
 	return res;
 }
 
-void spatial_two_double_interval_mul(double *lb, double *ub, double *sub_lb,
-                                     double *sub_ub, double ftr, double ftr_lb,
-                                     double ftr_ub, double rem, double rem_lb,
-                                     double rem_ub) {
-  double tmp1, tmp2;
-
-  elina_double_interval_mul(&tmp1, &tmp2, -ftr, ftr, ftr_lb, ftr_ub);
-  *sub_lb = tmp1;
-  *sub_ub = tmp2;
-
-  elina_double_interval_mul(&tmp1, &tmp2, -rem, rem, rem_lb, rem_ub);
-  *lb = *sub_lb + tmp1;
-  *ub = *sub_ub + tmp2;
-}
-
-double substitute_spatial_heuristic(expr_t *expr, fppoly_t *fp, double *obj,
-                                    bool LOWER) {
-  size_t idx, nbr, s_idx, s_nbr;
-  double lb_idx, lb_nbr, lb_org, sub_lb_idx, sub_lb_nbr;
-  double ub_idx, ub_nbr, ub_org, sub_ub_idx, sub_ub_nbr;
-
-  const size_t dims = expr->size;
-  const size_t num_pixels = fp->num_pixels;
-  double tmp1, tmp2;
-
-  double result = 0;
-  bool change = true;
-
-  while (change) {
-    change = false;
-
-    for (size_t i = 0; i < fp->spatial_constraints_size; ++i) {
-      idx = fp->spatial_indices[i];
-      nbr = fp->spatial_neighbors[i];
-
-      if (expr->type == DENSE) {
-        s_idx = idx;
-        s_nbr = nbr;
-      } else {
-        s_idx = s_nbr = num_pixels;
-
-        for (size_t j = 0; j < dims; ++j) {
-          if (expr->dim[j] == idx) {
-            s_idx = j;
-          }
-          if (expr->dim[j] == nbr) {
-            s_nbr = j;
-          }
-        }
-
-        if (s_idx == num_pixels || s_nbr == num_pixels) {
-          continue;
-        }
-      }
-
-      if (obj[s_idx] != 0 && obj[s_nbr] != 0) {
-        double remainder = obj[s_idx] + obj[s_nbr];
-
-        spatial_two_double_interval_mul(
-            &lb_idx, &ub_idx, &sub_lb_idx, &sub_ub_idx, obj[s_idx],
-            -fp->spatial_lower_bounds[i], fp->spatial_upper_bounds[i],
-            remainder, fp->input_inf[nbr], fp->input_sup[nbr]);
-        spatial_two_double_interval_mul(
-            &lb_nbr, &ub_nbr, &sub_lb_nbr, &sub_ub_nbr, obj[s_nbr],
-            fp->spatial_upper_bounds[i], -fp->spatial_lower_bounds[i],
-            remainder, fp->input_inf[idx], fp->input_sup[idx]);
-        spatial_two_double_interval_mul(&lb_org, &ub_org, &tmp1, &tmp2,
-                                        obj[s_idx], fp->input_inf[idx],
-                                        fp->input_sup[idx], obj[s_nbr],
-                                        fp->input_inf[nbr], fp->input_sup[nbr]);
-
-        if (LOWER) {
-          // flow constraints don't improve the bound
-          if (lb_org < fmin(lb_idx, lb_nbr)) {
-            continue;
-          }
-
-          change = true;
-
-          if (lb_idx < lb_nbr) {
-            obj[s_idx] = 0;
-            obj[s_nbr] = remainder;
-            result += sub_lb_idx;
-          } else {
-            obj[s_idx] = remainder;
-            obj[s_nbr] = 0;
-            result += sub_lb_nbr;
-          }
-        } else {
-          // flow constraints don't improve the bound
-          if (ub_org < fmin(ub_idx, ub_nbr)) {
-            continue;
-          }
-
-          change = true;
-
-          if (ub_idx < ub_nbr) {
-            obj[s_idx] = 0;
-            obj[s_nbr] = remainder;
-            result += sub_ub_idx;
-          } else {
-            obj[s_idx] = remainder;
-            obj[s_nbr] = 0;
-            result += sub_ub_nbr;
-          }
-        }
-      }
-    }
-  }
-
-  // compute bounds for variables with nonzero coefficients
-  for (size_t i = 0; i < dims; ++i) {
-    size_t k = expr->type == DENSE ? i : expr->dim[i];
-
-    if (obj[i] != 0) {
-      elina_double_interval_mul(&tmp1, &tmp2, -obj[i], obj[i], fp->input_inf[k],
-                                fp->input_sup[k]);
-      result += LOWER ? tmp1 : tmp2;
-    }
-  }
-
-  return result;
-}
-
 #ifdef GUROBI
 void handle_gurobi_error(int error, GRBenv *env) {
     if (error) {
@@ -292,186 +168,191 @@ void handle_gurobi_error(int error, GRBenv *env) {
     }
 }
 
-double substitute_spatial_gurobi(expr_t *expr, fppoly_t *fp, double *obj,
-                                 int opt_sense) {
-  GRBenv *env = NULL;
-  GRBmodel *model = NULL;
+double substitute_spatial_gurobi(expr_t *expr, fppoly_t *fp, const int opt_sense) {
 
-  int error;
+    GRBenv *env = NULL;
+    GRBmodel *model = NULL;
 
-  error = GRBemptyenv(&env);
-  handle_gurobi_error(error, env);
-  error = GRBsetintparam(env, "OutputFlag", 0);
-  handle_gurobi_error(error, env);
-  error = GRBstartenv(env);
-  handle_gurobi_error(error, env);
+    int error;
 
-  const size_t dims = expr->size;
-  double *lb, *ub;
+    error = GRBemptyenv(&env);
+    handle_gurobi_error(error, env);
+    error = GRBsetintparam(env, "OutputFlag", 0);
+    handle_gurobi_error(error, env);
+    error = GRBstartenv(env);
+    handle_gurobi_error(error, env);
 
-  lb = malloc(dims * sizeof(double));
-  ub = malloc(dims * sizeof(double));
+    double *lb, *ub, *obj;
+    const size_t dims = expr->size;
+    const size_t numvars = 3 * dims;
 
-  for (size_t i = 0; i < dims; ++i) {
-    size_t k = expr->type == DENSE ? i : expr->dim[i];
-    lb[i] = -fp->input_inf[k];
-    ub[i] = fp->input_sup[k];
-  }
+    lb = malloc(numvars * sizeof(double));
+    ub = malloc(numvars * sizeof(double));
+    obj = malloc(numvars * sizeof(double));
 
-  error = GRBnewmodel(env, &model, NULL, dims, obj, lb, ub, NULL, NULL);
-  handle_gurobi_error(error, env);
-  error = GRBsetintattr(model, GRB_INT_ATTR_MODELSENSE, opt_sense);
-  handle_gurobi_error(error, env);
+    for (size_t i = 0; i < dims; ++i) {
+        const size_t k = expr->type == DENSE ? i : expr->dim[i];
+        lb[i] = -fp->input_inf[k];
+        ub[i] = fp->input_sup[k];
+        obj[i] = opt_sense == GRB_MINIMIZE ? -expr->inf_coeff[i] : expr->sup_coeff[i];
 
-  size_t idx, nbr, s_idx, s_nbr;
-  const size_t num_pixels = fp->num_pixels;
-
-  for (size_t i = 0; i < fp->spatial_constraints_size; ++i) {
-    idx = fp->spatial_indices[i];
-    nbr = fp->spatial_neighbors[i];
-
-    if (expr->type == DENSE) {
-      s_idx = idx;
-      s_nbr = nbr;
-    } else {
-      s_idx = s_nbr = num_pixels;
-
-      for (size_t j = 0; j < dims; ++j) {
-        if (expr->dim[j] == idx) {
-          s_idx = j;
+        for (size_t j = 0; j < 2; ++j) {
+            const size_t l = fp->input_uexpr[k]->dim[j];
+            lb[dims + 2 * i + j] = -fp->input_inf[l];
+            ub[dims + 2 * i + j] = fp->input_sup[l];
+            obj[dims + 2 * i + j] = 0;
         }
-        if (expr->dim[j] == nbr) {
-          s_nbr = j;
-        }
-      }
-
-      if (s_idx == num_pixels || s_nbr == num_pixels) {
-        continue;
-      }
     }
 
-    int ind[] = {s_idx, s_nbr};
-    double val[] = {1., -1.};
-
-    error = GRBaddconstr(model, 2, ind, val, GRB_GREATER_EQUAL,
-                         fp->spatial_lower_bounds[i], NULL);
+    error = GRBnewmodel(env, &model, NULL, numvars, obj, lb, ub, NULL, NULL);
     handle_gurobi_error(error, env);
-    error = GRBaddconstr(model, 2, ind, val, GRB_LESS_EQUAL,
-                         fp->spatial_upper_bounds[i], NULL);
+    error = GRBsetintattr(model, GRB_INT_ATTR_MODELSENSE, opt_sense);
     handle_gurobi_error(error, env);
-  }
 
-  int opt_status;
-  double obj_val;
+    for (size_t i = 0; i < dims; ++i) {
+        const size_t k = expr->type == DENSE ? i : expr->dim[i];
 
-  error = GRBoptimize(model);
-  handle_gurobi_error(error, env);
-  error = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &opt_status);
-  handle_gurobi_error(error, env);
-  error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &obj_val);
-  handle_gurobi_error(error, env);
+        int ind[] = {i, dims + 2 * i, dims + 2 * i + 1};
 
-  if (opt_status != GRB_OPTIMAL) {
-    if (opt_sense == GRB_MAXIMIZE) {
-      printf("Gurobi: lower bound not optimal %i\n", opt_status);
-    } else {
-      printf("Gurobi: upper bound not optimal %i\n", opt_status);
+        double lb_val[] = {
+            -1, -fp->input_lexpr[k]->inf_coeff[0], -fp->input_lexpr[k]->inf_coeff[1]
+        };
+        error = GRBaddconstr(model, 3, ind, lb_val, GRB_LESS_EQUAL, fp->input_lexpr[k]->inf_cst, NULL);
+        handle_gurobi_error(error, env);
+
+        double ub_val[] = {
+            1, -fp->input_uexpr[k]->sup_coeff[0], -fp->input_uexpr[k]->sup_coeff[1]
+        };
+        error = GRBaddconstr(model, 3, ind, ub_val, GRB_LESS_EQUAL, fp->input_uexpr[k]->sup_cst, NULL);
+        handle_gurobi_error(error, env);
     }
-    exit(1);
-  }
 
-  free(lb);
-  free(ub);
+    size_t idx, nbr, s_idx, s_nbr;
+    const size_t num_pixels = fp->num_pixels;
 
-  GRBfreemodel(model);
-  GRBfreeenv(env);
+    for (size_t i = 0; i < fp->spatial_size; ++i) {
+        idx = fp->spatial_indices[i];
+        nbr = fp->spatial_neighbors[i];
 
-  return obj_val;
+        if (expr->type == DENSE) {
+            s_idx = idx;
+            s_nbr = nbr;
+        } else {
+            s_idx = s_nbr = num_pixels;
+
+            for (size_t j = 0; j < dims; ++j) {
+                if (expr->dim[j] == idx) {
+                    s_idx = j;
+                }
+                if (expr->dim[j] == nbr) {
+                    s_nbr = j;
+                }
+            }
+
+            if ((s_idx == num_pixels) || (s_nbr == num_pixels)) {
+                continue;
+            }
+        }
+
+        int ind_x[] = {dims + 2 * s_idx, dims + 2 * s_nbr};
+        int ind_y[] = {dims + 2 * s_idx + 1, dims + 2 * s_nbr + 1};
+        double val[] = {1., -1.};
+
+        error = GRBaddconstr(model, 2, ind_x, val, GRB_LESS_EQUAL, fp->spatial_gamma, NULL);
+        handle_gurobi_error(error, env);
+        error = GRBaddconstr(model, 2, ind_y, val, GRB_LESS_EQUAL, fp->spatial_gamma, NULL);
+        handle_gurobi_error(error, env);
+        error = GRBaddconstr(model, 2, ind_x, val, GRB_GREATER_EQUAL, -fp->spatial_gamma, NULL);
+        handle_gurobi_error(error, env);
+        error = GRBaddconstr(model, 2, ind_y, val, GRB_GREATER_EQUAL, -fp->spatial_gamma, NULL);
+        handle_gurobi_error(error, env);
+    }
+
+    int opt_status;
+    double obj_val;
+
+    error = GRBoptimize(model);
+    handle_gurobi_error(error, env);
+    error = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &opt_status);
+    handle_gurobi_error(error, env);
+    error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &obj_val);
+    handle_gurobi_error(error, env);
+
+    if (opt_status != GRB_OPTIMAL) {
+        printf("Gurobi model status not optimal %i\n", opt_status);
+        exit(1);
+    }
+
+    free(lb);
+    free(ub);
+    free(obj);
+
+    GRBfreemodel(model);
+    GRBfreeenv(env);
+
+    return obj_val;
 }
 #endif
 
 double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno){
+
+  double res_inf_spatial;
+
+  if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL) && layerno == -1) {
+    res_inf_spatial =
+        expr->inf_cst - substitute_spatial_gurobi(expr, fp, GRB_MINIMIZE);
+  }
+
   size_t k;
   double tmp1, tmp2;
-  // printf("start\n");
-  // fflush(stdout);
+
   if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL) && layerno == -1) {
     expr = replace_input_poly_cons_in_lexpr(pr, expr, fp);
-	}
-        //expr_print(expr);
-	//fflush(stdout);
-	size_t dims = expr->size;
-	double res_inf = expr->inf_cst;
-	if(expr->inf_coeff==NULL || expr->sup_coeff==NULL){
-		return res_inf;
-	}
+  }
 
-        double *expr_coeffs;
-        const size_t num_pixels = fp->num_pixels;
-        bool has_spatial_constraints =
-            (fp->spatial_constraints_size > 0) && (layerno == -1);
+  size_t dims = expr->size;
+  double res_inf = expr->inf_cst;
+  if (expr->inf_coeff == NULL || expr->sup_coeff == NULL) {
+    return res_inf;
+  }
 
-        if (has_spatial_constraints) {
-          expr_coeffs = malloc(dims * sizeof(double));
-        }
+  for (size_t i = 0; i < dims; i++) {
+    if (expr->type == DENSE) {
+      k = i;
+    } else {
+      k = expr->dim[i];
+    }
 
-        for (size_t i = 0; i < dims; i++) {
-          // if(expr->inf_coeff[i]<0){
-          if (expr->type == DENSE) {
-            k = i;
-          } else {
-            k = expr->dim[i];
-          }
-          if (layerno == -1) {
-            elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                      expr->sup_coeff[i], fp->input_inf[k],
-                                      fp->input_sup[k]);
+    if (layerno == -1) {
+      elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                expr->sup_coeff[i], fp->input_inf[k],
+                                fp->input_sup[k]);
+    } else {
+      elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                expr->sup_coeff[i],
+                                fp->layers[layerno]->neurons[k]->lb,
+                                fp->layers[layerno]->neurons[k]->ub);
+    }
 
-            if (has_spatial_constraints) {
-              expr_coeffs[i] = -expr->inf_coeff[i];
-            }
-          } else {
-            elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                      expr->sup_coeff[i],
-                                      fp->layers[layerno]->neurons[k]->lb,
-                                      fp->layers[layerno]->neurons[k]->ub);
-          }
-          // printf("tmp1: %g\n",tmp1);
-          res_inf = res_inf + tmp1;
-        }
-//	printf("inf: %g\n",-res_inf);
-//	fflush(stdout);
-        if(fp->input_lexpr!=NULL && fp->input_uexpr!=NULL && layerno==-1){
-		free_expr(expr);
-	}
-        //printf("finish\n");
-        //fflush(stdout);
+    res_inf = res_inf + tmp1;
+  }
 
-        if (has_spatial_constraints) {
-          double res_inf_spatial = expr->inf_cst;
+  if (fp->input_lexpr != NULL && fp->input_uexpr != NULL && layerno == -1) {
+    free_expr(expr);
+  }
 
-#ifdef GUROBI
-          if (fp->spatial_use_gurobi) {
-            res_inf_spatial -=
-                substitute_spatial_gurobi(expr, fp, expr_coeffs, GRB_MINIMIZE);
-          } else {
-#endif
-            res_inf_spatial +=
-                substitute_spatial_heuristic(expr, fp, expr_coeffs, true);
-#ifdef GUROBI
-          }
-#endif
-
-          free(expr_coeffs);
-
-          return res_inf_spatial;
-        }
-
-        return res_inf;
+  return res_inf;
 }
 
-double compute_ub_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp,
-                            int layerno) {
+double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno){
+
+  double res_sup_spatial;
+
+  if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL) && layerno == -1) {
+    res_sup_spatial =
+        expr->sup_cst + substitute_spatial_gurobi(expr, fp, GRB_MAXIMIZE);
+  }
+
   size_t k;
   double tmp1, tmp2;
 
@@ -485,79 +366,48 @@ double compute_ub_from_expr(fppoly_internal_t *pr, expr_t *expr, fppoly_t *fp,
     return res_sup;
   }
 
-  double *expr_coeffs;
-  const size_t num_pixels = fp->num_pixels;
-  bool has_spatial_constraints =
-      (fp->spatial_constraints_size > 0) && (layerno == -1);
-
-  if (has_spatial_constraints) {
-    expr_coeffs = malloc(dims * sizeof(double));
-  }
-
   for (size_t i = 0; i < dims; i++) {
-    // if(expr->inf_coeff[i]<0){
     if (expr->type == DENSE) {
       k = i;
     } else {
       k = expr->dim[i];
     }
+
     if (layerno == -1) {
       elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
                                 expr->sup_coeff[i], fp->input_inf[k],
                                 fp->input_sup[k]);
-
-      if (has_spatial_constraints) {
-        expr_coeffs[i] = expr->sup_coeff[i];
-      }
     } else {
       elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
                                 expr->sup_coeff[i],
                                 fp->layers[layerno]->neurons[k]->lb,
                                 fp->layers[layerno]->neurons[k]->ub);
     }
+
     res_sup = res_sup + tmp2;
   }
-  // printf("sup: %g\n",res_sup);
-  // fflush(stdout);
+
   if (fp->input_lexpr != NULL && fp->input_uexpr != NULL && layerno == -1) {
     free_expr(expr);
-  }
-
-  if (has_spatial_constraints) {
-    double res_sup_spatial = expr->sup_cst;
-
-#ifdef GUROBI
-    if (fp->spatial_use_gurobi) {
-      res_sup_spatial +=
-          substitute_spatial_gurobi(expr, fp, expr_coeffs, GRB_MAXIMIZE);
-    } else {
-#endif
-      res_sup_spatial +=
-          substitute_spatial_heuristic(expr, fp, expr_coeffs, false);
-#ifdef GUROBI
-    }
-#endif
-
-    free(expr_coeffs);
-
-    return res_sup_spatial;
   }
 
   return res_sup;
 }
 
-double get_lb_using_predecessor_layer(fppoly_internal_t * pr,fppoly_t *fp, expr_t **lexpr_ptr, int k){
-	expr_t * tmp_l;
-	neuron_t ** aux_neurons = fp->layers[k]->neurons;
-	expr_t *lexpr = *lexpr_ptr;
-	double res = INFINITY;
-	res = compute_lb_from_expr(pr,lexpr,fp,k);
-	tmp_l = lexpr;
-	*lexpr_ptr = lexpr_replace_bounds(pr,lexpr,aux_neurons, fp->layers[k]->is_activation);
-	free_expr(tmp_l);
-	return res;
+double get_lb_using_predecessor_layer(fppoly_internal_t *pr, fppoly_t *fp,
+                                      expr_t **lexpr_ptr, size_t k,
+                                      bool use_area_heuristic) {
+  expr_t *tmp_l;
+  neuron_t **aux_neurons = fp->layers[k]->neurons;
+  expr_t *lexpr = *lexpr_ptr;
+  double res = INFINITY;
+  res = compute_lb_from_expr(pr, lexpr, fp, k);
+  tmp_l = lexpr;
+  *lexpr_ptr = lexpr_replace_bounds(pr, lexpr, aux_neurons,
+                                    fp->layers[k]->is_activation);
+  free_expr(tmp_l);
+  return res;
 }
-
 
 double get_ub_using_predecessor_layer(fppoly_internal_t * pr,fppoly_t *fp, expr_t **uexpr_ptr, int k){
 	expr_t * tmp_u;

@@ -133,10 +133,6 @@ void fppoly_from_network_input_box(fppoly_t *res, size_t intdim, size_t realdim,
 	res->num_pixels = num_pixels;
     res->spatial_indices = NULL;
     res->spatial_neighbors = NULL;
-    res->spatial_lower_bounds = NULL;
-    res->spatial_upper_bounds = NULL;
-    res->spatial_constraints_size = 0;
-    res->spatial_use_gurobi = 0;
 }
 
 
@@ -157,74 +153,59 @@ void fppoly_set_network_input_box(elina_manager_t *man, elina_abstract0_t* eleme
     }
 }
 
-elina_abstract0_t *fppoly_from_network_input_poly(
-    elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array,
-    double *sup_array, double *lexpr_weights, double *lexpr_cst,
-    size_t *lexpr_dim, double *uexpr_weights, double *uexpr_cst,
-    size_t *uexpr_dim, size_t expr_size) {
-  fppoly_t *res = (fppoly_t *)malloc(sizeof(fppoly_t));
+elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man,
+        size_t intdim, size_t realdim, double *inf_array, double *sup_array,
+        double * lexpr_weights, double * lexpr_cst, size_t * lexpr_dim,
+        double * uexpr_weights, double * uexpr_cst, size_t * uexpr_dim,
+        size_t expr_size, size_t * spatial_indices, size_t * spatial_neighbors,
+        size_t spatial_size, double spatial_gamma) {
 
-  fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array);
-  size_t num_pixels = intdim + realdim;
-  res->input_lexpr = (expr_t **)malloc(num_pixels * sizeof(expr_t *));
-  res->input_uexpr = (expr_t **)malloc(num_pixels * sizeof(expr_t *));
+    fppoly_t * res = (fppoly_t *)malloc(sizeof(fppoly_t));
 
-  size_t i;
-  double *tmp_weights = (double *)malloc(expr_size * sizeof(double));
-  size_t *tmp_dim = (size_t *)malloc(expr_size * sizeof(size_t));
+    fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array);
+    size_t num_pixels = intdim + realdim;
+    res->input_lexpr = (expr_t **)malloc(num_pixels * sizeof(expr_t *));
+    res->input_uexpr = (expr_t **)malloc(num_pixels * sizeof(expr_t *));
 
-  for (i = 0; i < num_pixels; i++) {
+    size_t i;
+    double *tmp_weights = (double *)malloc(expr_size * sizeof(double));
+    size_t *tmp_dim = (size_t *)malloc(expr_size * sizeof(size_t));
 
-    size_t j;
-    for (j = 0; j < expr_size; j++) {
-      tmp_weights[j] = lexpr_weights[i * expr_size + j];
-      tmp_dim[j] = lexpr_dim[i * expr_size + j];
+    for (i = 0; i < num_pixels; i++) {
+
+      size_t j;
+      for (j = 0; j < expr_size; j++) {
+        tmp_weights[j] = lexpr_weights[i * expr_size + j];
+        tmp_dim[j] = lexpr_dim[i * expr_size + j];
+      }
+      res->input_lexpr[i] =
+          create_sparse_expr(tmp_weights, lexpr_cst[i], tmp_dim, expr_size);
+      sort_sparse_expr(res->input_lexpr[i]);
+      // printf("w: %p %g %g %g cst: %g dim: %p %zu %zu
+      // %zu\n",lexpr_weights[i],lexpr_weights[i][0],lexpr_weights[i][1],
+      // lexpr_weights[i][2],lexpr_cst[i],lexpr_dim[i],lexpr_dim[i][0],lexpr_dim[i][1],
+      // lexpr_dim[i][2]); expr_print(res->input_lexpr[i]); fflush(stdout);
+      for (j = 0; j < expr_size; j++) {
+        tmp_weights[j] = uexpr_weights[i * expr_size + j];
+        tmp_dim[j] = uexpr_dim[i * expr_size + j];
+      }
+      res->input_uexpr[i] =
+          create_sparse_expr(tmp_weights, uexpr_cst[i], tmp_dim, expr_size);
+      sort_sparse_expr(res->input_uexpr[i]);
+      //	expr_print(res->input_uexpr[i]);
+      //	fflush(stdout);
     }
-    res->input_lexpr[i] =
-        create_sparse_expr(tmp_weights, lexpr_cst[i], tmp_dim, expr_size);
-    sort_sparse_expr(res->input_lexpr[i]);
-    // printf("w: %p %g %g %g cst: %g dim: %p %zu %zu
-    // %zu\n",lexpr_weights[i],lexpr_weights[i][0],lexpr_weights[i][1],
-    // lexpr_weights[i][2],lexpr_cst[i],lexpr_dim[i],lexpr_dim[i][0],lexpr_dim[i][1],
-    // lexpr_dim[i][2]); expr_print(res->input_lexpr[i]); fflush(stdout);
-    for (j = 0; j < expr_size; j++) {
-      tmp_weights[j] = uexpr_weights[i * expr_size + j];
-      tmp_dim[j] = uexpr_dim[i * expr_size + j];
-    }
-    res->input_uexpr[i] =
-        create_sparse_expr(tmp_weights, uexpr_cst[i], tmp_dim, expr_size);
-    sort_sparse_expr(res->input_uexpr[i]);
-    //	expr_print(res->input_uexpr[i]);
-    //	fflush(stdout);
-  }
-  free(tmp_weights);
-  free(tmp_dim);
-  return abstract0_of_fppoly(man, res);
-}
+    free(tmp_weights);
+    free(tmp_dim);
 
-elina_abstract0_t *fppoly_from_network_input_spatial(
-    elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array,
-    double *sup_array, size_t *indices, size_t *neighbors, double *lower_bounds,
-    double *upper_bounds, size_t constraints_size, bool use_gurobi) {
+    res->spatial_size = spatial_size;
+    res->spatial_gamma = spatial_gamma;
+    res->spatial_indices = malloc(spatial_size * sizeof(size_t));
+    res->spatial_neighbors = malloc(spatial_size * sizeof(size_t));
+    memcpy(res->spatial_indices, spatial_indices, spatial_size * sizeof(size_t));
+    memcpy(res->spatial_neighbors, spatial_neighbors, spatial_size * sizeof(size_t));
 
-  fppoly_t *res = (fppoly_t *)malloc(sizeof(fppoly_t));
-  fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array);
-
-  res->spatial_constraints_size = constraints_size;
-  res->spatial_indices = malloc(constraints_size * sizeof(size_t));
-  res->spatial_neighbors = malloc(constraints_size * sizeof(size_t));
-  res->spatial_lower_bounds = malloc(constraints_size * sizeof(double));
-  res->spatial_upper_bounds = malloc(constraints_size * sizeof(double));
-  res->spatial_use_gurobi = use_gurobi;
-
-  memcpy(res->spatial_indices, indices, constraints_size * sizeof(size_t));
-  memcpy(res->spatial_neighbors, neighbors, constraints_size * sizeof(size_t));
-  memcpy(res->spatial_lower_bounds, lower_bounds,
-         constraints_size * sizeof(double));
-  memcpy(res->spatial_upper_bounds, upper_bounds,
-         constraints_size * sizeof(double));
-
-  return abstract0_of_fppoly(man, res);
+    return abstract0_of_fppoly(man, res);
 }
 
 void fppoly_add_new_layer(fppoly_t *fp, size_t size, size_t *predecessors, size_t num_predecessors, bool is_activation){
@@ -712,13 +693,9 @@ void fppoly_free(elina_manager_t *man, fppoly_t *fp){
     fp->spatial_indices = NULL;
     free(fp->spatial_neighbors);
     fp->spatial_neighbors = NULL;
-    free(fp->spatial_lower_bounds);
-    fp->spatial_lower_bounds = NULL;
-    free(fp->spatial_upper_bounds);
-    fp->spatial_upper_bounds = NULL;
 
-    free(fp);
-    fp = NULL;
+	free(fp);
+	fp = NULL;
 }
 
 
