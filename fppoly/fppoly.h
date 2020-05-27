@@ -118,10 +118,8 @@ typedef struct fppoly_t{
 	size_t lstm_index;
     size_t *spatial_indices;
     size_t *spatial_neighbors;
-    double *spatial_lower_bounds;
-    double *spatial_upper_bounds;
-    size_t spatial_constraints_size;
-    bool spatial_use_gurobi;
+    size_t spatial_size;
+    double spatial_gamma;
 }fppoly_t;
 
 
@@ -142,15 +140,12 @@ elina_abstract0_t* fppoly_from_network_input(elina_manager_t *man, size_t intdim
 
 void fppoly_set_network_input_box(elina_manager_t *man, elina_abstract0_t* element, size_t intdim, size_t realdim, double *inf_array, double * sup_array);
     
-elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array, double *sup_array, 
-                                                  double * lexpr_weights, double * lexpr_cst, size_t * lexpr_dim, double * uexpr_weights,
-						  double * uexpr_cst, size_t * uexpr_dim, size_t expr_size);
-
-elina_abstract0_t* fppoly_from_network_input_spatial(
-        elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array,
-        double *sup_array, size_t *indices, size_t *neighbors,
-        double *lower_bounds, double *upper_bounds, size_t constraints_size,
-        bool use_gurobi);
+elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man,
+        size_t intdim, size_t realdim, double *inf_array, double *sup_array,
+        double * lexpr_weights, double * lexpr_cst, size_t * lexpr_dim,
+        double * uexpr_weights, double * uexpr_cst, size_t * uexpr_dim,
+        size_t expr_size, size_t * spatial_indices, size_t * spatial_neighbors,
+        size_t spatial_size, double spatial_gamma);
 
 fppoly_internal_t* fppoly_init_from_manager(elina_manager_t* man, elina_funid_t funid);
 
