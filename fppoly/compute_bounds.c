@@ -296,102 +296,98 @@ double substitute_spatial_gurobi(expr_t *expr, fppoly_t *fp, const int opt_sense
 
 double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno){
 
-  double res_inf_spatial;
+    if ((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1 && fp->spatial_size > 0) {
+        return expr->inf_cst - substitute_spatial_gurobi(expr, fp, GRB_MINIMIZE);
+    }
 
-  if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL) && layerno == -1) {
-    res_inf_spatial =
-        expr->inf_cst - substitute_spatial_gurobi(expr, fp, GRB_MINIMIZE);
-  }
+    size_t k;
+    double tmp1, tmp2;
 
-  size_t k;
-  double tmp1, tmp2;
+    if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL) &&
+        layerno == -1) {
+      expr = replace_input_poly_cons_in_lexpr(pr, expr, fp);
+    }
 
-  if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL) && layerno == -1) {
-    expr = replace_input_poly_cons_in_lexpr(pr, expr, fp);
-  }
+    size_t dims = expr->size;
+    double res_inf = expr->inf_cst;
+    if (expr->inf_coeff == NULL || expr->sup_coeff == NULL) {
+      return res_inf;
+    }
 
-  size_t dims = expr->size;
-  double res_inf = expr->inf_cst;
-  if (expr->inf_coeff == NULL || expr->sup_coeff == NULL) {
+    for (size_t i = 0; i < dims; i++) {
+      if (expr->type == DENSE) {
+        k = i;
+      } else {
+        k = expr->dim[i];
+      }
+
+      if (layerno == -1) {
+        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                  expr->sup_coeff[i], fp->input_inf[k],
+                                  fp->input_sup[k]);
+      } else {
+        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                  expr->sup_coeff[i],
+                                  fp->layers[layerno]->neurons[k]->lb,
+                                  fp->layers[layerno]->neurons[k]->ub);
+      }
+
+      res_inf = res_inf + tmp1;
+    }
+
+    if (fp->input_lexpr != NULL && fp->input_uexpr != NULL && layerno == -1) {
+      free_expr(expr);
+    }
+
     return res_inf;
-  }
-
-  for (size_t i = 0; i < dims; i++) {
-    if (expr->type == DENSE) {
-      k = i;
-    } else {
-      k = expr->dim[i];
-    }
-
-    if (layerno == -1) {
-      elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                expr->sup_coeff[i], fp->input_inf[k],
-                                fp->input_sup[k]);
-    } else {
-      elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                expr->sup_coeff[i],
-                                fp->layers[layerno]->neurons[k]->lb,
-                                fp->layers[layerno]->neurons[k]->ub);
-    }
-
-    res_inf = res_inf + tmp1;
-  }
-
-  if (fp->input_lexpr != NULL && fp->input_uexpr != NULL && layerno == -1) {
-    free_expr(expr);
-  }
-
-  return res_inf;
 }
 
 double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno){
 
-  double res_sup_spatial;
+    if ((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1 && fp->spatial_size > 0) {
+        return expr->sup_cst + substitute_spatial_gurobi(expr, fp, GRB_MAXIMIZE);
+    }
 
-  if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL) && layerno == -1) {
-    res_sup_spatial =
-        expr->sup_cst + substitute_spatial_gurobi(expr, fp, GRB_MAXIMIZE);
-  }
+    size_t k;
+    double tmp1, tmp2;
 
-  size_t k;
-  double tmp1, tmp2;
+    if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL) &&
+        layerno == -1) {
+      expr = replace_input_poly_cons_in_uexpr(pr, expr, fp);
+    }
 
-  if ((fp->input_lexpr != NULL) && (fp->input_uexpr != NULL) && layerno == -1) {
-    expr = replace_input_poly_cons_in_uexpr(pr, expr, fp);
-  }
+    size_t dims = expr->size;
+    double res_sup = expr->sup_cst;
+    if (expr->inf_coeff == NULL || expr->sup_coeff == NULL) {
+      return res_sup;
+    }
 
-  size_t dims = expr->size;
-  double res_sup = expr->sup_cst;
-  if (expr->inf_coeff == NULL || expr->sup_coeff == NULL) {
+    for (size_t i = 0; i < dims; i++) {
+      if (expr->type == DENSE) {
+        k = i;
+      } else {
+        k = expr->dim[i];
+      }
+
+      if (layerno == -1) {
+        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                  expr->sup_coeff[i], fp->input_inf[k],
+                                  fp->input_sup[k]);
+      } else {
+        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
+                                  expr->sup_coeff[i],
+                                  fp->layers[layerno]->neurons[k]->lb,
+                                  fp->layers[layerno]->neurons[k]->ub);
+      }
+
+      res_sup = res_sup + tmp2;
+    }
+
+    if (fp->input_lexpr != NULL && fp->input_uexpr != NULL && layerno == -1) {
+      free_expr(expr);
+    }
+
     return res_sup;
-  }
-
-  for (size_t i = 0; i < dims; i++) {
-    if (expr->type == DENSE) {
-      k = i;
-    } else {
-      k = expr->dim[i];
-    }
-
-    if (layerno == -1) {
-      elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                expr->sup_coeff[i], fp->input_inf[k],
-                                fp->input_sup[k]);
-    } else {
-      elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                expr->sup_coeff[i],
-                                fp->layers[layerno]->neurons[k]->lb,
-                                fp->layers[layerno]->neurons[k]->ub);
-    }
-
-    res_sup = res_sup + tmp2;
-  }
-
-  if (fp->input_lexpr != NULL && fp->input_uexpr != NULL && layerno == -1) {
-    free_expr(expr);
-  }
-
-  return res_sup;
 }
 
 double get_lb_using_predecessor_layer(fppoly_internal_t *pr, fppoly_t *fp,
