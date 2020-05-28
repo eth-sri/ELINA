@@ -3698,7 +3698,7 @@ size_t predict_size(fppoly_t *fp, const size_t layerno) {
 
   size_t num_chunks = 1;
 
-  while (maximum_size > free_space) {
+  while (maximum_size > (free_space - (1 << 27))) {
     maximum_size /= 2;
     num_chunks *= 2;
   }
