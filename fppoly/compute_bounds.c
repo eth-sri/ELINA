@@ -179,6 +179,8 @@ double substitute_spatial_gurobi(expr_t *expr, fppoly_t *fp, const int opt_sense
     handle_gurobi_error(error, env);
     error = GRBsetintparam(env, "OutputFlag", 0);
     handle_gurobi_error(error, env);
+    error = GRBsetintparam(env, "NumericFocus", 1);
+    handle_gurobi_error(error, env);
     error = GRBstartenv(env);
     handle_gurobi_error(error, env);
 
@@ -206,7 +208,7 @@ double substitute_spatial_gurobi(expr_t *expr, fppoly_t *fp, const int opt_sense
 
     error = GRBnewmodel(env, &model, NULL, numvars, obj, lb, ub, NULL, NULL);
     handle_gurobi_error(error, env);
-    error = GRBsetintattr(model, GRB_INT_ATTR_MODELSENSE, opt_sense);
+    error = GRBsetintattr(model, "ModelSense", opt_sense);
     handle_gurobi_error(error, env);
 
     for (size_t i = 0; i < dims; ++i) {
