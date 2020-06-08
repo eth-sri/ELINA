@@ -31,7 +31,7 @@ extern "C" {
 #include "cdd.h"
 #include "setoper.h"
 
-void populate_matrix_maxpool(dd_MatrixPtr M, double *lb, double *ub,
+void populate_matrix_maxpool(dd_MatrixPtr M, float_type *lb, float_type *ub,
                              size_t pool_size, size_t val) {
   size_t *arr = (size_t *)malloc((pool_size - 1) * sizeof(size_t));
   size_t i, j = 0;
@@ -73,7 +73,8 @@ void populate_matrix_maxpool(dd_MatrixPtr M, double *lb, double *ub,
   free(arr);
 }
 
-dd_MatrixPtr maxpool_deeppoly_approx(double *lb, double *ub, size_t pool_size) {
+dd_MatrixPtr maxpool_deeppoly_approx(float_type *lb, float_type *ub,
+                                     size_t pool_size) {
   dd_set_global_constants();
   dd_MatrixPtr *H = (dd_MatrixPtr *)malloc(pool_size * sizeof(dd_MatrixPtr));
   dd_MatrixPtr A = NULL;
