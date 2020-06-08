@@ -1,225 +1,19 @@
 #include "lstm_approx.h"
 
 
-expr_t * lexpr_replace_pool_or_lstm_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons){
-	//printf("begin\n");
-	//fflush(stdout);
-	size_t num_neurons = expr->size;
-	size_t i,k;
-	expr_t *res;
-	if(expr->type==DENSE){
-		k = 0;
-	}
-	else{
-		k = expr->dim[0];
-	}
-	neuron_t *neuron_k = neurons[k];
-	if(expr->sup_coeff[0]<0){
-		//expr_print(neuron_k->uexpr);
-		if(neuron_k->uexpr==NULL){
-			res = (expr_t *)malloc(sizeof(expr_t));
-			res->inf_coeff = res->sup_coeff =  NULL;
-			res->dim = NULL;
-			res->size = 0;
-			res->type = SPARSE;
-			elina_double_interval_mul_cst_coeff(pr,&res->inf_cst,&res->sup_cst,neuron_k->lb,neuron_k->ub,expr->inf_coeff[0],expr->sup_coeff[0]);
-		}
-		else{
-			res = multiply_expr(pr,neuron_k->uexpr,expr->inf_coeff[0],expr->sup_coeff[0]);
-		}
-		//printf("multiply end %zu \n",k);
-		//expr_print(res);
-		//fflush(stdout);
-	}
-	else if(expr->inf_coeff[0]<0){
-		//expr_print(neuron_k->lexpr);
-		if(neuron_k->lexpr==NULL){
-			res = (expr_t *)malloc(sizeof(expr_t));
-			res->inf_coeff = res->sup_coeff = NULL;
-			res->dim = NULL;
-			res->size = 0;
-			res->type = SPARSE;
-			elina_double_interval_mul_cst_coeff(pr,&res->inf_cst,&res->sup_cst,neuron_k->lb,neuron_k->ub,expr->inf_coeff[0],expr->sup_coeff[0]);
-		}
-		else{
-			res = multiply_expr(pr,neuron_k->lexpr,expr->inf_coeff[0],expr->sup_coeff[0]);
-		}
-		//printf("multiply end %zu \n",k);
-		//expr_print(res);
-		//fflush(stdout);
-	}
-	else{
-		//printf("WTF1\n");
-		//fflush(stdout);
-		double tmp1, tmp2;
-		elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,neuron_k->lb,neuron_k->ub,expr->inf_coeff[0],expr->sup_coeff[0]);
-		double coeff[1];
-		size_t dim[1];
-		coeff[0] = 0;
-		dim[0] = 0;
-		res = create_sparse_expr(coeff,-tmp1,dim,1);
-	}
-	//printf("middle\n");
-	//fflush(stdout);
-	expr_t * mul_expr;
-	for(i = 1; i < num_neurons; i++){
-		if(expr->type==DENSE){
-			k = i;
-		}
-		else{
-			k = expr->dim[i];
-		}
-		neuron_t *neuron_k = neurons[k];
-		if(expr->sup_coeff[i]<0){
-			//expr_print(neuron_k->uexpr);
-			//printf("add start %zu %zu\n",k,i);
-			
-				//expr_print(res);
-				
-			if(neuron_k->uexpr==NULL){
-				mul_expr = (expr_t *)malloc(sizeof(expr_t));
-				mul_expr->inf_coeff = mul_expr->sup_coeff = NULL;
-				mul_expr->dim = NULL;
-				mul_expr->size = 0;
-				mul_expr->type = SPARSE;
-				//printf("lb: %g %g\n");
-				elina_double_interval_mul_cst_coeff(pr,&mul_expr->inf_cst,&mul_expr->sup_cst,neuron_k->lb,neuron_k->ub,expr->inf_coeff[i],expr->sup_coeff[i]);
-				res->inf_cst += mul_expr->inf_cst;
-				res->sup_cst += mul_expr->sup_cst;
-			}
-			else{
-				mul_expr = multiply_expr(pr,neuron_k->uexpr,expr->inf_coeff[i],expr->sup_coeff[i]);
-				
-				add_expr(pr,res,mul_expr);
-				
-			}
-			//expr_print(mul_expr);
-				//fflush(stdout);
-			//printf("add finish\n");
-				//expr_print(res);
-				//fflush(stdout);
-			free_expr(mul_expr);
-		}
-		else if (expr->inf_coeff[i]<0){
-			//expr_print(neuron_k->lexpr);
-			//printf("add start %zu %zu\n",k,i);
-			
-				//expr_print(res);
-				
-			if(neuron_k->lexpr==NULL){
-				mul_expr = (expr_t *)malloc(sizeof(expr_t));
-				mul_expr->inf_coeff = mul_expr->sup_coeff = NULL;
-				mul_expr->dim = NULL;
-				mul_expr->size = 0;
-				mul_expr->type = SPARSE;
-				elina_double_interval_mul_cst_coeff(pr,&mul_expr->inf_cst,&mul_expr->sup_cst,neuron_k->lb,neuron_k->ub,expr->inf_coeff[i],expr->sup_coeff[i]);
-				res->inf_cst += mul_expr->inf_cst;
-				res->sup_cst += mul_expr->sup_cst;
-			}
-			else{
-				mul_expr = multiply_expr(pr,neuron_k->lexpr,expr->inf_coeff[i],expr->sup_coeff[i]);
-				//printf("add start1 %zu %zu\n",k,i);
-				//expr_print(res);
-				//expr_print(mul_expr);
-				//fflush(stdout);
-				add_expr(pr,res,mul_expr);
-				
-			}
-			//expr_print(mul_expr);
-			//	fflush(stdout);
-			//printf("add finish1\n");
-			//expr_print(res);
-			//fflush(stdout);
-			free_expr(mul_expr);
-		}
-		else{
-			//printf("WTF2\n");
-			//fflush(stdout);
-			double tmp1, tmp2;
-			elina_double_interval_mul_expr_coeff(pr,&tmp1,&tmp2,neuron_k->lb,neuron_k->ub,expr->inf_coeff[i],expr->sup_coeff[i]);
-			res->inf_cst = res->inf_cst + tmp1;
-			res->sup_cst = res->sup_cst - tmp1;
-		}
-	}
-	//printf("finish\n");	
-	//fflush(stdout);
-	res->inf_cst = res->inf_cst + expr->inf_cst;
-	res->sup_cst = res->sup_cst + expr->sup_cst;
-	return res;
-}
-
-expr_t * uexpr_replace_pool_or_lstm_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons){
-	size_t num_neurons = expr->size;
-	size_t i,k;
-	expr_t *res;
-	if(expr->type==DENSE){
-		k = 0;
-	}
-	else{
-		k = expr->dim[0];
-	}
-	neuron_t *neuron_k = neurons[k];
-	if(expr->sup_coeff[0]<0){
-		res = multiply_expr(pr,neuron_k->lexpr,expr->inf_coeff[0],expr->sup_coeff[0]);
-	}
-	else if(expr->inf_coeff[0]<0){
-		res = multiply_expr(pr,neuron_k->uexpr,expr->inf_coeff[0],expr->sup_coeff[0]);
-	}
-	else{
-		
-		double tmp1, tmp2;
-		elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,neuron_k->lb,neuron_k->ub,expr->inf_coeff[0],expr->sup_coeff[0]);
-		double coeff[1];
-		size_t dim[1];
-		coeff[0] = 0;
-		dim[0] = 0;
-		res = create_sparse_expr(coeff,tmp2,dim,1);
-	}
-
-	for(i = 1; i < num_neurons; i++){
-		if(expr->type==DENSE){
-			k = i;
-		}
-		else{
-			k = expr->dim[i];
-		}
-		neuron_t *neuron_k = neurons[k];
-		if(expr->sup_coeff[i]<0){
-			expr_t * mul_expr = multiply_expr(pr,neuron_k->lexpr,expr->inf_coeff[i],expr->sup_coeff[i]);
-			add_expr(pr,res,mul_expr);
-			free_expr(mul_expr);
-		}
-		else if (expr->inf_coeff[i]<0){
-			expr_t * mul_expr = multiply_expr(pr,neuron_k->uexpr,expr->inf_coeff[i],expr->sup_coeff[i]);
-			add_expr(pr,res,mul_expr);
-			free_expr(mul_expr);
-		}
-		else{
-			
-			double tmp1, tmp2;
-			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,neuron_k->lb,neuron_k->ub,expr->inf_coeff[i],expr->sup_coeff[i]);
-			res->inf_cst = res->inf_cst - tmp2;
-			res->sup_cst = res->sup_cst + tmp2;
-		}
-	}
-	res->inf_cst = res->inf_cst + expr->inf_cst;
-	res->sup_cst = res->sup_cst + expr->sup_cst;
-	return res;
-}
-
 expr_t * lexpr_unroll_lstm_layer(fppoly_internal_t *pr, expr_t * expr, neuron_t ** neurons){
 	return NULL;
 }
 
 
-void create_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, size_t h, size_t *predecessors){
+void create_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, size_t h, size_t *predecessors, size_t num_predecessors){
 	fppoly_t *fp = fppoly_of_abstract0(abs);
 	size_t numlayers = fp->numlayers;
-	fppoly_add_new_layer(fp,h, LSTM, NONE);
+	fppoly_add_new_layer(fp,h, predecessors, num_predecessors);
 	fp->lstm_index = numlayers;
 }
 
-void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, double **weights,  double *bias, size_t d, size_t h, size_t * predecessors, bool use_area_heuristic){
+void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, double **weights,  double *bias, size_t d, size_t h, size_t * predecessors, size_t num_predecessors){
 	fppoly_t *fp = fppoly_of_abstract0(abs);
 	fppoly_internal_t *pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	size_t lstm_index = fp->lstm_index;
@@ -268,8 +62,8 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, double **we
 		expr_t *f_t_uexpr = copy_expr(f_t_lexpr);
 		expr_t *tmp_f_t_lexpr = copy_expr(f_t_lexpr);
 		expr_t *tmp_f_t_uexpr = copy_expr(f_t_uexpr);
-		double lb_f_t = get_lb_using_previous_layers(man, fp, tmp_f_t_lexpr, lstm_index,use_area_heuristic);
-		double ub_f_t = get_ub_using_previous_layers(man, fp, tmp_f_t_uexpr, lstm_index,use_area_heuristic);
+		double lb_f_t = get_lb_using_previous_layers(man, fp, tmp_f_t_lexpr, lstm_index);
+		double ub_f_t = get_ub_using_previous_layers(man, fp, tmp_f_t_uexpr, lstm_index);
 		/* free_expr(tmp_f_t_lexpr); */
 		/* free_expr(tmp_f_t_uexpr); */
 
@@ -289,8 +83,8 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, double **we
 		expr_t *i_t_uexpr = copy_expr(i_t_lexpr);
 		expr_t *tmp_i_t_lexpr = copy_expr(i_t_lexpr);
 		expr_t *tmp_i_t_uexpr = copy_expr(i_t_uexpr);
-		double lb_i_t = get_lb_using_previous_layers(man, fp, tmp_i_t_lexpr,lstm_index,use_area_heuristic);
-		double ub_i_t = get_ub_using_previous_layers(man, fp, tmp_i_t_uexpr, lstm_index,use_area_heuristic);	
+		double lb_i_t = get_lb_using_previous_layers(man, fp, tmp_i_t_lexpr,lstm_index);
+		double ub_i_t = get_ub_using_previous_layers(man, fp, tmp_i_t_uexpr, lstm_index);	
 		/* free_expr(tmp_i_t_lexpr); */
 		/* free_expr(tmp_i_t_uexpr); */
 		neuron->lb = lb_i_t;
@@ -307,8 +101,8 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, double **we
 		expr_t *o_t_uexpr = copy_expr(o_t_lexpr);
 		expr_t *tmp_o_t_lexpr = copy_expr(o_t_lexpr);
 		expr_t *tmp_o_t_uexpr = copy_expr(o_t_uexpr);
-		double lb_o_t = get_lb_using_previous_layers(man, fp, tmp_o_t_lexpr, lstm_index,use_area_heuristic);
-		double ub_o_t = get_ub_using_previous_layers(man, fp, tmp_o_t_uexpr, lstm_index,use_area_heuristic);
+		double lb_o_t = get_lb_using_previous_layers(man, fp, tmp_o_t_lexpr, lstm_index);
+		double ub_o_t = get_ub_using_previous_layers(man, fp, tmp_o_t_uexpr, lstm_index);
 		/* free_expr(tmp_o_t_lexpr); */
 		/* free_expr(tmp_o_t_uexpr); */
 
@@ -331,8 +125,8 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, double **we
 		expr_t *c_t_uexpr = copy_expr(c_t_lexpr);
 		expr_t *tmp_c_t_lexpr = copy_expr(c_t_lexpr);
 		expr_t *tmp_c_t_uexpr = copy_expr(c_t_uexpr);
-		double lb_c_t = get_lb_using_previous_layers(man, fp, tmp_c_t_lexpr, lstm_index,use_area_heuristic);
-		double ub_c_t = get_ub_using_previous_layers(man, fp, tmp_c_t_uexpr, lstm_index,use_area_heuristic);
+		double lb_c_t = get_lb_using_previous_layers(man, fp, tmp_c_t_lexpr, lstm_index);
+		double ub_c_t = get_ub_using_previous_layers(man, fp, tmp_c_t_uexpr, lstm_index);
 		neuron->lb = lb_c_t;
 		neuron->ub = ub_c_t;
 		//expr_print(c_t_lexpr);
@@ -418,8 +212,8 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, double **we
 			free_expr(tmp_l);
 			free_expr(tmp_u);
 		}
-		layer->c_t_inf[i] = get_lb_using_previous_layers(man, fp, c_t_lexpr, lstm_index,use_area_heuristic);
-		layer->c_t_sup[i] = get_ub_using_previous_layers(man, fp, c_t_uexpr, lstm_index,use_area_heuristic);
+		layer->c_t_inf[i] = get_lb_using_previous_layers(man, fp, c_t_lexpr, lstm_index);
+		layer->c_t_sup[i] = get_ub_using_previous_layers(man, fp, c_t_uexpr, lstm_index);
 
 		neuron->lb = layer->c_t_inf[i];
 		neuron->ub = layer->c_t_sup[i];
@@ -442,8 +236,8 @@ void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, double **we
 			h_t_uexpr =  multiply_expr(pr,o_t_uexpr,lb_c_t,ub_c_t);
 		}
 
-		layer->h_t_inf[i] = get_lb_using_previous_layers(man, fp, h_t_lexpr, lstm_index,use_area_heuristic);
-		layer->h_t_sup[i] = get_ub_using_previous_layers(man, fp, h_t_uexpr, lstm_index,use_area_heuristic);
+		layer->h_t_inf[i] = get_lb_using_previous_layers(man, fp, h_t_lexpr, lstm_index);
+		layer->h_t_sup[i] = get_ub_using_previous_layers(man, fp, h_t_uexpr, lstm_index);
 
 		free_expr(f_t_lexpr);
 		free_expr(f_t_uexpr);

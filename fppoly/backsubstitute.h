@@ -29,7 +29,6 @@ extern "C" {
 
 #include "fppoly.h"
 #include "expr.h"
-#include "affine_transform.h"
 #include "compute_bounds.h"
 #include "relu_approx.h"
 #include "s_curve_approx.h"
@@ -38,7 +37,7 @@ extern "C" {
 #include "pool_approx.h"
 #include "lstm_approx.h"
 
-void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t *fp, size_t layerno, bool use_area_heuristic);
+void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t *fp, size_t layerno);
 
 #ifdef __cplusplus
  }

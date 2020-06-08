@@ -29,9 +29,7 @@ extern "C" {
 
 #include "backsubstitute.h"
 
-expr_t * lexpr_replace_parabola_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons);
-
-expr_t * uexpr_replace_parabola_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons);
+void handle_parabola_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
 #ifdef __cplusplus
  }

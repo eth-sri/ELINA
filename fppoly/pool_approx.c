@@ -2,8 +2,8 @@
 #include "maxpool_convex_hull.h"
 
 size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element, 
-			   size_t *pool_size, size_t *input_size, size_t *strides, size_t dimensionality, size_t pad_top, size_t pad_left, size_t * output_size,size_t *predecessors, bool is_maxpool){
-	assert(dimensionality==3);
+			   size_t *pool_size, size_t *input_size, size_t *strides, size_t pad_top, size_t pad_left, size_t * output_size,size_t *predecessors, size_t num_predecessors, bool is_maxpool){
+	assert(num_predecessors==1);
 	assert(pool_size[2]==1);
 	//assert(stride[0]==2 && stride[1]==2 && stride[2]==1);
 	
@@ -19,14 +19,14 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 	
 	fppoly_t * fp = fppoly_of_abstract0(element);
 	size_t numlayers = fp->numlayers;
-	fppoly_add_new_layer(fp,num_out_neurons, POOL, NONE);
+	fppoly_add_new_layer(fp,num_out_neurons, predecessors, num_predecessors, false);
 	size_t out_pos;
 	double * inf = (double *) calloc(p01,sizeof(double));
 	double * sup = (double *) calloc(p01,sizeof(double));
 	size_t * pool_map = (size_t *)calloc(p01,sizeof(size_t));
 	neuron_t ** out_neurons = fp->layers[numlayers]->neurons;
-	fp->layers[numlayers]->predecessors = predecessors;
-	size_t count = 0;
+	int k1 = predecessors[0] - 1;
+	neuron_t ** in_neurons = fp->layers[k1]->neurons;
 	for(out_pos=0; out_pos<num_out_neurons; out_pos++){
 		size_t out_x = out_pos / o12;
 		size_t out_y = (out_pos-out_x*o12) / output_size[2];
@@ -40,15 +40,11 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
         	//printf("outXYZ: %zu, %zu, %zu\n", out_x, out_y, out_z);
 		//fflush(stdout);
 		size_t x_shift, y_shift, l = 0;
-		double sum_u = 0.0;
-		double sum_l = 0.0;
 		double max_u = -INFINITY;
 		double max_l = -INFINITY;
 		
 		size_t max_l_var = 0.0; 
 		size_t max_u_var = 0.0;
-		size_t min_width_var = 0.0;
-		double min_width = INFINITY;
 		for(x_shift = 0; x_shift < pool_size[0]; x_shift++){
 			for(y_shift = 0; y_shift < pool_size[1]; y_shift++){
 				long int x_val = out_x*strides[0] + x_shift - pad_top;
@@ -65,24 +61,11 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 				}
 				pool_map[l] = pool_cur_dim;
 				// use the ReLU bounds from the previous layer
-				double lb = -fp->layers[numlayers-1]->neurons[pool_cur_dim]->lb;
-				double ub = fp->layers[numlayers-1]->neurons[pool_cur_dim]->ub;
-				if(ub<=0){
-					inf[l] = 0.0;
-					sup[l] = 0.0;
-				}
-				else if(lb>0){
-					inf[l] = lb;
-					sup[l] = ub;
-				}
-				else{
-					inf[l] = 0;
-					sup[l] = ub;
-				}
-				//printf("inf: %g %g\n",inf[l],sup[l]);
-				//fflush(stdout);
-				sum_u = sum_u + sup[l];
-				sum_l = sum_l + inf[l];
+				double lb = -in_neurons[pool_cur_dim]->lb;
+				double ub = in_neurons[pool_cur_dim]->ub;
+				inf[l] = lb;
+				sup[l] = ub;
+
 				if(sup[l]>max_u){
 					max_u = sup[l];
 					max_u_var = pool_map[l];
@@ -90,10 +73,6 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 				if(inf[l] > max_l){
 					max_l = inf[l];
 					max_l_var = pool_map[l];
-				}
-				if((ub-lb) < min_width){
-					min_width = ub - lb;
-					min_width_var = pool_map[l];
 				}
 				l++;
 			}
@@ -127,7 +106,6 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 			if(flag){
 			//if(0){
 				//x_new = x_var
-				count++;
 				//printf("out_pos: %zu\n",out_pos);
 				//fflush(stdout);
 				double coeff[1];
@@ -142,6 +120,7 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 				dd_MatrixPtr M = NULL;
 				if(l<=10){
 					M = maxpool_deeppoly_approx(inf,sup,l);
+					
 				}
 				//printf("end\n");
 				//fflush(stdout);
@@ -175,10 +154,12 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 				double best_val = INFINITY;
 				if(M!=NULL){
 					size_t nbrows = M->rowsize;
+					
 					//double best_val = INFINITY;
 					for(i=0; i < nbrows; i++){
 						double Miy = dd_get_d(M->matrix[i][l+1]);
 						if(Miy<0){
+							
 							double div = -Miy;
 							size_t j;
 							double val = dd_get_d(M->matrix[i][0])/div;
@@ -194,6 +175,7 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 									val = val + Mij*sup[j];
 								}
 							}
+							
 						//printf("COMING HERE %g %g %g %g %g %g\n",pi[2]/div,pi[3]/div,pi[4]/div,pi[5]/div,val,max_u);
 							if(rel_cons && val<best_val){
 								rel_flag = true;
@@ -205,6 +187,7 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 					}
 				
 				}
+				
 				if(rel_flag==true && fabs(best_val-max_u)<0.01){
 				 // if(0){      
 					double *ucoeff = (double *)malloc(l*sizeof(double));
@@ -218,16 +201,18 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 						udim[j] = pool_map[j];
 					}
 					double cst = dd_get_d(M->matrix[rel_index][0])/div;
+					
 					 out_neurons[out_pos]->uexpr = create_sparse_expr(ucoeff,cst,udim,l);
 					 free(ucoeff);
 					 free(udim);
 				}
 				else{
-				double ucoeff[1];
-				size_t udim[1];
-				ucoeff[0] = 0;
-				udim[0] = 0;
-				out_neurons[out_pos]->uexpr = create_sparse_expr(ucoeff,max_u,udim,1);
+					double ucoeff[1];
+					size_t udim[1];
+					ucoeff[0] = 0;
+					udim[0] = 0;
+					
+					out_neurons[out_pos]->uexpr = create_sparse_expr(ucoeff,max_u,udim,1);
 				}
 				//out_neurons[out_pos]->uexpr = create_sparse_expr(ucoeff,max_l-sum_l,udim,p01);
 				//sort_sparse_expr(out_neurons[out_pos]->uexpr);
@@ -238,7 +223,7 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 				dd_FreeMatrix(M);
 			}
 			out_neurons[out_pos]->lb = -max_l;
-			out_neurons[out_pos]->ub = max_u;		
+			out_neurons[out_pos]->ub = max_u;	
 		}
 		else{
 			size_t j;
@@ -273,9 +258,7 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 	free(sup);
 	free(pool_map);
 	//free(output_size);
-        //printf("count: %zu\n",count);
 	//fflush(stdout);
-	//printf("return here2\n");
 	//fppoly_fprint(stdout,man,fp,NULL);
 	//fflush(stdout);
 	return num_out_neurons;

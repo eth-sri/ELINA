@@ -1,75 +1,16 @@
 #include "backsubstitute.h"
 
 
-void update_state_using_predecessor_layer(fppoly_internal_t *pr,fppoly_t *fp, expr_t **lexpr_ptr, expr_t **uexpr_ptr, size_t k, bool use_area_heuristic){
+void update_state_using_predecessor_layer(fppoly_internal_t *pr,fppoly_t *fp, expr_t **lexpr_ptr, expr_t **uexpr_ptr, size_t k){
 	expr_t *lexpr = *lexpr_ptr;
 	expr_t *uexpr = *uexpr_ptr;
 	expr_t *tmp_l = lexpr;
 	expr_t *tmp_u = uexpr;
         neuron_t ** aux_neurons = fp->layers[k]->neurons; 
-	if(fp->layers[k]->type==FFN || fp->layers[k]->type==CONV){      
-		if(fp->layers[k]->activation==RELU){
-				
-		       lexpr = lexpr_replace_relu_bounds(pr,lexpr,aux_neurons, use_area_heuristic);
-		            
-		       uexpr = uexpr_replace_relu_bounds(pr,uexpr,aux_neurons, use_area_heuristic);
-		}
-		else if(fp->layers[k]->activation==SIGMOID){
-		                
-		       lexpr = lexpr_replace_sigmoid_bounds(pr,lexpr,aux_neurons);
-		               
-		       uexpr = uexpr_replace_sigmoid_bounds(pr,uexpr,aux_neurons);
-		}
-		else if(fp->layers[k]->activation==TANH){
-		       lexpr = lexpr_replace_tanh_bounds(pr,lexpr,aux_neurons);
-		       uexpr = uexpr_replace_tanh_bounds(pr,uexpr,aux_neurons);
-		}
-		else if(fp->layers[k]->activation==PARABOLA){
-			lexpr = lexpr_replace_parabola_bounds(pr,lexpr,aux_neurons);
-		        uexpr = uexpr_replace_parabola_bounds(pr,uexpr,aux_neurons);
-		}
-		else if(fp->layers[k]->activation==LOG){
-			lexpr = lexpr_replace_log_bounds(pr,lexpr,aux_neurons);
-			uexpr = uexpr_replace_log_bounds(pr,uexpr,aux_neurons);
-		}
-			
-		if(fp->layers[k]->activation!=NONE){
-			free_expr(tmp_l);
-					
-			free_expr(tmp_u);
-		}	
-		       
-		tmp_l = lexpr;
-		tmp_u = uexpr;
-				
-		*lexpr_ptr = expr_from_previous_layer(pr,lexpr, fp->layers[k]);
-						
-		*uexpr_ptr = expr_from_previous_layer(pr,uexpr, fp->layers[k]);
-
-		free_expr(tmp_l);
-		free_expr(tmp_u);
-	}
-	else if(fp->layers[k]->type==POOL || fp->layers[k]->type==LSTM){
-		expr_t * tmp_l = lexpr;
-		expr_t * tmp_u = uexpr;
-		*lexpr_ptr = lexpr_replace_pool_or_lstm_bounds(pr,lexpr,aux_neurons);
-				
-		*uexpr_ptr = uexpr_replace_pool_or_lstm_bounds(pr,uexpr,aux_neurons);
-		free_expr(tmp_l);
-				
-		free_expr(tmp_u);
-	}
-			//}
-	else{
-		expr_t *tmp_l = lexpr;
-		expr_t *tmp_u = uexpr;
-		*lexpr_ptr = lexpr_unroll_lstm_layer(pr,lexpr, aux_neurons);
-				
-				//uexpr = uexpr_unroll_lstm_layer(pr, uexpr, aux_neurons);
-				
-		free_expr(tmp_l);
-		free_expr(tmp_u);
-	}
+        *lexpr_ptr = lexpr_replace_bounds(pr,lexpr,aux_neurons, fp->layers[k]->is_activation);            
+	*uexpr_ptr = uexpr_replace_bounds(pr,uexpr,aux_neurons, fp->layers[k]->is_activation);
+	free_expr(tmp_l);
+	free_expr(tmp_u);
 }
 
 
@@ -81,19 +22,18 @@ void * update_state_using_previous_layers(void *args){
 	size_t layerno = data->layerno;
 	size_t idx_start = data->start;
 	size_t idx_end = data->end;
-        bool use_area_heuristic = data->use_area_heuristic;
 	size_t i;
 	int k;
 	
 	neuron_t ** out_neurons = fp->layers[layerno]->neurons;
 	size_t num_out_neurons = fp->layers[layerno]->dims;
-	//printf("idx: %zu %zu\n",idx_start,idx_end);
-	//fflush(stdout);
+	
 	for(i=idx_start; i < idx_end; i++){
 		bool already_computed= false;
-		expr_t *lexpr = copy_expr(out_neurons[i]->expr);
-		expr_t *uexpr = copy_expr(out_neurons[i]->expr);
-	 	if(fp->layers[layerno]->type==RESIDUAL){
+		expr_t *lexpr = copy_expr(out_neurons[i]->lexpr);
+		expr_t *uexpr = copy_expr(out_neurons[i]->uexpr);
+	 	if(fp->layers[layerno]->num_predecessors==2){
+	 		
 			expr_t * lexpr_copy = copy_expr(lexpr);
 			lexpr_copy->inf_cst = 0;
 			lexpr_copy->sup_cst = 0;
@@ -121,14 +61,14 @@ void * update_state_using_previous_layers(void *args){
 				
 			iter = predecessor1;
 			while(iter!=common_predecessor){
-				update_state_using_predecessor_layer(pr,fp, &lexpr, &uexpr, iter, use_area_heuristic);
+				update_state_using_predecessor_layer(pr,fp, &lexpr, &uexpr, iter);
 					
 				iter = fp->layers[iter]->predecessors[0]-1;
 			}
 			iter =  predecessor2;
 			while(iter!=common_predecessor){
 					
-				update_state_using_predecessor_layer(pr,fp, &lexpr_copy, &uexpr_copy, iter, use_area_heuristic);
+				update_state_using_predecessor_layer(pr,fp, &lexpr_copy, &uexpr_copy, iter);
 					
 				iter = fp->layers[iter]->predecessors[0]-1;					
 			}
@@ -141,26 +81,19 @@ void * update_state_using_previous_layers(void *args){
 				
 			k = common_predecessor;
 			
+			
 		}
 		else{
 			
 			k = fp->layers[layerno]->predecessors[0]-1;
 		}
 		//printf("k: %d layerno: %zu\n",k,layerno);
+		//fflush(stdout);
 		while(k>=0){
 		//for(k=fp->layers[layerno]->predecessors[0]-1; k >=0; k = fp->layers[k]->predecessors[0]-1){	
 			neuron_t ** aux_neurons = fp->layers[k]->neurons;
 			
-			if(fp->layers[k]->type==RESIDUAL){
-				if(fp->layers[k]->activation==RELU){
-					neuron_t ** aux_neurons = fp->layers[k]->neurons; 
-					expr_t *tmp_l = lexpr;
-					expr_t *tmp_u = uexpr;
-		       			lexpr = lexpr_replace_relu_bounds(pr,lexpr,aux_neurons, use_area_heuristic);
-		      		        uexpr = uexpr_replace_relu_bounds(pr,uexpr,aux_neurons, use_area_heuristic);
-					free_expr(tmp_l);
-					free_expr(tmp_u);
-				}
+			if(fp->layers[k]->num_predecessors==2){
 				expr_t * lexpr_copy = copy_expr(lexpr);
 				lexpr_copy->inf_cst = 0;
 				lexpr_copy->sup_cst = 0;
@@ -190,14 +123,14 @@ void * update_state_using_previous_layers(void *args){
 				iter = predecessor1;
 				while(iter!=common_predecessor){
 					
-					update_state_using_predecessor_layer(pr,fp, &lexpr, &uexpr, iter, use_area_heuristic);
+					update_state_using_predecessor_layer(pr,fp, &lexpr, &uexpr, iter);
 					
 					iter = fp->layers[iter]->predecessors[0]-1;
 				}
 				iter =  predecessor2;
 				while(iter!=common_predecessor){
 					
-					update_state_using_predecessor_layer(pr,fp, &lexpr_copy, &uexpr_copy, iter, use_area_heuristic);
+					update_state_using_predecessor_layer(pr,fp, &lexpr_copy, &uexpr_copy, iter);
 					
 					iter = fp->layers[iter]->predecessors[0]-1;					
 				}
@@ -209,14 +142,6 @@ void * update_state_using_previous_layers(void *args){
 				// Assume at least one non-residual layer between two residual layers
 				
 				k = common_predecessor;
-				if(fp->layers[k]->activation==RELU){
-					expr_t *tmp_l = lexpr;
-					expr_t *tmp_u = uexpr; 
-					lexpr = lexpr_replace_relu_bounds(pr,lexpr,fp->layers[k]->neurons, use_area_heuristic);
-		       			uexpr = uexpr_replace_relu_bounds(pr,uexpr,fp->layers[k]->neurons, use_area_heuristic);
-					free_expr(tmp_l);
-					free_expr(tmp_u);
-				}
 				out_neurons[i]->lb = compute_lb_from_expr(pr, lexpr,fp,k); 
 				out_neurons[i]->ub = compute_ub_from_expr(pr, uexpr,fp,k);
 				already_computed = true;
@@ -224,10 +149,10 @@ void * update_state_using_previous_layers(void *args){
 				//continue;
 			}
 			else {
-				 
-				 update_state_using_predecessor_layer(pr,fp, &lexpr, &uexpr, k, use_area_heuristic);
-				 
+				
+				 update_state_using_predecessor_layer(pr,fp, &lexpr, &uexpr, k);
 				 k = fp->layers[k]->predecessors[0]-1;
+				 
 			}
 			
 			//printf("k %d\n",k);
@@ -250,15 +175,14 @@ void * update_state_using_previous_layers(void *args){
 		}
 		
 	}
-	//printf("thread finish\n");
-	//fflush(stdout);
+	
 	return NULL;
 }
 
 
-void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t *fp, size_t layerno, bool use_area_heuristic){
+void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t *fp, size_t layerno){
 	//size_t NUM_THREADS = get_nprocs();
-  size_t NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
+  	size_t NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
 	nn_thread_t args[NUM_THREADS];
 	pthread_t threads[NUM_THREADS];
 	size_t num_out_neurons = fp->layers[layerno]->dims;
@@ -272,7 +196,6 @@ void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t 
 			args[i].man = man;
 			args[i].fp = fp;
 			args[i].layerno = layerno;
-			args[i].use_area_heuristic = use_area_heuristic;
 	    		pthread_create(&threads[i], NULL,update_state_using_previous_layers, (void*)&args[i]);
 			
 	  	}
@@ -292,7 +215,6 @@ void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t 
 			args[i].man = man;
 			args[i].fp = fp;
 			args[i].layerno = layerno;
-			args[i].use_area_heuristic = use_area_heuristic;
 	    		pthread_create(&threads[i], NULL,update_state_using_previous_layers, (void*)&args[i]);
 			idx_start = idx_end;
 			idx_end = idx_start + idx_n;
