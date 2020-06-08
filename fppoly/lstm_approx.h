@@ -29,20 +29,11 @@ extern "C" {
 
 #include "backsubstitute.h"
 
-expr_t *lexpr_replace_pool_or_lstm_bounds(fppoly_internal_t *pr, expr_t *expr,
-                                          neuron_t **neurons);
-
-expr_t *uexpr_replace_pool_or_lstm_bounds(fppoly_internal_t *pr, expr_t *expr,
-                                          neuron_t **neurons);
-
 expr_t * lexpr_unroll_lstm_layer(fppoly_internal_t *pr, expr_t * expr, neuron_t ** neurons);
 
-void create_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, size_t h,
-                       size_t *predecessors);
+void create_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, size_t h, size_t *predecessors, size_t num_predecessors);
 
-void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                       double **weights, double *bias, size_t d, size_t h,
-                       size_t *predecessors, bool use_area_heuristic);
+void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, double **weights,  double *bias, size_t d, size_t h, size_t * predecessors, size_t num_predecessors);
 
 #ifdef __cplusplus
  }

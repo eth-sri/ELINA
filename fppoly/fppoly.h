@@ -61,22 +61,7 @@ typedef struct fppoly_internal_t{
   elina_manager_t* man;
 }fppoly_internal_t;
 
-typedef enum layertype_t {
-  FFN,      /* FFN layer */
-  CONV,     /* CONV layer */
-  POOL,     /* MAXPOOL/AVERAGEPOOL layer */
-  LSTM,     /* LSTM layer */
-  RESIDUAL, /* RESIDUAL layer */
-} layertype_t;
 
-typedef enum activation_type_t {
-  RELU,
-  SIGMOID,
-  TANH,
-  PARABOLA, /* Parabolic assignments */
-  LOG,      /* Logrithmic assignments */
-  NONE,
-} activation_type_t;
 
 typedef enum fnn_op{
 	MATMULT,
@@ -104,21 +89,20 @@ typedef struct expr_t{
 typedef struct neuron_t{
 	double lb;
 	double ub;
-        expr_t *expr;
-        expr_t * lexpr;
+	expr_t * lexpr;
 	expr_t * uexpr;
 }neuron_t;
 
 typedef struct layer_t{
 	size_t dims;
-        layertype_t type;
-        activation_type_t activation;
-        neuron_t **neurons;
+	neuron_t **neurons;
 	double * h_t_inf;
 	double * h_t_sup;
 	double * c_t_inf;
 	double * c_t_sup;
 	size_t *predecessors;
+	size_t num_predecessors;
+	bool is_activation;
 }layer_t;
 
 typedef struct output_abstract_t {
@@ -148,7 +132,6 @@ typedef struct nn_thread_t{
 	elina_manager_t *man;
 	fppoly_t *fp;
 	size_t layerno;
-        bool use_area_heuristic;
 }nn_thread_t;
 
 
@@ -166,237 +149,49 @@ elina_abstract0_t *fppoly_from_network_input_poly(
 
 fppoly_internal_t* fppoly_init_from_manager(elina_manager_t* man, elina_funid_t funid);
 
-void ffn_handle_first_relu_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                                 double **weights, double *bias, size_t size,
-                                 size_t num_pixels, size_t *predecessors);
 
-void ffn_handle_first_sigmoid_layer(elina_manager_t *man,
-                                    elina_abstract0_t *abs, double **weights,
-                                    double *bias, size_t size,
-                                    size_t num_pixels, size_t *predecessors);
+void handle_fully_connected_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons, size_t *predecessors, size_t num_predecessors);
 
-void ffn_handle_first_tanh_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                                 double **weights, double *bias, size_t size,
-                                 size_t num_pixels, size_t *predecessors);
+void handle_fully_connected_layer_no_alloc(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons, size_t *predecessors, size_t num_predecessors);
 
-void ffn_handle_first_parabola_layer(elina_manager_t *man,
-                                     elina_abstract0_t *abs, double **weights,
-                                     double *bias, size_t size,
-                                     size_t num_pixels, size_t *predecessors);
+void handle_sub_layer(elina_manager_t* man, elina_abstract0_t* element,  double * cst, bool is_minuend, size_t num_in_neurons, size_t *predecessors, size_t num_predecessors);
 
-void ffn_handle_first_log_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                                double **weights, double *bias, size_t size,
-                                size_t num_pixels, size_t *predecessors);
+void handle_mul_layer(elina_manager_t* man, elina_abstract0_t* element,  double * bias,  size_t num_in_neurons, size_t *predecessors, size_t num_predecessors);
 
-void ffn_handle_first_sub_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                                double *cst, bool is_minuend, size_t size,
-                                size_t *predecessors);
+void handle_relu_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristics);
 
-void ffn_handle_first_mul_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                                double *cst, size_t size, size_t *predecessors);
+void handle_sigmoid_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
-void ffn_handle_first_relu_layer_no_alloc(elina_manager_t *man,
-                                          elina_abstract0_t *abs,
-                                          double **weights, double *bias,
-                                          size_t size, size_t num_pixels,
-                                          size_t *predecessors);
+void handle_tanh_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
-void ffn_handle_first_sigmoid_layer_no_alloc(elina_manager_t *man,
-                                             elina_abstract0_t *abs,
-                                             double **weights, double *bias,
-                                             size_t size, size_t num_pixels,
-                                             size_t *predecessors);
+void handle_parabola_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
-void ffn_handle_first_tanh_layer_no_alloc(elina_manager_t *man,
-                                          elina_abstract0_t *abs,
-                                          double **weights, double *bias,
-                                          size_t size, size_t num_pixels,
-                                          size_t *predecessors);
+void handle_log_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
-void ffn_handle_first_parabola_layer_no_alloc(elina_manager_t *man,
-                                              elina_abstract0_t *abs,
-                                              double **weights, double *bias,
-                                              size_t size, size_t num_pixels,
-                                              size_t *predecessors);
 
-void ffn_handle_first_log_layer_no_alloc(elina_manager_t *man,
-                                         elina_abstract0_t *abs,
-                                         double **weights, double *bias,
-                                         size_t size, size_t num_pixels,
-                                         size_t *predecessors);
-
-void ffn_handle_intermediate_affine_layer(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool use_area_heuristic);
-
-void ffn_handle_intermediate_relu_layer(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool use_area_heuristic);
-
-void ffn_handle_intermediate_sigmoid_layer(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool use_area_heuristic);
-
-void ffn_handle_intermediate_tanh_layer(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool use_area_heuristic);
-
-void ffn_handle_intermediate_parabola_layer(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool use_area_heuristic);
-
-void ffn_handle_intermediate_log_layer(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool use_area_heuristic);
-
-void ffn_handle_intermediate_sub_layer(elina_manager_t *man,
-                                       elina_abstract0_t *element, double *cst,
-                                       bool is_minuend, size_t num_in_neurons,
-                                       size_t *predecessors,
-                                       bool use_area_heuristic);
-
-void ffn_handle_intermediate_mul_layer(elina_manager_t *man,
-                                       elina_abstract0_t *element, double *bias,
-                                       size_t num_in_neurons,
-                                       size_t *predecessors,
-                                       bool use_area_heuristic);
-
-void ffn_handle_intermediate_affine_layer_no_alloc(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool use_area_heuristic);
-
-void ffn_handle_intermediate_relu_layer_no_alloc(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool use_area_heuristic);
-
-void ffn_handle_intermediate_sigmoid_layer_no_alloc(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool use_area_heuristic);
-
-void ffn_handle_intermediate_tanh_layer_no_alloc(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool use_area_heuristic);
-
-void ffn_handle_intermediate_parabola_layer_no_alloc(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool use_area_heuristic);
-
-void ffn_handle_intermediate_log_layer_no_alloc(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool use_area_heuristic);
 
 void fppoly_fprint(FILE* stream, elina_manager_t* man, fppoly_t* fp, char** name_of_dim);
 
-void ffn_handle_last_relu_layer(elina_manager_t *man,
-                                elina_abstract0_t *element, double **weights,
-                                double *bias, size_t num_out_neurons,
-                                size_t num_in_neurons, size_t *predecessors,
-                                bool has_relu, bool use_area_heuristic);
-
-void ffn_handle_last_sigmoid_layer(elina_manager_t *man,
-                                   elina_abstract0_t *element, double **weights,
-                                   double *bias, size_t num_out_neurons,
-                                   size_t num_in_neurons, size_t *predecessors,
-                                   bool has_sigmoid, bool use_area_heuristic);
-
-void ffn_handle_last_tanh_layer(elina_manager_t *man,
-                                elina_abstract0_t *element, double **weights,
-                                double *bias, size_t num_out_neurons,
-                                size_t num_in_neurons, size_t *predecessors,
-                                bool has_tanh, bool use_area_heuristic);
-
-void ffn_handle_last_parabola_layer(elina_manager_t *man,
-                                    elina_abstract0_t *element,
-                                    double **weights, double *bias,
-                                    size_t num_out_neurons,
-                                    size_t num_in_neurons, size_t *predecessors,
-                                    bool has_parabola, bool use_area_heuristic);
-
-void ffn_handle_last_log_layer(elina_manager_t *man, elina_abstract0_t *element,
-                               double **weights, double *bias,
-                               size_t num_out_neurons, size_t num_in_neurons,
-                               size_t *predecessors, bool has_log,
-                               bool use_area_heuristic);
-
-void ffn_handle_last_relu_layer_no_alloc(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool has_relu, bool use_area_heuristic);
-
-void ffn_handle_last_sigmoid_layer_no_alloc(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool has_sigmoid, bool use_area_heuristic);
-
-void ffn_handle_last_tanh_layer_no_alloc(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool has_tanh, bool use_area_heuristic);
-
-void ffn_handle_last_parabola_layer_no_alloc(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool has_parabola, bool use_area_heuristic);
-
-void ffn_handle_last_log_layer_no_alloc(
-    elina_manager_t *man, elina_abstract0_t *element, double **weights,
-    double *bias, size_t num_out_neurons, size_t num_in_neurons,
-    size_t *predecessors, bool has_log, bool use_area_heuristic);
 
 void fppoly_free(elina_manager_t *man, fppoly_t *fp);
 
-bool is_greater(elina_manager_t *man, elina_abstract0_t *element, elina_dim_t y,
-                elina_dim_t x, bool use_area_heuristic);
+bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y, elina_dim_t x);
 
-void conv_handle_first_layer(elina_manager_t *man, elina_abstract0_t *element,
-                             double *filter_weights, double *filter_bias,
-                             size_t *input_size, size_t *filter_size,
-                             size_t num_filters, size_t *strides,
-                             size_t *output_size, size_t pad_top,
-                             size_t pad_left, bool has_bias,
-                             size_t *predecessors);
 
-void conv_handle_intermediate_relu_layer(
-    elina_manager_t *man, elina_abstract0_t *element, double *filter_weights,
-    double *filter_bias, size_t *input_size, size_t *filter_size,
-    size_t num_filters, size_t *strides, size_t *output_size, size_t pad_top,
-    size_t pad_left, bool has_bias, size_t *predecessors,
-    bool use_area_heuristic);
 
-void conv_handle_intermediate_affine_layer(
-    elina_manager_t *man, elina_abstract0_t *element, double *filter_weights,
-    double *filter_bias, size_t *input_size, size_t *filter_size,
-    size_t num_filters, size_t *strides, size_t *output_size, size_t pad_top,
-    size_t pad_left, bool has_bias, size_t *predecessors,
-    bool use_area_heuristic);
+void handle_convolutional_layer(elina_manager_t* man, elina_abstract0_t* element, double *filter_weights, double * filter_bias,  
+				         size_t * input_size, size_t *filter_size, size_t num_filters, size_t *strides, size_t *output_size, size_t pad_top, size_t pad_left, bool has_bias, size_t *predecessors, size_t num_predecessors);
+
+/*void conv_handle_intermediate_affine_layer(elina_manager_t* man, elina_abstract0_t* element, double *filter_weights, double * filter_bias,  
+				         size_t * input_size, size_t *filter_size, size_t num_filters, size_t *strides, size_t *output_size, size_t pad_top, size_t pad_left, bool has_bias, size_t *predecessors, bool use_area_heuristic);*/
 
 size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
-                         size_t *pool_size, size_t *input_size, size_t *strides,
-                         size_t dimensionality, size_t pad_top, size_t pad_left,
-                         size_t *output_size, size_t *predecessors,
-                         bool is_maxpool);
+                           size_t *pool_size, size_t *input_size, size_t *strides, size_t pad_top, size_t pad_left, size_t * output_size, size_t *predecessors, size_t num_predecessors, bool is_maxpool);
 
-void create_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, size_t h,
-                       size_t *predecessors);
+void create_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, size_t h, size_t *predecessors, size_t num_predecessors);
 
-void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs,
-                       double **weights, double *bias, size_t d, size_t h,
-                       size_t *predecessors, bool use_area_heuristic);
+void handle_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, double **weights,  double *bias, size_t d, size_t h, size_t *predecessors, size_t num_predecessors);
 
-void fppoly_alloc_first_layer(fppoly_t *fp, size_t size, layertype_t type,
-                              activation_type_t activation);
 
 neuron_t *neuron_alloc(void);
 
@@ -416,24 +211,17 @@ void free_non_lstm_layer_expr(elina_manager_t *man, elina_abstract0_t *abs, size
     
 void update_bounds_for_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno, size_t neuron_no, double lb, double ub);
 
-elina_interval_t *get_bounds_for_linexpr(elina_manager_t *man,
-                                         elina_abstract0_t *element,
-                                         elina_linexpr0_t *linexpr0,
-                                         size_t layerno);
+double get_upper_bound_for_linexpr(elina_manager_t *man,
+                                   elina_abstract0_t *element,
+                                   elina_linexpr0_t *linexpr0, size_t layerno);
 
-void handle_residual_relu_layer(elina_manager_t *man,
-                                elina_abstract0_t *element, size_t num_neurons,
-                                size_t *predecessors, bool use_area_heuristic);
+void handle_residual_layer(elina_manager_t *man, elina_abstract0_t *element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
-void handle_residual_affine_layer(elina_manager_t *man,
-                                  elina_abstract0_t *element,
-                                  size_t num_neurons, size_t *predecessors,
-                                  bool use_area_heuristic);
+//void handle_residual_affine_layer(elina_manager_t *man, elina_abstract0_t *element, size_t num_neurons, size_t *predecessors, bool use_area_heuristic);
 
 fppoly_t* fppoly_of_abstract0(elina_abstract0_t* a);
 
-void fppoly_add_new_layer(fppoly_t *fp, size_t size, layertype_t type,
-                          activation_type_t activation);
+void fppoly_add_new_layer(fppoly_t *fp, size_t size, size_t *predecessors, size_t num_predecessors, bool is_activation);
 
 #ifdef __cplusplus
  }

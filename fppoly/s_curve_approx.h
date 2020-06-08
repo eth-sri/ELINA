@@ -29,38 +29,17 @@ extern "C" {
 
 #include "backsubstitute.h"
 
-expr_t *uexpr_replace_sigmoid_bounds(fppoly_internal_t *pr, expr_t *expr,
-                                     neuron_t **neurons);
+void handle_sigmoid_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
-expr_t *lexpr_replace_sigmoid_bounds(fppoly_internal_t *pr, expr_t *expr,
-                                     neuron_t **neurons);
-
-expr_t *lexpr_replace_tanh_bounds(fppoly_internal_t *pr, expr_t *expr,
-                                  neuron_t **neurons);
-
-expr_t *uexpr_replace_tanh_bounds(fppoly_internal_t *pr, expr_t *expr,
-                                  neuron_t **neurons);
-
-void compute_slope_and_intercept_s_curve_lexpr(
-    fppoly_internal_t *pr, double *slope_inf, double *slope_sup,
-    double *intercept_inf, double *intercept_sup, double inf_coeff,
-    double sup_coeff, double lb, double ub, bool is_sigmoid, bool *boxify);
-
-void compute_slope_and_intercept_s_curve_uexpr(
-    fppoly_internal_t *pr, double *slope_inf, double *slope_sup,
-    double *intercept_inf, double *intercept_sup, double inf_coeff,
-    double sup_coeff, double lb, double ub, bool is_sigmoid, bool *boxify);
+void handle_tanh_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
 double apply_sigmoid_lexpr(fppoly_internal_t *pr, expr_t **lexpr_p, neuron_t * neuron);
 
-double apply_sigmoid_uexpr(fppoly_internal_t *pr, expr_t **lexpr_p,
-                           neuron_t *neuron);
+double apply_tanh_lexpr(fppoly_internal_t *pr, expr_t **lexpr_p, neuron_t * neuron);
 
-double apply_tanh_lexpr(fppoly_internal_t *pr, expr_t **lexpr_p,
-                        neuron_t *neuron);
+double apply_sigmoid_uexpr(fppoly_internal_t *pr, expr_t **uexpr_p, neuron_t * neuron);
 
-double apply_tanh_uexpr(fppoly_internal_t *pr, expr_t **lexpr_p,
-                        neuron_t *neuron);
+double apply_tanh_uexpr(fppoly_internal_t *pr, expr_t **uexpr_p, neuron_t * neuron);
 
 #ifdef __cplusplus
  }

@@ -1,175 +1,60 @@
 #include "parabola_approx.h"
 
-expr_t *lexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
-                                      neuron_t **neurons) {
-  size_t num_neurons = expr->size;
-  size_t i, k;
-  expr_t *res = alloc_expr();
-  res->inf_coeff = (double *)malloc(num_neurons * sizeof(double));
-  res->sup_coeff = (double *)malloc(num_neurons * sizeof(double));
-  res->inf_cst = expr->inf_cst;
-  res->sup_cst = expr->sup_cst;
-  res->type = expr->type;
-  res->size = num_neurons;
+expr_t * create_parabola_expr(fppoly_internal_t *pr, neuron_t * out_neuron, neuron_t *in_neuron, size_t i, bool is_lower){
+	expr_t * res = alloc_expr();
+	res->inf_coeff = (double *)malloc(sizeof(double));
+	res->sup_coeff = (double *)malloc(sizeof(double));
+	res->inf_cst = 0.0;
+	res->sup_cst = 0.0;
+	res->type = SPARSE;
+	res->size = 1;  
+	res->dim = (size_t*)malloc(sizeof(size_t));
+	res->dim[0] = i;
+	
+	double lb = in_neuron->lb;
+	double ub = in_neuron->ub;
+	double u_plus_l_sup = (ub-lb);
+        double u_plus_l_inf = -(ub-lb);
+        //= (u_plus_l)*(u_plus_l)
+	if(!is_lower){
+            double lu_sup;
+            double lu_inf;
+            out_neuron->ub = ub*ub;
+            elina_double_interval_mul_cst_coeff(pr,&lu_inf,&lu_sup,lb,-lb,-ub,ub);
+            res->inf_coeff[0] = u_plus_l_inf;
+            res->sup_coeff[0] = u_plus_l_sup;
+	    res->inf_cst = lu_inf;
+	    res->sup_cst = lu_sup;
+	}
+	else{
+	    res->inf_coeff[0] = 4*lb;
+	    res->sup_coeff[0] = -4*lb;
+	    res->inf_cst = 4*lb*lb;
+	    res->sup_cst = -4*lb*lb;
+	    if(lb>0){
+	    	out_neuron->lb = 0;
+	    }
+	    else{
+	    	out_neuron->lb = -lb*lb;
+	    }
+	}
 
-  for (i = 0; i < num_neurons; i++) {
-    if (expr->type == DENSE) {
-      k = i;
-    } else {
-      k = expr->dim[i];
-    }
-    neuron_t *neuron_k = neurons[k];
-    double lb = neurons[k]->lb;
-    double ub = neurons[k]->ub;
-    res->inf_coeff[i] = 0.0;
-    res->sup_coeff[i] = 0.0;
-    if ((expr->sup_coeff[i] == 0) && (expr->inf_coeff[i] == 0)) {
-      continue;
-    }
-    double u_plus_l_sup = (ub - lb);
-    double u_plus_l_inf = -(ub - lb);
-
-    //= (u_plus_l)*(u_plus_l)
-    if (expr->sup_coeff[i] < 0) {
-
-      double lu_sup;
-      double lu_inf;
-      elina_double_interval_mul_cst_coeff(pr, &lu_inf, &lu_sup, lb, -lb, -ub,
-                                          ub);
-      // res->coeff[i] = lambda*expr->coeff[i];
-      // res->cst = res->cst + expr->coeff[i]*mu;
-      elina_double_interval_mul_expr_coeff(
-          pr, &res->inf_coeff[i], &res->sup_coeff[i], u_plus_l_inf,
-          u_plus_l_sup, expr->inf_coeff[i], expr->sup_coeff[i]);
-      double tmp1, tmp2;
-      elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, lu_inf, lu_sup,
-                                          expr->inf_coeff[i],
-                                          expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
-      res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
-    } else if (expr->inf_coeff[i] < 0) {
-      res->inf_coeff[i] = 0;
-      res->sup_coeff[i] = 0;
-      // double u_plus_l_sq_inf, u_plus_l_sq_sup;
-      // u_plus_l_sq_inf = u_plus_l_inf/2;
-      // u_plus_l_sq_sup = u_plus_l_sup/2;
-      // elina_double_interval_mul_cst_coeff(pr,&u_plus_l_sq_inf,&u_plus_l_sq_sup,u_plus_l_inf/2,u_plus_l_sup/2,u_plus_l_inf/2,u_plus_l_sup/2);
-      // elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],u_plus_l_inf,u_plus_l_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
-      // double tmp1, tmp2;
-      // elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,-u_plus_l_sq_inf,-u_plus_l_sq_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
-      double tmp1, tmp2;
-      elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                expr->sup_coeff[i], -lb * lb, lb * lb);
-      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
-      res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
-    } else {
-      res->inf_coeff[i] = 0.0;
-      res->sup_coeff[i] = 0.0;
-
-      double tmp1, tmp2;
-      if (lb * lb < ub * ub) {
-        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                  expr->sup_coeff[i], -lb * lb, ub * ub);
-      } else {
-        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                  expr->sup_coeff[i], -ub * ub, lb * lb);
-      }
-      res->inf_cst = res->inf_cst + tmp1;
-      res->sup_cst = res->sup_cst + tmp2;
-    }
-  }
-  if (expr->type == SPARSE) {
-    res->dim = (size_t *)malloc(num_neurons * sizeof(size_t));
-    for (i = 0; i < num_neurons; i++) {
-      res->dim[i] = expr->dim[i];
-    }
-  }
-  return res;
+	return res;
 }
 
-expr_t *uexpr_replace_parabola_bounds(fppoly_internal_t *pr, expr_t *expr,
-                                      neuron_t **neurons) {
-  size_t num_neurons = expr->size;
-  size_t i, k;
-  expr_t *res = alloc_expr();
-  res->inf_coeff = (double *)malloc(num_neurons * sizeof(double));
-  res->sup_coeff = (double *)malloc(num_neurons * sizeof(double));
-  res->inf_cst = expr->inf_cst;
-  res->sup_cst = expr->sup_cst;
-  res->type = expr->type;
-  res->size = num_neurons;
-  for (i = 0; i < num_neurons; i++) {
-    if (expr->type == DENSE) {
-      k = i;
-    } else {
-      k = expr->dim[i];
-    }
-    neuron_t *neuron_k = neurons[k];
-    double lb = neurons[k]->lb;
-    double ub = neurons[k]->ub;
-    res->inf_coeff[i] = 0.0;
-    res->sup_coeff[i] = 0.0;
-    if ((expr->sup_coeff[i] == 0) && (expr->inf_coeff[i] == 0)) {
-      continue;
-    }
-    double u_plus_l_sup = (ub - lb);
-    double u_plus_l_inf = -(ub - lb);
-
-    //= (u_plus_l)*(u_plus_l)
-    if (expr->inf_coeff[i] < 0) {
-
-      double lu_sup;
-      double lu_inf;
-      elina_double_interval_mul_cst_coeff(pr, &lu_inf, &lu_sup, lb, -lb, -ub,
-                                          ub);
-      // res->coeff[i] = lambda*expr->coeff[i];
-      // res->cst = res->cst + expr->coeff[i]*mu;
-      elina_double_interval_mul_expr_coeff(
-          pr, &res->inf_coeff[i], &res->sup_coeff[i], u_plus_l_inf,
-          u_plus_l_sup, expr->inf_coeff[i], expr->sup_coeff[i]);
-      double tmp1, tmp2;
-      elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, lu_inf, lu_sup,
-                                          expr->inf_coeff[i],
-                                          expr->sup_coeff[i]);
-      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
-      res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
-    } else if (expr->sup_coeff[i] < 0) {
-      res->inf_coeff[i] = 0;
-      res->sup_coeff[i] = 0;
-      // double u_plus_l_sq_inf, u_plus_l_sq_sup;
-      // u_plus_l_sq_inf = u_plus_l_inf/2;
-      // u_plus_l_sq_sup = u_plus_l_sup/2;
-      // elina_double_interval_mul_cst_coeff(pr,&u_plus_l_sq_inf,&u_plus_l_sq_sup,u_plus_l_inf/2,u_plus_l_sup/2,u_plus_l_inf/2,u_plus_l_sup/2);
-      // elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],u_plus_l_inf,u_plus_l_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
-
-      double tmp1, tmp2;
-      elina_double_interval_mul_cst_coeff(pr, &tmp1, &tmp2, -lb * lb, lb * lb,
-                                          expr->inf_coeff[i],
-                                          expr->sup_coeff[i]);
-      // double tmp =lb*lb;
-      res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
-      res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
-    } else {
-      res->inf_coeff[i] = 0.0;
-      res->sup_coeff[i] = 0.0;
-      double tmp1, tmp2;
-      if (lb * lb < ub * ub) {
-        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                  expr->sup_coeff[i], -lb * lb, ub * ub);
-      } else {
-        elina_double_interval_mul(&tmp1, &tmp2, expr->inf_coeff[i],
-                                  expr->sup_coeff[i], -ub * ub, lb * lb);
-      }
-      res->inf_cst = res->inf_cst + tmp2;
-      res->sup_cst = res->sup_cst + tmp2;
-    }
-  }
-
-  if (expr->type == SPARSE) {
-    res->dim = (size_t *)malloc(num_neurons * sizeof(size_t));
-    for (i = 0; i < num_neurons; i++) {
-      res->dim[i] = expr->dim[i];
-    }
-  }
-  return res;
+void handle_parabola_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors){
+	assert(num_predecessors==1);
+	fppoly_t *fp = fppoly_of_abstract0(element);
+	fppoly_internal_t *pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
+	size_t numlayers = fp->numlayers;
+	fppoly_add_new_layer(fp, num_neurons, predecessors, num_predecessors, true);
+	neuron_t **out_neurons = fp->layers[numlayers]->neurons;
+	int k = predecessors[0]-1;
+	neuron_t **in_neurons = fp->layers[k]->neurons;
+	size_t i;
+	for(i=0; i < num_neurons; i++){
+		out_neurons[i]->lexpr = create_parabola_expr(pr, out_neurons[i], in_neurons[i], i, true);
+		out_neurons[i]->uexpr = create_parabola_expr(pr, out_neurons[i], in_neurons[i], i, false);
+	}
 }
+

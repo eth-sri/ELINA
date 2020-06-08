@@ -29,17 +29,7 @@ extern "C" {
 
 #include "backsubstitute.h"
 
-expr_t *lexpr_replace_relu_bounds(fppoly_internal_t *pr, expr_t *expr,
-                                  neuron_t **neurons, bool use_area_heuristic);
-
-expr_t *uexpr_replace_relu_bounds(fppoly_internal_t *pr, expr_t *expr,
-                                  neuron_t **neurons, bool use_area_heuristic);
-
-double apply_relu_lexpr(fppoly_internal_t *pr, expr_t **lexpr_p,
-                        neuron_t *neuron);
-
-double apply_relu_uexpr(fppoly_internal_t *pr, expr_t **lexpr_p,
-                        neuron_t *neuron);
+void handle_relu_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristics);
 
 #ifdef __cplusplus
  }

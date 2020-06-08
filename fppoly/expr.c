@@ -410,6 +410,8 @@ void add_expr(fppoly_internal_t *pr,expr_t * exprA, expr_t * exprB){
 		exprA->sup_cst += exprB->sup_cst  + (maxA + maxB)*pr->ulp + pr->min_denormal;
 		if(exprA->type==DENSE){
 			if(exprB->type==DENSE){
+				//printf("AA\n");
+				//fflush(stdout);
 				for(i=0; i < sizeB; i++){
 					maxA = fmax(fabs(exprA->inf_coeff[i]),fabs(exprA->sup_coeff[i]));
 					maxB = fmax(fabs(exprB->inf_coeff[i]),fabs(exprB->sup_coeff[i]));
@@ -418,8 +420,9 @@ void add_expr(fppoly_internal_t *pr,expr_t * exprA, expr_t * exprB){
 				}
 			}
 			else{
-
-                                size_t k = 0;
+				//printf("AB\n");	
+				//fflush(stdout);
+				size_t k = 0;
 				for(i=0; i < sizeA; i++){
 					if(k < sizeB && exprB->dim[k]==i){
 						maxA = fmax(fabs(exprA->inf_coeff[i]),fabs(exprA->sup_coeff[i]));
@@ -437,8 +440,9 @@ void add_expr(fppoly_internal_t *pr,expr_t * exprA, expr_t * exprB){
 			double * new_inf_coeff;
 			double * new_sup_coeff;
 			if(exprB->type==DENSE){
-
-                                i=0;
+				//printf("BB\n");
+				//fflush(stdout);
+				i=0;
 				new_inf_coeff = (double *)malloc(sizeB*sizeof(double));
 				new_sup_coeff = (double *)malloc(sizeB*sizeof(double));				
 				for(k=0; k < sizeB; k++){
@@ -460,6 +464,8 @@ void add_expr(fppoly_internal_t *pr,expr_t * exprA, expr_t * exprB){
 				exprA->dim = NULL;
 			}
 			else{
+				//printf("BC %zu %zu\n",exprA->size, exprB->size);
+				//fflush(stdout);
 				i=0;
 				k=0;
 				size_t l = 0;
@@ -538,3 +544,249 @@ void add_expr(fppoly_internal_t *pr,expr_t * exprA, expr_t * exprB){
 		}
 	}
 }
+
+expr_t * expr_replace_bounds_affine(fppoly_internal_t *pr, expr_t * expr, neuron_t ** neurons, bool is_lower){
+	if(expr->size==0){
+		return copy_cst_expr(expr);
+	}	
+	if(expr->inf_coeff==NULL || expr->sup_coeff==NULL ){
+		return alloc_expr();
+	}
+	
+	size_t num_neurons = expr->size;
+	size_t i,k;
+	expr_t * res;
+	if(expr->type==DENSE){
+		k = 0;
+	}
+	else{
+		k = expr->dim[0];		
+	}
+		
+	expr_t * mul_expr = NULL;
+	neuron_t * neuron_k = neurons[k];
+	if(is_lower){
+		if(expr->sup_coeff[0] < 0){
+			mul_expr = neuron_k->uexpr;
+		}
+		else if(expr->inf_coeff[0]<0){
+			mul_expr = neuron_k->lexpr;
+		}
+	}
+	else{
+		if(expr->sup_coeff[0] < 0){
+			mul_expr = neuron_k->lexpr;
+		}
+		else if(expr->inf_coeff[0]<0){
+			mul_expr = neuron_k->uexpr;
+		}
+	}	
+	
+	if(mul_expr==NULL){
+		
+		double tmp1=0.0, tmp2=0.0;
+		if(expr->inf_coeff[0]!=0 || expr->sup_coeff[0]!=0){
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,neuron_k->lb,neuron_k->ub,expr->inf_coeff[0],expr->sup_coeff[0]);
+		}
+		double coeff[1];
+		size_t dim[1];
+		coeff[0] = 0;
+		dim[0] = 0;
+		if(is_lower){
+			res = create_sparse_expr(coeff,-tmp1,dim,1);
+		}
+		else{
+			res = create_sparse_expr(coeff,tmp2,dim,1);
+		}
+	}
+	else if(mul_expr->size==0){
+			
+		res = multiply_cst_expr(pr,mul_expr,expr->inf_coeff[0],expr->sup_coeff[0]);
+			
+	}
+	else{
+			
+		res = multiply_expr(pr,mul_expr,expr->inf_coeff[0],expr->sup_coeff[0]);
+	}
+    	
+	for(i=1; i < num_neurons; i++){
+		if(expr->type==DENSE){
+			k = i;
+		}
+		else{
+			k = expr->dim[i];
+		}
+		neuron_k = neurons[k];
+		mul_expr = NULL;
+		if(is_lower){
+			if(expr->sup_coeff[i] < 0){
+				mul_expr = neuron_k->uexpr;
+			}
+			else if(expr->inf_coeff[i]<0){
+				mul_expr = neuron_k->lexpr;
+			}
+		}
+		else{
+			if(expr->sup_coeff[i] < 0){
+				mul_expr = neuron_k->lexpr;
+			}
+			else if(expr->inf_coeff[i]<0){
+				mul_expr = neuron_k->uexpr;
+			}
+		}
+		if(expr->sup_coeff[i]==0 && expr->inf_coeff[i]==0){
+			continue;
+		}
+		expr_t * tmp_mul_expr = NULL;
+		if(expr->sup_coeff[i] < 0 || expr->inf_coeff[i]<0){
+			if(mul_expr->size==0){
+				tmp_mul_expr = multiply_cst_expr(pr,mul_expr, expr->inf_coeff[i],expr->sup_coeff[i]);
+				add_cst_expr(pr,res,tmp_mul_expr);
+				free_expr(tmp_mul_expr);
+			}
+			else{
+				tmp_mul_expr = multiply_expr(pr, mul_expr, expr->inf_coeff[i],expr->sup_coeff[i]);
+				
+				add_expr(pr,res,tmp_mul_expr);
+				free_expr(tmp_mul_expr);
+				
+			}
+		}
+		else{
+			//printf("WTF2 %g %g\n",expr->inf_coeff[i],expr->sup_coeff[i]);
+			//fflush(stdout);
+			double tmp1, tmp2;
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,neuron_k->lb,neuron_k->ub,expr->inf_coeff[i],expr->sup_coeff[i]);
+			if(is_lower){
+				res->inf_cst = res->inf_cst + tmp1;
+				res->sup_cst = res->sup_cst - tmp1;
+			}
+			else{
+				res->inf_cst = res->inf_cst - tmp2;
+				res->sup_cst = res->sup_cst + tmp2;
+			}
+		}
+		
+	}
+	res->inf_cst = res->inf_cst + expr->inf_cst; 
+	res->sup_cst = res->sup_cst + expr->sup_cst; 
+	return res;
+}
+
+expr_t * lexpr_replace_bounds_affine(fppoly_internal_t *pr, expr_t * expr, neuron_t ** neurons){
+	return expr_replace_bounds_affine(pr, expr, neurons, true);
+}
+
+expr_t * uexpr_replace_bounds_affine(fppoly_internal_t *pr, expr_t * expr, neuron_t ** neurons){
+	return expr_replace_bounds_affine(pr, expr, neurons, false);
+}
+
+expr_t * expr_replace_bounds_activation(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons, bool is_lower){
+	size_t num_neurons = expr->size;
+	size_t i,k;
+	expr_t * res = alloc_expr();  
+	res->inf_coeff = (double *)malloc(num_neurons*sizeof(double));
+	res->sup_coeff = (double *)malloc(num_neurons*sizeof(double));
+	res->inf_cst = expr->inf_cst;
+	res->sup_cst = expr->sup_cst;
+	res->type = expr->type;
+	res->size = num_neurons;  
+
+	for(i = 0; i < num_neurons; i++){
+		if(expr->type==DENSE){
+			k = i;
+		}
+		else{
+			k = expr->dim[i];
+		}
+		neuron_t *neuron_k = neurons[k];
+		
+		if((expr->sup_coeff[i]==0) && (expr->inf_coeff[i]==0)){
+			res->inf_coeff[i] = 0.0;
+			res->sup_coeff[i] = 0.0;
+			continue;
+		}
+		expr_t * mul_expr = NULL;
+		if(is_lower){
+			if(expr->sup_coeff[i] < 0){
+				mul_expr = neuron_k->uexpr;
+			}
+			else if(expr->inf_coeff[i]<0){
+				mul_expr = neuron_k->lexpr;
+			}
+		}
+		else{
+			if(expr->sup_coeff[i] < 0){
+				mul_expr = neuron_k->lexpr;
+			}
+			else if(expr->inf_coeff[i]<0){
+				mul_expr = neuron_k->uexpr;
+			}
+		}
+		if(expr->sup_coeff[i]<0 || expr->inf_coeff[i] < 0){
+			double lambda_inf = mul_expr->inf_coeff[0];
+			double lambda_sup = mul_expr->sup_coeff[0];
+			double mu_inf = mul_expr->inf_cst;
+			double mu_sup = mul_expr->sup_cst;
+			//res->coeff[i] = lambda*expr->coeff[i];
+			//res->cst = res->cst + expr->coeff[i]*mu;
+			elina_double_interval_mul_expr_coeff(pr,&res->inf_coeff[i],&res->sup_coeff[i],lambda_inf,lambda_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			double tmp1, tmp2;
+			elina_double_interval_mul_cst_coeff(pr,&tmp1,&tmp2,mu_inf,mu_sup,expr->inf_coeff[i],expr->sup_coeff[i]);
+			res->inf_cst = res->inf_cst + tmp1 + pr->min_denormal;
+			res->sup_cst = res->sup_cst + tmp2 + pr->min_denormal;
+			
+		}
+		else{
+			res->inf_coeff[i] = 0.0;
+			res->sup_coeff[i] = 0.0;
+			double tmp1, tmp2;
+			elina_double_interval_mul_expr_coeff(pr, &tmp1,&tmp2, neuron_k->lb, neuron_k->ub, expr->inf_coeff[i],expr->sup_coeff[i]);
+			if(is_lower){
+				res->inf_cst = res->inf_cst + tmp1;
+				res->sup_cst = res->sup_cst - tmp1;
+			}
+			else{
+				res->inf_cst = res->inf_cst - tmp2;
+				res->sup_cst = res->sup_cst + tmp2;
+			}
+			
+		}
+	}
+	if(expr->type==SPARSE){
+		res->dim = (size_t*)malloc(num_neurons*sizeof(size_t));
+		for(i=0; i < num_neurons; i++){
+			res->dim[i] = expr->dim[i];
+		}
+	}
+	
+	return res;
+}
+
+expr_t * lexpr_replace_bounds_activation(fppoly_internal_t *pr, expr_t * expr, neuron_t ** neurons){
+	return expr_replace_bounds_activation(pr, expr, neurons, true);
+}
+
+expr_t * uexpr_replace_bounds_activation(fppoly_internal_t *pr, expr_t * expr, neuron_t ** neurons){
+	return expr_replace_bounds_activation(pr, expr, neurons, false);
+}
+
+
+expr_t * lexpr_replace_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons, bool is_activation){
+	if(is_activation){
+		return lexpr_replace_bounds_activation(pr, expr, neurons);
+	}
+	else{
+		return lexpr_replace_bounds_affine(pr, expr, neurons);
+	}
+}
+
+expr_t * uexpr_replace_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons, bool is_activation){
+	if(is_activation){
+		return uexpr_replace_bounds_activation(pr, expr, neurons);
+	}
+	else{
+		return uexpr_replace_bounds_affine(pr, expr, neurons);
+	}
+}
+
