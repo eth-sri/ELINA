@@ -787,3 +787,44 @@ void update_bounds_for_neuron(elina_manager_t *man, elina_abstract0_t *abs, size
 	neuron->ub = ub;
 }
 
+void update_relu_upper_bound_for_neuron(elina_manager_t *man,
+                                        elina_abstract0_t *abs, size_t layerno,
+                                        size_t neuron_no, double *coeff,
+                                        size_t *dim, size_t size) {
+  fppoly_t *fp = fppoly_of_abstract0(abs);
+  if (layerno >= fp->numlayers) {
+    fprintf(stdout, "the layer does not exist\n");
+    return;
+  }
+  if (!fp->layers[layerno]->is_activation) {
+    fprintf(stdout, "the layer is not an activation layer\n");
+    return;
+  }
+  layer_t *layer = fp->layers[layerno];
+  neuron_t *neuron = layer->neurons[neuron_no];
+  free_expr(neuron->uexpr);
+  neuron->uexpr = NULL;
+  neuron->uexpr = create_sparse_expr(coeff + 1, coeff[0], dim, size);
+  sort_sparse_expr(neuron->uexpr);
+}
+
+void update_relu_lower_bound_for_neuron(elina_manager_t *man,
+                                        elina_abstract0_t *abs, size_t layerno,
+                                        size_t neuron_no, double *coeff,
+                                        size_t *dim, size_t size) {
+  fppoly_t *fp = fppoly_of_abstract0(abs);
+  if (layerno >= fp->numlayers) {
+    fprintf(stdout, "the layer does not exist\n");
+    return;
+  }
+  if (!fp->layers[layerno]->is_activation) {
+    fprintf(stdout, "the layer is not an activation layer\n");
+    return;
+  }
+  layer_t *layer = fp->layers[layerno];
+  neuron_t *neuron = layer->neurons[neuron_no];
+  free_expr(neuron->lexpr);
+  neuron->lexpr = NULL;
+  neuron->lexpr = create_sparse_expr(coeff + 1, coeff[0], dim, size);
+  sort_sparse_expr(neuron->lexpr);
+}

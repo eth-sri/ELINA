@@ -223,6 +223,16 @@ fppoly_t* fppoly_of_abstract0(elina_abstract0_t* a);
 
 void fppoly_add_new_layer(fppoly_t *fp, size_t size, size_t *predecessors, size_t num_predecessors, bool is_activation);
 
+void update_relu_upper_bound_for_neuron(elina_manager_t *man,
+                                        elina_abstract0_t *abs, size_t layerno,
+                                        size_t neuron_no, double *coeff,
+                                        size_t *dim, size_t size);
+
+void update_relu_lower_bound_for_neuron(elina_manager_t *man,
+                                        elina_abstract0_t *abs, size_t layerno,
+                                        size_t neuron_no, double *coeff,
+                                        size_t *dim, size_t size);
+
 #ifdef __cplusplus
  }
 #endif
