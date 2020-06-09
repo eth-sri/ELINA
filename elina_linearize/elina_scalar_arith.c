@@ -410,6 +410,9 @@ void elina_scalar_sqrt(elina_scalar_t *up, elina_scalar_t *down, elina_scalar_t 
   if(down!=b){
   	elina_scalar_reinit(down,discr);
   }
+  if(b->discr!=discr){
+  	elina_scalar_convert(b,discr);
+  }
   //elina_scalar_reinit(b,discr);
   if (elina_scalar_infty(b)) {
     elina_scalar_set_infty(up,1);
@@ -549,6 +552,9 @@ void elina_scalar_trunc(elina_scalar_t *a, elina_scalar_t *b, elina_scalar_discr
   if(a!=b){
   	elina_scalar_reinit(a,discr);
   }
+  if(b->discr!=discr){
+  	elina_scalar_convert(b,discr);
+  }
   //elina_scalar_reinit(b,discr);
   if (elina_scalar_infty(b)){
 	 elina_scalar_set_infty(a,elina_scalar_sgn(b));
@@ -592,6 +598,9 @@ void elina_scalar_ceil(elina_scalar_t *a, elina_scalar_t *b, elina_scalar_discr_
 	if(a!=b){
 		elina_scalar_reinit(a,discr);
 	}
+	if(b->discr!=discr){
+  		elina_scalar_convert(b,discr);
+  	}
   	//elina_scalar_reinit(b,discr);
 	 if (elina_scalar_infty(b)){
 	 	elina_scalar_set_infty(a,elina_scalar_sgn(b));
@@ -636,6 +645,9 @@ void elina_scalar_floor(elina_scalar_t *a, elina_scalar_t *b, elina_scalar_discr
 	if(a!=b){
 		elina_scalar_reinit(a,discr);
 	}
+	if(b->discr!=discr){
+  		elina_scalar_convert(b,discr);
+  	}
   	//elina_scalar_reinit(b,discr);
 	 if (elina_scalar_infty(b)){
 	 	elina_scalar_set_infty(a,elina_scalar_sgn(b));
