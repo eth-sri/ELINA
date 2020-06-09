@@ -9,7 +9,7 @@ expr_t * lexpr_unroll_lstm_layer(fppoly_internal_t *pr, expr_t * expr, neuron_t 
 void create_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, size_t h, size_t *predecessors, size_t num_predecessors){
 	fppoly_t *fp = fppoly_of_abstract0(abs);
 	size_t numlayers = fp->numlayers;
-	fppoly_add_new_layer(fp,h, predecessors, num_predecessors);
+	fppoly_add_new_layer(fp,h, predecessors, num_predecessors, false);
 	fp->lstm_index = numlayers;
 }
 
