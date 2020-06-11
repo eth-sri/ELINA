@@ -342,54 +342,108 @@ expr_t * elina_linexpr0_to_expr(elina_linexpr0_t *linexpr0){
 }
 
 
-double get_upper_bound_for_linexpr0(elina_manager_t *man, elina_abstract0_t *element, elina_linexpr0_t *linexpr0, size_t layerno){
+void *get_upper_bound_for_linexpr0_parallel(void *args){
 	
-	elina_interval_t * res = elina_interval_alloc();
-	fppoly_t *fp = fppoly_of_abstract0(element);
+	//elina_interval_t * res = elina_interval_alloc();
+	nn_thread_t * data = (nn_thread_t *)args;
+	elina_manager_t *man = data->man;
+	fppoly_t *fp = data->fp;
     fppoly_internal_t *pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
-    //printf("start %lu\n",layerno);
-    //
-    //fflush(stdout);
-	expr_t * tmp = elina_linexpr0_to_expr(linexpr0);
-    //printf("coming here\n");
-    //fflush(stdout);
-	//double lb = compute_lb_from_expr(pr,tmp,fp,layerno);
-	double ub = compute_ub_from_expr(pr,tmp,fp,layerno);
-      
-    	//	expr_t *expr = NULL;
-	//if(fp->layers[layerno]->num_predecessors==2){
-	//	expr = copy_expr(tmp);
-	//}
-	//else{
-    	//	expr = expr_from_previous_layer(pr,tmp, fp->layers[layerno]);
-	//}
-    //printf("end\n");
-    //fflush(stdout);
-    	//expr_t * lexpr = NULL;
-	expr_t * uexpr = NULL;
-	if(fp->layers[layerno]->num_predecessors==2){
-	//	lexpr = copy_expr(tmp);
-		uexpr = copy_expr(tmp);
-	}
-	else{
-    	//	lexpr =  lexpr_replace_bounds(pr, tmp, fp->layers[layerno]->neurons, false);
-		uexpr = uexpr_replace_bounds(pr, tmp,fp->layers[layerno]->neurons, false);
-	}
-	//lb = fmin(lb,get_lb_using_previous_layers(man,fp,lexpr,layerno));
+        size_t layerno = data->layerno;
+	size_t idx_start = data->start;
+	size_t idx_end = data->end;
+	elina_linexpr0_t ** linexpr0 = data->linexpr0;
+	double * res = data->res;
+	size_t i;
+	for(i=idx_start; i < idx_end; i++){
+		expr_t * tmp = elina_linexpr0_to_expr(linexpr0[i]);
+		double ub = compute_ub_from_expr(pr,tmp,fp,layerno);
+        	if(linexpr0[i]->size==1){
+			res[i] = ub;
+			continue;
+		}
+		expr_t * uexpr = NULL;
+		if(fp->layers[layerno]->num_predecessors==2){
+			uexpr = copy_expr(tmp);
+		}
+		else{
+			uexpr = uexpr_replace_bounds(pr, tmp,fp->layers[layerno]->neurons, false);
+		}
 	
-	ub = fmin(ub,get_ub_using_previous_layers(man,fp,uexpr,layerno));
+		ub = fmin(ub,get_ub_using_previous_layers(man,fp,uexpr,layerno));
 	
-	//elina_interval_set_double(res,-lb,ub);
-	//free_expr(lexpr);
-	free_expr(uexpr);
-    	free_expr(tmp);
-        //printf("lb: %g ub: %g\n",lb,ub);
-        //fflush(stdout);
-	return ub;
+		free_expr(uexpr);
+    		free_expr(tmp);
+		res[i] = ub;
+	}
+	return NULL;
 }
      
 
+double *get_upper_bound_for_linexpr0(elina_manager_t *man, elina_abstract0_t *element, elina_linexpr0_t **linexpr0, size_t size, size_t layerno){
+	fppoly_t * fp = fppoly_of_abstract0(element);
+	size_t NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
+	nn_thread_t args[NUM_THREADS];
+	pthread_t threads[NUM_THREADS];
+	size_t i;
+	//printf("layerno %zu %zu\n",layerno,fp->layers[layerno]->predecessors[0]-1);
+	//fflush(stdout);
+	double * res = (double *)malloc(size*sizeof(double));
+	if(size < NUM_THREADS){
+		for (i = 0; i < size; i++){
+	    		args[i].start = i;
+	    		args[i].end = i+1;
+			args[i].man = man;
+			args[i].fp = fp;
+			args[i].layerno = layerno;
+			args[i].linexpr0 = linexpr0;
+			args[i].res = res;
+	    		pthread_create(&threads[i], NULL,get_upper_bound_for_linexpr0_parallel, (void*)&args[i]);
 
+	  	}
+		for (i = 0; i < size; i = i + 1){
+			pthread_join(threads[i], NULL);
+		}
+	}
+	else{
+		size_t idx_start = 0;
+		size_t idx_n = size / NUM_THREADS;
+		size_t idx_end = idx_start + idx_n;
+
+
+	  	for (i = 0; i < NUM_THREADS; i++){
+	    		args[i].start = idx_start;
+	    		args[i].end = idx_end;
+			args[i].man = man;
+			args[i].fp = fp;
+			args[i].layerno = layerno;
+			args[i].linexpr0 = linexpr0;
+			args[i].res = res;
+	    		pthread_create(&threads[i], NULL, get_upper_bound_for_linexpr0_parallel, (void*)&args[i]);
+			idx_start = idx_end;
+			idx_end = idx_start + idx_n;
+	    		if(idx_end> size){
+				idx_end = size;
+			}
+			if((i==NUM_THREADS-2)){
+				idx_end = size;
+
+			}
+	  	}
+		//idx_start = idx_end;
+	    	//idx_end = num_out_neurons;
+		//args[i].start = idx_start;
+	    	//args[i].end = idx_end;
+		//args[i].man = man;
+		//args[i].fp = fp;
+		//args[i].layerno = layerno;
+	    	//pthread_create(&threads[i], NULL,update_state_using_previous_layers, (void*)&args[i]);
+		for (i = 0; i < NUM_THREADS; i = i + 1){
+			pthread_join(threads[i], NULL);
+		}
+	}
+	return res;
+}
 
 
 bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y, elina_dim_t x){
