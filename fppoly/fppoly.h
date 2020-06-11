@@ -132,6 +132,8 @@ typedef struct nn_thread_t{
 	elina_manager_t *man;
 	fppoly_t *fp;
 	size_t layerno;
+	elina_linexpr0_t ** linexpr0;
+	double *res;
 }nn_thread_t;
 
 
@@ -211,9 +213,7 @@ void free_non_lstm_layer_expr(elina_manager_t *man, elina_abstract0_t *abs, size
     
 void update_bounds_for_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno, size_t neuron_no, double lb, double ub);
 
-double get_upper_bound_for_linexpr(elina_manager_t *man,
-                                   elina_abstract0_t *element,
-                                   elina_linexpr0_t *linexpr0, size_t layerno);
+double* get_upper_bound_for_linexpr(elina_manager_t *man, elina_abstract0_t *element, elina_linexpr0_t **linexpr0, size_t size, size_t layerno);
 
 void handle_residual_layer(elina_manager_t *man, elina_abstract0_t *element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
