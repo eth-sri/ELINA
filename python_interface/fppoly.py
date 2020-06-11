@@ -783,7 +783,7 @@ def update_bounds_for_neuron(man, element,layerno, neuron_no, lb, ub):
 
 
 
-def get_upper_bound_for_linexpr0(man,element,linexpr0,layerno):
+def get_upper_bound_for_linexpr0(man,element,linexpr0, size, layerno):
     """
     returns bounds for a linexpr0 over neurons in "layerno"
     
@@ -793,28 +793,30 @@ def get_upper_bound_for_linexpr0(man,element,linexpr0,layerno):
         Pointer to the ElinaManager.
     element : ElinaAbstract0Ptr
         Pointer to the ElinaAbstract0.
-    linexpr0 : ElinaLinexpr0Ptr
+    linexpr0 : POINTER(ElinaLinexpr0Ptr)
         Pointer to the Elinalinexpr0
+    size: c_size_t
+        Size of the linexpr0 array
     layerno: c_size_t
         the layer number
     Returns
     -------
-    ub : c_double
-        The upper bound
+    ub : POINTER(c_double)
+        array of upper bounds
 
     """
 
-    interval = None
+    res = None
     try:
         get_upper_bound_for_linexpr0_c = fppoly_api.get_upper_bound_for_linexpr0
-        get_upper_bound_for_linexpr0_c.restype = c_double
-        get_upper_bound_for_linexpr0_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaLinexpr0Ptr, c_size_t]
-        ub = get_upper_bound_for_linexpr0_c(man, element, linexpr0, layerno)
+        get_upper_bound_for_linexpr0_c.restype = POINTER(c_double)
+        get_upper_bound_for_linexpr0_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaLinexpr0Array, c_size_t, c_size_t]
+        res = get_upper_bound_for_linexpr0_c(man, element, linexpr0, size, layerno)
     except:
         print('Problem with loading/calling "get_upper_bound_for_linexpr0" from "fppoly.so"')
         print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, ElinaLinexpr0Ptr, c_size_t to the function')
 
-    return ub
+    return res
     
 
 def get_lexpr_for_output_neuron(man,element,i):
