@@ -50,16 +50,18 @@ LIBS = -L../partitions_api -lpartitions -L$(APRON_PREFIX)/lib -lapron  -L../elin
 INCLUDES = -I$(APRON_PREFIX)/include -I../ -I../apron_interface -I../elina_linearize -I../partitions_api $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
 endif
 
-
 INSTALL = install
 INSTALLd = install -d
 
 SOINST = liboptoct.so
 
+ifeq ($(LAIT), 1)
+OPTOCTH = opt_oct.h opt_oct_internal.h opt_oct_hmat.h $(CLOSUREH) opt_oct_lait.h
+all : liboptoct.so elina_test_oct elina_test_oct_lait
+else
 OPTOCTH = opt_oct.h opt_oct_internal.h opt_oct_hmat.h $(CLOSUREH)
-
 all : liboptoct.so elina_test_oct
-
+endif
 
 opt_oct_closure_comp_sparse.o : opt_oct_closure_comp_sparse.h opt_oct_closure_comp_sparse.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_oct_closure_comp_sparse.o opt_oct_closure_comp_sparse.c $(LIBS)
@@ -102,11 +104,27 @@ opt_oct_representation.o : opt_oct_representation.c
 opt_oct_transfer.o : opt_oct_transfer.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_oct_transfer.o opt_oct_transfer.c $(LIBS) 
 
+ifeq ($(LAIT), 1)
+PYTHON_LIBS = -lpython3.6m -lpthread -ldl -lutil -lm
+
+opt_oct_lait.o : opt_oct_lait.h opt_oct_lait.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o opt_oct_lait.o opt_oct_lait.c $(LIBS) $(PYTHON_LIBS)
+
+liboptoct.so : $(OBJS) opt_oct_lait.o $(OPTOCTH)
+	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) opt_oct_lait.o $(LIBS) $(PYTHON_LIBS)
+
+elina_test_oct : elina_test_oct.c liboptoct.so
+	$(CC) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_test_oct elina_test_oct.c $(LIBS) $(PYTHON_LIBS) -L. -loptoct
+
+elina_test_oct_lait : elina_test_oct_lait.c liboptoct.so
+	$(CC) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_test_oct_lait elina_test_oct_lait.c $(LIBS) $(PYTHON_LIBS) -L. -loptoct
+else
 liboptoct.so : $(OBJS) $(OPTOCTH)
 	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
 elina_test_oct : elina_test_oct.c liboptoct.so
 	$(CC) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o elina_test_oct elina_test_oct.c $(LIBS) -L. -loptoct
+endif
 
 install:
 	$(INSTALLd) $(LIBDIR); \
