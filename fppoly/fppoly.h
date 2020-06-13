@@ -105,12 +105,6 @@ typedef struct layer_t{
 	bool is_activation;
 }layer_t;
 
-typedef struct output_abstract_t {
-  double *output_inf;
-  double *output_sup;
-  expr_t **lexpr;
-  expr_t **uexpr;
-} output_abstract_t;
 
 typedef struct fppoly_t{
 	layer_t ** layers;
@@ -122,7 +116,6 @@ typedef struct fppoly_t{
 	size_t size;
 	size_t num_pixels;
 	size_t lstm_index;
-        output_abstract_t *out;
 }fppoly_t;
 
 
