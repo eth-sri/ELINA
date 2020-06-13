@@ -3,12 +3,16 @@ ETH Library for Numerical Analyis (ELINA) contains optimized implementations of 
 
 The library uses improved algorithms, online decomposition as well as state of the art performance optimizations from linear algebra such as vectorization, locality of reference, scalar replacement etc. to significantly improve the performance of static analysis with the numerical domains.
 
-For more documentation, refer to http://elina.ethz.ch
+For more documentation, refer to http://elina.ethz.ch.
+
+:star:New feature:star:: the learning-based Lait transformer. See more details [here](README_lait.md).
 
 Contributors
 --------------
 
 * [Gagandeep Singh](https://www.sri.inf.ethz.ch/people/gagandeep) (lead contact) - gsingh@inf.ethz.ch
+
+* [Jingxuan He](https://www.sri.inf.ethz.ch/people/jingxuan) (contact for Lait) - jingxuan.he@inf.ethz.ch
 
 * Christoph Müller (contact for GPUPoly) - christoph.mueller@inf.ethz.ch
 
