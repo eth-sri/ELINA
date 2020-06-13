@@ -131,7 +131,6 @@ void fppoly_from_network_input_box(fppoly_t *res, size_t intdim, size_t realdim,
 		res->input_sup[i] = sup_array[i];
 	}
 	res->num_pixels = num_pixels;
-	res->out = NULL;
 }
 
 
@@ -657,27 +656,6 @@ void fppoly_free(elina_manager_t *man, fppoly_t *fp){
 	for(i=0; i < fp->numlayers; i++){
 		layer_free(fp->layers[i]);
 	}
-	if(fp->out!=NULL){
-		for(i=0; i < output_size; i++){
-			if(fp->out->lexpr[i]){
-				free_expr(fp->out->lexpr[i]);
-			}
-			if(fp->out->uexpr[i]){
-				free_expr(fp->out->uexpr[i]);
-			}
-		}
-		 free(fp->out->output_inf);
-        	 fp->out->output_inf = NULL;
-        	 free(fp->out->output_sup);
-        	 fp->out->output_sup = NULL;
-        	 free(fp->out->lexpr);
-        	 fp->out->lexpr = NULL;
-        	 free(fp->out->uexpr);
-        	 fp->out->uexpr = NULL;
-        	 free(fp->out);
-        	 fp->out=NULL;
-
-	}
 	free(fp->layers);
 	fp->layers = NULL;
 	free(fp->input_inf);
@@ -711,12 +689,13 @@ void fppoly_fprint(FILE* stream, elina_manager_t* man, fppoly_t* fp, char** name
 		layer_fprint(stream, fp->layers[i], name_of_dim);
 	}
 	size_t output_size = fp->layers[fp->numlayers-1]->dims;
-	if(fp->out!=NULL){
-		fprintf(stream,"OUTPUT bounds: \n");
-		for(i=0; i < output_size;i++){
-			fprintf(stream,"%zu: [%g,%g] \n",i,-fp->out->output_inf[i],fp->out->output_sup[i]);
-		}
+	size_t numlayers = fp->numlayers;
+	neuron_t **neurons = fp->layers[numlayers-1]->neurons;
+	fprintf(stream,"OUTPUT bounds: \n");
+	for(i=0; i < output_size;i++){
+		fprintf(stream,"%zu: [%g,%g] \n",i,-neurons[i]->lb,neurons[i]->ub);
 	}
+
 }
 
 
@@ -779,10 +758,10 @@ elina_linexpr0_t * get_expr_for_output_neuron(elina_manager_t *man, elina_abstra
 	size_t num_pixels = fp->num_pixels;
 	expr_t * expr = NULL;
 	if(is_lower){
-		expr = fp->out->lexpr[i];
+		expr = fp->layers[fp->numlayers-1]->neurons[i]->lexpr;
 	}
 	else{
-		expr = fp->out->uexpr[i];
+		expr = fp->layers[fp->numlayers-1]->neurons[i]->uexpr;
 	}
 	elina_linexpr0_t * res = NULL;
 	size_t j,k;
