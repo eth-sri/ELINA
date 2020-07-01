@@ -93,8 +93,26 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
                                         	continue;
                                 	}
                                 	else if(inf[j]<=sup[k]){
-                                        	is_greater = false;
-                                        	break;
+                                		expr_t * sub = (expr_t *)malloc(sizeof(expr_t));
+						sub->inf_cst = 0;
+						sub->sup_cst = 0;
+						sub->inf_coeff = (double*)malloc(2*sizeof(double));
+						sub->sup_coeff = (double*)malloc(2*sizeof(double));
+						sub->dim =(size_t *)malloc(2*sizeof(size_t));
+						sub->size = 2;
+						sub->type = SPARSE;
+						sub->inf_coeff[0] = -1;
+						sub->sup_coeff[0] = 1;
+						sub->dim[0] = pool_map[j];
+						sub->inf_coeff[1] = 1;
+						sub->sup_coeff[1] = -1;
+						sub->dim[1] = pool_map[k];
+                                	        double lb = get_lb_using_previous_layers(man, fp, sub, numlayers);
+                                	        free_expr(sub);
+                                	        if(lb>=0){
+                                        		is_greater = false;
+                                        		break;
+                                        	}
                                 	}
                         	}
                         	if(is_greater){
