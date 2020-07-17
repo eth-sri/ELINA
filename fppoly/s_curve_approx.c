@@ -36,7 +36,11 @@ expr_t * create_s_curve_expr(fppoly_internal_t *pr, neuron_t *out_neuron, neuron
 	res->dim[0] = i;
 	double lb = in_neuron->lb;
 	double ub = in_neuron->ub;
-	double slope_inf, slope_sup;
+        if (-lb < 0 && ub > 0) {
+          printf("lb: %g ub: %g\n", -lb, ub);
+          fflush(stdout);
+        }
+        double slope_inf, slope_sup;
 	double intercept_inf, intercept_sup;
 	fesetround(FE_DOWNWARD);
         double e_sup_l = is_sigmoid ? -exp(ub) : -tanh(ub);
@@ -257,7 +261,10 @@ void handle_s_curve_layer(elina_manager_t *man, elina_abstract0_t* element, size
 }
 
 void handle_sigmoid_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors){
-	handle_s_curve_layer(man, element, num_neurons, predecessors, num_predecessors, true);
+  printf("SIGMOID\n");
+  fflush(stdout);
+  handle_s_curve_layer(man, element, num_neurons, predecessors,
+                       num_predecessors, true);
 }
 
 void handle_tanh_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors){
@@ -271,6 +278,7 @@ double apply_s_curve_expr(fppoly_internal_t *pr, expr_t **uexpr_p, neuron_t * ne
 	size_t size = uexpr->size;
 	double lb = neuron->lb;
 	double ub = neuron->ub;
+	
 	neuron_t *tmp_neuron = neuron_alloc();
 	expr_t * res = create_s_curve_expr(pr,tmp_neuron, neuron, 0, is_lower, is_sigmoid);
 	bool boxify = false;
