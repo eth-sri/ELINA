@@ -985,7 +985,7 @@ def free_non_lstm_layer_expr(man,element,layerno):
 
 
 
-def update_relu_upper_bound_for_neuron(man, element,layerno, neuron_no, coeff, dim, size):
+def update_activation_upper_bound_for_neuron(man, element,layerno, neuron_no, coeff, dim, size):
     """
     returns bounds for a neuron in a layer
     
@@ -1011,19 +1011,19 @@ def update_relu_upper_bound_for_neuron(man, element,layerno, neuron_no, coeff, d
 
     
     try:
-        update_relu_upper_bound_for_neuron_c = fppoly_api.update_relu_upper_bound_for_neuron
-        update_relu_upper_bound_for_neuron_c.restype = None
-        update_relu_upper_bound_for_neuron_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), c_size_t]
-        update_relu_upper_bound_for_neuron_c(man, element,layerno, neuron_no, coeff, dim, size)
+        update_activation_upper_bound_for_neuron_c = fppoly_api.update_activation_upper_bound_for_neuron
+        update_activation_upper_bound_for_neuron_c.restype = None
+        update_activation_upper_bound_for_neuron_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), c_size_t]
+        update_activation_upper_bound_for_neuron_c(man, element,layerno, neuron_no, coeff, dim, size)
     except Exception as inst:
         print(inst)
-        print('Problem with loading/calling "update_relu_upper_bound_for_neuron" from "fppoly.so"')
+        print('Problem with loading/calling "update_activation_upper_bound_for_neuron" from "fppoly.so"')
         print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, POINTER(c_double), POINTER(c_size_t), c_size_t to the function')
         
         
-def update_relu_lower_bound_for_neuron(man, element,layerno, neuron_no, coeff, dim, size):
+def update_activation_lower_bound_for_neuron(man, element,layerno, neuron_no, coeff, dim, size):
     """
-    returns bounds for a neuron in a layer
+    update bounds for a neuron in a layer
     
     Parameters
     ----------
@@ -1047,11 +1047,11 @@ def update_relu_lower_bound_for_neuron(man, element,layerno, neuron_no, coeff, d
 
     
     try:
-        update_relu_lower_bound_for_neuron_c = fppoly_api.update_relu_lower_bound_for_neuron
-        update_relu_lower_bound_for_neuron_c.restype = None
-        update_relu_lower_bound_for_neuron_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), c_size_t]
-        update_relu_lower_bound_for_neuron_c(man, element,layerno, neuron_no, coeff, dim, size)
+        update_activation_lower_bound_for_neuron_c = fppoly_api.update_activation_lower_bound_for_neuron
+        update_activation_lower_bound_for_neuron_c.restype = None
+        update_activation_lower_bound_for_neuron_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), c_size_t]
+        update_activation_lower_bound_for_neuron_c(man, element,layerno, neuron_no, coeff, dim, size)
     except Exception as inst:
         print(inst)
-        print('Problem with loading/calling "update_relu_lower_bound_for_neuron" from "fppoly.so"')
+        print('Problem with loading/calling "update_activation_lower_bound_for_neuron" from "fppoly.so"')
         print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t, POINTER(c_double), POINTER(c_size_t), c_size_t to the function')
