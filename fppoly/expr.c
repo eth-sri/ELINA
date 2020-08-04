@@ -775,20 +775,20 @@ expr_t * uexpr_replace_bounds_activation(fppoly_internal_t *pr, expr_t * expr, n
 
 
 expr_t * lexpr_replace_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons, bool is_activation){
-//	if(is_activation){
-//		return lexpr_replace_bounds_activation(pr, expr, neurons);
-//	}
-//	else{
+	if(is_activation){
+		return lexpr_replace_bounds_activation(pr, expr, neurons);
+	}
+	else{
 		return lexpr_replace_bounds_affine(pr, expr, neurons);
-//	}
+	}
 }
 
 expr_t * uexpr_replace_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons, bool is_activation){
-//	if(is_activation){
-//		return uexpr_replace_bounds_activation(pr, expr, neurons);
-//	}
-//	else{
+	if(is_activation){
+		return uexpr_replace_bounds_activation(pr, expr, neurons);
+	}
+	else{
 		return uexpr_replace_bounds_affine(pr, expr, neurons);
-//	}
+	}
 }
 
