@@ -37,10 +37,7 @@ expr_t * create_s_curve_expr(fppoly_internal_t *pr, neuron_t *out_neuron, neuron
 	res->dim[0] = i;
 	double lb = in_neuron->lb;
 	double ub = in_neuron->ub;
-	if (-lb < 0 && ub> 0){
-		printf("lb: %g ub: %g\n", -lb,ub);
-		fflush(stdout);
-	}
+	
 	double slope_inf, slope_sup;
 	double intercept_inf, intercept_sup;
 	fesetround(FE_DOWNWARD);
