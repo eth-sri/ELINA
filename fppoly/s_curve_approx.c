@@ -254,8 +254,6 @@ void handle_s_curve_layer(elina_manager_t *man, elina_abstract0_t* element, size
 }
 
 void handle_sigmoid_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors){
-        printf("SIGMOID\n");
-        fflush(stdout);
 	handle_s_curve_layer(man, element, num_neurons, predecessors, num_predecessors, true);
 }
 
