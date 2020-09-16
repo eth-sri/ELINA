@@ -198,9 +198,12 @@ def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array,
 
     except Exception as inst:
         print('Problem with loading/calling "fppoly_from_network_input_poly" from "libfppoly.so"')
-        print(inst)
+        print(inst)   
 
     return res
+
+
+
 
 
 def handle_fully_connected_layer(man, element,weights, bias,  size, num_pixels, predecessors, num_predecessors):
