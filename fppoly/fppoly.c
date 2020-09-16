@@ -204,6 +204,7 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man,
     return abstract0_of_fppoly(man,res);	
 }
 
+
 void fppoly_add_new_layer(fppoly_t *fp, size_t size, size_t *predecessors, size_t num_predecessors, bool is_activation){
 	size_t numlayers = fp->numlayers;
 	if(fp->numlayers==0){
