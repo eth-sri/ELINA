@@ -29,6 +29,7 @@ where options include:
   -use-opam            use opam to install ELINA
   -no-warn-overflow    Silence all output relating to sound overflow
   -use-cuda            compile gpu version of DeepPoly
+  -use-gurobi          use gurobi for spatial constraints
 
 Environment variables that affect configuration:
   CC                   C compiler to use (default: gcc)
@@ -61,6 +62,7 @@ has_apron=0
 has_vector=0
 has_cdd=0
 has_cuda=0
+use_gurobi=0
 extra_elina_options=""
 force_absolute_dylib_install_names=0;
 while : ; do
@@ -105,6 +107,8 @@ while : ; do
 	 has_cdd=1;;
         -use-cuda|--use-cuda)
          has_cuda=1;;
+        -use-gurobi|--use-gurobi)
+         use_gurobi=1;;
         -use-opam|--use-opam)
             has_ocaml=1
             has_ocamlfind=1
@@ -502,6 +506,7 @@ if test "$has_apron" -eq 0; then has_apron=; else has_apron=-DHAS_APRON; fi
 if test "$has_vector" -eq 0; then is_vector=; else is_vector=-DVECTOR; fi
 if test "$has_cdd" -eq 0; then has_cdd=; else has_cdd=-DHAS_CDD; fi
 if test "$has_cuda" -eq 0; then is_cuda=; else is_cuda=-DCUDA; fi
+if test "$use_gurobi" -eq 0; then use_gurobi=; fi
 if test "$use_opam" -eq 0; then use_opam=; fi
 
 cat > Makefile.config <<EOF
@@ -528,6 +533,8 @@ HAS_CDD = $has_cdd
 # if defined to VECTOR, compile GPUPoly (the GPU version of DeepPoly)
 IS_CUDA = $is_cuda
 
+# if defined, compile with Gurobi library
+USE_GUROBI = $use_gurobi
 
 ELINA_PREFIX = $elina_prefix
 APRON_PREFIX = $apron_prefix

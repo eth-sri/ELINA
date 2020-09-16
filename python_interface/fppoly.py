@@ -129,7 +129,10 @@ def fppoly_set_network_input_box(man, element, intdim, realdim, inf_array, sup_a
 
     return res
 
-def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array, lexpr_weights, lexpr_cst, lexpr_dim,  uexpr_weights, uexpr_cst, uexpr_dim, expr_size):
+def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array,
+        lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst,
+        uexpr_dim, expr_size, spatial_indices, spatial_neighbors, spatial_size,
+        spatial_gamma):
     """
     Create an abstract element from perturbed input
     
@@ -159,6 +162,14 @@ def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array, l
         the indexes of the variables in the upper polyhedra constraints
     expr_size: c_size_t
         size of the polyhedra constraints
+    spatial_indices: POINTER(c_size_t)
+        vector field indices
+    spatial_neighbors: POINTER(c_size_t)
+        neighboring vector field indices
+    spatial_size: c_size_t
+        number of spatial constraints
+    spatial_gamma: double
+        flow constraint parameter
     Returns
     -------
     res: ElinaAbstract0Ptr
@@ -170,8 +181,21 @@ def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array, l
     try:
         fppoly_from_network_input_poly_c = fppoly_api.fppoly_from_network_input_poly
         fppoly_from_network_input_poly_c.restype = ElinaAbstract0Ptr
-        fppoly_from_network_input_poly_c.argtypes = [ElinaManagerPtr, c_size_t, c_size_t,ndpointer(ctypes.c_double),ndpointer(ctypes.c_double),ndpointer(ctypes.c_double),ndpointer(ctypes.c_double),ndpointer(ctypes.c_size_t),ndpointer(ctypes.c_double),ndpointer(ctypes.c_double),ndpointer(ctypes.c_size_t), c_size_t]
-        res = fppoly_from_network_input_poly_c(man,intdim, realdim, inf_array,sup_array, lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim ,expr_size)
+        fppoly_from_network_input_poly_c.argtypes = [
+            ElinaManagerPtr, c_size_t, c_size_t, ndpointer(ctypes.c_double),
+            ndpointer(ctypes.c_double), ndpointer(ctypes.c_double),
+            ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t),
+            ndpointer(ctypes.c_double), ndpointer(ctypes.c_double),
+            ndpointer(ctypes.c_size_t), c_size_t, ndpointer(ctypes.c_size_t),
+            ndpointer(ctypes.c_size_t), c_size_t, c_double
+        ]
+        res = fppoly_from_network_input_poly_c(
+            man, intdim, realdim, inf_array, sup_array, lexpr_weights,
+            lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim,
+            expr_size, spatial_indices, spatial_neighbors, spatial_size,
+            spatial_gamma
+        )
+
     except Exception as inst:
         print('Problem with loading/calling "fppoly_from_network_input_poly" from "libfppoly.so"')
         print(inst)	

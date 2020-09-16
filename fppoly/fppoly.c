@@ -131,6 +131,8 @@ void fppoly_from_network_input_box(fppoly_t *res, size_t intdim, size_t realdim,
 		res->input_sup[i] = sup_array[i];
 	}
 	res->num_pixels = num_pixels;
+    res->spatial_indices = NULL;
+    res->spatial_neighbors = NULL;
 }
 
 
@@ -151,10 +153,13 @@ void fppoly_set_network_input_box(elina_manager_t *man, elina_abstract0_t* eleme
     }
 }
 
-elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array, double *sup_array, 
-                                                  double * lexpr_weights, double * lexpr_cst, size_t * lexpr_dim, double * uexpr_weights,
-						  double * uexpr_cst, size_t * uexpr_dim, size_t expr_size){
-	fppoly_t * res = (fppoly_t *)malloc(sizeof(fppoly_t));
+elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man,
+        size_t intdim, size_t realdim, double *inf_array, double *sup_array,
+        double * lexpr_weights, double * lexpr_cst, size_t * lexpr_dim,
+        double * uexpr_weights, double * uexpr_cst, size_t * uexpr_dim,
+        size_t expr_size, size_t * spatial_indices, size_t * spatial_neighbors,
+        size_t spatial_size, double spatial_gamma) {
+    fppoly_t * res = (fppoly_t *)malloc(sizeof(fppoly_t));
 	
 	fppoly_from_network_input_box(res, intdim, realdim, inf_array, sup_array);
 	size_t num_pixels = intdim + realdim;
@@ -188,8 +193,15 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t i
 	}
 	free(tmp_weights);
 	free(tmp_dim);
-	return abstract0_of_fppoly(man,res);	
+	
+    res->spatial_size = spatial_size;
+    res->spatial_gamma = spatial_gamma;
+    res->spatial_indices = malloc(spatial_size * sizeof(size_t));
+    res->spatial_neighbors = malloc(spatial_size * sizeof(size_t));
+    memcpy(res->spatial_indices, spatial_indices, spatial_size * sizeof(size_t));
+    memcpy(res->spatial_neighbors, spatial_neighbors, spatial_size * sizeof(size_t));
 
+    return abstract0_of_fppoly(man,res);	
 }
 
 
@@ -673,6 +685,12 @@ void fppoly_free(elina_manager_t *man, fppoly_t *fp){
         }
 	free(fp->input_sup);
 	fp->input_sup = NULL;
+
+    free(fp->spatial_indices);
+    fp->spatial_indices = NULL;
+    free(fp->spatial_neighbors);
+    fp->spatial_neighbors = NULL;
+
 	free(fp);
 	fp = NULL;
 }

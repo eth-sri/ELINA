@@ -1,4 +1,13 @@
+#ifdef GUROBI
+#include <stdlib.h>
+#include <stdio.h>
+
+#include "gurobi_c.h"
+#include "omp.h"
+#endif
+
 #include "compute_bounds.h"
+#include "math.h"
 
 expr_t * replace_input_poly_cons_in_lexpr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp){
 	size_t dims = expr->size;
@@ -152,8 +161,150 @@ expr_t * replace_input_poly_cons_in_uexpr(fppoly_internal_t *pr, expr_t * expr, 
 	return res;
 }
 
+#ifdef GUROBI
+void handle_gurobi_error(int error, GRBenv *env) {
+    if (error) {
+        printf("Gurobi error: %s\n", GRBgeterrormsg(env));
+        exit(1);
+    }
+}
+
+double substitute_spatial_gurobi(expr_t *expr, fppoly_t *fp, const int opt_sense) {
+
+    GRBenv *env = NULL;
+    GRBmodel *model = NULL;
+
+    int error;
+
+    error = GRBemptyenv(&env);
+    handle_gurobi_error(error, env);
+    error = GRBsetintparam(env, "OutputFlag", 0);
+    handle_gurobi_error(error, env);
+    error = GRBsetintparam(env, "NumericFocus", 2);
+    handle_gurobi_error(error, env);
+    error = GRBsetintparam(env, "Threads", omp_get_num_procs());
+    handle_gurobi_error(error, env);
+    error = GRBstartenv(env);
+    handle_gurobi_error(error, env);
+
+    double *lb, *ub, *obj;
+    const size_t dims = expr->size;
+    const size_t numvars = 3 * dims;
+
+    lb = malloc(numvars * sizeof(double));
+    ub = malloc(numvars * sizeof(double));
+    obj = malloc(numvars * sizeof(double));
+
+    for (size_t i = 0; i < dims; ++i) {
+        const size_t k = expr->type == DENSE ? i : expr->dim[i];
+        lb[i] = -fp->input_inf[k];
+        ub[i] = fp->input_sup[k];
+        obj[i] = opt_sense == GRB_MINIMIZE ? -expr->inf_coeff[i] : expr->sup_coeff[i];
+
+        for (size_t j = 0; j < 2; ++j) {
+            const size_t l = fp->input_uexpr[k]->dim[j];
+            lb[dims + 2 * i + j] = -fp->input_inf[l];
+            ub[dims + 2 * i + j] = fp->input_sup[l];
+            obj[dims + 2 * i + j] = 0;
+        }
+    }
+
+    error = GRBnewmodel(env, &model, NULL, numvars, obj, lb, ub, NULL, NULL);
+    handle_gurobi_error(error, env);
+    error = GRBsetintattr(model, "ModelSense", opt_sense);
+    handle_gurobi_error(error, env);
+
+    for (size_t i = 0; i < dims; ++i) {
+        const size_t k = expr->type == DENSE ? i : expr->dim[i];
+
+        int ind[] = {i, dims + 2 * i, dims + 2 * i + 1};
+
+        double lb_val[] = {
+            -1, -fp->input_lexpr[k]->inf_coeff[0], -fp->input_lexpr[k]->inf_coeff[1]
+        };
+        error = GRBaddconstr(model, 3, ind, lb_val, GRB_LESS_EQUAL, fp->input_lexpr[k]->inf_cst, NULL);
+        handle_gurobi_error(error, env);
+
+        double ub_val[] = {
+            1, -fp->input_uexpr[k]->sup_coeff[0], -fp->input_uexpr[k]->sup_coeff[1]
+        };
+        error = GRBaddconstr(model, 3, ind, ub_val, GRB_LESS_EQUAL, fp->input_uexpr[k]->sup_cst, NULL);
+        handle_gurobi_error(error, env);
+    }
+
+    size_t idx, nbr, s_idx, s_nbr;
+    const size_t num_pixels = fp->num_pixels;
+
+    for (size_t i = 0; i < fp->spatial_size; ++i) {
+        idx = fp->spatial_indices[i];
+        nbr = fp->spatial_neighbors[i];
+
+        if (expr->type == DENSE) {
+            s_idx = idx;
+            s_nbr = nbr;
+        } else {
+            s_idx = s_nbr = num_pixels;
+
+            for (size_t j = 0; j < dims; ++j) {
+                if (expr->dim[j] == idx) {
+                    s_idx = j;
+                }
+                if (expr->dim[j] == nbr) {
+                    s_nbr = j;
+                }
+            }
+
+            if ((s_idx == num_pixels) || (s_nbr == num_pixels)) {
+                continue;
+            }
+        }
+
+        int ind_x[] = {dims + 2 * s_idx, dims + 2 * s_nbr};
+        int ind_y[] = {dims + 2 * s_idx + 1, dims + 2 * s_nbr + 1};
+        double val[] = {1., -1.};
+
+        error = GRBaddconstr(model, 2, ind_x, val, GRB_LESS_EQUAL, fp->spatial_gamma, NULL);
+        handle_gurobi_error(error, env);
+        error = GRBaddconstr(model, 2, ind_y, val, GRB_LESS_EQUAL, fp->spatial_gamma, NULL);
+        handle_gurobi_error(error, env);
+        error = GRBaddconstr(model, 2, ind_x, val, GRB_GREATER_EQUAL, -fp->spatial_gamma, NULL);
+        handle_gurobi_error(error, env);
+        error = GRBaddconstr(model, 2, ind_y, val, GRB_GREATER_EQUAL, -fp->spatial_gamma, NULL);
+        handle_gurobi_error(error, env);
+    }
+
+    int opt_status;
+    double obj_val;
+
+    error = GRBoptimize(model);
+    handle_gurobi_error(error, env);
+    error = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &opt_status);
+    handle_gurobi_error(error, env);
+    error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &obj_val);
+    handle_gurobi_error(error, env);
+
+    if (opt_status != GRB_OPTIMAL) {
+        printf("Gurobi model status not optimal %i\n", opt_status);
+        exit(1);
+    }
+
+    free(lb);
+    free(ub);
+    free(obj);
+
+    GRBfreemodel(model);
+    GRBfreeenv(env);
+
+    return obj_val;
+}
+#endif
 
 double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno){
+
+    if ((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1 && fp->spatial_size > 0) {
+        return expr->inf_cst - substitute_spatial_gurobi(expr, fp, GRB_MINIMIZE);
+    }
+
 	size_t i,k;
 	double tmp1, tmp2;
         //printf("start\n");
@@ -197,6 +348,11 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 }
 
 double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno){
+
+    if ((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1 && fp->spatial_size > 0) {
+        return expr->sup_cst + substitute_spatial_gurobi(expr, fp, GRB_MAXIMIZE);
+    }
+
 	size_t i,k;
 	double tmp1, tmp2;
 
