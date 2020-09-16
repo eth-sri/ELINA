@@ -16,6 +16,8 @@ Contributors
 
 * Christoph Müller (contact for GPUPoly) - christoph.mueller@inf.ethz.ch
 
+* Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
+
 * [Markus Püschel](https://acl.inf.ethz.ch/people/markusp/) - pueschel@inf.ethz.ch
 
 * [Martin Vechev](https://www.sri.inf.ethz.ch/vechev.php) - martin.vechev@inf.ethz.ch
