@@ -3,7 +3,6 @@
 #include <stdio.h>
 
 #include "gurobi_c.h"
-#include "omp.h"
 #endif
 
 #include "compute_bounds.h"
@@ -181,8 +180,6 @@ double substitute_spatial_gurobi(expr_t *expr, fppoly_t *fp, const int opt_sense
     error = GRBsetintparam(env, "OutputFlag", 0);
     handle_gurobi_error(error, env);
     error = GRBsetintparam(env, "NumericFocus", 2);
-    handle_gurobi_error(error, env);
-    error = GRBsetintparam(env, "Threads", omp_get_num_procs());
     handle_gurobi_error(error, env);
     error = GRBstartenv(env);
     handle_gurobi_error(error, env);
