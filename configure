@@ -22,6 +22,8 @@ where options include:
   -gmp-prefix dir      where to find the GMP library
   -mpfr-prefix dir     where to find the MPFR library
   -java-prefix dir     where to find Java
+  -eigen-prefix dir    where to find Eigen library
+  -boost-prefix dir    where to find Boost library
   -use-vector          use vector instructions for the Octagon library
   -use-ocaml           enable OCaml support (only available with APRON)
   -use-ocamlfind       enable OCamlfind support
@@ -30,6 +32,7 @@ where options include:
   -no-warn-overflow    Silence all output relating to sound overflow
   -use-cuda            compile gpu version of DeepPoly
   -use-gurobi          use gurobi for spatial constraints
+  -use-fconv		   use fconv for computing convex hull
 
 Environment variables that affect configuration:
   CC                   C compiler to use (default: gcc)
@@ -39,7 +42,8 @@ Environment variables that affect configuration:
   GMP_PREFIX           where to find the GMP library
   MPFR_PREFIX          where to find the MPFR library
   CDD_PREFIX           where to find the CDD library
-  PPL_PREFIX           where to find tye PPL library
+  EIGEN_PREFIX		   where to find the Eigen library
+  BOOST_PREFIX		   where to find the Boost library
   JAVA_HOME            where to find Java
 
 EOF
@@ -54,6 +58,7 @@ EOF
 elina_prefix=/usr/local
 apron_prefix=/usr/local
 cdd_prefix=/usr/local/include/cddlib
+eigen_prefix=/usr/local/include/eigen3
 has_ocaml=0
 has_ocamlfind=0
 has_java=0
@@ -63,6 +68,7 @@ has_vector=0
 has_cdd=0
 has_cuda=0
 use_gurobi=0
+use_fconv=0
 extra_elina_options=""
 force_absolute_dylib_install_names=0;
 while : ; do
@@ -87,6 +93,12 @@ while : ; do
         -cdd-prefix|--cdd-prefix)
             cdd_prefix="$2"
             shift;;
+        -eigen-prefix|--eigen-prefix)
+        	eigen_prefix="$2"
+        	shift;;
+        -boost-prefix|--boost-prefix)
+        	boost_prefix="$2"
+        	shift;;
         -java-prefix|--java-prefix)
             java_prefix="$2"
             shift;;
@@ -103,12 +115,14 @@ while : ; do
          has_apron=1;;
         -use-vector|--use-vector)
          has_vector=1;;
-	-use-deeppoly|--use-deeppoly)
-	 has_cdd=1;;
+		-use-deeppoly|--use-deeppoly)
+		 use_deeppoly=1 && has_cdd=1;;
         -use-cuda|--use-cuda)
          has_cuda=1;;
         -use-gurobi|--use-gurobi)
          use_gurobi=1;;
+        -use-fconv|--use-fconv)
+         use_fconv=1 && has_cdd=1;;
         -use-opam|--use-opam)
             has_ocaml=1
             has_ocamlfind=1
@@ -504,9 +518,9 @@ if test "$has_ocaml" -eq 0; then has_ocaml=; fi
 if test "$has_java" -eq 0; then has_java=; fi
 if test "$has_apron" -eq 0; then has_apron=; else has_apron=-DHAS_APRON; fi
 if test "$has_vector" -eq 0; then is_vector=; else is_vector=-DVECTOR; fi
-if test "$has_cdd" -eq 0; then has_cdd=; else has_cdd=-DHAS_CDD; fi
 if test "$has_cuda" -eq 0; then is_cuda=; else is_cuda=-DCUDA; fi
 if test "$use_gurobi" -eq 0; then use_gurobi=; fi
+if test "$use_fconv" -eq 0; then use_fconv=; fi
 if test "$use_opam" -eq 0; then use_opam=; fi
 
 cat > Makefile.config <<EOF
@@ -527,8 +541,14 @@ IS_APRON = $has_apron
 # if defined to VECTOR, uses SIMD instructions for the Octagon library
 IS_VECTOR = $is_vector
 
-# if define to HAS_CDD, compile DeepPoly
-HAS_CDD = $has_cdd
+# if define to USE_DEEPPOLY, compile DeepPoly
+USE_DEEPPOLY = $use_deeppoly
+
+# if define to USE_FCONV, compile Fconv
+USE_FCONV = $use_fconv
+CDD_PREFIX = $cdd_prefix
+EIGEN_PREFIX = $eigen_prefix
+BOOST_PREFIX = $boost_prefix
 
 # if defined to VECTOR, compile GPUPoly (the GPU version of DeepPoly)
 IS_CUDA = $is_cuda
