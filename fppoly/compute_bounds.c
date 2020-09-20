@@ -301,9 +301,11 @@ double substitute_spatial_gurobi(expr_t *expr, fppoly_t *fp, const int opt_sense
 
 double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno){
 
+#ifdef GUROBI
     if ((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1 && fp->spatial_size > 0) {
         return expr->inf_cst - substitute_spatial_gurobi(expr, fp, GRB_MINIMIZE);
     }
+#endif
 
 	size_t i,k;
 	double tmp1, tmp2;
@@ -349,9 +351,11 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 
 double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno){
 
+#ifdef GUROBI
     if ((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1 && fp->spatial_size > 0) {
         return expr->sup_cst + substitute_spatial_gurobi(expr, fp, GRB_MAXIMIZE);
     }
+#endif
 
 	size_t i,k;
 	double tmp1, tmp2;
