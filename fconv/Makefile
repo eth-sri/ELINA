@@ -46,8 +46,7 @@ endif
 SOINST = libfconv.so
 FCONVH = fconv.h
 
-# TODO[gleb] double check about fpic
-CXXFLAGS := -std=c++14 -Wall -Wextra -Wpedantic -flto -mfma -mavx2 -DGMPRATIONAL # -fPIC
+CXXFLAGS := -std=c++14 -Wall -Wextra -Wpedantic -flto -mfma -mavx2 -DGMPRATIONAL
 
 ifeq ($(DEBUG),)
 	CXXFLAGS := $(CXXFLAGS) -DNDEBUG -O3 -march=native
