@@ -265,12 +265,10 @@ void handler(int sig) {
 
 int main() {
     signal(SIGSEGV, handler);
-    dd_set_global_constants();
 
     run_all_octahedron_tests();
     run_all_split_in_quadrants_tests();
     run_all_fkrelu_tests();
 
-    dd_free_global_constants();
     return 0;
 }
