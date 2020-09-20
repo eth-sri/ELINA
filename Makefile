@@ -56,6 +56,9 @@ endif
 ifneq ($(IS_CUDA),)
 	(cd fppoly_gpu; make all)
 endif
+ifneq ($(USE_FCONV),)
+	(cd fconv; make all)
+endif
 
 
 install:
@@ -74,6 +77,9 @@ ifneq ($(HAS_CDD),)
 endif
 ifneq ($(IS_CUDA),)
 	(cd fppoly_gpu; make install)
+endif
+ifneq ($(USE_FCONV),)
+	(cd fconv; make install)
 endif
 	(cd apron_interface; make install)
 ifneq ($(HAS_OCAML),) 
@@ -100,6 +106,9 @@ endif
 	(cd zonoml; make clean)
 ifneq ($(HAS_CDD),)
 	(cd fppoly; make clean)
+endif
+ifneq ($(USE_FCONV),)
+	(cd fconv; make clean)
 endif
 ifneq ($(IS_CUDA),)
 	(cd fppoly_gpu; make clean)
