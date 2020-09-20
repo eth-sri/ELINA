@@ -46,7 +46,7 @@ endif
 SOINST = libfconv.so
 FCONVH = fconv.h
 
-CXXFLAGS := -std=c++14 -Wall -Wextra -Wpedantic -flto -mfma -mavx2 -DGMPRATIONAL
+CXXFLAGS := -std=c++14 -Wall -Wextra -Wpedantic -flto -mfma -mavx2 -DGMPRATIONAL -fPIC
 
 ifeq ($(DEBUG),)
 	CXXFLAGS := $(CXXFLAGS) -DNDEBUG -O3 -march=native
@@ -61,7 +61,7 @@ tests: tests.cpp $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(LIBS)
 
 %.o: %.cpp
-	$(CXX) -I$(EIGEN_DIR) $(CXXFLAGS) $(CDDFLAGS) $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(CDDFLAGS) $(CPPFLAGS) $(INCLUDES) -c $< -o $@
 
 install:
 	$(INSTALLd) $(LIBDIR); \

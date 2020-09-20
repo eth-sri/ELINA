@@ -546,6 +546,7 @@ USE_DEEPPOLY = $use_deeppoly
 
 # if define to USE_FCONV, compile Fconv
 USE_FCONV = $use_fconv
+CDD_PREFIX = $cdd_prefix
 EIGEN_PREFIX = $eigen_prefix
 BOOST_PREFIX = $boost_prefix
 
