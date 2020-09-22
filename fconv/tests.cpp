@@ -217,6 +217,22 @@ void run_fkrelu_test(const string &path) {
   cout << "\tpassed" << endl;
 }
 
+void run_1relu_test() {
+    cout << "running 1-relu test:" << endl;
+    MatrixXd inp(2, 2);
+    inp << 2, 1, // x >= -2
+        2, -1;   // x <= 2
+
+    MatrixXd expected(3, 3);
+    expected << 0, 0, 1, // y >= 0
+        0, -1, 1,        // y >= x
+        1, 0.5, -1;      // y <= 1 + 1/2 * x
+
+    MatrixXd out = fkrelu(inp);
+    ASRTF(out == expected, "Actual and expected matrices should match.");
+    cout << "\tpassed" << endl;
+}
+
 void run_all_octahedron_tests() {
     cout << "Running all fast V octahedron tests" << endl;
     for (int k = 2; k <= 4; k++) {
@@ -269,6 +285,7 @@ int main() {
     run_all_octahedron_tests();
     run_all_split_in_quadrants_tests();
     run_all_fkrelu_tests();
+    run_1relu_test();
 
     return 0;
 }

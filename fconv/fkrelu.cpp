@@ -30,9 +30,46 @@ vector<bset> transpose_incidence(const vector<bset> &input) {
   return output;
 }
 
+// Computation of relaxation for 1-relu easily done with analytical formula.
+MatrixXd relu_1(double lb, double ub) {
+  ASRTF(lb <= ub, "Unsoundness - lower bound should be <= then upper bound.");
+  ASRTF(lb < 0 && 0 < ub, "Expecting non-trivial input where lb < 0 < ub.");
+
+  double lmd = -lb * ub / (ub - lb);
+  double mu = ub / (ub - lb);
+  assert(lmd > 0 && "Expected lmd > 0.");
+  assert(mu > 0 && "Expected mu > 0.");
+
+  MatrixXd res(3, 3);
+
+  res << 0, 0, 1,  // y >= 0
+      0, -1, 1,    // y >= x
+      lmd, mu, -1; // y <= mu * x + lmd;
+
+  return res;
+}
+
+void verify_fkrelu_input(const MatrixXd &A) {
+  const int K = A.cols() - 1;
+  ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
+  ASRTF(A.rows() == POW3[K] - 1, "Unexpected number of rows in the input.");
+  const vector<vector<int>> &coefs = K2OCTAHEDRON_COEFS[K];
+  for (int i = 0; i < A.rows(); i++) {
+    const RowXd &row = A.row(i);
+    const vector<int> &coef_row = coefs[i];
+    for (int j = 0; j < K; j++) {
+      ASRTF(row(0, j + 1) == coef_row[j], "Input is not of correct format.");
+    }
+  }
+}
+
 MatrixXd fkrelu(const MatrixXd &A) {
   const int K = A.cols() - 1;
-  ASRTF(2 <= K && K <= 4, "K should be within allowed range.");
+  ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
+  verify_fkrelu_input(A);
+  if (K == 1) {
+    return relu_1(-A(0, 0), A(1, 0));
+  }
   OctahedronV oct = compute_octahedron_V(A);
 
   // Split in quadrants takes care of memory management of input vertices.
