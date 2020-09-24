@@ -1,4 +1,5 @@
 #include <vector>
+#include <algorithm>
 #include "sparse_cover.h"
 
 #include "asrt.h"
