@@ -33,6 +33,14 @@ class MatDouble_c(Structure):
     ]
 
 
+class MatInt_c(Structure):
+    _fields_ = [
+        ('rows', c_int),
+        ('cols', c_int),
+        ('data', POINTER(c_int))
+    ]
+
+
 new_MatDouble_c = fconv_api.new_MatDouble
 new_MatDouble_c.argtype = [c_int, c_int, POINTER(c_double)]
 new_MatDouble_c.restype = MatDouble_c
@@ -41,6 +49,10 @@ free_MatDouble_c = fconv_api.free_MatDouble
 free_MatDouble_c.argtype = MatDouble_c
 free_MatDouble_c.restype = None
 
+free_MatInt_c = fconv_api.free_MatInt
+free_MatInt_c.argtype = MatInt_c
+free_MatInt_c.restype = None
+
 fkrelu_c = fconv_api.fkrelu
 fkrelu_c.argtype = [MatDouble_c]
 fkrelu_c.restype = MatDouble_c
@@ -48,6 +60,10 @@ fkrelu_c.restype = MatDouble_c
 krelu_with_cdd_c = fconv_api.krelu_with_cdd
 krelu_with_cdd_c.argtype = [MatDouble_c]
 krelu_with_cdd_c.restype = MatDouble_c
+
+generate_sparse_cover_c = fconv_api.generate_sparse_cover
+generate_sparse_cover_c.argtype = [c_int, c_int]
+generate_sparse_cover_c.restype = MatInt_c
 
 
 def fkrelu(inp_mat: np.ndarray) -> np.ndarray:
@@ -120,3 +136,19 @@ def krelu_with_cdd(inp_mat: np.ndarray) -> np.ndarray:
     free_MatDouble_c(out_hrep)
 
     return out
+
+
+def generate_sparse_cover(n, k):
+    cover_c = generate_sparse_cover_c(n, k)
+    rows = cover_c.rows
+
+    cover = []
+    for i in range(rows):
+        comb = [None] * k
+        for j in range(k):
+            comb[j] = cover_c.data[i * k + j]
+        cover.append(comb)
+
+    free_MatInt_c(cover_c)
+
+    return cover

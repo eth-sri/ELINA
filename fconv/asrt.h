@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <stdexcept>
 
 #define ASRTF(A, B)                                                            \
   asrt(A, B,                                                                   \
