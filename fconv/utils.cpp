@@ -102,6 +102,19 @@ dd_MatrixPtr eigen2cdd(const MatrixXd& A) {
     return cdd_A;
 }
 
+MatrixXd cdd2eigen(dd_MatrixPtr cdd_A) {
+    const int rows = cdd_A->rowsize;
+    const int cols = cdd_A->colsize;
+
+    MatrixXd A(rows, cols);
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            A(i, j) = mpq_get_d(cdd_A->matrix[i][j]);
+        }
+    }
+    return A;
+}
+
 void print_vertices(const int dim, const vector<mpq_t*>& vertices) {
     cout << "printing " << vertices.size() << " vertices" << endl;
     for (size_t vi = 0; vi < vertices.size(); vi++) {

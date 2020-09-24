@@ -19,6 +19,8 @@ void free_MatDouble(MatDouble mat);
 
 MatDouble fkrelu(MatDouble input_hrep);
 
+MatDouble krelu_with_cdd(MatDouble input_hrep);
+
 #ifdef __cplusplus
 }
 #endif

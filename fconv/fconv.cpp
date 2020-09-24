@@ -43,7 +43,17 @@ void free_MatDouble(MatDouble cmat) {
 }
 
 MatDouble fkrelu(MatDouble input_hrep) {
+    dd_set_global_constants();
     MatrixXd A = cmat2eigen(input_hrep);
     MatrixXd H = fkrelu(A);
+    dd_free_global_constants();
+    return eigen2cmat(H);
+}
+
+MatDouble krelu_with_cdd(MatDouble input_hrep) {
+    dd_set_global_constants();
+    MatrixXd A = cmat2eigen(input_hrep);
+    MatrixXd H = krelu_with_cdd(A);
+    dd_free_global_constants();
     return eigen2cmat(H);
 }

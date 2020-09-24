@@ -730,20 +730,16 @@ struct OctahedronToV_Helper {
     }
 };
 
-// TODO[gleb] Ideally this should also check that the input coefficients match the expected format.
 OctahedronV compute_octahedron_V(const MatrixXd& A) {
-    dd_set_global_constants();
     const int K = (int) A.cols() - 1;
     ASRTF(2 <= K && K <= 4, "K should be within allowed range.");
     ASRTF((int) A.rows() == K2NUM_H[K], "Unexpected number of rows in the input.");
     OctahedronToV_Helper computation(A, K);
     computation.compute();
-    dd_free_global_constants();
     return computation.extract_OctahedronV();
 }
 
 OctahedronV compute_V_with_cdd(const MatrixXd& A) {
-    dd_set_global_constants();
     const int K = (int) A.cols() - 1;
     ASRTF(2 <= K, "K should be within allowed range.");
     const int NUM_H = (int) A.rows();
@@ -808,14 +804,12 @@ OctahedronV compute_V_with_cdd(const MatrixXd& A) {
     dd_FreeSetFamily(cdd_adjacencies);
     dd_FreeSetFamily(cdd_incidence);
 
-    dd_free_global_constants();
     return {K + 1, V, adjacencies, incidence};
 }
 
 map<Quadrant, QuadrantInfo> compute_quadrants_with_cdd(const MatrixXd& A) {
-    dd_set_global_constants();
     const int K = (int) A.cols() - 1;
-    ASRTF(2 <= K && K <= 5, "K should be within allowed range.");
+    ASRTF(1 <= K && K <= 5, "K should be within allowed range.");
 
     vector<Quadrant> quadrants {{}};
     for (int i = 0; i < K; i++) {
@@ -896,6 +890,5 @@ map<Quadrant, QuadrantInfo> compute_quadrants_with_cdd(const MatrixXd& A) {
     }
 
     dd_FreeMatrix(cdd_A);
-    dd_free_global_constants();
     return quadrant2info;
 }

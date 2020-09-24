@@ -124,3 +124,62 @@ MatrixXd fkrelu(const MatrixXd& A) {
     }
     return decomposition(quadrant2pdd, K);
 }
+
+MatrixXd krelu_with_cdd(const MatrixXd& A) {
+    const int K = A.cols() - 1;
+    ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
+    map<Quadrant, QuadrantInfo> quadrant2info = compute_quadrants_with_cdd(A);
+
+    size_t num_vertices = 0;
+    for (auto& entry : quadrant2info) {
+        num_vertices += entry.second.V.size();
+    }
+
+    dd_MatrixPtr vertices = dd_CreateMatrix(num_vertices, 2 * K + 1);
+    vertices->representation = dd_Generator;
+    size_t counter = 0;
+
+    // Now I will compute the final V. This will allow me to verify that produced constraints do not
+    // violate any of the original vertices and thus I produce a sound overapproximation.
+    vector<mpq_t*> V;
+    for (auto& entry : quadrant2info) {
+        const auto& quadrant = entry.first;
+        auto& V_quadrant = entry.second.V;
+
+        for (const auto& v : V_quadrant) {
+            mpq_t* v_projection = vertices->matrix[counter];
+            counter++;
+            for (int i = 0; i < K + 1; i++) {
+                mpq_set(v_projection[i], v[i]);
+            }
+            for (int i = 0; i < K; i++) {
+                if (quadrant[i] == PLUS) {
+                    // Only need to set for the case of PLUS, because in case of MINUS there should be 0.
+                    // And it is already there automatically.
+                    mpq_set(v_projection[1 + i + K], v[1 + i]);
+                }
+            }
+        }
+
+        mpq_free_array_vector(K + 1, V_quadrant);
+    }
+    assert(counter == num_vertices && "Consistency checking that counter equals the number of vertices.");
+
+    dd_ErrorType err = dd_NoError;
+    dd_PolyhedraPtr poly = dd_DDMatrix2Poly(vertices, &err);
+    ASRTF(err == dd_NoError, "Converting matrix to polytope failed with error " + to_string(err));
+
+    dd_MatrixPtr inequalities = dd_CopyInequalities(poly);
+
+    MatrixXd H = cdd2eigen(inequalities);
+    for (int i = 0; i < H.rows(); i++) {
+        double abs_coef = H.row(i).array().abs().maxCoeff();
+        H.row(i) /= abs_coef;
+    }
+
+    dd_FreePolyhedra(poly);
+    dd_FreeMatrix(vertices);
+    dd_FreeMatrix(inequalities);
+
+    return H;
+}

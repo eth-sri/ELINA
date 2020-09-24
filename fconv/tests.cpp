@@ -8,6 +8,8 @@
 #include "split_in_quadrants.h"
 #include "fkrelu.h"
 
+constexpr int K2NUM_TESTS[6] = {0, 2, 4, 5, 4, 4};
+
 // Creates bijective mapping between the rows of two matrices.
 // Will throw an exception if such mapping does not exist.
 vector<int> get_bijective_mapping_for_matrix_rows(
@@ -221,8 +223,7 @@ void run_1relu_test() {
 void run_all_octahedron_tests() {
     cout << "Running all fast V octahedron tests" << endl;
     for (int k = 2; k <= 4; k++) {
-        int num_tests = k == 3 ? 5 : 4;
-        for (int i = 1; i <= num_tests; i++) {
+        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
             run_octahedron_test("octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
         }
     }
@@ -231,8 +232,7 @@ void run_all_octahedron_tests() {
 void run_all_split_in_quadrants_tests() {
     cout << "Running all split in quadrant tests" << endl;
     for (int k = 2; k <= 4; k++) {
-        int num_tests = k == 3 ? 5 : 4;
-        for (int i = 1; i <= num_tests; i++) {
+        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
             run_split_in_quadrants_test("octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
         }
     }
@@ -240,9 +240,8 @@ void run_all_split_in_quadrants_tests() {
 
 void run_all_fkrelu_tests() {
     cout << "Running all fkrelu tests" << endl;
-    for (int k = 2; k <= 4; k++) {
-        int num_tests = k == 3 ? 5 : 4;
-        for (int i = 1; i <= num_tests; i++) {
+    for (int k = 1; k <= 4; k++) {
+        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
             run_fkrelu_test("octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
         }
     }
@@ -263,11 +262,13 @@ void handler(int sig) {
 
 int main() {
     signal(SIGSEGV, handler);
+    dd_set_global_constants();
 
     run_all_octahedron_tests();
     run_all_split_in_quadrants_tests();
     run_all_fkrelu_tests();
     run_1relu_test();
 
+    dd_free_global_constants();
     return 0;
 }
