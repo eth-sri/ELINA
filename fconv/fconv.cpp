@@ -1,5 +1,6 @@
 #include "fconv.h"
 #include "fkrelu.h"
+#include "sparse_cover.h"
 #include "utils.h"
 #include <Eigen/Dense>
 
@@ -42,6 +43,10 @@ void free_MatDouble(MatDouble cmat) {
     free((double *) cmat.data);
 }
 
+void free_MatInt(MatInt cmat) {
+    free((int *) cmat.data);
+}
+
 MatDouble fkrelu(MatDouble input_hrep) {
   dd_set_global_constants();
   MatrixXd A = cmat2eigen(input_hrep);
@@ -56,4 +61,20 @@ MatDouble krelu_with_cdd(MatDouble input_hrep) {
   MatrixXd H = krelu_with_cdd(A);
   dd_free_global_constants();
   return eigen2cmat(H);
+}
+
+MatInt generate_sparse_cover(const int N, const int K) {
+    vector<vector<int>> cover = sparse_cover(N, K);
+    // I'm not sure how to combine std::vector and ctypes thus converting to plain array format.
+    auto mat = (int *) calloc(cover.size() * K, sizeof(int));
+
+    int cur = 0;
+    for (const auto& comb : cover) {
+        for (int i = 0; i < K; i++) {
+            mat[cur] = comb[i];
+            cur++;
+        }
+    }
+
+    return {(int) cover.size(), K, mat};
 }

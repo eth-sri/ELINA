@@ -1,6 +1,7 @@
 #include "fkrelu.h"
 #include "mpq.h"
 #include "octahedron.h"
+#include "sparse_cover.h"
 #include "split_in_quadrants.h"
 #include "utils.h"
 #include <iostream>
@@ -235,6 +236,31 @@ void run_1relu_test() {
     cout << "\tpassed" << endl;
 }
 
+void run_sparse_cover_test(const int N, const int K) {
+    cout << "running sparse cover test: N " << N << " K " << K << endl;
+
+    Timer t;
+    vector<vector<int>> cover = sparse_cover(N, K);
+    int micros = t.micros();
+
+    cout << "\ttook " << micros / 1000 << " ms and generated " << cover.size()
+         << " combinations" << endl;
+
+    for (const auto &comb : cover) {
+      ASRTF((int)comb.size() == K, "Combination size should equal K.");
+      for (auto elem : comb) {
+        ASRTF(0 <= elem && elem < N,
+              "Every element of combination should be within range.");
+      }
+      for (int i = 0; i < K - 1; i++) {
+        ASRTF(comb[i] < comb[i + 1],
+              "Element of combination should be in ascending order.");
+      }
+    }
+
+    cout << "\tpassed" << endl;
+}
+
 void run_all_octahedron_tests() {
     cout << "Running all fast V octahedron tests" << endl;
     for (int k = 2; k <= 4; k++) {
@@ -265,6 +291,16 @@ void run_all_fkrelu_tests() {
     }
 }
 
+void run_all_sparse_cover_tests() {
+    cout << "Running all sparse cover tests" << endl;
+    run_sparse_cover_test(50, 3);
+    run_sparse_cover_test(100, 3);
+    run_sparse_cover_test(150, 3);
+    run_sparse_cover_test(30, 4);
+    run_sparse_cover_test(50, 4);
+    run_sparse_cover_test(30, 5);
+}
+
 void handler(int sig) {
     void *array[10];
     size_t size;
@@ -286,6 +322,7 @@ int main() {
     run_all_split_in_quadrants_tests();
     run_all_fkrelu_tests();
     run_1relu_test();
+    run_all_sparse_cover_tests();
 
     dd_free_global_constants();
     return 0;
