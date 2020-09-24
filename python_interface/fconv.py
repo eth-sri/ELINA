@@ -45,6 +45,10 @@ fkrelu_c = fconv_api.fkrelu
 fkrelu_c.argtype = [MatDouble_c]
 fkrelu_c.restype = MatDouble_c
 
+krelu_with_cdd_c = fconv_api.krelu_with_cdd
+krelu_with_cdd_c.argtype = [MatDouble_c]
+krelu_with_cdd_c.restype = MatDouble_c
+
 
 def fkrelu(inp_mat: np.ndarray) -> np.ndarray:
     """
@@ -68,6 +72,42 @@ def fkrelu(inp_mat: np.ndarray) -> np.ndarray:
 
     inp_hrep = new_MatDouble_c(rows, cols, data_c)
     out_hrep = fkrelu_c(inp_hrep)
+    assert out_hrep.cols == 2 * k + 1
+
+    out = [0] * (out_hrep.rows * out_hrep.cols)
+    for i in range(out_hrep.rows * out_hrep.cols):
+        out[i] = out_hrep.data[i]
+    out = np.array(out)
+    out = out.reshape(out_hrep.rows, out_hrep.cols)
+
+    free_MatDouble_c(inp_hrep)
+    free_MatDouble_c(out_hrep)
+
+    return out
+
+
+def krelu_with_cdd(inp_mat: np.ndarray) -> np.ndarray:
+    """
+    Input in format b + Ax >= 0. The input has to be octahedron in a certain format.
+    An example of possible inp is:
+        [0.4, 1, 0],
+        [0.5, -1, 0],
+        [0.25, 0, 1],
+        [0.75, 0, -1]
+    Which describes a system:
+        x1  <= 0.4
+        -x1 <= 0.5
+        x2  <= 0.25
+        -x2 <= 0.75
+    """
+    rows, cols = inp_mat.shape
+    k = cols - 1
+    assert k >= 1
+    inp_mat = inp_mat.flatten().tolist()
+    data_c = (c_double * (rows * cols))(*inp_mat)
+
+    inp_hrep = new_MatDouble_c(rows, cols, data_c)
+    out_hrep = krelu_with_cdd_c(inp_hrep)
     assert out_hrep.cols == 2 * k + 1
 
     out = [0] * (out_hrep.rows * out_hrep.cols)

@@ -36,6 +36,8 @@ MatrixXd read_matrix(const string &path);
 
 dd_MatrixPtr eigen2cdd(const MatrixXd &A);
 
+MatrixXd cdd2eigen(dd_MatrixPtr cdd_A);
+
 void print_vertices(const int dim, const vector<mpq_t *> &vertices);
 
 using Adj = pair<int, int>;
