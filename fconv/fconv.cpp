@@ -1,32 +1,27 @@
-#include <Eigen/Dense>
 #include "utils.h"
 #include "fconv.h"
 #include "fkrelu.h"
 #include "sparse_cover.h"
 
-using namespace Eigen;
-
-MatrixXd cmat2eigen(const MatDouble &cmat) {
-    MatrixXd A(cmat.rows, cmat.cols);
+vector<double*> cmat2double(const MatDouble &cmat) {
+    vector<double*> A = create_mat(cmat.rows, cmat.cols);
     for (int i = 0; i < cmat.rows; i++) {
         for (int j = 0; j < cmat.cols; j++) {
-            A(i, j) = cmat.data[i * cmat.cols + j];
+            A[i][j] = cmat.data[i * cmat.cols + j];
         }
     }
     return A;
 }
 
-MatDouble eigen2cmat(const MatrixXd& A) {
-    int rows = A.rows();
-    int cols = A.cols();
-    auto mat = (double *) calloc(rows * cols, sizeof(double));
+MatDouble double2cmat(const int n, const vector<double*>& A) {
+    auto mat = (double *) calloc(A.size() * n, sizeof(double));
 
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            mat[i * cols + j] = A(i, j);
+    for (int i = 0; i < (int) A.size(); i++) {
+        for (int j = 0; j < n; j++) {
+            mat[i * n + j] = A[i][j];
         }
     }
-    return {rows, cols, mat};
+    return {(int) A.size(), n, mat};
 }
 
 MatDouble new_MatDouble(int rows, int cols, const double *data) {
@@ -49,18 +44,26 @@ void free_MatInt(MatInt cmat) {
 
 MatDouble fkrelu(MatDouble input_hrep) {
     dd_set_global_constants();
-    MatrixXd A = cmat2eigen(input_hrep);
-    MatrixXd H = fkrelu(A);
+    const int K = input_hrep.cols - 1;
+    vector<double*> A = cmat2double(input_hrep);
+    vector<double*> H = fkrelu(K, A);
+    MatDouble out = double2cmat(2 * K + 1, H);
+    free_mat(A);
+    free_mat(H);
     dd_free_global_constants();
-    return eigen2cmat(H);
+    return out;
 }
 
 MatDouble krelu_with_cdd(MatDouble input_hrep) {
     dd_set_global_constants();
-    MatrixXd A = cmat2eigen(input_hrep);
-    MatrixXd H = krelu_with_cdd(A);
+    const int K = input_hrep.cols - 1;
+    vector<double*> A = cmat2double(input_hrep);
+    vector<double*> H = krelu_with_cdd(K, A);
+    MatDouble out = double2cmat(2 * K + 1, H);
+    free_mat(A);
+    free_mat(H);
     dd_free_global_constants();
-    return eigen2cmat(H);
+    return out;
 }
 
 MatInt generate_sparse_cover(const int N, const int K) {

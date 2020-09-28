@@ -35,10 +35,6 @@ ifneq ($(CDD_PREFIX),)
 	INCLUDES += -I$(CDD_PREFIX)
 endif
 
-ifneq ($(EIGEN_PREFIX),)
-	INCLUDES += -I$(EIGEN_PREFIX)
-endif
-
 ifneq ($(BOOST_PREFIX),)
 	INCLUDES += -I$(BOOST_PREFIX)
 endif

@@ -1,5 +1,4 @@
 #include <map>
-#include <Eigen/Dense>
 #include "fkrelu.h"
 #include "octahedron.h"
 #include "split_in_quadrants.h"
@@ -30,7 +29,7 @@ vector<bset> transpose_incidence(const vector<bset>& input) {
 }
 
 // Computation of relaxation for 1-relu easily done with analytical formula.
-MatrixXd relu_1(double lb, double ub) {
+vector<double*> relu_1(double lb, double ub) {
     ASRTF(lb <= ub, "Unsoundness - lower bound should be <= then upper bound.");
     ASRTF(lb < 0 && 0 < ub, "Expecting non-trivial input where lb < 0 < ub.");
 
@@ -39,37 +38,45 @@ MatrixXd relu_1(double lb, double ub) {
     assert(lmd > 0 && "Expected lmd > 0.");
     assert(mu > 0 && "Expected mu > 0.");
 
-    MatrixXd res(3, 3);
+    vector<double*> res = create_mat(3, 3);
 
-    res <<  0, 0, 1,        // y >= 0
-            0, -1, 1,       // y >= x
-            lmd, mu, -1;    // y <= mu * x + lmd;
+    // y >= 0
+    res[0][0] = 0;
+    res[0][1] = 0;
+    res[0][2] = 1;
+
+    // y >= x
+    res[1][0] = 0;
+    res[1][1] = -1;
+    res[1][2] = 1;
+
+    // y <= mu * x + lmd;
+    res[2][0] = lmd;
+    res[2][1] = mu;
+    res[2][2] = -1;
 
     return res;
 }
 
-void verify_fkrelu_input(const MatrixXd& A) {
-    const int K = A.cols() - 1;
+void verify_fkrelu_input(const int K, const vector<double*>& A) {
     ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
-    ASRTF(A.rows() == POW3[K] - 1, "Unexpected number of rows in the input.");
+    ASRTF((int) A.size() == POW3[K] - 1, "Unexpected number of rows in the input.");
     const vector<vector<int>>& coefs = K2OCTAHEDRON_COEFS[K];
-    for (int i = 0; i < A.rows(); i++) {
-        const RowXd& row = A.row(i);
-        const vector<int>& coef_row = coefs[i];
+    for (int i = 0; i < (int) A.size(); i++) {
         for (int j = 0; j < K; j++) {
-            ASRTF(row(0, j + 1) == coef_row[j], "Input is not of correct format.");
+            ASRTF(A[i][j + 1] == coefs[i][j], "Input is not of correct format.");
         }
     }
 }
 
-MatrixXd fkrelu(const MatrixXd& A) {
-    const int K = A.cols() - 1;
+vector<double*> fkrelu(const int K, const vector<double*>& A) {
     ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
-    verify_fkrelu_input(A);
+//    cout << "In fkrelu K is "  << K << endl;
+    verify_fkrelu_input(K, A);
     if (K == 1) {
-        return relu_1(-A(0, 0), A(1, 0));
+        return relu_1(-A[0][0], A[1][0]);
     }
-    OctahedronV oct = compute_octahedron_V(A);
+    OctahedronV oct = compute_octahedron_V(K, A);
 
     // Split in quadrants takes care of memory management of input vertices.
     map<Quadrant, QuadrantInfo> quadrant2info = split_in_quadrants(oct.V,
@@ -84,51 +91,55 @@ MatrixXd fkrelu(const MatrixXd& A) {
 
         if (V_mpq.empty()) {
             // Input in the quadrant is the empty set.
-            MatrixXd empty(0, K + 1);
-            quadrant2pdd[quadrant] = {K + 1, empty, empty, {}};
+            quadrant2pdd[quadrant] = {K + 1, {}, {}, {}};
             continue;
         }
 
-        MatrixXd V = mpq_convert2eigen(K + 1, V_mpq);
+        vector<double*> V = mpq_to_double(K + 1, V_mpq);
         mpq_free_array_vector(K + 1, V_mpq);
 
         const vector<bset>& incidence_V_to_H = pair.second.V_to_H_incidence;
-        assert((int) incidence_V_to_H.size() == V.rows() && "Incidence_V_to_H size should equal V.rows()");
+        assert(
+                incidence_V_to_H.size() == V.size() &&
+                "Incidence_V_to_H size should equal V.size()");
         vector<bset> incidence_H_to_V_with_redundancy = transpose_incidence(incidence_V_to_H);
         assert(
-                (int) incidence_H_to_V_with_redundancy.size() == A.rows() + K &&
-                "Incidence_H_to_V_with_redundancy size should equal A.rows() + K");
+                incidence_H_to_V_with_redundancy.size() == A.size() + K &&
+                "Incidence_H_to_V_with_redundancy size should equal A.size() + K");
         vector<int> maximal_H = compute_maximal_indexes(incidence_H_to_V_with_redundancy);
 
-        MatrixXd H(maximal_H.size(), K + 1);
+        vector<double*> H(maximal_H.size());
         vector<bset> incidence_H_to_V(maximal_H.size());
 
-        for (int i = 0; i < (int) maximal_H.size(); i++) {
+        for (size_t i = 0; i < maximal_H.size(); i++) {
+            double* h = (double*) calloc(K + 1, sizeof(double));
+            H[i] = h;
             int maximal = maximal_H[i];
             incidence_H_to_V[i] = incidence_H_to_V_with_redundancy[maximal];
-            if (maximal < A.rows()) {
-                H.row(i) = A.row(maximal);
+            if (maximal < (int) A.size()) {
+                for (int i = 0; i < K + 1; i++) {
+                    h[i] = A[maximal][i];
+                }
             } else {
-                H.row(i) = MatrixXd::Zero(1, K + 1);
-                int xi = maximal - A.rows();
+                int xi = maximal - (int) A.size();
                 assert(0 <= xi && xi < K && "Sanity checking the range of xi.");
                 if (quadrant[xi] == MINUS) {
-                    H(i, xi + 1) = -1;
+                    h[xi + 1] = -1;
                 }  else {
-                    H(i, xi + 1) = 1;
+                    h[xi + 1] = 1;
                 }
             }
         }
 
         quadrant2pdd[quadrant] = {K + 1, V, H, incidence_H_to_V};
     }
-    return decomposition(quadrant2pdd, K);
+    return decomposition(K, quadrant2pdd);
 }
 
-MatrixXd krelu_with_cdd(const MatrixXd& A) {
-    const int K = A.cols() - 1;
+vector<double*> krelu_with_cdd(const int K, const vector<double*>& A) {
+    // No need to verify since CDD can work with input in any format.
     ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
-    map<Quadrant, QuadrantInfo> quadrant2info = compute_quadrants_with_cdd(A);
+    map<Quadrant, QuadrantInfo> quadrant2info = compute_quadrants_with_cdd(K, A);
 
     size_t num_vertices = 0;
     for (auto& entry : quadrant2info) {
@@ -171,10 +182,15 @@ MatrixXd krelu_with_cdd(const MatrixXd& A) {
 
     dd_MatrixPtr inequalities = dd_CopyInequalities(poly);
 
-    MatrixXd H = cdd2eigen(inequalities);
-    for (int i = 0; i < H.rows(); i++) {
-        double abs_coef = H.row(i).array().abs().maxCoeff();
-        H.row(i) /= abs_coef;
+    vector<double*> H = cdd2double(inequalities);
+    for (auto h : H) {
+        double abs_coef = abs(h[0]);
+        for (int i = 1; i < 2 * K + 1; i++) {
+            abs_coef = min(abs(h[i]), abs_coef);
+        }
+        for (int i = 0; i < 2 * K + 1; i++) {
+            h[i] /= abs_coef;
+        }
     }
 
     dd_FreePolyhedra(poly);

@@ -186,7 +186,7 @@ struct OctahedronToV_Helper {
     set<Vertex, MpqCompareVertex> to_visit;
     vector<Adj> adjacencies;
 
-    explicit OctahedronToV_Helper(const MatrixXd& A, const int K) :
+    explicit OctahedronToV_Helper(const int K, const vector<double*>& A) :
         K(K),
         NUM_H(K2NUM_H[K]),
         COEFS(K2OCTAHEDRON_COEFS[K]),
@@ -198,25 +198,10 @@ struct OctahedronToV_Helper {
         vertex_precomp_last_double(PRECOMP_LAST_SIZE),
         vertex_count(0)
     {
-//        cout << "PRECOMP_FIRST_SIZE " << PRECOMP_FIRST_SIZE << endl;
-//        cout << "PRECOMP_LAST_SIZE " << PRECOMP_LAST_SIZE << endl;
-        bool correct_input_format = true;
-        for (int hi = 0; hi < NUM_H; hi++) {
-            const RowXd& row = A.row(hi);
-            const vector<int>& coef = COEFS[hi];
-            for (int i = 0; i < K; i++) {
-                if (row[i + 1] != coef[i]) {
-                    correct_input_format = false;
-                    break;
-                }
-            }
-        }
-        ASRTF(correct_input_format, "Octahedron input should be given in a certain format.");
-
         constraints = mpq_create_array(NUM_H);
         for (int i = 0; i < NUM_H; i++) {
-            mpq_set_d(constraints[i], A(i, 0));
-            constraints_double[i] = A(i, 0);
+            mpq_set_d(constraints[i], A[i][0]);
+            constraints_double[i] = A[i][0];
         }
 
         vertex_precomp_first = mpq_create_array(PRECOMP_FIRST_SIZE);
@@ -730,21 +715,19 @@ struct OctahedronToV_Helper {
     }
 };
 
-OctahedronV compute_octahedron_V(const MatrixXd& A) {
-    const int K = (int) A.cols() - 1;
+OctahedronV compute_octahedron_V(const int K, const vector<double*>& A) {
     ASRTF(2 <= K && K <= 4, "K should be within allowed range.");
-    ASRTF((int) A.rows() == K2NUM_H[K], "Unexpected number of rows in the input.");
-    OctahedronToV_Helper computation(A, K);
+    ASRTF((int) A.size() == K2NUM_H[K], "Unexpected number of rows in the input.");
+    OctahedronToV_Helper computation(K, A);
     computation.compute();
     return computation.extract_OctahedronV();
 }
 
-OctahedronV compute_V_with_cdd(const MatrixXd& A) {
-    const int K = (int) A.cols() - 1;
+OctahedronV compute_V_with_cdd(const int K, const vector<double*>& A) {
     ASRTF(2 <= K, "K should be within allowed range.");
-    const int NUM_H = (int) A.rows();
+    const int NUM_H = (int) A.size();
 
-    dd_MatrixPtr cdd_hrep = eigen2cdd(A);
+    dd_MatrixPtr cdd_hrep = double2cdd(K + 1, A);
     cdd_hrep->representation = dd_Inequality;
     dd_ErrorType err = dd_NoError;
 
@@ -807,8 +790,7 @@ OctahedronV compute_V_with_cdd(const MatrixXd& A) {
     return {K + 1, V, adjacencies, incidence};
 }
 
-map<Quadrant, QuadrantInfo> compute_quadrants_with_cdd(const MatrixXd& A) {
-    const int K = (int) A.cols() - 1;
+map<Quadrant, QuadrantInfo> compute_quadrants_with_cdd(const int K, const vector<double*>& A) {
     ASRTF(1 <= K && K <= 5, "K should be within allowed range.");
 
     vector<Quadrant> quadrants {{}};
@@ -826,14 +808,14 @@ map<Quadrant, QuadrantInfo> compute_quadrants_with_cdd(const MatrixXd& A) {
     }
     ASRTF((int) quadrants.size() == POW2[K], "Sanity checking number of quadrants.");
 
-    const int NUM_H = (int) A.rows();
+    const int NUM_H = (int) A.size();
 
     dd_MatrixPtr cdd_A = dd_CreateMatrix(NUM_H + K, K + 1);
     cdd_A->representation = dd_Inequality;
 
     for (int i = 0; i < NUM_H; i++) {
         mpq_t* cdd_row = cdd_A->matrix[i];
-        const RowXd& row = A.row(i);
+        const double* row = A[i];
         for (int j = 0; j < K + 1; j++) {
             mpq_set_d(cdd_row[j], row[j]);
         }

@@ -2,4 +2,5 @@
 
 #include "pdd.h"
 
-MatrixXd decomposition(const map<Quadrant, PDD>& quadrant2pdd, const int K);
+/* The function take ownership of all memory in the input. */
+vector<double*> decomposition(const int K, const map<Quadrant, PDD>& quadrant2pdd);

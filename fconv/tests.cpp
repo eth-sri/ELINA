@@ -40,13 +40,16 @@ vector<int> get_bijective_mapping_for_matrix_rows(
 
 void run_octahedron_test(const string& path) {
     cout << "running octahedron test: " << path << endl;
-    MatrixXd A = read_matrix(path);
-    const int K = (int) A.cols() - 1;
+
+    int cols = -1;
+    vector<double*> A = read_matrix(cols, path);
+    const int K = cols - 1;
+
     Timer t_fast;
-    OctahedronV fast = compute_octahedron_V(A);
+    OctahedronV fast = compute_octahedron_V(K, A);
     int micros_fast = t_fast.micros();
     Timer t_slow;
-    OctahedronV slow = compute_V_with_cdd(A);
+    OctahedronV slow = compute_V_with_cdd(K, A);
     int micros_slow = t_slow.micros();
 
     cout << "\tAcceleration is " << (double) micros_slow / micros_fast << endl;
@@ -88,6 +91,7 @@ void run_octahedron_test(const string& path) {
 
     mpq_free_array_vector(K + 1, fast.V);
     mpq_free_array_vector(K + 1, slow.V);
+    free_mat(A);
 
     cout << "\tpassed" << endl;
 }
@@ -95,12 +99,13 @@ void run_octahedron_test(const string& path) {
 void run_split_in_quadrants_test(const string& path) {
     cout << "running split in quadrants test: " << path << endl;
 
-    MatrixXd A = read_matrix(path);
-    const int K = (int) A.cols() - 1;
-    const int num_h = (int) A.rows();
+    int cols = -1;
+    vector<double*> A = read_matrix(cols, path);
+    const int K = cols - 1;
+    const int num_h = (int) A.size();
 
     Timer t_fast;
-    OctahedronV oct_fast = compute_octahedron_V(A);
+    OctahedronV oct_fast = compute_octahedron_V(K, A);
     map<Quadrant, QuadrantInfo> fast = split_in_quadrants(
             oct_fast.V,
             oct_fast.incidence,
@@ -109,7 +114,7 @@ void run_split_in_quadrants_test(const string& path) {
     int micros_fast = t_fast.micros();
 
     Timer t_slow;
-    map<Quadrant, QuadrantInfo> slow = compute_quadrants_with_cdd(A);
+    map<Quadrant, QuadrantInfo> slow = compute_quadrants_with_cdd(K, A);
     int micros_slow = t_slow.micros();
 
     cout << "\tAcceleration is " << (double) micros_slow / micros_fast << endl;
@@ -146,6 +151,7 @@ void run_split_in_quadrants_test(const string& path) {
     for (auto& entry : slow) {
         mpq_free_array_vector(K + 1, entry.second.V);
     }
+    free_mat(A);
 
     cout << "\tpassed" << endl;
 }
@@ -153,18 +159,20 @@ void run_split_in_quadrants_test(const string& path) {
 void run_fkrelu_test(const string& path) {
     cout << "running fkrelu test: " << path << endl;
 
-    MatrixXd A = read_matrix(path);
+    int cols = -1;
+    vector<double*> A = read_matrix(cols, path);
+    const int K = cols - 1;
 
     Timer t;
-    MatrixXd H_double = fkrelu(A);
+    vector<double*> H_double = fkrelu(K, A);
     int micros = t.micros();
 
-    const int K = (int) A.cols() - 1;
-    cout << "\tK = " << K << " took " << micros / 1000 << " ms" << endl;
+    cout << "\tK = " << K << " took " << micros / 1000 << \
+        " ms and discovered " << H_double.size() << " constraints" << endl;
 
-    vector<mpq_t*> H = mpq_from_eigen(H_double);
+    vector<mpq_t*> H = mpq_from_double(2 * K + 1, H_double);
 
-    map<Quadrant, QuadrantInfo> quadrant2info = compute_quadrants_with_cdd(A);
+    map<Quadrant, QuadrantInfo> quadrant2info = compute_quadrants_with_cdd(K, A);
 
     // Now I will compute the final V. This will allow me to verify that produced constraints do not
     // violate any of the original vertices and thus I produce a sound overapproximation.
@@ -201,23 +209,53 @@ void run_fkrelu_test(const string& path) {
     mpq_free_array_vector(2 * K + 1, H);
     mpq_free_array_vector(2 * K + 1, V);
     mpq_free_array_vector(H.size(), V_x_H);
+    free_mat(A);
+    free_mat(H_double);
 
     cout << "\tpassed" << endl;
 }
 
 void run_1relu_test() {
     cout << "running 1-relu test:" << endl;
-    MatrixXd inp(2, 2);
-    inp <<  2, 1,   // x >= -2
-            2, -1;  // x <= 2
+    vector<double*> inp = create_mat(2, 2);
 
-    MatrixXd expected(3, 3);
-    expected << 0, 0, 1,    // y >= 0
-            0, -1, 1,   // y >= x
-            1, 0.5, -1; // y <= 1 + 1/2 * x
+    // x >= -2
+    inp[0][0] = 2;
+    inp[0][1] = 1;
 
-    MatrixXd out = fkrelu(inp);
-    ASRTF(out == expected, "Actual and expected matrices should match.");
+    // x <= 2
+    inp[1][0] = 2;
+    inp[1][1] = -1;
+
+    vector<double*> expected = create_mat(3, 3);
+
+    // y >= 0
+    expected[0][0] = 0;
+    expected[0][1] = 0;
+    expected[0][2] = 1;
+
+    // y >= x
+    expected[1][0] = 0;
+    expected[1][1] = -1;
+    expected[1][2] = 1;
+
+    // y <= 1 + 1/2 * x
+    expected[2][0] = 1;
+    expected[2][1] = 0.5;
+    expected[2][2] = -1;
+
+    vector<double*> out = fkrelu(1, inp);
+
+    ASRTF(out.size() == 3, "Expected that output has 3 rows.");
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            ASRTF(out[i][j] == expected[i][j], "Actual and expected elements match.");
+        }
+    }
+    free_mat(inp);
+    free_mat(expected);
+    free_mat(out);
+
     cout << "\tpassed" << endl;
 }
 

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Eigen/Dense>
+std::vector<double*> fkrelu(int K, const std::vector<double*>& A);
 
-Eigen::MatrixXd fkrelu(const Eigen::MatrixXd& A);
-
-Eigen::MatrixXd krelu_with_cdd(const Eigen::MatrixXd& A);
+std::vector<double*> krelu_with_cdd(int K, const std::vector<double*>& A);
