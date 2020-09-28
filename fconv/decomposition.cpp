@@ -4,35 +4,50 @@
 
 using namespace std;
 
-void project_to_relu_y_branch(const int xi, PDD &pdd_dual, Polarity polarity) {
+void project_to_relu_y_branch(const int xi, PDD &pdd_dual,
+                              const Polarity polarity) {
   const int dim = pdd_dual.dim;
-  pdd_dual.dim += 1;
+  pdd_dual.dim++;
 
   // Intentionally swapped because PDD here is given in the dual view.
-  MatrixXd &V = pdd_dual.H;
-  MatrixXd &H = pdd_dual.V;
+  vector<double *> &V = pdd_dual.H;
+  vector<double *> &H = pdd_dual.V;
+
+  if (V.empty()) {
+    // There are no vertices - the further convex hull with an empty vertex set
+    // would not change the vertex set, thus I'm leaving it empty.
+    assert(H.empty() && "Consistency checking that H is empty.");
+    return;
+  }
   vector<bset> &incidence = pdd_dual.incidence;
 
-  H.conservativeResize(H.rows() + 2, dim + 1);
-  H.bottomRows(2) = MatrixXd::Zero(2, dim + 1);
-  H.rightCols(1) = MatrixXd::Zero(H.rows(), 1);
-  H(H.rows() - 2, dim) = 1;
-  H(H.rows() - 1, dim) = -1;
+  for (size_t i = 0; i < V.size(); i++) {
+    V[i] = (double *)realloc(V[i], sizeof(double) * (dim + 1));
+    if (polarity == MINUS) {
+      V[i][dim] = 0;
+    } else {
+      V[i][dim] = V[i][xi + 1];
+    }
+  }
+  for (size_t i = 0; i < H.size(); i++) {
+    H[i] = (double *)realloc(H[i], sizeof(double) * (dim + 1));
+    H[i][dim] = 0;
+  }
+  H.resize(H.size() + 2);
+  H[H.size() - 2] = (double *)calloc(dim + 1, sizeof(double));
+  H[H.size() - 1] = (double *)calloc(dim + 1, sizeof(double));
+
+  H[H.size() - 2][dim] = 1;
+  H[H.size() - 1][dim] = -1;
   if (polarity == PLUS) {
-    H(H.rows() - 2, xi + 1) = -1;
-    H(H.rows() - 1, xi + 1) = 1;
+    H[H.size() - 2][xi + 1] = -1;
+    H[H.size() - 1][xi + 1] = 1;
   }
 
-  V.conservativeResize(NoChange, dim + 1);
-  if (polarity == MINUS) {
-    V.rightCols(1) = MatrixXd::Zero(V.rows(), 1);
-  } else {
-    V.rightCols(1) = V.col(xi + 1);
-  }
-
-  incidence.emplace_back(V.rows());
+  incidence.reserve(V.size() + 2);
+  incidence.emplace_back(V.size());
   incidence.back().set();
-  incidence.emplace_back(V.rows());
+  incidence.emplace_back(V.size());
   incidence.back().set();
 }
 
@@ -50,13 +65,15 @@ PDD decomposition_recursive(Quadrant &quadrant,
 
     project_to_relu_y_branch(quadrant.size(), pdd_minus, MINUS);
     project_to_relu_y_branch(quadrant.size(), pdd_plus, PLUS);
+    PDD res = PDD_intersect_two_PDDs(pdd_minus, pdd_plus);
 
-    return PDD_intersect_two_PDDs(pdd_minus, pdd_plus);
+    return res;
   }
 }
 
 // TODO[gleb] Add support for multiple passes.
-MatrixXd decomposition(const map<Quadrant, PDD> &quadrant2pdd, const int K) {
+vector<double *> decomposition(const int K,
+                               const map<Quadrant, PDD> &quadrant2pdd) {
   ASRTF(2 <= K && K <= 5, "Only 2 <= K <= 5 are currently supported.");
   ASRTF((int)quadrant2pdd.size() == POW2[K],
         "Sanity check - the number of quadrants should be 2^K.");
@@ -64,16 +81,25 @@ MatrixXd decomposition(const map<Quadrant, PDD> &quadrant2pdd, const int K) {
   Quadrant quadrant{};
   quadrant.reserve(K);
   PDD res = decomposition_recursive(quadrant, quadrant2pdd, K);
-  MatrixXd &H = res.V;
-  MatrixXd &V = res.H;
+  vector<double *> &H = res.V;
+  vector<double *> &V = res.H;
 
-  PDD_adjust_H_for_soundness_finite_polytope(H, V);
+  PDD_adjust_H_for_soundness_finite_polytope(2 * K + 1, H, V);
 
-  // H is given in order (1, x1, ..., xk, yk, ..., y1) thus last k rows have to
-  // be reversed. For some reason if I don't do it through temporary variable it
-  // doesn't work.
-  MatrixXd H_rightCols_reversed = H.rightCols(K).rowwise().reverse();
-  H.rightCols(K) = H_rightCols_reversed;
+  // H is given in order (1, x1, ..., xk, yk, ..., y1) thus last k cols have to
+  // be reversed. The desired order is (1, x1, ..., xk, y1, ..., yk).
+  for (size_t hi = 0; hi < H.size(); hi++) {
+    int first = K + 1;
+    int last = 2 * K;
+    double *h = H[hi];
+    while (first < last) {
+      swap(h[first], h[last]);
+      first++;
+      last--;
+    }
+  }
+
+  free_mat(V);
 
   return H;
 }

@@ -1,6 +1,5 @@
 #include "mpq.h"
 #include "asrt.h"
-#include <Eigen/Dense>
 #include <cstdlib>
 #include <iostream>
 #include <vector>
@@ -16,7 +15,7 @@ mpq_t *mpq_create_array(const int n) {
   return arr;
 }
 
-mpq_t *mpq_create_and_copy_array(int n, const mpq_t *src) {
+mpq_t *mpq_create_and_copy_array(const int n, const mpq_t *src) {
   mpq_t *arr = mpq_create_array(n);
   for (int i = 0; i < n; i++) {
     mpq_set(arr[i], src[i]);
@@ -24,7 +23,7 @@ mpq_t *mpq_create_and_copy_array(int n, const mpq_t *src) {
   return arr;
 }
 
-void mpq_free_array(int n, mpq_t *arr) {
+void mpq_free_array(const int n, mpq_t *arr) {
   for (int i = 0; i < n; i++) {
     mpq_clear(arr[i]);
   }
@@ -40,35 +39,33 @@ bool mpq_arrays_are_equal(const int n, mpq_t *first, mpq_t *second) {
   return true;
 }
 
-Eigen::MatrixXd mpq_convert2eigen(const int n,
-                                  const std::vector<mpq_t *> &mpq_A) {
-  Eigen::MatrixXd eig_A(mpq_A.size(), n);
+vector<double *> mpq_to_double(const int n, const vector<mpq_t *> &mpq_A) {
+  vector<double *> A(mpq_A.size());
   for (size_t i = 0; i < mpq_A.size(); i++) {
-    mpq_t *row = mpq_A[i];
+    double *row = (double *)calloc(n, sizeof(double));
+    A[i] = row;
+    const mpq_t *mpq_row = mpq_A[i];
     for (int j = 0; j < n; j++) {
-      eig_A(i, j) = mpq_get_d(row[j]);
+      row[j] = mpq_get_d(mpq_row[j]);
     }
   }
-  return eig_A;
+  return A;
 }
 
-vector<mpq_t *> mpq_from_eigen(const Eigen::MatrixXd &A) {
-  vector<mpq_t *> out(A.rows());
-
-  const int num_cols = A.cols();
-  for (int i = 0; i < (int)A.rows(); i++) {
-    const auto &row_fp = A.row(i);
-    mpq_t *row_mpq = mpq_create_array(num_cols);
-    out[i] = row_mpq;
-    for (int j = 0; j < num_cols; j++) {
-      mpq_set_d(row_mpq[j], row_fp(j));
+vector<mpq_t *> mpq_from_double(const int n, const vector<double *> &A) {
+  vector<mpq_t *> mpq_A(A.size());
+  for (size_t i = 0; i < A.size(); i++) {
+    mpq_t *row_mpq = mpq_create_array(n);
+    mpq_A[i] = row_mpq;
+    const double *row = A[i];
+    for (int j = 0; j < n; j++) {
+      mpq_set_d(row_mpq[j], row[j]);
     }
   }
-
-  return out;
+  return mpq_A;
 }
 
-vector<mpq_t *> mpq_copy_array_vector(int n,
+vector<mpq_t *> mpq_copy_array_vector(const int n,
                                       const vector<mpq_t *> &src_vector) {
   vector<mpq_t *> copy(src_vector.size());
 
@@ -79,13 +76,13 @@ vector<mpq_t *> mpq_copy_array_vector(int n,
   return copy;
 }
 
-void mpq_free_array_vector(int n, vector<mpq_t *> &vec) {
+void mpq_free_array_vector(const int n, vector<mpq_t *> &vec) {
   for (const auto &arr : vec) {
     mpq_free_array(n, arr);
   }
 }
 
-void mpq_print_array(int n, const mpq_t *v) {
+void mpq_print_array(const int n, const mpq_t *v) {
   for (int i = 0; i < n; i++) {
     cout << mpq_get_d(v[i]) << " ";
   }

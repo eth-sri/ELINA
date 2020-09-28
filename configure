@@ -22,7 +22,6 @@ where options include:
   -gmp-prefix dir      where to find the GMP library
   -mpfr-prefix dir     where to find the MPFR library
   -java-prefix dir     where to find Java
-  -eigen-prefix dir    where to find Eigen library
   -boost-prefix dir    where to find Boost library
   -use-vector          use vector instructions for the Octagon library
   -use-ocaml           enable OCaml support (only available with APRON)
@@ -42,7 +41,6 @@ Environment variables that affect configuration:
   GMP_PREFIX           where to find the GMP library
   MPFR_PREFIX          where to find the MPFR library
   CDD_PREFIX           where to find the CDD library
-  EIGEN_PREFIX		   where to find the Eigen library
   BOOST_PREFIX		   where to find the Boost library
   JAVA_HOME            where to find Java
 
@@ -58,7 +56,6 @@ EOF
 elina_prefix=/usr/local
 apron_prefix=/usr/local
 cdd_prefix=/usr/local/include/cddlib
-eigen_prefix=/usr/local/include/eigen3
 has_ocaml=0
 has_ocamlfind=0
 has_java=0
@@ -93,9 +90,6 @@ while : ; do
         -cdd-prefix|--cdd-prefix)
             cdd_prefix="$2"
             shift;;
-        -eigen-prefix|--eigen-prefix)
-        	eigen_prefix="$2"
-        	shift;;
         -boost-prefix|--boost-prefix)
         	boost_prefix="$2"
         	shift;;
@@ -547,7 +541,6 @@ USE_DEEPPOLY = $use_deeppoly
 # if define to USE_FCONV, compile Fconv
 USE_FCONV = $use_fconv
 CDD_PREFIX = $cdd_prefix
-EIGEN_PREFIX = $eigen_prefix
 BOOST_PREFIX = $boost_prefix
 
 # if defined to VECTOR, compile GPUPoly (the GPU version of DeepPoly)

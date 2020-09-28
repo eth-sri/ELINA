@@ -1,11 +1,24 @@
 #include "utils.h"
 #include "cdd.h"
 #include "setoper.h"
-#include <Eigen/Dense>
 #include <iostream>
 #include <numeric>
 
 using namespace std;
+
+vector<double *> create_mat(const int rows, const int cols) {
+  vector<double *> mat(rows);
+  for (int i = 0; i < rows; i++) {
+    mat[i] = (double *)calloc(cols, sizeof(double));
+  }
+  return mat;
+}
+
+void free_mat(const vector<double *> &mat) {
+  for (auto v : mat) {
+    free(v);
+  }
+}
 
 Timer::Timer() {
     start = chrono::high_resolution_clock::now();
@@ -29,6 +42,8 @@ vector<int> compute_maximal_indexes(const vector<bset> &incidence) {
   vector<int> indexes_by_cardinality(num_members);
   iota(indexes_by_cardinality.begin(), indexes_by_cardinality.end(), 0);
 
+  // TODO[gleb] If the count() function is expensive - there is a potential
+  // optimization.
   sort(indexes_by_cardinality.begin(), indexes_by_cardinality.end(),
        [&incidence](int i, int j) {
          return incidence[i].count() > incidence[j].count();
@@ -59,7 +74,7 @@ vector<int> compute_maximal_indexes(const vector<bset> &incidence) {
   return maximal;
 }
 
-MatrixXd read_matrix(const string &path) {
+vector<double *> read_matrix(int &num_cols, const string &path) {
   ifstream file(path);
   asrt(file.is_open(), "File could not be opened.");
 
@@ -75,44 +90,44 @@ MatrixXd read_matrix(const string &path) {
     rows.push_back(row);
   }
 
-  size_t num_rows = rows.size();
+  int num_rows = (int)rows.size();
   ASRTF(num_rows > 0, "Expected to read at least one row.");
-  size_t num_cols = rows[0].size();
+  num_cols = (int)rows[0].size();
 
   for (auto &row : rows) {
-    ASRTF(row.size() == num_cols,
+    ASRTF((int)row.size() == num_cols,
           "The number of doubles in every row should match.");
   }
 
-  MatrixXd mat(num_rows, num_cols);
-  for (size_t i = 0; i < num_rows; i++) {
-    for (size_t j = 0; j < num_cols; j++) {
-      mat(i, j) = rows[i][j];
+  vector<double *> mat = create_mat(num_rows, num_cols);
+  for (int i = 0; i < num_rows; i++) {
+    for (int j = 0; j < num_cols; j++) {
+      mat[i][j] = rows[i][j];
     }
   }
 
   return mat;
 }
 
-dd_MatrixPtr eigen2cdd(const MatrixXd &A) {
-  dd_MatrixPtr cdd_A = dd_CreateMatrix(A.rows(), A.cols());
+dd_MatrixPtr double2cdd(const int n, const vector<double *> &A) {
+  dd_MatrixPtr cdd_A = dd_CreateMatrix(A.size(), n);
   ASRTF(cdd_A != nullptr, "Failed to create cdd_A.");
-  for (int i = 0; i < A.rows(); i++) {
-    for (int j = 0; j < A.cols(); j++) {
-      dd_set_d(cdd_A->matrix[i][j], A(i, j));
+  for (int i = 0; i < (int)A.size(); i++) {
+    for (int j = 0; j < n; j++) {
+      dd_set_d(cdd_A->matrix[i][j], A[i][j]);
     }
   }
   return cdd_A;
 }
 
-MatrixXd cdd2eigen(dd_MatrixPtr cdd_A) {
+vector<double *> cdd2double(dd_MatrixPtr cdd_A) {
   const int rows = cdd_A->rowsize;
   const int cols = cdd_A->colsize;
 
-  MatrixXd A(rows, cols);
+  vector<double *> A = create_mat(rows, cols);
   for (int i = 0; i < rows; i++) {
     for (int j = 0; j < cols; j++) {
-      A(i, j) = mpq_get_d(cdd_A->matrix[i][j]);
+      A[i][j] = mpq_get_d(cdd_A->matrix[i][j]);
     }
   }
   return A;

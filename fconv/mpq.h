@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Eigen/Dense>
 #include <gmp.h>
 #include <vector>
 
@@ -14,9 +13,9 @@ void mpq_free_array(int n, mpq_t *arr);
 
 bool mpq_arrays_are_equal(int n, mpq_t *first, mpq_t *second);
 
-Eigen::MatrixXd mpq_convert2eigen(int n, const std::vector<mpq_t *> &mpq_A);
+vector<double *> mpq_to_double(int n, const vector<mpq_t *> &mpq_A);
 
-vector<mpq_t *> mpq_from_eigen(const Eigen::MatrixXd &A);
+vector<mpq_t *> mpq_from_double(int n, const vector<double *> &A);
 
 vector<mpq_t *> mpq_copy_array_vector(int n, const vector<mpq_t *> &src_vector);
 

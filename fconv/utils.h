@@ -3,7 +3,6 @@
 #include "asrt.h"
 #include "cdd.h"
 #include "setoper.h"
-#include <Eigen/Dense>
 #include <array>
 #include <boost/dynamic_bitset.hpp>
 #include <chrono>
@@ -17,9 +16,12 @@
 constexpr double EPS = 1.0E-7;
 
 using namespace std;
-using namespace Eigen;
 
 using bset = boost::dynamic_bitset<>;
+
+vector<double *> create_mat(int rows, int cols);
+
+void free_mat(const vector<double *> &mat);
 
 class Timer {
     chrono::time_point<chrono::high_resolution_clock> start;
@@ -32,19 +34,15 @@ public:
 
 vector<int> compute_maximal_indexes(const vector<bset> &incidence);
 
-MatrixXd read_matrix(const string &path);
+vector<double *> read_matrix(int &cols, const string &path);
 
-dd_MatrixPtr eigen2cdd(const MatrixXd &A);
+dd_MatrixPtr double2cdd(int n, const vector<double *> &A);
 
-MatrixXd cdd2eigen(dd_MatrixPtr cdd_A);
+vector<double *> cdd2double(dd_MatrixPtr cdd_A);
 
 void print_vertices(const int dim, const vector<mpq_t *> &vertices);
 
 using Adj = pair<int, int>;
-
-using RowXd = Matrix<double, 1, Eigen::Dynamic>;
-
-using ColXd = Matrix<double, Eigen::Dynamic, 1>;
 
 enum Polarity { MINUS, PLUS };
 
