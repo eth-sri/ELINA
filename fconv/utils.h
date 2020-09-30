@@ -9,15 +9,13 @@
 #include <string>
 #include <chrono>
 #include <iostream>
-#include <boost/dynamic_bitset.hpp>
 #include "asrt.h"
+#include "dynamic_bitset.h"
 
 // I consider to be a zero everything that is abs(x) <= EPS.
 constexpr double EPS = 1.0E-7;
 
 using namespace std;
-
-using bset = boost::dynamic_bitset<>;
 
 vector<double*> create_mat(int rows, int cols);
 
@@ -32,7 +30,7 @@ public:
     int micros();
 };
 
-vector<int> compute_maximal_indexes(const vector<bset>& incidence);
+vector<int> compute_maximal_indexes(const vector<set_t>& incidence);
 
 vector<double*> read_matrix(int& cols, const string& path);
 
@@ -54,7 +52,7 @@ using Quadrant = vector<Polarity>;
 struct QuadrantInfo {
     int dim;
     vector<mpq_t*> V;
-    vector<bset> V_to_H_incidence;
+    vector<set_t> V_to_H_incidence;
 };
 
 constexpr int POW2[11] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};

@@ -3,6 +3,7 @@
 #include <signal.h>
 #include "gmp.h"
 #include "utils.h"
+#include "dynamic_bitset.h"
 
 using namespace std;
 
@@ -17,7 +18,7 @@ struct OctahedronV {
     vector<Adj> orthant_adjacencies;
 
     // Incidence of vertices to input octahedron constraints.
-    vector<bset> incidence;
+    vector<set_t> incidence;
 };
 
 OctahedronV compute_octahedron_V(int K, const vector<double*>& A);

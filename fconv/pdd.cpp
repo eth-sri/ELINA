@@ -1,3 +1,4 @@
+#include <cassert>
 #include "pdd.h"
 
 // This can be optimized if there will be a need for it.
@@ -22,34 +23,40 @@ vector<double*> mat_mul_with_transpose(const int n,
 
 struct PDD_VInc {
     vector<double*> V;
-    vector<bset> incidence;
+    vector<set_t> incidence;
 };
 
 /*
  * The function takes ownership of the input's memory.
  */
-PDD_VInc PDD_make_irredundant(const vector<double*>& V, const vector<bset>& incidence) {
+PDD_VInc PDD_make_irredundant(const vector<double*>& V, const vector<set_t>& incidence) {
     assert(
             V.size() == incidence.size() &&
-            "Consistency checking that size of V equals size of incidence.");
+            "V.size() should equal incidence.size()");
     vector<int> maximal = compute_maximal_indexes(incidence);
     vector<double*> V_res(maximal.size());
-    vector<bset> incidence_res(maximal.size());
-    bset is_maximal(V.size());
+    vector<set_t> incidence_res(maximal.size());
+    set_t is_maximal = set_create(V.size());
     for (int i : maximal) {
-        is_maximal.set(i);
+        set_set(is_maximal, i);
     }
     size_t count = 0;
     for (size_t i = 0; i < V.size(); i++) {
-        if (is_maximal.test(i)) {
+        if (set_test(is_maximal, i)) {
             V_res[count] = V[i];
             incidence_res[count] = incidence[i];
             count++;
         } else {
             free(V[i]);
+            set_free(incidence[i]);
         }
     }
     assert(count == maximal.size() && "Consistency checking that count == maximal.size().");
+    set_free(is_maximal);
+
+    assert(
+            V_res.size() == incidence_res.size() &&
+            "V_res.size() should equal incidence_res.size()");
 
     return {V_res, incidence_res};
 }
@@ -59,7 +66,7 @@ PDD_VInc PDD_make_irredundant(const vector<double*>& V, const vector<bset>& inci
  * pdd.V and pdd.incidence to PDD_VInc.
  * It leaves pdd in inconsistent state - and the function is only to be used internally.
  */
-PDD_VInc PDD_batch_intersect_helper(const PDD& pdd, const vector<double*>& H_new) {
+PDD_VInc PDD_batch_intersect_helper(PDD& pdd, const vector<double*>& H_new) {
     const int dim = pdd.dim;
 
     ASRTF(!H_new.empty(), "There should be non-empty number of new hyperplanes.");
@@ -73,34 +80,36 @@ PDD_VInc PDD_batch_intersect_helper(const PDD& pdd, const vector<double*>& H_new
     // Points that violate at least one of the constraints.
     vector<int> outs;
     vector<vector<int>> outs_violation_vec;
-    vector<bset> outs_violation;
-    vector<bset> outs_incidence;
-    vector<bset> outs_incidence_new;
+    vector<set_t> outs_violation;
+    vector<set_t> outs_incidence;
+    vector<set_t> outs_incidence_new;
     // Points that don't violate any constraints.
     vector<int> ins;
-    vector<bset> ins_incidence;
-    vector<bset> ins_incidence_new;
+    vector<set_t> ins_incidence;
+    vector<set_t> ins_incidence_new;
 
     for (size_t vi = 0; vi < pdd.V.size(); vi++) {
         vector<int> vio_vec;
-        bset vio(H_new.size());
-        bset inc_new(H_new.size());
-        bset inc = pdd.incidence[vi]; // Intentionally doing a copy.
-        assert(inc.size() == pdd.H.size() && "Sanity checking the size of incidence.");
-        inc.resize(pdd.H.size() + H_new.size());
+        set_t vio = set_create(H_new.size());
+        set_t inc_new = set_create(H_new.size());
+        set_t& inc = pdd.incidence[vi];
+        assert(set_size(inc) == (int) pdd.H.size() && "Sanity checking the size of incidence.");
+        inc = set_resize(inc, pdd.H.size() + H_new.size());
         const double* v_x_H = V_x_H[vi];
 
         for (size_t hi = 0; hi < H_new.size(); hi++) {
             double val = v_x_H[hi];
             if (val < -EPS) {
                 vio_vec.push_back(hi);
-                vio.set(hi);
+                set_set(vio, hi);
             } else if (val <= EPS) {
-                inc_new.set(hi);
-                inc.set(pdd.H.size() + hi);
+                set_set(inc_new, hi);
+                set_set(inc, pdd.H.size() + hi);
             }
         }
-        assert(vio_vec.size() == vio.count() && "Sanity check violation sizes should match.");
+        assert(
+                (int) vio_vec.size() == set_count(vio) &&
+                "Sanity check violation sizes should match.");
         if (!vio_vec.empty()) {
             outs.push_back(vi);
             outs_violation_vec.push_back(vio_vec);
@@ -108,6 +117,7 @@ PDD_VInc PDD_batch_intersect_helper(const PDD& pdd, const vector<double*>& H_new
             outs_incidence.push_back(inc);
             outs_incidence_new.push_back(inc_new);
         } else {
+            set_free(vio);
             ins.push_back(vi);
             ins_incidence.push_back(inc);
             ins_incidence_new.push_back(inc_new);
@@ -116,7 +126,7 @@ PDD_VInc PDD_batch_intersect_helper(const PDD& pdd, const vector<double*>& H_new
 
     size_t max_count = outs.size() * ins.size() + ins.size();
     vector<double*> V_res(max_count);
-    vector<bset> V_res_incidence(max_count);
+    vector<set_t> V_res_incidence(max_count);
 
     size_t count = 0;
     for (size_t i_out = 0; i_out < outs.size(); i_out++) {
@@ -125,18 +135,18 @@ PDD_VInc PDD_batch_intersect_helper(const PDD& pdd, const vector<double*>& H_new
         const double* V_out = pdd.V[out];
 
         const vector<int>& vio_vec = outs_violation_vec[i_out];
-        const bset& vio = outs_violation[i_out];
-        const bset& out_inc = outs_incidence[i_out];
+        const set_t vio = outs_violation[i_out];
+        const set_t out_inc = outs_incidence[i_out];
 
         for (size_t i_in = 0; i_in < ins.size(); i_in++) {
-            const bset& in_inc_new = ins_incidence_new[i_in];
+            const set_t in_inc_new = ins_incidence_new[i_in];
 
-            if ((vio & in_inc_new).any()) {
+            if (set_intersect_by_any(vio, in_inc_new)) {
                 continue;
             }
 
             const int in = ins[i_in];
-            const bset& in_inc = ins_incidence[i_in];
+            const set_t in_inc = ins_incidence[i_in];
 
             // This code can be accelerated using the analog of the Chernikova criteria.
             // That is based on the cardinality of intersection of in_inc and out_inc.
@@ -178,13 +188,13 @@ PDD_VInc PDD_batch_intersect_helper(const PDD& pdd, const vector<double*>& H_new
             }
 
             V_res[count] = v;
-            V_res_incidence[count] = in_inc & out_inc;
+            V_res_incidence[count] = set_intersect(in_inc, out_inc);
 
             // Note that theoretically ray-shooting might hit multiple hyperplanes at a time.
             // So the incidence potentially can be slightly bigger for this vertex, and it is very
             // easy to implement it in exact precision. However, with fp its more tricky and
             // since we are anyway approximating, I'm keeping it simple.
-            V_res_incidence[count].set(pdd.H.size() + argmin_h);
+            set_set(V_res_incidence[count], pdd.H.size() + argmin_h);
             count++;
         }
     }
@@ -192,9 +202,9 @@ PDD_VInc PDD_batch_intersect_helper(const PDD& pdd, const vector<double*>& H_new
     // It is also possible to do negative-negative ray-shooting.
     // But for now I have removed it since it didn't prove to be very useful for our problem.
 
-    for (size_t i = 0; i < ins.size(); i++) {
-        V_res[count] = pdd.V[ins[i]];
-        V_res_incidence[count] = ins_incidence[i];
+    for (int in : ins) {
+        V_res[count] = pdd.V[in];
+        V_res_incidence[count] = pdd.incidence[in];
         count++;
     }
 
@@ -204,6 +214,7 @@ PDD_VInc PDD_batch_intersect_helper(const PDD& pdd, const vector<double*>& H_new
 
     for (int out : outs) {
         free(pdd.V[out]);
+        set_free(pdd.incidence[out]);
     }
 
     free_mat(V_x_H);
@@ -245,23 +256,28 @@ PDD PDD_intersect_two_PDDs(PDD& pdd1, PDD& pdd2) {
         V.push_back(v);
     }
 
-    vector<bset>& V_incidence = VInc1.incidence;
+    vector<set_t>& V_incidence = VInc1.incidence;
     V_incidence.reserve(V.size());
 
     const size_t num_H1 = H1.size();
     const size_t num_H2 = H2.size();
+    // For this I should implement a specialized operation in dynamic bitset class.
+    // It can be implemented efficiently with bit-wise operations.
     for (auto& inc_H2_H1 : VInc2.incidence) {
-        bset inc(num_H1 + num_H2);
-        // Probably there is a much more efficient way to do this operation,
-        // but I doubt that it will be a bottleneck. Should double check.
+        set_t inc = set_create(num_H1 + num_H2);
         for (size_t i = 0; i < num_H1; i++) {
-            inc.set(i, inc_H2_H1.test(num_H2 + i));
+            if (set_test(inc_H2_H1, num_H2 + i)) {
+                set_set(inc, i);
+            }
         }
         for (size_t i = 0; i < num_H2; i++) {
-            inc.set(num_H1 + i, inc_H2_H1.test(i));
+            if (set_test(inc_H2_H1, i)) {
+                set_set(inc, num_H1 + i);
+            }
         }
         V_incidence.push_back(inc);
     }
+    set_free_vector(VInc2.incidence);
 
     PDD_VInc VInc = PDD_make_irredundant(V, V_incidence);
 

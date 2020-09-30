@@ -1,4 +1,5 @@
 #include <map>
+#include <cassert>
 #include "fkrelu.h"
 #include "octahedron.h"
 #include "split_in_quadrants.h"
@@ -6,27 +7,6 @@
 #include "pdd.h"
 #include "mpq.h"
 #include "utils.h"
-
-vector<bset> transpose_incidence(const vector<bset>& input) {
-    ASRTF(!input.empty(), "The function doesn't support empty input.");
-
-    const size_t num_rows = input.size();
-    const size_t num_cols = input[0].size();
-
-    vector<bset> output(num_cols, bset(num_rows));
-    for (size_t row = 0; row < num_rows; row++) {
-        const bset& in_row = input[row];
-        assert(in_row.size() == num_cols && "All incidences should be of the same size.");
-        for (size_t col = 0; col < num_cols; col++) {
-            if (!in_row.test(col)) {
-                continue;
-            }
-            output[col].set(row);
-        }
-    }
-
-    return output;
-}
 
 // Computation of relaxation for 1-relu easily done with analytical formula.
 vector<double*> relu_1(double lb, double ub) {
@@ -71,7 +51,6 @@ void verify_fkrelu_input(const int K, const vector<double*>& A) {
 
 vector<double*> fkrelu(const int K, const vector<double*>& A) {
     ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
-//    cout << "In fkrelu K is "  << K << endl;
     verify_fkrelu_input(K, A);
     if (K == 1) {
         return relu_1(-A[0][0], A[1][0]);
@@ -98,30 +77,41 @@ vector<double*> fkrelu(const int K, const vector<double*>& A) {
         vector<double*> V = mpq_to_double(K + 1, V_mpq);
         mpq_free_array_vector(K + 1, V_mpq);
 
-        const vector<bset>& incidence_V_to_H = pair.second.V_to_H_incidence;
+        const vector<set_t>& incidence_V_to_H = pair.second.V_to_H_incidence;
         assert(
                 incidence_V_to_H.size() == V.size() &&
-                "Incidence_V_to_H size should equal V.size()");
-        vector<bset> incidence_H_to_V_with_redundancy = transpose_incidence(incidence_V_to_H);
+                "Incidence_V_to_H.size() should equal V.size()");
+        vector<set_t> incidence_H_to_V_with_redundancy = set_transpose(incidence_V_to_H);
+        set_free_vector(incidence_V_to_H);
         assert(
                 incidence_H_to_V_with_redundancy.size() == A.size() + K &&
-                "Incidence_H_to_V_with_redundancy size should equal A.size() + K");
+                "Incidence_H_to_V_with_redundancy.size() should equal A.size() + K");
         vector<int> maximal_H = compute_maximal_indexes(incidence_H_to_V_with_redundancy);
+        set_t is_maximal = set_create(incidence_H_to_V_with_redundancy.size());
+        for (auto i : maximal_H) {
+            set_set(is_maximal, i);
+        }
 
         vector<double*> H(maximal_H.size());
-        vector<bset> incidence_H_to_V(maximal_H.size());
+        vector<set_t> incidence_H_to_V(maximal_H.size());
 
-        for (size_t i = 0; i < maximal_H.size(); i++) {
+        int count = 0;
+        for (size_t i = 0; i < incidence_H_to_V_with_redundancy.size(); i++) {
+            if (!set_test(is_maximal, i)) {
+                set_free(incidence_H_to_V_with_redundancy[i]);
+                continue;
+            }
             double* h = (double*) calloc(K + 1, sizeof(double));
-            H[i] = h;
-            int maximal = maximal_H[i];
-            incidence_H_to_V[i] = incidence_H_to_V_with_redundancy[maximal];
-            if (maximal < (int) A.size()) {
-                for (int i = 0; i < K + 1; i++) {
-                    h[i] = A[maximal][i];
+            H[count] = h;
+            incidence_H_to_V[count] = incidence_H_to_V_with_redundancy[i];
+            count++;
+            if (i < A.size()) {
+                const double* a = A[i];
+                for (int j = 0; j < K + 1; j++) {
+                    h[j] = a[j];
                 }
             } else {
-                int xi = maximal - (int) A.size();
+                int xi = i - (int) A.size();
                 assert(0 <= xi && xi < K && "Sanity checking the range of xi.");
                 if (quadrant[xi] == MINUS) {
                     h[xi + 1] = -1;
@@ -130,7 +120,8 @@ vector<double*> fkrelu(const int K, const vector<double*>& A) {
                 }
             }
         }
-
+        assert(count == (int) maximal_H.size() && "count should equal maximal_H.size()");
+        set_free(is_maximal);
         quadrant2pdd[quadrant] = {K + 1, V, H, incidence_H_to_V};
     }
     return decomposition(K, quadrant2pdd);
@@ -165,7 +156,8 @@ vector<double*> krelu_with_cdd(const int K, const vector<double*>& A) {
             }
             for (int i = 0; i < K; i++) {
                 if (quadrant[i] == PLUS) {
-                    // Only need to set for the case of PLUS, because in case of MINUS there should be 0.
+                    // Only need to set for the case of PLUS,
+                    // because in case of MINUS there should be 0.
                     // And it is already there automatically.
                     mpq_set(v_projection[1 + i + K], v[1 + i]);
                 }
