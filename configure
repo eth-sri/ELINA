@@ -22,7 +22,6 @@ where options include:
   -gmp-prefix dir      where to find the GMP library
   -mpfr-prefix dir     where to find the MPFR library
   -java-prefix dir     where to find Java
-  -boost-prefix dir    where to find Boost library
   -use-vector          use vector instructions for the Octagon library
   -use-ocaml           enable OCaml support (only available with APRON)
   -use-ocamlfind       enable OCamlfind support
@@ -90,9 +89,6 @@ while : ; do
         -cdd-prefix|--cdd-prefix)
             cdd_prefix="$2"
             shift;;
-        -boost-prefix|--boost-prefix)
-        	boost_prefix="$2"
-        	shift;;
         -java-prefix|--java-prefix)
             java_prefix="$2"
             shift;;
@@ -541,7 +537,6 @@ USE_DEEPPOLY = $use_deeppoly
 # if define to USE_FCONV, compile Fconv
 USE_FCONV = $use_fconv
 CDD_PREFIX = $cdd_prefix
-BOOST_PREFIX = $boost_prefix
 
 # if defined to VECTOR, compile GPUPoly (the GPU version of DeepPoly)
 IS_CUDA = $is_cuda

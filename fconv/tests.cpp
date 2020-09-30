@@ -4,10 +4,12 @@
 #include "sparse_cover.h"
 #include "split_in_quadrants.h"
 #include "utils.h"
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <set>
 #include <string>
+#include <unistd.h>
 
 constexpr int K2NUM_TESTS[6] = {0, 2, 4, 5, 4, 4};
 
@@ -91,13 +93,15 @@ void run_octahedron_test(const string &path) {
 
   for (size_t i = 0; i < fast.incidence.size(); i++) {
     // I intentionally do a copy here so I can modify it.
-    const bset &inc_fast = fast.incidence[i];
-    const bset &inc_slow = slow.incidence[mapping[i]];
-    ASRTF(inc_fast.size() == inc_slow.size(),
+    const set_t inc_fast = fast.incidence[i];
+    const set_t inc_slow = slow.incidence[mapping[i]];
+    ASRTF(set_size(inc_fast) == set_size(inc_slow),
           "Sizes of incidence should match.");
-    ASRTF(inc_fast == inc_slow, "Incidence should match.");
+    ASRTF(set_equal(inc_fast, inc_slow), "Incidence should match.");
   }
 
+  set_free_vector(fast.incidence);
+  set_free_vector(slow.incidence);
   mpq_free_array_vector(K + 1, fast.V);
   mpq_free_array_vector(K + 1, slow.V);
   free_mat(A);
@@ -139,30 +143,31 @@ void run_split_in_quadrants_test(const string &path) {
         get_bijective_mapping_for_matrix_rows(K + 1, mine.V, gt.V);
 
     const size_t num_v = mine.V.size();
-    const vector<bset> &gt_incidence = gt.V_to_H_incidence;
-    const vector<bset> &mine_incidence = mine.V_to_H_incidence;
+    const vector<set_t> &gt_incidence = gt.V_to_H_incidence;
+    const vector<set_t> &mine_incidence = mine.V_to_H_incidence;
     ASRTF(gt_incidence.size() == num_v,
           "The size of incidence should equal num_v.");
     ASRTF(mine_incidence.size() == num_v,
           "The size of incidence should equal num_v.");
 
     for (size_t i = 0; i < num_v; i++) {
-      // I intentionally do a copy here so I can modify it.
-      const bset &inc_fast = mine_incidence[i];
-      const bset &inc_slow = gt_incidence[mapping[i]];
-      ASRTF((int)inc_fast.size() == num_h + K,
+      const set_t inc_fast = mine_incidence[i];
+      const set_t inc_slow = gt_incidence[mapping[i]];
+      ASRTF(set_size(inc_fast) == num_h + K,
             "Size of inc_fast should be num_h + K.");
-      ASRTF((int)inc_slow.size() == num_h + K,
+      ASRTF(set_size(inc_slow) == num_h + K,
             "Size of inc_slow should be num_h + K.");
-      ASRTF(inc_fast == inc_slow, "Incidence should be equal.");
+      ASRTF(set_equal(inc_fast, inc_slow), "Incidence should be equal.");
     }
   }
 
   for (auto &entry : fast) {
     mpq_free_array_vector(K + 1, entry.second.V);
+    set_free_vector(entry.second.V_to_H_incidence);
   }
   for (auto &entry : slow) {
     mpq_free_array_vector(K + 1, entry.second.V);
+    set_free_vector(entry.second.V_to_H_incidence);
   }
   free_mat(A);
 
@@ -202,8 +207,9 @@ void run_fkrelu_test(const string &path) {
       }
       for (int i = 0; i < K; i++) {
         if (quadrant[i] == PLUS) {
-          // Only need to set for the case of PLUS, because in case of MINUS
-          // there should be 0. And it is already there automatically.
+          // Only need to set for the case of PLUS,
+          // because in case of MINUS there should be 0.
+          // And it is already there automatically.
           mpq_set(v_projection[1 + i + K], v[1 + i]);
         }
       }

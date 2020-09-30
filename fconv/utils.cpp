@@ -1,8 +1,9 @@
-#include "utils.h"
-#include "cdd.h"
-#include "setoper.h"
 #include <iostream>
-#include <numeric>
+#include <algorithm>
+#include "utils.h"
+#include "setoper.h"
+#include "cdd.h"
+#include "dynamic_bitset.h"
 
 using namespace std;
 
@@ -30,48 +31,49 @@ int Timer::micros() {
 }
 
 // It also does not remove members that have full incidence.
-vector<int> compute_maximal_indexes(const vector<bset> &incidence) {
-  if (incidence.empty()) {
-    return {};
-  }
-  size_t num_members = incidence.size();
-  size_t num_containers = incidence[0].size();
-  if (num_containers == 0) {
-    return {};
-  }
-  vector<int> indexes_by_cardinality(num_members);
-  iota(indexes_by_cardinality.begin(), indexes_by_cardinality.end(), 0);
-
-  // TODO[gleb] If the count() function is expensive - there is a potential
-  // optimization.
-  sort(indexes_by_cardinality.begin(), indexes_by_cardinality.end(),
-       [&incidence](int i, int j) {
-         return incidence[i].count() > incidence[j].count();
-       });
-
-  vector<int> maximal;
-  int count_full_incidence = 0;
-  for (int i : indexes_by_cardinality) {
-    const bset &inc_i = incidence[i];
-    if (inc_i.count() == num_containers) {
-      count_full_incidence++;
-      maximal.push_back(i);
-      continue;
+vector<int> compute_maximal_indexes(const vector<set_t>& incidence) {
+    if (incidence.empty()) {
+        return {};
     }
-    bool is_subset = false;
-    for (int j = count_full_incidence; j < (int)maximal.size(); j++) {
-      if (inc_i.is_subset_of(incidence[maximal[j]])) {
-        is_subset = true;
-        break;
-      }
+    size_t num_members = incidence.size();
+    int num_containers = set_size(incidence[0]);
+    if (num_containers == 0) {
+        return {};
     }
-    if (!is_subset) {
-      maximal.push_back(i);
-    }
-  }
 
-  sort(maximal.begin(), maximal.end());
-  return maximal;
+    vector<int> indexes_by_cardinality(num_members);
+    vector<int> cardinalities(num_members);
+    for (size_t i = 0; i < num_members; i++) {
+        indexes_by_cardinality[i] = i;
+        cardinalities[i] = set_count(incidence[i]);
+    }
+
+    sort(indexes_by_cardinality.begin(), indexes_by_cardinality.end(),
+         [&cardinalities](int i, int j){return cardinalities[i] > cardinalities[j];});
+
+    vector<int> maximal;
+    int count_full_incidence = 0;
+    for (int i : indexes_by_cardinality) {
+        if (cardinalities[i] == num_containers) {
+            count_full_incidence++;
+            maximal.push_back(i);
+            continue;
+        }
+        bool is_subset = false;
+        const set_t inc_i = incidence[i];
+        for (int j = count_full_incidence; j < (int) maximal.size(); j++) {
+            if (set_is_subset_of(inc_i, incidence[maximal[j]])) {
+                is_subset = true;
+                break;
+            }
+        }
+        if (!is_subset) {
+            maximal.push_back(i);
+        }
+    }
+
+    sort(maximal.begin(), maximal.end());
+    return maximal;
 }
 
 vector<double *> read_matrix(int &num_cols, const string &path) {

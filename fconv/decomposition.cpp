@@ -1,4 +1,5 @@
 #include <map>
+#include <cassert>
 #include "pdd.h"
 #include "utils.h"
 
@@ -19,7 +20,7 @@ void project_to_relu_y_branch(const int xi, PDD &pdd_dual,
     assert(H.empty() && "Consistency checking that H is empty.");
     return;
   }
-  vector<bset> &incidence = pdd_dual.incidence;
+  vector<set_t> &incidence = pdd_dual.incidence;
 
   for (size_t i = 0; i < V.size(); i++) {
     V[i] = (double *)realloc(V[i], sizeof(double) * (dim + 1));
@@ -44,18 +45,26 @@ void project_to_relu_y_branch(const int xi, PDD &pdd_dual,
     H[H.size() - 1][xi + 1] = 1;
   }
 
-  incidence.reserve(V.size() + 2);
-  incidence.emplace_back(V.size());
-  incidence.back().set();
-  incidence.emplace_back(V.size());
-  incidence.back().set();
+  // Incidence size equals previous size of H which is now increased by 2.
+  incidence.resize(H.size());
+  incidence[incidence.size() - 2] = set_create(V.size());
+  incidence[incidence.size() - 1] = set_create(V.size());
+  set_set_all(incidence[incidence.size() - 2]);
+  set_set_all(incidence[incidence.size() - 1]);
 }
 
 PDD decomposition_recursive(Quadrant &quadrant,
                             const map<Quadrant, PDD> &quadrant2pdd,
                             const int K) {
   if ((int)quadrant.size() == K) {
-    return quadrant2pdd.at(quadrant);
+    PDD pdd = quadrant2pdd.at(quadrant);
+    assert(pdd.V.size() == pdd.incidence.size() &&
+           "Consistency checking V.size() equals incidence.size().");
+    if (!pdd.V.empty()) {
+      assert((int)pdd.H.size() == set_size(pdd.incidence[0]) &&
+             "H.size() should equal size of incidence[0].");
+    }
+    return pdd;
   } else {
     quadrant.push_back(MINUS);
     PDD pdd_minus = decomposition_recursive(quadrant, quadrant2pdd, K);
@@ -100,6 +109,7 @@ vector<double *> decomposition(const int K,
   }
 
   free_mat(V);
+  set_free_vector(res.incidence);
 
   return H;
 }

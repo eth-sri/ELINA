@@ -1,7 +1,6 @@
 #pragma once
 
 #include "utils.h"
-#include <boost/dynamic_bitset.hpp>
 
 using namespace std;
 
@@ -9,7 +8,7 @@ struct PDD {
     int dim;
     vector<double*> H;
     vector<double*> V;
-    vector<bset> incidence; // V to H incidence.
+    vector<set_t> incidence; // V to H incidence.
 };
 
 /* Function transfers the memory ownership of H_new to pdd. */
