@@ -1,5 +1,6 @@
 #include <map>
 #include <cassert>
+#include <cstring>
 #include "fkrelu.h"
 #include "octahedron.h"
 #include "split_in_quadrants.h"
@@ -7,6 +8,8 @@
 #include "pdd.h"
 #include "mpq.h"
 #include "utils.h"
+
+using namespace std;
 
 // Computation of relaxation for 1-relu easily done with analytical formula.
 vector<double*> relu_1(double lb, double ub) {
@@ -106,10 +109,7 @@ vector<double*> fkrelu(const int K, const vector<double*>& A) {
             incidence_H_to_V[count] = incidence_H_to_V_with_redundancy[i];
             count++;
             if (i < A.size()) {
-                const double* a = A[i];
-                for (int j = 0; j < K + 1; j++) {
-                    h[j] = a[j];
-                }
+                memcpy(h, A[i], sizeof(double) * (K + 1));
             } else {
                 int xi = i - (int) A.size();
                 assert(0 <= xi && xi < K && "Sanity checking the range of xi.");
