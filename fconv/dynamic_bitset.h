@@ -10,6 +10,8 @@
 
 using namespace std;
 
+// It is important that block_t is unsigned because in that case
+// bit shifting operations work correctly.
 using block_t = unsigned long;
 using set_t = block_t*;
 

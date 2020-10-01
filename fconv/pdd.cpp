@@ -82,7 +82,6 @@ PDD_VInc PDD_batch_intersect_helper(PDD& pdd, const vector<double*>& H_new) {
     vector<vector<int>> outs_violation_vec;
     vector<set_t> outs_violation;
     vector<set_t> outs_incidence;
-    vector<set_t> outs_incidence_new;
     // Points that don't violate any constraints.
     vector<int> ins;
     vector<set_t> ins_incidence;
@@ -111,11 +110,11 @@ PDD_VInc PDD_batch_intersect_helper(PDD& pdd, const vector<double*>& H_new) {
                 (int) vio_vec.size() == set_count(vio) &&
                 "Sanity check violation sizes should match.");
         if (!vio_vec.empty()) {
+            set_free(inc_new);
             outs.push_back(vi);
             outs_violation_vec.push_back(vio_vec);
             outs_violation.push_back(vio);
             outs_incidence.push_back(inc);
-            outs_incidence_new.push_back(inc_new);
         } else {
             set_free(vio);
             ins.push_back(vi);
@@ -211,6 +210,9 @@ PDD_VInc PDD_batch_intersect_helper(PDD& pdd, const vector<double*>& H_new) {
     assert(count <= max_count && "Sanity checking the count size.");
     V_res.resize(count);
     V_res_incidence.resize(count);
+
+    set_free_vector(outs_violation);
+    set_free_vector(ins_incidence_new);
 
     for (int out : outs) {
         free(pdd.V[out]);
