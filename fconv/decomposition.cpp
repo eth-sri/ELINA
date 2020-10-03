@@ -2,6 +2,7 @@
 #include <cassert>
 #include "pdd.h"
 #include "utils.h"
+#include "fp_mat.h"
 
 using namespace std;
 
@@ -49,8 +50,8 @@ void project_to_relu_y_branch(const int xi, PDD &pdd_dual,
   incidence.resize(H.size());
   incidence[incidence.size() - 2] = set_create(V.size());
   incidence[incidence.size() - 1] = set_create(V.size());
-  set_set_all(incidence[incidence.size() - 2]);
-  set_set_all(incidence[incidence.size() - 1]);
+  set_enable_all(incidence[incidence.size() - 2]);
+  set_enable_all(incidence[incidence.size() - 1]);
 }
 
 PDD decomposition_recursive(Quadrant &quadrant,
@@ -108,8 +109,8 @@ vector<double *> decomposition(const int K,
     }
   }
 
-  free_mat(V);
-  set_free_vector(res.incidence);
+  fp_mat_free(V);
+  set_arr_free(res.incidence);
 
   return H;
 }

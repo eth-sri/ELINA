@@ -43,25 +43,30 @@ set_t set_create(const int num_bits)
     return set;
 }
 
-vector<set_t> set_create_vector(const int num_sets, const int num_bits) {
-  assert(num_sets >= 0 && num_bits >= 0 &&
-         "Expected a non-negative num_sets and num_bits.");
-  vector<set_t> sets(num_sets);
-  for (int i = 0; i < num_sets; i++) {
-    sets[i] = set_create(num_bits);
-  }
-  return sets;
+set_t set_resize(set_t set, const int num_bits) {
+    const int old_num_bits = set[0];
+    if (num_bits == old_num_bits) {
+        return set;
+    }
+    // Update number of bits.
+    set[0] = num_bits;
+    const int old_blocks = set_number_of_blocks(old_num_bits);
+    const int blocks = set_number_of_blocks(num_bits);
+    if (old_blocks == blocks) {
+        // Same amount of memory allocated - no need to reallocate.
+        return set;
+    }
+    set = (set_t) realloc(set, blocks * sizeof(block_t));
+    for (int i = old_blocks; i < blocks; i++) {
+        // If any new blocks were allocated - set them to zero.
+        set[i] = 0;
+    }
+    return set;
 }
 
 void set_free(const set_t set)
 {
     free(set);
-}
-
-void set_free_vector(const vector<set_t> &sets) {
-  for (auto set : sets) {
-    free(set);
-  }
 }
 
 set_t set_copy(const set_t set) {
@@ -71,37 +76,34 @@ set_t set_copy(const set_t set) {
     return set_copy;
 }
 
-bool set_test(const set_t set, const int n) {
-  assert(0 <= n && n < (int)set[0] &&
-         "Tested element should be within range of set.");
-  int block_i = n / BITS_IN_BLOCK + 1;
-  int bit_i = n % BITS_IN_BLOCK;
-  block_t block = set[block_i];
-  return block & (ONE << bit_i);
+bool set_test_bit(const set_t set, const int n)
+{
+    assert(0 <= n && n < (int) set[0] && "Tested element should be within range of set.");
+    int block_i = n / BITS_IN_BLOCK + 1;
+    int bit_i = n % BITS_IN_BLOCK;
+    block_t block = set[block_i];
+    return block & (ONE << bit_i);
 }
 
-void set_set(const set_t set, const int n) {
-  assert(0 <= n && n < (int)set[0] &&
-         "Tested element should be within range of set.");
-  int block_i = n / BITS_IN_BLOCK + 1;
-  int bit_i = n % BITS_IN_BLOCK;
-  set[block_i] = set[block_i] | (ONE << bit_i);
+void set_enable_bit(const set_t set, const int n) {
+    assert(0 <= n && n < (int) set[0] && "Tested element should be within range of set.");
+    int block_i = n / BITS_IN_BLOCK + 1;
+    int bit_i = n % BITS_IN_BLOCK;
+    set[block_i] = set[block_i] | (ONE << bit_i);
 }
 
-void set_set_all(const set_t set) {
-  int num_bits = (int)set[0];
-  int num_blocks = set_number_of_blocks(num_bits);
-  // Note that the last block cannot be set - otherwise the count would not be
-  // correct.
-  for (int i = 1; i < num_blocks - 1; i++) {
-    set[i] = ALL_SET;
-  }
-  int bits_left = num_bits - BITS_IN_BLOCK * (num_blocks - 2);
-  assert(bits_left > 0 && "At least one should be left to set, otherwise "
-                          "number of blocks is incorrect.");
+void set_enable_all(const set_t set) {
+    int num_bits = (int) set[0];
+    int num_blocks = set_number_of_blocks(num_bits);
+    // Note that the last block cannot be set - otherwise the count would not be correct.
+    for (int i = 1; i < num_blocks - 1; i++) {
+        set[i] = ALL_SET;
+    }
+    int bits_left = num_bits - BITS_IN_BLOCK * (num_blocks - 2);
+    assert(bits_left > 0 && "At least one should be left to set, otherwise number of blocks is incorrect.");
 
-  // This operation sets the bits_left only.
-  set[num_blocks - 1] = ALL_SET >> (BITS_IN_BLOCK - bits_left);
+    // This operation sets the bits_left only.
+    set[num_blocks - 1] = ALL_SET >> (BITS_IN_BLOCK - bits_left);
 }
 
 bool set_intersect_by_any(const set_t first, const set_t second)
@@ -174,68 +176,55 @@ int set_size(const set_t set)
     return (int) set[0];
 }
 
-// Maybe has potential for optimization.
-vector<set_t> set_transpose(const vector<set_t> &input) {
-  if (input.empty()) {
-    return {};
-  }
-
-  const int rows = (int)input.size();
-  const int cols = (int)input[0][0];
-
-  vector<set_t> output(cols);
-  for (int i = 0; i < cols; i++) {
-    output[i] = set_create(rows);
-  }
-
-  for (int i = 0; i < rows; i++) {
-    const set_t in_row = input[i];
-    assert((int)in_row[0] == cols && "All sets should be of the same size.");
-    for (int j = 0; j < cols; j++) {
-      if (!set_test(in_row, j)) {
-        continue;
-      }
-      set_set(output[j], i);
-    }
-  }
-
-  return output;
-}
-
-set_t set_resize(set_t set, const int num_bits) {
-  const int old_num_bits = set[0];
-  if (num_bits == old_num_bits) {
-    return set;
-  }
-  // Update number of bits.
-  set[0] = num_bits;
-  const int old_blocks = set_number_of_blocks(old_num_bits);
-  const int blocks = set_number_of_blocks(num_bits);
-  if (old_blocks == blocks) {
-    // Same amount of memory allocated - no need to reallocate.
-    return set;
-  }
-  set = (set_t)realloc(set, blocks * sizeof(block_t));
-  for (int i = old_blocks; i < blocks; i++) {
-    // If any new blocks were allocated - set them to zero.
-    set[i] = 0;
-  }
-  return set;
-}
-
 set_t set_from_cdd(set_type cdd_set) {
-  // For some reason CDD has one more bit than necessary.
-  int cdd_num_bits = cdd_set[0];
-  cdd_set[0]--;
+    // For some reason CDD has one more bit than necessary
+    // Thus, I subtract 1 from the number of bits.
+    int num_bits = cdd_set[0] - 1;
+    set_t set = set_create(num_bits);
+    int blocks = set_number_of_blocks(num_bits);
+    memcpy(&(set[1]), &(cdd_set[1]), (blocks - 1) * sizeof(block_t));
+    return set;
+}
 
-  int cdd_blocks = set_blocks(cdd_num_bits);
-  // Blocks can only be smaller than cdd_blocks.
-  int blocks = set_number_of_blocks(cdd_num_bits - 1);
+vector<set_t> set_arr_create(const int num_sets, const int num_bits) {
+    assert(num_sets >= 0 && num_bits >= 0 && "Expected a non-negative num_sets and num_bits.");
+    vector<set_t> sets(num_sets);
+    for (int i = 0; i < num_sets; i++) {
+        sets[i] = set_create(num_bits);
+    }
+    return sets;
+}
 
-  if (blocks == cdd_blocks) {
-    return (set_t)cdd_set;
-  }
+void set_arr_free(const vector<set_t>& sets) {
+    for (auto set : sets) {
+        free(set);
+    }
+}
 
-  assert(blocks == cdd_blocks - 1 && "blocks should equals cdd_blocks - 1");
-  return (set_t)realloc(cdd_set, blocks * sizeof(block_t));
+// Maybe has potential for optimization.
+vector<set_t> set_arr_transpose(const vector<set_t>& input) {
+    if (input.empty()) {
+        return {};
+    }
+
+    const int rows = (int) input.size();
+    const int cols = (int) input[0][0];
+
+    vector<set_t> output(cols);
+    for (int i = 0; i < cols; i++) {
+        output[i] = set_create(rows);
+    }
+
+    for (int i = 0; i < rows; i++) {
+        const set_t in_row = input[i];
+        assert((int) in_row[0] == cols && "All sets should be of the same size.");
+        for (int j = 0; j < cols; j++) {
+            if (!set_test_bit(in_row, j)) {
+                continue;
+            }
+            set_enable_bit(output[j], i);
+        }
+    }
+
+    return output;
 }

@@ -1,25 +1,23 @@
 #include "fconv.h"
 #include "fkrelu.h"
+#include "fp_mat.h"
 #include "sparse_cover.h"
 #include "utils.h"
+#include <string.h>
 
-vector<double *> cmat2double(const MatDouble &cmat) {
-  vector<double *> A = create_mat(cmat.rows, cmat.cols);
+vector<double *> mat_external_to_internal_format(const MatDouble &cmat) {
+  vector<double *> A = fp_mat_create(cmat.rows, cmat.cols);
   for (int i = 0; i < cmat.rows; i++) {
-    for (int j = 0; j < cmat.cols; j++) {
-      A[i][j] = cmat.data[i * cmat.cols + j];
-    }
+    memcpy(A[i], &(cmat.data[i * cmat.cols]), cmat.cols * sizeof(double));
   }
   return A;
 }
 
-MatDouble double2cmat(const int n, const vector<double *> &A) {
+MatDouble mat_internal_to_external_format(const int n,
+                                          const vector<double *> &A) {
   auto mat = (double *)calloc(A.size() * n, sizeof(double));
-
   for (int i = 0; i < (int)A.size(); i++) {
-    for (int j = 0; j < n; j++) {
-      mat[i * n + j] = A[i][j];
-    }
+    memcpy(&(mat[i * n]), A[i], n * sizeof(double));
   }
   return {(int)A.size(), n, mat};
 }
@@ -45,11 +43,11 @@ void free_MatInt(MatInt cmat) {
 MatDouble fkrelu(MatDouble input_hrep) {
   dd_set_global_constants();
   const int K = input_hrep.cols - 1;
-  vector<double *> A = cmat2double(input_hrep);
+  vector<double *> A = mat_external_to_internal_format(input_hrep);
   vector<double *> H = fkrelu(K, A);
-  MatDouble out = double2cmat(2 * K + 1, H);
-  free_mat(A);
-  free_mat(H);
+  MatDouble out = mat_internal_to_external_format(2 * K + 1, H);
+  fp_mat_free(A);
+  fp_mat_free(H);
   dd_free_global_constants();
   return out;
 }
@@ -57,11 +55,11 @@ MatDouble fkrelu(MatDouble input_hrep) {
 MatDouble krelu_with_cdd(MatDouble input_hrep) {
   dd_set_global_constants();
   const int K = input_hrep.cols - 1;
-  vector<double *> A = cmat2double(input_hrep);
+  vector<double *> A = mat_external_to_internal_format(input_hrep);
   vector<double *> H = krelu_with_cdd(K, A);
-  MatDouble out = double2cmat(2 * K + 1, H);
-  free_mat(A);
-  free_mat(H);
+  MatDouble out = mat_internal_to_external_format(2 * K + 1, H);
+  fp_mat_free(A);
+  fp_mat_free(H);
   dd_free_global_constants();
   return out;
 }

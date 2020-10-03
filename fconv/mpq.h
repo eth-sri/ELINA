@@ -5,23 +5,26 @@
 
 using namespace std;
 
-mpq_t *mpq_create_array(int n);
+mpq_t* mpq_arr_create(int n);
 
-mpq_t *mpq_create_and_copy_array(int n, const mpq_t *src);
+mpq_t *mpq_arr_copy(int n, const mpq_t *src);
 
-void mpq_free_array(int n, mpq_t *arr);
+mpq_t* mpq_arr_resize(int new_n, int old_n, mpq_t* arr);
 
-bool mpq_arrays_are_equal(int n, mpq_t *first, mpq_t *second);
+void mpq_arr_free(int n, mpq_t* arr);
 
-vector<double *> mpq_to_double(int n, const vector<mpq_t *> &mpq_A);
+void mpq_arr_set_zero(int n, mpq_t* arr);
 
-vector<mpq_t *> mpq_from_double(int n, const vector<double *> &A);
+bool mpq_arr_equal(int n, mpq_t* first, mpq_t* second);
 
-vector<mpq_t *> mpq_copy_array_vector(int n, const vector<mpq_t *> &src_vector);
+void mpq_arr_print(int n, const mpq_t *arr);
 
-void mpq_free_array_vector(int n, vector<mpq_t *> &vec);
+vector<mpq_t*> mpq_mat_copy(int n, const vector<mpq_t*>& src);
 
-void mpq_print_array(int n, const mpq_t *v);
+void mpq_mat_free(int n, const vector<mpq_t*>& mat);
 
-vector<mpq_t *> mpq_matrix_mul(int n, const vector<mpq_t *> &A,
-                               const vector<mpq_t *> &B);
+vector<mpq_t*> mpq_mat_mul_with_transpose(int n, const vector<mpq_t*>& A, const vector<mpq_t*>& B);
+
+vector<double*> mpq_mat_to_fp(int n, const vector<mpq_t*>& mpq_A);
+
+vector<mpq_t*> mpq_mat_from_fp(int n, const vector<double*>& A);

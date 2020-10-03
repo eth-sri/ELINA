@@ -1,5 +1,6 @@
 #include "fkrelu.h"
 #include "decomposition.h"
+#include "fp_mat.h"
 #include "mpq.h"
 #include "octahedron.h"
 #include "pdd.h"
@@ -21,7 +22,7 @@ vector<double *> relu_1(double lb, double ub) {
   assert(lmd > 0 && "Expected lmd > 0.");
   assert(mu > 0 && "Expected mu > 0.");
 
-  vector<double *> res = create_mat(3, 3);
+  vector<double *> res = fp_mat_create(3, 3);
 
   // y >= 0
   res[0][0] = 0;
@@ -76,22 +77,22 @@ vector<double *> fkrelu(const int K, const vector<double *> &A) {
       continue;
     }
 
-    vector<double *> V = mpq_to_double(K + 1, V_mpq);
-    mpq_free_array_vector(K + 1, V_mpq);
+    vector<double *> V = mpq_mat_to_fp(K + 1, V_mpq);
+    mpq_mat_free(K + 1, V_mpq);
 
     const vector<set_t> &incidence_V_to_H = pair.second.V_to_H_incidence;
     assert(incidence_V_to_H.size() == V.size() &&
            "Incidence_V_to_H.size() should equal V.size()");
     vector<set_t> incidence_H_to_V_with_redundancy =
-        set_transpose(incidence_V_to_H);
-    set_free_vector(incidence_V_to_H);
+        set_arr_transpose(incidence_V_to_H);
+    set_arr_free(incidence_V_to_H);
     assert(incidence_H_to_V_with_redundancy.size() == A.size() + K &&
            "Incidence_H_to_V_with_redundancy.size() should equal A.size() + K");
     vector<int> maximal_H =
         compute_maximal_indexes(incidence_H_to_V_with_redundancy);
     set_t is_maximal = set_create(incidence_H_to_V_with_redundancy.size());
     for (auto i : maximal_H) {
-      set_set(is_maximal, i);
+      set_enable_bit(is_maximal, i);
     }
 
     vector<double *> H(maximal_H.size());
@@ -99,7 +100,7 @@ vector<double *> fkrelu(const int K, const vector<double *> &A) {
 
     int count = 0;
     for (size_t i = 0; i < incidence_H_to_V_with_redundancy.size(); i++) {
-      if (!set_test(is_maximal, i)) {
+      if (!set_test_bit(is_maximal, i)) {
         set_free(incidence_H_to_V_with_redundancy[i]);
         continue;
       }
@@ -163,9 +164,9 @@ vector<double *> krelu_with_cdd(const int K, const vector<double *> &A) {
           mpq_set(v_projection[1 + i + K], v[1 + i]);
         }
       }
+      V.push_back(v_projection);
     }
-
-    mpq_free_array_vector(K + 1, V_quadrant);
+    mpq_mat_free(K + 1, V_quadrant);
   }
   assert(counter == num_vertices &&
          "Consistency checking that counter equals the number of vertices.");
@@ -177,7 +178,7 @@ vector<double *> krelu_with_cdd(const int K, const vector<double *> &A) {
 
   dd_MatrixPtr inequalities = dd_CopyInequalities(poly);
 
-  vector<double *> H = cdd2double(inequalities);
+  vector<double *> H = fp_mat_from_cdd(inequalities);
   for (auto h : H) {
     double abs_coef = abs(h[0]);
     for (int i = 1; i < 2 * K + 1; i++) {

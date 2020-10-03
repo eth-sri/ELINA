@@ -1,25 +1,6 @@
 #include <cassert>
 #include "pdd.h"
-
-// This can be optimized if there will be a need for it.
-vector<double *> mat_mul_with_transpose(const int n,
-                                        const vector<double *> &mat1,
-                                        const vector<double *> &mat2) {
-  vector<double *> res = create_mat(mat1.size(), mat2.size());
-  for (size_t i1 = 0; i1 < mat1.size(); i1++) {
-    const double *r1 = mat1[i1];
-    double *res_row = res[i1];
-    for (size_t i2 = 0; i2 < mat2.size(); i2++) {
-      const double *r2 = mat2[i2];
-      double accum = 0;
-      for (int j = 0; j < n; j++) {
-        accum += r1[j] * r2[j];
-      }
-      res_row[i2] = accum;
-    }
-  }
-  return res;
-}
+#include "fp_mat.h"
 
 struct PDD_VInc {
     vector<double*> V;
@@ -38,18 +19,18 @@ PDD_VInc PDD_make_irredundant(const vector<double*>& V, const vector<set_t>& inc
     vector<set_t> incidence_res(maximal.size());
     set_t is_maximal = set_create(V.size());
     for (int i : maximal) {
-      set_set(is_maximal, i);
+        set_enable_bit(is_maximal, i);
     }
     size_t count = 0;
     for (size_t i = 0; i < V.size(); i++) {
-      if (set_test(is_maximal, i)) {
-        V_res[count] = V[i];
-        incidence_res[count] = incidence[i];
-        count++;
-      } else {
-        free(V[i]);
-        set_free(incidence[i]);
-      }
+        if (set_test_bit(is_maximal, i)) {
+            V_res[count] = V[i];
+            incidence_res[count] = incidence[i];
+            count++;
+        } else {
+            free(V[i]);
+            set_free(incidence[i]);
+        }
     }
     assert(count == maximal.size() && "Consistency checking that count == maximal.size().");
     set_free(is_maximal);
@@ -75,7 +56,7 @@ PDD_VInc PDD_batch_intersect_helper(PDD& pdd, const vector<double*>& H_new) {
             pdd.V.size() == pdd.incidence.size() &&
             "Consistency checking number of vertices and size of incidence.");
 
-    vector<double *> V_x_H = mat_mul_with_transpose(dim, pdd.V, H_new);
+    vector<double*> V_x_H = fp_mat_mul_with_transpose(dim, pdd.V, H_new);
 
     // Points that violate at least one of the constraints.
     vector<int> outs;
@@ -100,10 +81,10 @@ PDD_VInc PDD_batch_intersect_helper(PDD& pdd, const vector<double*>& H_new) {
             double val = v_x_H[hi];
             if (val < -EPS) {
                 vio_vec.push_back(hi);
-                set_set(vio, hi);
+                set_enable_bit(vio, hi);
             } else if (val <= EPS) {
-              set_set(inc_new, hi);
-              set_set(inc, pdd.H.size() + hi);
+                set_enable_bit(inc_new, hi);
+                set_enable_bit(inc, pdd.H.size() + hi);
             }
         }
         assert(
@@ -193,7 +174,7 @@ PDD_VInc PDD_batch_intersect_helper(PDD& pdd, const vector<double*>& H_new) {
             // So the incidence potentially can be slightly bigger for this vertex, and it is very
             // easy to implement it in exact precision. However, with fp its more tricky and
             // since we are anyway approximating, I'm keeping it simple.
-            set_set(V_res_incidence[count], pdd.H.size() + argmin_h);
+            set_enable_bit(V_res_incidence[count], pdd.H.size() + argmin_h);
             count++;
         }
     }
@@ -211,15 +192,15 @@ PDD_VInc PDD_batch_intersect_helper(PDD& pdd, const vector<double*>& H_new) {
     V_res.resize(count);
     V_res_incidence.resize(count);
 
-    set_free_vector(outs_violation);
-    set_free_vector(ins_incidence_new);
+    set_arr_free(outs_violation);
+    set_arr_free(ins_incidence_new);
 
     for (int out : outs) {
         free(pdd.V[out]);
         set_free(pdd.incidence[out]);
     }
 
-    free_mat(V_x_H);
+    fp_mat_free(V_x_H);
 
     return {V_res, V_res_incidence};
 }
@@ -268,18 +249,18 @@ PDD PDD_intersect_two_PDDs(PDD& pdd1, PDD& pdd2) {
     for (auto& inc_H2_H1 : VInc2.incidence) {
         set_t inc = set_create(num_H1 + num_H2);
         for (size_t i = 0; i < num_H1; i++) {
-          if (set_test(inc_H2_H1, num_H2 + i)) {
-            set_set(inc, i);
-          }
+            if (set_test_bit(inc_H2_H1, num_H2 + i)) {
+                set_enable_bit(inc, i);
+            }
         }
         for (size_t i = 0; i < num_H2; i++) {
-          if (set_test(inc_H2_H1, i)) {
-            set_set(inc, num_H1 + i);
-          }
+            if (set_test_bit(inc_H2_H1, i)) {
+                set_enable_bit(inc, num_H1 + i);
+            }
         }
         V_incidence.push_back(inc);
     }
-    set_free_vector(VInc2.incidence);
+    set_arr_free(VInc2.incidence);
 
     PDD_VInc VInc = PDD_make_irredundant(V, V_incidence);
 
