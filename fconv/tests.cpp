@@ -10,6 +10,7 @@
 #include "split_in_quadrants.h"
 #include "fkrelu.h"
 #include "sparse_cover.h"
+#include "fp_mat.h"
 
 constexpr int K2NUM_TESTS[6] = {0, 2, 4, 5, 4, 4};
 
@@ -27,7 +28,7 @@ vector<int> get_bijective_mapping_for_matrix_rows(
         mpq_t* vertex_f = first[fi];
         int mapped_v = -1;
         for (int si = 0; si < num_v; si++) {
-            if (mpq_arrays_are_equal(dim, vertex_f, second[si])) {
+            if (mpq_arr_equal(dim, vertex_f, second[si])) {
                 ASRTF(mapped_v == -1, "Vertex can only be mapped to one vertex.");
                 ASRTF(mapping_second_to_first[si] == -1, "Has to be one-to-one correspondence.");
                 mapped_v = si;
@@ -40,12 +41,10 @@ vector<int> get_bijective_mapping_for_matrix_rows(
     return mapping_first_to_second;
 }
 
-void run_octahedron_test(const string& path) {
+void run_octahedron_test(const int K, const string& path) {
     cout << "running octahedron test: " << path << endl;
 
-    int cols = -1;
-    vector<double*> A = read_matrix(cols, path);
-    const int K = cols - 1;
+    vector<double*> A = fp_mat_read(K + 1, path);
 
     Timer t_fast;
     OctahedronV fast = compute_octahedron_V(K, A);
@@ -91,21 +90,19 @@ void run_octahedron_test(const string& path) {
         ASRTF(set_equal(inc_fast, inc_slow), "Incidence should match.");
     }
 
-    set_free_vector(fast.incidence);
-    set_free_vector(slow.incidence);
-    mpq_free_array_vector(K + 1, fast.V);
-    mpq_free_array_vector(K + 1, slow.V);
-    free_mat(A);
+    set_arr_free(fast.incidence);
+    set_arr_free(slow.incidence);
+    mpq_mat_free(K + 1, fast.V);
+    mpq_mat_free(K + 1, slow.V);
+    fp_mat_free(A);
 
     cout << "\tpassed" << endl;
 }
 
-void run_split_in_quadrants_test(const string& path) {
+void run_split_in_quadrants_test(const int K, const string& path) {
     cout << "running split in quadrants test: " << path << endl;
 
-    int cols = -1;
-    vector<double*> A = read_matrix(cols, path);
-    const int K = cols - 1;
+    vector<double*> A = fp_mat_read(K + 1, path);
     const int num_h = (int) A.size();
 
     Timer t_fast;
@@ -149,24 +146,22 @@ void run_split_in_quadrants_test(const string& path) {
     }
 
     for (auto& entry : fast) {
-        mpq_free_array_vector(K + 1, entry.second.V);
-        set_free_vector(entry.second.V_to_H_incidence);
+        mpq_mat_free(K + 1, entry.second.V);
+        set_arr_free(entry.second.V_to_H_incidence);
     }
     for (auto& entry : slow) {
-        mpq_free_array_vector(K + 1, entry.second.V);
-        set_free_vector(entry.second.V_to_H_incidence);
+        mpq_mat_free(K + 1, entry.second.V);
+        set_arr_free(entry.second.V_to_H_incidence);
     }
-    free_mat(A);
+    fp_mat_free(A);
 
     cout << "\tpassed" << endl;
 }
 
-void run_fkrelu_test(const string& path) {
+void run_fkrelu_test(const int K, const string& path) {
     cout << "running fkrelu test: " << path << endl;
 
-    int cols = -1;
-    vector<double*> A = read_matrix(cols, path);
-    const int K = cols - 1;
+    vector<double*> A = fp_mat_read(K + 1, path);
 
     Timer t;
     vector<double*> H_double = fkrelu(K, A);
@@ -175,7 +170,7 @@ void run_fkrelu_test(const string& path) {
     cout << "\tK = " << K << " took " << micros / 1000 << \
         " ms and discovered " << H_double.size() << " constraints" << endl;
 
-    vector<mpq_t*> H = mpq_from_double(2 * K + 1, H_double);
+    vector<mpq_t*> H = mpq_mat_from_fp(2 * K + 1, H_double);
 
     map<Quadrant, QuadrantInfo> quadrant2info = compute_quadrants_with_cdd(K, A);
 
@@ -187,7 +182,7 @@ void run_fkrelu_test(const string& path) {
         auto& V_quadrant = entry.second.V;
 
         for (const auto& v : V_quadrant) {
-            mpq_t* v_projection = mpq_create_array(2 * K + 1);
+            mpq_t* v_projection = mpq_arr_create(2 * K + 1);
             for (int i = 0; i < K + 1; i++) {
                 mpq_set(v_projection[i], v[i]);
             }
@@ -202,28 +197,49 @@ void run_fkrelu_test(const string& path) {
             V.push_back(v_projection);
         }
 
-        mpq_free_array_vector(K + 1, V_quadrant);
+        mpq_mat_free(K + 1, V_quadrant);
     }
 
-    vector<mpq_t*> V_x_H = mpq_matrix_mul(2 * K + 1, V, H);
+    vector<mpq_t*> V_x_H = mpq_mat_mul_with_transpose(2 * K + 1, V, H);
     for (const auto& row : V_x_H) {
         for (size_t i = 0; i < H.size(); i++) {
             ASRTF(mpq_sgn(row[i]) >= 0, "All discovered constraints should be sound with respect to V");
         }
     }
 
-    mpq_free_array_vector(2 * K + 1, H);
-    mpq_free_array_vector(2 * K + 1, V);
-    mpq_free_array_vector(H.size(), V_x_H);
-    free_mat(A);
-    free_mat(H_double);
+    mpq_mat_free(2 * K + 1, H);
+    mpq_mat_free(2 * K + 1, V);
+    mpq_mat_free(H.size(), V_x_H);
+    fp_mat_free(A);
+    fp_mat_free(H_double);
 
     cout << "\tpassed" << endl;
 }
 
+// This test doesn't check for correctness
+// It's just a sanity check for # of discovered constraints and runtime.
+void run_krelu_with_cdd_test(const int K, const string& path) {
+    cout << "running krelu with cdd test: " << path << endl;
+
+    vector<double*> A = fp_mat_read(K + 1, path);
+
+    Timer t;
+    vector<double*> H = krelu_with_cdd(K, A);
+    int micros = t.micros();
+
+    cout << "\tK = " << K << " took " << micros / 1000 << \
+        " ms and discovered " << H.size() << " constraints" << endl;
+
+    fp_mat_free(A);
+    fp_mat_free(H);
+
+    cout << "\tpassed" << endl;
+}
+
+
 void run_1relu_test() {
     cout << "running 1-relu test:" << endl;
-    vector<double*> inp = create_mat(2, 2);
+    vector<double*> inp = fp_mat_create(2, 2);
 
     // x >= -2
     inp[0][0] = 2;
@@ -233,7 +249,7 @@ void run_1relu_test() {
     inp[1][0] = 2;
     inp[1][1] = -1;
 
-    vector<double*> expected = create_mat(3, 3);
+    vector<double*> expected = fp_mat_create(3, 3);
 
     // y >= 0
     expected[0][0] = 0;
@@ -258,9 +274,9 @@ void run_1relu_test() {
             ASRTF(out[i][j] == expected[i][j], "Actual and expected elements match.");
         }
     }
-    free_mat(inp);
-    free_mat(expected);
-    free_mat(out);
+    fp_mat_free(inp);
+    fp_mat_free(expected);
+    fp_mat_free(out);
 
     cout << "\tpassed" << endl;
 }
@@ -293,7 +309,9 @@ void run_all_octahedron_tests() {
     cout << "Running all fast V octahedron tests" << endl;
     for (int k = 2; k <= 4; k++) {
         for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-            run_octahedron_test("octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
+            run_octahedron_test(
+                    k,
+                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
         }
     }
 }
@@ -302,7 +320,9 @@ void run_all_split_in_quadrants_tests() {
     cout << "Running all split in quadrant tests" << endl;
     for (int k = 2; k <= 4; k++) {
         for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-            run_split_in_quadrants_test("octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
+            run_split_in_quadrants_test(
+                    k,
+                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
         }
     }
 }
@@ -311,7 +331,20 @@ void run_all_fkrelu_tests() {
     cout << "Running all fkrelu tests" << endl;
     for (int k = 1; k <= 4; k++) {
         for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-            run_fkrelu_test("octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
+            run_fkrelu_test(
+                    k,
+                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
+        }
+    }
+}
+
+void run_all_krelu_with_cdd_tests() {
+    cout << "Running all krelu with cdd tests" << endl;
+    for (int k = 1; k <= 3; k++) {
+        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+            run_krelu_with_cdd_test(
+                    k,
+                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
         }
     }
 }
@@ -346,6 +379,7 @@ int main() {
     run_all_octahedron_tests();
     run_all_split_in_quadrants_tests();
     run_all_fkrelu_tests();
+    run_all_krelu_with_cdd_tests();
     run_1relu_test();
     run_all_sparse_cover_tests();
 

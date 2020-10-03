@@ -17,19 +17,17 @@ using set_t = block_t*;
 
 set_t set_create(int num_bits);
 
-vector<set_t> set_create_vector(int num_sets, int num_bits);
+set_t set_resize(set_t set, int num_bits);
 
 void set_free(set_t set);
 
-void set_free_vector(const vector<set_t>& sets);
-
 set_t set_copy(set_t set);
 
-bool set_test(set_t set, int n);
+bool set_test_bit(set_t set, int n);
 
-void set_set(set_t set, int n);
+void set_enable_bit(set_t set, int n);
 
-void set_set_all(set_t set);
+void set_enable_all(set_t set);
 
 bool set_intersect_by_any(set_t first, set_t second);
 
@@ -43,9 +41,10 @@ int set_count(set_t set);
 
 int set_size(set_t set);
 
-vector<set_t> set_transpose(const vector<set_t>& input);
-
-set_t set_resize(set_t set, int num_bits);
-
-// Takes ownership of the input memory.
 set_t set_from_cdd(set_type cdd_set);
+
+vector<set_t> set_arr_create(int num_sets, int num_bits);
+
+void set_arr_free(const vector<set_t>& sets);
+
+vector<set_t> set_arr_transpose(const vector<set_t>& input);

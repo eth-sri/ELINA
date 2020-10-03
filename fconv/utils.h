@@ -4,9 +4,6 @@
 #include "setoper.h"
 #include "cdd.h"
 #include <array>
-#include <fstream>
-#include <sstream>
-#include <string>
 #include <chrono>
 #include <iostream>
 #include "asrt.h"
@@ -16,10 +13,6 @@
 constexpr double EPS = 1.0E-7;
 
 using namespace std;
-
-vector<double*> create_mat(int rows, int cols);
-
-void free_mat(const vector<double*>& mat);
 
 class Timer {
     chrono::time_point<chrono::high_resolution_clock> start;
@@ -31,14 +24,6 @@ public:
 };
 
 vector<int> compute_maximal_indexes(const vector<set_t>& incidence);
-
-vector<double*> read_matrix(int& cols, const string& path);
-
-dd_MatrixPtr double2cdd(int n, const vector<double*>& A);
-
-vector<double*> cdd2double(dd_MatrixPtr cdd_A);
-
-void print_vertices(const int dim, const vector<mpq_t*>& vertices);
 
 using Adj = pair<int, int>;
 

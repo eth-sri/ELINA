@@ -22,7 +22,7 @@ vector<Adj> compute_adjacency_from_incidence(const vector<set_t>& incidence) {
         }
     }
     vector<int> maximal = compute_maximal_indexes(adjacencies_incidence);
-    set_free_vector(adjacencies_incidence);
+    set_arr_free(adjacencies_incidence);
 
     vector<Adj> maximal_adjacencies(maximal.size());
     for (size_t i = 0; i < maximal.size(); i++) {
@@ -79,9 +79,9 @@ void split_in_quadrants_recursive(
             V_to_sign[vi] = 0;
             // It's okay to modify incidence because from it I will be creating two copies
             // that will be passed down to children recursively.
-            assert(!set_test(incidence[vi], NUM_H + xi) &&
+            assert(!set_test_bit(incidence[vi], NUM_H + xi) &&
                   "Consistency check, the bit with this index could not be set.");
-            set_set(incidence[vi], NUM_H + xi);
+            set_enable_bit(incidence[vi], NUM_H + xi);
         }
     }
 
@@ -140,10 +140,10 @@ void split_in_quadrants_recursive(
         const Adj& adj = adj_split[adj_i];
         incidence_of_V_new_and_zero[adj_i] = set_intersect(incidence[adj.first],
                                                            incidence[adj.second]);
-        set_set(incidence_of_V_new_and_zero[adj_i], NUM_H + xi);
+        set_enable_bit(incidence_of_V_new_and_zero[adj_i], NUM_H + xi);
         const mpq_t* a = vrep[adj.first];
         const mpq_t* b = vrep[adj.second];
-        new_vrep[adj_i] = mpq_create_array(K + 1);
+        new_vrep[adj_i] = mpq_arr_create(K + 1);
         mpq_t* v = new_vrep[adj_i];
 
         int a_sign = mpq_sgn(a[xi + 1]);
@@ -265,7 +265,7 @@ void split_in_quadrants_recursive(
                 vrep_plus[plus_i] = vrep[vi];
                 incidence_plus[plus_i] = incidence[vi];
             } else {
-                vrep_plus[plus_i] = mpq_create_and_copy_array(K + 1, vrep[vi]);
+                vrep_plus[plus_i] = mpq_arr_copy(K + 1, vrep[vi]);
                 incidence_plus[plus_i] = set_copy(incidence[vi]);
             }
         }
@@ -276,7 +276,7 @@ void split_in_quadrants_recursive(
         vrep_minus[count_minus + vi] = new_vrep[vi];
         incidence_minus[count_minus + vi] = incidence_of_V_new_and_zero[vi];
         // Plus branch copies.
-        vrep_plus[count_plus + vi] = mpq_create_and_copy_array(K + 1, new_vrep[vi]);
+        vrep_plus[count_plus + vi] = mpq_arr_copy(K + 1, new_vrep[vi]);
         incidence_plus[count_plus + vi] = set_copy(incidence_of_V_new_and_zero[vi]);
     }
 
@@ -307,84 +307,5 @@ map<Quadrant, QuadrantInfo> split_in_quadrants(vector<mpq_t*>& V,
     map<Quadrant, QuadrantInfo> quadrant2info;
     split_in_quadrants_recursive(quadrant, orthant_adjacencies, incidence, V, quadrant2info, K, NUM_H);
 
-    return quadrant2info;
-}
-
-map<Quadrant, QuadrantInfo> compute_quadrants_with_cdd(const int K, const vector<double*>& A) {
-    ASRTF(1 <= K && K <= 5, "K should be within allowed range.");
-
-    vector<Quadrant> quadrants {{}};
-    for (int i = 0; i < K; i++) {
-        vector<Quadrant> next_quadrants;
-        next_quadrants.reserve(quadrants.size() * 2);
-
-        for (auto& quadrant : quadrants) {
-            quadrant.push_back(MINUS);
-            next_quadrants.push_back(quadrant);
-            quadrant.back() = PLUS;
-            next_quadrants.push_back(quadrant);
-        }
-        quadrants = next_quadrants;
-    }
-    ASRTF((int) quadrants.size() == POW2[K], "Sanity checking number of quadrants.");
-
-    const int NUM_H = (int) A.size();
-
-    dd_MatrixPtr cdd_A = dd_CreateMatrix(NUM_H + K, K + 1);
-    cdd_A->representation = dd_Inequality;
-
-    for (int i = 0; i < NUM_H; i++) {
-        mpq_t* cdd_row = cdd_A->matrix[i];
-        const double* row = A[i];
-        for (int j = 0; j < K + 1; j++) {
-            mpq_set_d(cdd_row[j], row[j]);
-        }
-    }
-
-    map<Quadrant, QuadrantInfo> quadrant2info;
-    for (const auto& quadrant : quadrants) {
-        for (int xi = 0; xi < K; xi++) {
-            mpq_t* row = cdd_A->matrix[NUM_H + xi];
-            for (int i = 0; i < K + 1; i++) {
-                mpq_set_si(row[i], 0, 1);
-            }
-            if (quadrant[xi] == MINUS) {
-                mpq_set_si(row[xi + 1], -1, 1);
-            } else {
-                mpq_set_si(row[xi + 1], 1, 1);
-            }
-        }
-        dd_ErrorType err = dd_NoError;
-        dd_PolyhedraPtr poly = dd_DDMatrix2Poly(cdd_A, &err);
-
-        ASRTF(err == dd_NoError, "Converting matrix to polytope failed with error " + to_string(err));
-
-        dd_MatrixPtr cdd_V = dd_CopyGenerators(poly);
-        dd_SetFamilyPtr cdd_incidence = dd_CopyIncidence(poly);
-        const size_t num_v = cdd_V->rowsize;
-        ASRTF(
-                cdd_incidence->famsize == (int) num_v && \
-                cdd_incidence->setsize == NUM_H + K + 1,
-                "Sanity checking cdd_incidence size.");
-
-        vector<mpq_t*> V(num_v);
-        // Here H include the orthant.
-        vector<set_t> incidence(num_v);
-
-        for (size_t v = 0; v < num_v; v++) {
-            ASRTF(!mpq_cmp_si(cdd_V->matrix[v][0], 1, 1), "Polytope is not bounded.");
-            V[v] = mpq_create_and_copy_array(K + 1, cdd_V->matrix[v]);
-            incidence[v] = set_from_cdd(cdd_incidence->set[v]);
-        }
-        free(cdd_incidence->set);
-        free(cdd_incidence);
-
-        dd_FreePolyhedra(poly);
-        dd_FreeMatrix(cdd_V);
-
-        quadrant2info[quadrant] = {K + 1, V, incidence};
-    }
-
-    dd_FreeMatrix(cdd_A);
     return quadrant2info;
 }

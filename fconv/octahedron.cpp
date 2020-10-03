@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "mpq.h"
 #include "dynamic_bitset.h"
+#include "fp_mat.h"
 
 // The absolutely proper way would be to set it based on the size of the input constraints.
 // But I will just keep it fixed for now - I use this value to do partially solve problem in fp precision.
@@ -201,21 +202,21 @@ struct OctahedronToV_Helper {
         vertex_precomp_last_double(PRECOMP_LAST_SIZE),
         vertex_count(0)
     {
-        constraints = mpq_create_array(NUM_H);
+        constraints = mpq_arr_create(NUM_H);
         for (int i = 0; i < NUM_H; i++) {
             mpq_set_d(constraints[i], A[i][0]);
             constraints_double[i] = A[i][0];
         }
 
-        vertex_precomp_first = mpq_create_array(PRECOMP_FIRST_SIZE);
-        vertex_precomp_last = mpq_create_array(PRECOMP_LAST_SIZE);
+        vertex_precomp_first = mpq_arr_create(PRECOMP_FIRST_SIZE);
+        vertex_precomp_last = mpq_arr_create(PRECOMP_LAST_SIZE);
     }
 
     ~OctahedronToV_Helper() {
         // I don't free up dynamically allocated memory for vertices because these pointers are extracted and reused.
-        mpq_free_array(NUM_H, constraints);
-        mpq_free_array(PRECOMP_FIRST_SIZE, vertex_precomp_first);
-        mpq_free_array(PRECOMP_LAST_SIZE, vertex_precomp_last);
+        mpq_arr_free(NUM_H, constraints);
+        mpq_arr_free(PRECOMP_FIRST_SIZE, vertex_precomp_first);
+        mpq_arr_free(PRECOMP_LAST_SIZE, vertex_precomp_last);
     }
 
     void do_precomputation_for_vertex(const Vertex& cur_vertex) {
@@ -311,18 +312,18 @@ struct OctahedronToV_Helper {
             }
         }
 
-        // Now for every direction we determine whether it's positive, negative or non-viable. There are 4 possible
-        // cases:
-        // (1) The direction is positive iff scalar products with all hyperplanes give >= 0 and gives > 0 with at
-        // least 1 hyperplane.
+        // Now for every direction we determine whether it's positive, negative or non-viable.
+        // There are 4 possible cases:
+        // (1) The direction is positive iff scalar products with all hyperplanes
+        //      give >= 0 and gives > 0 with at least 1 hyperplane.
         // (2) The direction is negative iff -//- but with <= 0 and < 0.
-        // (3) The direction is non-viable iff there are hyperplanes with which scalar product gives < 0 and
-        // hyperplanes with which scalar product gives > 0.
-        // (4) There is an error if for some direction scalar product with all hyperplanes is 0. It means that the
-        // vertex was not extreme in the first place.
+        // (3) The direction is non-viable iff there are hyperplanes with which scalar
+        //      product gives < 0 and hyperplanes with which scalar product gives > 0.
+        // (4) There is an error if for some direction scalar product with all hyperplanes is 0.
+        //      It means that the vertex was not extreme in the first place.
 
-        // It is important that it is a set - otherwise there is a chance that direction is negative, I will inverse it
-        // and will create a duplicate.
+        // It is important that it is a set - otherwise there is a chance that
+        // direction is negative, I will inverse it and will create a duplicate.
         set<vector<int>> selected_directions;
 
         // Intentionally making a copy so I can modify it.
@@ -399,7 +400,7 @@ struct OctahedronToV_Helper {
 
         vector<int> denom_all(directions.size());
         vector<double> closest_t_double_all(directions.size());
-        mpq_t* closest_t_all = mpq_create_array(directions.size());
+        mpq_t* closest_t_all = mpq_arr_create(directions.size());
         // The hyperplanes that will be incident to the vertex reached by new direction.
         vector<vector<int>> new_hyperplanes_all(directions.size());
 
@@ -408,10 +409,10 @@ struct OctahedronToV_Helper {
 
         set_t incident = set_create(NUM_H);
         for (int hi : vertex.incidence) {
-            set_set(incident, hi);
+            set_enable_bit(incident, hi);
         }
         for (int hi = 0; hi < NUM_H; hi++) {
-            if (set_test(incident, hi)) {
+            if (set_test_bit(incident, hi)) {
                 // If the vertex is incident to the current vertex then obviously t = 0.
                 continue;
             }
@@ -455,21 +456,21 @@ struct OctahedronToV_Helper {
                 int denom_int = -scalar_product(directions[dir_i], h);
                 if (denom_int == 0) {
                     // The hyperplane is parallel to this direction.
-                    set_set(skip_direction, dir_i);
+                    set_enable_bit(skip_direction, dir_i);
                     continue;
                 }
                 double cur_t_double = numer_double / (double) denom_int;
                 if (cur_t_double < -DOUBLE_PRECISION) {
                     // Rejecting the hyperplane early based on the floating point
                     // arithmetic because hyperplane intersects in the negative direction.
-                    set_set(skip_direction, dir_i);
+                    set_enable_bit(skip_direction, dir_i);
                     continue;
                 }
                 if (!new_hyperplanes_all[dir_i].empty() &&
                     cur_t_double > closest_t_double_all[dir_i] + DOUBLE_PRECISION) {
                     // Rejecting hyperplane because cur_t_double is significantly
                     // bigger than best result.
-                    set_set(skip_direction, dir_i);
+                    set_enable_bit(skip_direction, dir_i);
                     continue;
                 }
                 at_least_one_left_to_process = true;
@@ -505,15 +506,15 @@ struct OctahedronToV_Helper {
                    "Sign can't be zero, because the hyperplanes incident to the current vertex were rejected earlier.");
 
             for (int dir_i = 0; dir_i < (int) directions.size(); dir_i++) {
-                if (set_test(skip_direction, dir_i)) {
+                if (set_test_bit(skip_direction, dir_i)) {
                     // This direction was rejected earlier based on floating point arithmetic.
                     continue;
                 }
 
                 int denom_int = denom_all[dir_i];
                 if ((denom_int < 0 && sign > 0) || (denom_int > 0 && sign < 0)) {
-                    // cur_t will be < 0 - this means that this direction is of no interest because I'm only looking at
-                    // the positive directions.
+                    // cur_t will be < 0 - this means that this direction is of no interest
+                    // because I'm only looking at the positive directions.
                     continue;
                 }
 
@@ -552,7 +553,7 @@ struct OctahedronToV_Helper {
             ASRTF(!new_hyperplanes.empty(),
                   "At least one hyperplane should intersect direction. Otherwise octahedron is unbounded.");
 
-            mpq_t* new_v = mpq_create_array(K + 1);
+            mpq_t* new_v = mpq_arr_create(K + 1);
             mpq_set_si(new_v[0], 1, 1);
 
             vector<double> new_v_double(K);
@@ -582,7 +583,7 @@ struct OctahedronToV_Helper {
                 if (save_adjacency) {
                     adjacencies.emplace_back(min(search_visited->id, vertex.id), max(search_visited->id, vertex.id));
                 }
-                mpq_free_array(K + 1, new_v);
+                mpq_arr_free(K + 1, new_v);
                 continue;
             }
 
@@ -591,7 +592,7 @@ struct OctahedronToV_Helper {
                 if (save_adjacency) {
                     adjacencies.emplace_back(min(search_to_visit->id, vertex.id), max(search_to_visit->id, vertex.id));
                 }
-                mpq_free_array(K + 1, new_v);
+                mpq_arr_free(K + 1, new_v);
                 continue;
             }
 
@@ -617,7 +618,7 @@ struct OctahedronToV_Helper {
         }
 
         mpq_clear(dir_elem);
-        mpq_free_array(directions.size(), closest_t_all);
+        mpq_arr_free(directions.size(), closest_t_all);
     }
 
     Vertex get_first_vertex() {
@@ -648,7 +649,7 @@ struct OctahedronToV_Helper {
         mpq_t* found_vertex = lp->sol;
         ASRTF(!mpq_cmp_si(found_vertex[0], 1, 1), "First element of the found vertex should be 1.");
 
-        mpq_t* first_vertex = mpq_create_array(K + 1);
+        mpq_t* first_vertex = mpq_arr_create(K + 1);
         vector<double> first_vertex_double(K);
         mpq_set_si(first_vertex[0], 1, 1);
         for (int i = 0; i < K; i++) {
@@ -702,7 +703,7 @@ struct OctahedronToV_Helper {
     OctahedronV extract_OctahedronV() {
         size_t num_vertices = visited.size();
         vector<mpq_t*> V(num_vertices);
-        vector<set_t> incidence = set_create_vector(num_vertices, NUM_H);
+        vector<set_t> incidence = set_arr_create(num_vertices, NUM_H);
 
         for (auto& vertex : visited) {
             int id = vertex.id;
@@ -711,7 +712,7 @@ struct OctahedronToV_Helper {
             auto& inc = incidence[id];
 
             for (int hi : vertex.incidence) {
-                set_set(inc, hi);
+                set_enable_bit(inc, hi);
             }
         }
 
@@ -730,7 +731,7 @@ OctahedronV compute_octahedron_V(const int K, const vector<double*>& A) {
 OctahedronV compute_V_with_cdd(const int K, const vector<double*>& A) {
     ASRTF(2 <= K, "K should be within allowed range.");
 
-    dd_MatrixPtr cdd_hrep = double2cdd(K + 1, A);
+    dd_MatrixPtr cdd_hrep = fp_mat_to_cdd(K + 1, A);
     cdd_hrep->representation = dd_Inequality;
     dd_ErrorType err = dd_NoError;
 
@@ -747,7 +748,7 @@ OctahedronV compute_V_with_cdd(const int K, const vector<double*>& A) {
 
     vector<mpq_t*> V(num_v);
     for (int i = 0; i < num_v; i++) {
-        V[i] = mpq_create_and_copy_array(K + 1, cdd_vrep->matrix[i]);
+        V[i] = mpq_arr_copy(K + 1, cdd_vrep->matrix[i]);
     }
 
     dd_SetFamilyPtr cdd_adjacencies = dd_CopyAdjacency(poly);
@@ -777,13 +778,87 @@ OctahedronV compute_V_with_cdd(const int K, const vector<double*>& A) {
     for (int v = 0; v < num_v; v++) {
         incidence[v] = set_from_cdd(cdd_incidence->set[v]);
     }
-    free(cdd_incidence->set);
-    free(cdd_incidence);
 
     dd_FreeMatrix(cdd_hrep);
     dd_FreeMatrix(cdd_vrep);
     dd_FreePolyhedra(poly);
     dd_FreeSetFamily(cdd_adjacencies);
+    dd_FreeSetFamily(cdd_incidence);
 
     return {K + 1, V, adjacencies, incidence};
+}
+
+map<Quadrant, QuadrantInfo> compute_quadrants_with_cdd(const int K, const vector<double*>& A) {
+    ASRTF(1 <= K && K <= 5, "K should be within allowed range.");
+
+    vector<Quadrant> quadrants {{}};
+    for (int i = 0; i < K; i++) {
+        vector<Quadrant> next_quadrants;
+        next_quadrants.reserve(quadrants.size() * 2);
+
+        for (auto& quadrant : quadrants) {
+            quadrant.push_back(MINUS);
+            next_quadrants.push_back(quadrant);
+            quadrant.back() = PLUS;
+            next_quadrants.push_back(quadrant);
+        }
+        quadrants = next_quadrants;
+    }
+    ASRTF((int) quadrants.size() == POW2[K], "Sanity checking number of quadrants.");
+
+    const int NUM_H = (int) A.size();
+
+    dd_MatrixPtr cdd_A = dd_CreateMatrix(NUM_H + K, K + 1);
+    cdd_A->representation = dd_Inequality;
+
+    for (int i = 0; i < NUM_H; i++) {
+        mpq_t* cdd_row = cdd_A->matrix[i];
+        const double* row = A[i];
+        for (int j = 0; j < K + 1; j++) {
+            mpq_set_d(cdd_row[j], row[j]);
+        }
+    }
+
+    map<Quadrant, QuadrantInfo> quadrant2info;
+    for (const auto& quadrant : quadrants) {
+        for (int xi = 0; xi < K; xi++) {
+            mpq_t* row = cdd_A->matrix[NUM_H + xi];
+            mpq_arr_set_zero(K + 1, row);
+            if (quadrant[xi] == MINUS) {
+                mpq_set_si(row[xi + 1], -1, 1);
+            } else {
+                mpq_set_si(row[xi + 1], 1, 1);
+            }
+        }
+        dd_ErrorType err = dd_NoError;
+        dd_PolyhedraPtr poly = dd_DDMatrix2Poly(cdd_A, &err);
+
+        ASRTF(err == dd_NoError, "Converting matrix to polytope failed with error " + to_string(err));
+
+        dd_MatrixPtr cdd_V = dd_CopyGenerators(poly);
+        dd_SetFamilyPtr cdd_incidence = dd_CopyIncidence(poly);
+        const size_t num_v = cdd_V->rowsize;
+        ASRTF(
+                cdd_incidence->famsize == (int) num_v && \
+                cdd_incidence->setsize == NUM_H + K + 1,
+                "Sanity checking cdd_incidence size.");
+
+        vector<mpq_t*> V(num_v);
+        // Here H include the orthant.
+        vector<set_t> incidence(num_v);
+
+        for (size_t v = 0; v < num_v; v++) {
+            ASRTF(!mpq_cmp_si(cdd_V->matrix[v][0], 1, 1), "Polytope is not bounded.");
+            V[v] = mpq_arr_copy(K + 1, cdd_V->matrix[v]);
+            incidence[v] = set_from_cdd(cdd_incidence->set[v]);
+        }
+        dd_FreePolyhedra(poly);
+        dd_FreeMatrix(cdd_V);
+        dd_FreeSetFamily(cdd_incidence);
+
+        quadrant2info[quadrant] = {K + 1, V, incidence};
+    }
+
+    dd_FreeMatrix(cdd_A);
+    return quadrant2info;
 }
