@@ -1,3 +1,4 @@
+#include "fkpool.h"
 #include "fkrelu.h"
 #include "fp_mat.h"
 #include "mpq.h"
@@ -188,23 +189,19 @@ void run_fkrelu_test(const int K, const string& path) {
       const auto &quadrant = entry.first;
       auto &V_quadrant = entry.second.V;
 
-      for (const auto &v : V_quadrant) {
-        mpq_t *v_projection = mpq_arr_create(2 * K + 1);
-        for (int i = 0; i < K + 1; i++) {
-          mpq_set(v_projection[i], v[i]);
-        }
+      for (auto v : V_quadrant) {
+        v = mpq_arr_resize(2 * K + 1, K + 1, v);
         for (int i = 0; i < K; i++) {
           if (quadrant[i] == PLUS) {
             // Only need to set for the case of PLUS,
             // because in case of MINUS there should be 0.
             // And it is already there automatically.
-            mpq_set(v_projection[1 + i + K], v[1 + i]);
+            mpq_set(v[1 + i + K], v[1 + i]);
           }
         }
-        V.push_back(v_projection);
+        V.push_back(v);
       }
-
-      mpq_mat_free(K + 1, V_quadrant);
+      set_arr_free(entry.second.V_to_H_incidence);
     }
 
     vector<mpq_t *> V_x_H = mpq_mat_mul_with_transpose(2 * K + 1, V, H);
@@ -224,6 +221,53 @@ void run_fkrelu_test(const int K, const string& path) {
     cout << "\tpassed" << endl;
 }
 
+void run_fkpool_test(const int K, const string& path) {
+    cout << "running fkpool test: " << path << endl;
+
+    vector<double *> A = fp_mat_read(K + 1, path);
+
+    Timer t;
+    vector<double *> H_double = fkpool(K, A);
+    int micros = t.micros();
+
+    cout << "\tK = " << K << " took " << micros / 1000 << " ms and discovered "
+         << H_double.size() << " constraints" << endl;
+
+    vector<mpq_t *> H = mpq_mat_from_fp(K + 2, H_double);
+
+    vector<QuadrantInfo> quadrant_infos =
+        compute_max_pool_quadrants_with_cdd(K, A);
+
+    // Now I will compute the final V. This will allow me to verify that produced constraints do not
+    // violate any of the original vertices and thus I produce a sound overapproximation.
+    vector<mpq_t *> V;
+    for (int xi = 0; xi < K; xi++) {
+      auto &V_quadrant = quadrant_infos[xi].V;
+      for (auto v : V_quadrant) {
+        v = mpq_arr_resize(K + 2, K + 1, v);
+        mpq_set(v[K + 1], v[xi + 1]);
+        V.push_back(v);
+        }
+        set_arr_free(quadrant_infos[xi].V_to_H_incidence);
+    }
+
+    vector<mpq_t *> V_x_H = mpq_mat_mul_with_transpose(K + 2, V, H);
+    for (const auto& row : V_x_H) {
+      for (size_t i = 0; i < H.size(); i++) {
+        ASRTF(mpq_sgn(row[i]) >= 0,
+              "All discovered constraints should be sound with respect to V");
+      }
+    }
+
+    mpq_mat_free(K + 2, H);
+    mpq_mat_free(K + 2, V);
+    mpq_mat_free(H.size(), V_x_H);
+    fp_mat_free(A);
+    fp_mat_free(H_double);
+
+    cout << "\tpassed" << endl;
+}
+
 // This test doesn't check for correctness
 // It's just a sanity check for # of discovered constraints and runtime.
 void run_krelu_with_cdd_test(const int K, const string &path) {
@@ -233,6 +277,26 @@ void run_krelu_with_cdd_test(const int K, const string &path) {
 
   Timer t;
   vector<double *> H = krelu_with_cdd(K, A);
+  int micros = t.micros();
+
+  cout << "\tK = " << K << " took " << micros / 1000 << " ms and discovered "
+       << H.size() << " constraints" << endl;
+
+  fp_mat_free(A);
+  fp_mat_free(H);
+
+  cout << "\tpassed" << endl;
+}
+
+// This test doesn't check for correctness
+// It's just a sanity check for # of discovered constraints and runtime.
+void run_kpool_with_cdd_test(const int K, const string &path) {
+  cout << "running kpool with cdd test: " << path << endl;
+
+  vector<double *> A = fp_mat_read(K + 1, path);
+
+  Timer t;
+  vector<double *> H = kpool_with_cdd(K, A);
   int micros = t.micros();
 
   cout << "\tK = " << K << " took " << micros / 1000 << " ms and discovered "
@@ -347,11 +411,33 @@ void run_all_fkrelu_tests() {
     }
 }
 
+void run_all_fkpool_tests() {
+    cout << "Running all fkpool tests" << endl;
+    for (int k = 1; k <= 4; k++) {
+        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+            run_fkpool_test(
+                    k,
+                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
+        }
+    }
+}
+
 void run_all_krelu_with_cdd_tests() {
   cout << "Running all krelu with cdd tests" << endl;
   for (int k = 1; k <= 3; k++) {
     for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
       run_krelu_with_cdd_test(k, "octahedron_hrep/k" + to_string(k) + "/" +
+                                     to_string(i) + ".txt");
+    }
+  }
+}
+
+void run_all_kpool_with_cdd_tests() {
+  cout << "Running all kpool with cdd tests" << endl;
+  // kpool with cdd doesn't scale to k=4.
+  for (int k = 1; k <= 3; k++) {
+    for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+      run_kpool_with_cdd_test(k, "octahedron_hrep/k" + to_string(k) + "/" +
                                      to_string(i) + ".txt");
     }
   }
@@ -389,6 +475,8 @@ int main() {
     run_all_fkrelu_tests();
     run_all_krelu_with_cdd_tests();
     run_1relu_test();
+    run_all_fkpool_tests();
+    run_all_kpool_with_cdd_tests();
     run_all_sparse_cover_tests();
 
     dd_free_global_constants();

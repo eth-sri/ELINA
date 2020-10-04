@@ -850,7 +850,6 @@ compute_quadrants_with_cdd(const int K, const vector<double *> &A) {
           "Sanity checking cdd_incidence size.");
 
     vector<mpq_t *> V(num_v);
-    // Here H include the orthant.
     vector<set_t> incidence(num_v);
 
     for (size_t v = 0; v < num_v; v++) {
@@ -867,4 +866,69 @@ compute_quadrants_with_cdd(const int K, const vector<double *> &A) {
 
   dd_FreeMatrix(cdd_A);
   return quadrant2info;
+}
+
+vector<QuadrantInfo>
+compute_max_pool_quadrants_with_cdd(const int K, const vector<double *> &A) {
+  ASRTF(1 <= K && K <= 5, "K should be within allowed range.");
+
+  const int NUM_H = (int)A.size();
+
+  dd_MatrixPtr cdd_A = dd_CreateMatrix(NUM_H + K - 1, K + 1);
+  cdd_A->representation = dd_Inequality;
+
+  for (int i = 0; i < NUM_H; i++) {
+    mpq_t *cdd_row = cdd_A->matrix[i];
+    const double *row = A[i];
+    for (int j = 0; j < K + 1; j++) {
+      mpq_set_d(cdd_row[j], row[j]);
+    }
+  }
+
+  vector<QuadrantInfo> quadrant_infos;
+  for (int xi = 0; xi < K; xi++) {
+    int row_i = NUM_H;
+    for (int i = 0; i < K; i++) {
+      if (i == xi) {
+        continue;
+      }
+      mpq_t *row = cdd_A->matrix[row_i];
+      // xi - i >= 0.
+      mpq_arr_set_zero(K + 1, row);
+      mpq_set_si(row[xi + 1], 1, 1);
+      mpq_set_si(row[i + 1], -1, 1);
+      row_i++;
+    }
+    assert(row_i == NUM_H + K - 1 && "row_i should be equal NUM_H + K - 1.");
+    dd_ErrorType err = dd_NoError;
+    dd_PolyhedraPtr poly = dd_DDMatrix2Poly(cdd_A, &err);
+
+    ASRTF(err == dd_NoError,
+          "Converting matrix to polytope failed with error " + to_string(err));
+
+    dd_MatrixPtr cdd_V = dd_CopyGenerators(poly);
+    dd_SetFamilyPtr cdd_incidence = dd_CopyIncidence(poly);
+    const size_t num_v = cdd_V->rowsize;
+    ASRTF(cdd_incidence->famsize == (int)num_v &&
+              cdd_incidence->setsize == NUM_H + K,
+          "Sanity checking cdd_incidence size.");
+
+    vector<mpq_t *> V(num_v);
+    vector<set_t> incidence(num_v);
+
+    for (size_t v = 0; v < num_v; v++) {
+      ASRTF(!mpq_cmp_si(cdd_V->matrix[v][0], 1, 1), "Polytope is not bounded.");
+      V[v] = mpq_arr_copy(K + 1, cdd_V->matrix[v]);
+      incidence[v] = set_from_cdd(cdd_incidence->set[v]);
+    }
+
+    dd_FreePolyhedra(poly);
+    dd_FreeMatrix(cdd_V);
+    dd_FreeSetFamily(cdd_incidence);
+
+    quadrant_infos.push_back({K + 1, V, incidence});
+  }
+
+  dd_FreeMatrix(cdd_A);
+  return quadrant_infos;
 }

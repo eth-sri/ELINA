@@ -16,6 +16,6 @@ vector<double*> fp_mat_mul_with_transpose(int n,
 
 vector<double*> fp_mat_read(int cols, const string& path);
 
-dd_MatrixPtr fp_mat_to_cdd(const int n, const vector<double *> &A);
+void fp_mat_print(int n, const vector<double *> &mat);
 
-vector<double *> fp_mat_from_cdd(dd_MatrixPtr cdd_A);
+dd_MatrixPtr fp_mat_to_cdd(const int n, const vector<double *> &A);

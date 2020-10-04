@@ -2,6 +2,8 @@
 
 #include <vector>
 
-std::vector<double *> fkrelu(int K, const std::vector<double *> &A);
+using namespace std;
 
-std::vector<double *> krelu_with_cdd(int K, const std::vector<double *> &A);
+vector<double *> fkrelu(int K, const vector<double *> &A);
+
+vector<double *> krelu_with_cdd(int K, const vector<double *> &A);

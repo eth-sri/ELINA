@@ -25,6 +25,8 @@ public:
 
 vector<int> compute_maximal_indexes(const vector<set_t> &incidence);
 
+vector<double *> cdd_compute_inequalities_from_vertices(dd_MatrixPtr vertices);
+
 using Adj = pair<int, int>;
 
 enum Polarity { MINUS, PLUS };

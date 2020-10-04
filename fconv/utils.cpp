@@ -1,9 +1,12 @@
 #include <iostream>
 #include <algorithm>
+#include <cassert>
 #include "utils.h"
 #include "setoper.h"
 #include "cdd.h"
 #include "dynamic_bitset.h"
+#include "fp_mat.h"
+#include "mpq.h"
 
 using namespace std;
 
@@ -60,4 +63,49 @@ vector<int> compute_maximal_indexes(const vector<set_t>& incidence) {
 
     sort(maximal.begin(), maximal.end());
     return maximal;
+}
+
+vector<double *> cdd_compute_inequalities_from_vertices(dd_MatrixPtr vertices) {
+  dd_ErrorType err = dd_NoError;
+  dd_PolyhedraPtr poly = dd_DDMatrix2Poly(vertices, &err);
+  ASRTF(err == dd_NoError,
+        "Converting matrix to polytope failed with error " + to_string(err));
+
+  dd_MatrixPtr inequalities = dd_CopyInequalities(poly);
+  // Note that linearities are quite rare.
+  set_type linearities = inequalities->linset;
+
+  const int num_ineq = inequalities->rowsize;
+  const int dim = inequalities->colsize;
+  vector<double *> H = fp_mat_create(num_ineq + set_card(linearities), dim);
+  int counter = 0;
+  for (int ineq = 0; ineq < num_ineq; ineq++) {
+    for (int j = 0; j < dim; j++) {
+      H[counter][j] = mpq_get_d(inequalities->matrix[ineq][j]);
+    }
+    counter++;
+    if (set_member(ineq + 1, linearities)) {
+      for (int j = 0; j < dim; j++) {
+        H[counter][j] = -H[counter - 1][j];
+      }
+      counter++;
+    }
+  }
+  assert(counter == num_ineq + set_card(linearities) &&
+         "Counter should equal num_ineq + number of linearities");
+
+  for (auto h : H) {
+    double abs_coef = 0;
+    for (int i = 0; i < dim; i++) {
+      abs_coef = max(abs(h[i]), abs_coef);
+    }
+    ASRTF(abs_coef != 0, "Inequality cannot consist fully of zeros.");
+    for (int i = 0; i < dim; i++) {
+      h[i] /= abs_coef;
+    }
+  }
+
+  dd_FreePolyhedra(poly);
+  dd_FreeMatrix(inequalities);
+  return H;
 }

@@ -142,10 +142,6 @@ vector<double *> krelu_with_cdd(const int K, const vector<double *> &A) {
   vertices->representation = dd_Generator;
   size_t counter = 0;
 
-  // Now I will compute the final V. This will allow me to verify that produced
-  // constraints do not violate any of the original vertices and thus I produce
-  // a sound overapproximation.
-  vector<mpq_t *> V;
   for (auto &entry : quadrant2info) {
     const auto &quadrant = entry.first;
     auto &V_quadrant = entry.second.V;
@@ -164,34 +160,15 @@ vector<double *> krelu_with_cdd(const int K, const vector<double *> &A) {
           mpq_set(v_projection[1 + i + K], v[1 + i]);
         }
       }
-      V.push_back(v_projection);
     }
     mpq_mat_free(K + 1, V_quadrant);
+    set_arr_free(entry.second.V_to_H_incidence);
   }
   assert(counter == num_vertices &&
          "Consistency checking that counter equals the number of vertices.");
 
-  dd_ErrorType err = dd_NoError;
-  dd_PolyhedraPtr poly = dd_DDMatrix2Poly(vertices, &err);
-  ASRTF(err == dd_NoError,
-        "Converting matrix to polytope failed with error " + to_string(err));
-
-  dd_MatrixPtr inequalities = dd_CopyInequalities(poly);
-
-  vector<double *> H = fp_mat_from_cdd(inequalities);
-  for (auto h : H) {
-    double abs_coef = abs(h[0]);
-    for (int i = 1; i < 2 * K + 1; i++) {
-      abs_coef = min(abs(h[i]), abs_coef);
-    }
-    for (int i = 0; i < 2 * K + 1; i++) {
-      h[i] /= abs_coef;
-    }
-  }
-
-  dd_FreePolyhedra(poly);
+  vector<double *> H = cdd_compute_inequalities_from_vertices(vertices);
   dd_FreeMatrix(vertices);
-  dd_FreeMatrix(inequalities);
 
   return H;
 }
