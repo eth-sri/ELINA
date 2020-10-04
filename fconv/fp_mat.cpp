@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <iostream>
 #include "fp_mat.h"
 #include "asrt.h"
 #include "setoper.h"
@@ -64,6 +65,15 @@ vector<double*> fp_mat_read(const int cols, const string& path) {
     return mat;
 }
 
+void fp_mat_print(const int n, const vector<double*>& mat) {
+    for (size_t i = 0; i < mat.size(); i++) {
+        for (int j = 0; j < n; j++) {
+            cout << mat[i][j] << " ";
+        }
+        cout << endl;
+    }
+}
+
 dd_MatrixPtr fp_mat_to_cdd(const int n, const vector<double*>& A) {
     dd_MatrixPtr cdd_A = dd_CreateMatrix(A.size(), n);
     ASRTF(cdd_A != nullptr, "Failed to create cdd_A.");
@@ -73,17 +83,4 @@ dd_MatrixPtr fp_mat_to_cdd(const int n, const vector<double*>& A) {
         }
     }
     return cdd_A;
-}
-
-vector<double*> fp_mat_from_cdd(dd_MatrixPtr cdd_A) {
-    const int rows = cdd_A->rowsize;
-    const int cols = cdd_A->colsize;
-
-    vector<double*> A = fp_mat_create(rows, cols);
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            A[i][j] = mpq_get_d(cdd_A->matrix[i][j]);
-        }
-    }
-    return A;
 }

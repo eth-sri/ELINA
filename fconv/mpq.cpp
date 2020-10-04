@@ -37,7 +37,7 @@ mpq_t* mpq_arr_resize(const int new_n, const int old_n, mpq_t* arr) {
     mpq_t* new_arr = (mpq_t*) realloc(arr, new_n * sizeof(mpq_t));
     // If new_n is greater than old_n, this will allocate all added mpq_t.
     for (int i = old_n; i < new_n; i++) {
-        mpq_init(arr[i]);
+        mpq_init(new_arr[i]);
     }
     return new_arr;
 }

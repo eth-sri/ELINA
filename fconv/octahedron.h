@@ -1,6 +1,7 @@
 #pragma once
 #include <execinfo.h>
 #include <signal.h>
+#include <map>
 #include "gmp.h"
 #include "utils.h"
 #include "dynamic_bitset.h"
@@ -26,3 +27,5 @@ OctahedronV compute_octahedron_V(int K, const vector<double*>& A);
 OctahedronV compute_V_with_cdd(int K, const vector<double*>& A);
 
 map<Quadrant, QuadrantInfo> compute_quadrants_with_cdd(int K, const vector<double*>& A);
+
+vector<QuadrantInfo> compute_max_pool_quadrants_with_cdd(const int K, const vector<double*>& A);
