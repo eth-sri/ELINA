@@ -1,4 +1,5 @@
 #include "fconv.h"
+#include "fkpool.h"
 #include "fkrelu.h"
 #include "fp_mat.h"
 #include "sparse_cover.h"
@@ -40,28 +41,55 @@ void free_MatInt(MatInt cmat) {
     free((int *) cmat.data);
 }
 
-MatDouble fkrelu(MatDouble input_hrep) {
+enum RelaxationType { ReluFast, ReluCDD, PoolFast, PoolCDD };
+
+MatDouble compute_relaxation(MatDouble input_hrep, RelaxationType type) {
   dd_set_global_constants();
   const int K = input_hrep.cols - 1;
   vector<double *> A = mat_external_to_internal_format(input_hrep);
-  vector<double *> H = fkrelu(K, A);
-  MatDouble out = mat_internal_to_external_format(2 * K + 1, H);
+
+  vector<double *> H;
+  switch (type) {
+  case ReluFast:
+    H = fkrelu(K, A);
+    break;
+  case ReluCDD:
+    H = krelu_with_cdd(K, A);
+    break;
+  case PoolFast:
+    H = fkpool(K, A);
+    break;
+  case PoolCDD:
+    H = kpool_with_cdd(K, A);
+    break;
+  default:
+    throw runtime_error("Unknown relaxation type.");
+  }
+
+  MatDouble out = (type == PoolFast || type == PoolCDD)
+                      ? mat_internal_to_external_format(K + 2, H)
+                      : mat_internal_to_external_format(2 * K + 1, H);
+
   fp_mat_free(A);
   fp_mat_free(H);
   dd_free_global_constants();
   return out;
 }
 
+MatDouble fkrelu(MatDouble input_hrep) {
+  return compute_relaxation(input_hrep, ReluFast);
+}
+
 MatDouble krelu_with_cdd(MatDouble input_hrep) {
-  dd_set_global_constants();
-  const int K = input_hrep.cols - 1;
-  vector<double *> A = mat_external_to_internal_format(input_hrep);
-  vector<double *> H = krelu_with_cdd(K, A);
-  MatDouble out = mat_internal_to_external_format(2 * K + 1, H);
-  fp_mat_free(A);
-  fp_mat_free(H);
-  dd_free_global_constants();
-  return out;
+  return compute_relaxation(input_hrep, ReluCDD);
+}
+
+MatDouble fkpool(MatDouble input_hrep) {
+  return compute_relaxation(input_hrep, PoolFast);
+}
+
+MatDouble kpool_with_cdd(MatDouble input_hrep) {
+  return compute_relaxation(input_hrep, PoolCDD);
 }
 
 MatInt generate_sparse_cover(const int N, const int K) {
