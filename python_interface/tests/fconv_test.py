@@ -24,6 +24,7 @@ import cdd
 import scipy.spatial
 import numpy as np
 from fconv import *
+from time import time
 
 
 def read_matrix(filename) -> np.ndarray:
@@ -53,29 +54,39 @@ def hrep2volume(hrep: np.ndarray, number_type: str) -> float:
     return scipy.spatial.ConvexHull(vertices).volume
 
 
-def test_krelu_volume_difference(filename):
-    print("krelu volume test for", filename)
+def test_volume_difference(filename, activation):
+    assert activation in ["relu", "pool"]
+    print("volume test for:", activation, filename)
     hrep = read_matrix(filename)
 
-    res_optimal = krelu_with_cdd(hrep)
-    res_mine = fkrelu(hrep)
+    time_fast = time()
+    res_fast = fkrelu(hrep) if activation == "relu" else fkpool(hrep)
+    time_fast = time() - time_fast
 
-    res_concat = np.concatenate([res_optimal, res_mine], axis=0)
+    time_cdd = time()
+    res_cdd = krelu_with_cdd(hrep) if activation == "relu" else kpool_with_cdd(hrep)
+    time_cdd = time() - time_cdd
 
-    volume_optimal = hrep2volume(res_optimal, "float")
-    volume_mine = hrep2volume(res_mine, "float")
+    res_concat = np.concatenate([res_cdd, res_fast], axis=0)
+
+    volume_cdd = hrep2volume(res_cdd, "float")
+    volume_fast = hrep2volume(res_fast, "float")
     volume_concat = hrep2volume(res_concat, "float")
 
-    over_approximation = volume_mine / volume_optimal
-    correctness = volume_concat / volume_optimal
+    over_approximation = round(volume_fast / volume_cdd, 4)
+    soundness = round(volume_concat / volume_cdd, 4)
+    speedup = round(time_cdd / time_fast)
     # The sound over-approximation is >= 1 and correctness check should = 1.
     # However, due to numerical errors in computing volume / converting to V
     # slight deviations are possible - it's okay.
-    print("Over approximation: ", over_approximation)
-    print("Correctness check (should be close to 1)", correctness)
+    print("\tOver approximation", over_approximation)
+    print("\tSoundness check (should be close to 1)", soundness)
+    print("\tSpeedup", speedup)
 
 
 # Unfortunately library for computing volume often fails due to numerical errors.
 # Thus it is possible to perform this test only for some of the inputs.
-test_krelu_volume_difference("k3/1.txt")
-test_krelu_volume_difference("k3/5.txt")
+test_volume_difference("k3/1.txt", "relu")
+test_volume_difference("k3/5.txt", "relu")
+test_volume_difference("k3/1.txt", "pool")
+test_volume_difference("k3/2.txt", "pool")

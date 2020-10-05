@@ -29,6 +29,10 @@ MatDouble fkrelu(MatDouble input_hrep);
 
 MatDouble krelu_with_cdd(MatDouble input_hrep);
 
+MatDouble fkpool(MatDouble input_hrep);
+
+MatDouble kpool_with_cdd(MatDouble input_hrep);
+
 MatInt generate_sparse_cover(int N, int K);
 
 #ifdef __cplusplus

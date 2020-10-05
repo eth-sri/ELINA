@@ -23,6 +23,7 @@ from fconv_imports import *
 
 import numpy as np
 from ctypes import *
+from enum import Enum
 
 
 class MatDouble_c(Structure):
@@ -61,12 +62,20 @@ krelu_with_cdd_c = fconv_api.krelu_with_cdd
 krelu_with_cdd_c.argtype = [MatDouble_c]
 krelu_with_cdd_c.restype = MatDouble_c
 
+fkpool_c = fconv_api.fkpool
+fkpool_c.argtype = [MatDouble_c]
+fkpool_c.restype = MatDouble_c
+
+kpool_with_cdd_c = fconv_api.kpool_with_cdd
+kpool_with_cdd_c.argtype = [MatDouble_c]
+kpool_with_cdd_c.restype = MatDouble_c
+
 generate_sparse_cover_c = fconv_api.generate_sparse_cover
 generate_sparse_cover_c.argtype = [c_int, c_int]
 generate_sparse_cover_c.restype = MatInt_c
 
 
-def fkrelu(inp_mat: np.ndarray) -> np.ndarray:
+def _compute_relaxation(inp_hrep: np.ndarray, type: str) -> np.ndarray:
     """
     Input in format b + Ax >= 0. The input has to be octahedron in a certain format.
     An example of possible inp is:
@@ -80,15 +89,25 @@ def fkrelu(inp_mat: np.ndarray) -> np.ndarray:
         x2  <= 0.25
         -x2 <= 0.75
     """
-    rows, cols = inp_mat.shape
+
+    rows, cols = inp_hrep.shape
     k = cols - 1
     assert k >= 1
-    inp_mat = inp_mat.flatten().tolist()
-    data_c = (c_double * (rows * cols))(*inp_mat)
+    inp_hrep = inp_hrep.flatten().tolist()
+    data_c = (c_double * (rows * cols))(*inp_hrep)
 
     inp_hrep = new_MatDouble_c(rows, cols, data_c)
-    out_hrep = fkrelu_c(inp_hrep)
-    assert out_hrep.cols == 2 * k + 1
+
+    if type == "relu_fast":
+        out_hrep = fkrelu_c(inp_hrep)
+    elif type == "relu_cdd":
+        out_hrep = krelu_with_cdd_c(inp_hrep)
+    elif type == "pool_fast":
+        out_hrep = fkpool_c(inp_hrep)
+    elif type == "pool_cdd":
+        out_hrep = kpool_with_cdd_c(inp_hrep)
+    else:
+        raise Exception("Unknown relaxation type", type)
 
     out = [0] * (out_hrep.rows * out_hrep.cols)
     for i in range(out_hrep.rows * out_hrep.cols):
@@ -102,40 +121,20 @@ def fkrelu(inp_mat: np.ndarray) -> np.ndarray:
     return out
 
 
-def krelu_with_cdd(inp_mat: np.ndarray) -> np.ndarray:
-    """
-    Input in format b + Ax >= 0. The input has to be octahedron in a certain format.
-    An example of possible inp is:
-        [0.4, 1, 0],
-        [0.5, -1, 0],
-        [0.25, 0, 1],
-        [0.75, 0, -1]
-    Which describes a system:
-        x1  <= 0.4
-        -x1 <= 0.5
-        x2  <= 0.25
-        -x2 <= 0.75
-    """
-    rows, cols = inp_mat.shape
-    k = cols - 1
-    assert k >= 1
-    inp_mat = inp_mat.flatten().tolist()
-    data_c = (c_double * (rows * cols))(*inp_mat)
+def fkrelu(inp_hrep: np.ndarray) -> np.ndarray:
+    return _compute_relaxation(inp_hrep, "relu_fast")
 
-    inp_hrep = new_MatDouble_c(rows, cols, data_c)
-    out_hrep = krelu_with_cdd_c(inp_hrep)
-    assert out_hrep.cols == 2 * k + 1
 
-    out = [0] * (out_hrep.rows * out_hrep.cols)
-    for i in range(out_hrep.rows * out_hrep.cols):
-        out[i] = out_hrep.data[i]
-    out = np.array(out)
-    out = out.reshape(out_hrep.rows, out_hrep.cols)
+def krelu_with_cdd(inp_hrep: np.ndarray) -> np.ndarray:
+    return _compute_relaxation(inp_hrep, "relu_cdd")
 
-    free_MatDouble_c(inp_hrep)
-    free_MatDouble_c(out_hrep)
 
-    return out
+def fkpool(inp_hrep: np.ndarray) -> np.ndarray:
+    return _compute_relaxation(inp_hrep, "pool_fast")
+
+
+def kpool_with_cdd(inp_hrep: np.ndarray) -> np.ndarray:
+    return _compute_relaxation(inp_hrep, "pool_cdd")
 
 
 def generate_sparse_cover(n, k):
