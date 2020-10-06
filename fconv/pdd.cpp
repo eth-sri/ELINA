@@ -273,6 +273,27 @@ PDD PDD_intersect_two_PDDs(PDD& pdd1, PDD& pdd2) {
     return {pdd1.dim, H, VInc.V, VInc.incidence};
 }
 
+
+PDD PDD_intersect_all(vector<PDD>& pdds) {
+    ASRTF(!pdds.empty(), "Expected non-empty number of PDDs.");
+    if (pdds.size() == 1) {
+        return pdds[0];
+    }
+    vector<PDD> next_pdds;
+    size_t i = 0;
+    while (i < pdds.size()) {
+        if (i < pdds.size() - 1) {
+            next_pdds.push_back(PDD_intersect_two_PDDs(pdds[i], pdds[i + 1]));
+            i += 2;
+        } else {
+            next_pdds.push_back(pdds[i]);
+            i++;
+        }
+    }
+    return PDD_intersect_all(next_pdds);
+}
+
+
 void PDD_adjust_H_for_soundness_finite_polytope(const int dim,
                                                 vector<double*>& H,
                                                 const vector<double*>& V) {

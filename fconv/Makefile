@@ -26,7 +26,7 @@ INCLDIR = $(ELINA_PREFIX)/include
 INSTALL = install
 INSTALLd = install -d
 
-OBJS = fconv.o fkrelu.o fkpool.o decomposition.o split_in_quadrants.o octahedron.o pdd.o sparse_cover.o mpq.o utils.o dynamic_bitset.o fp_mat.o
+OBJS = fconv.o relaxation.o decomposition.o split_in_quadrants.o octahedron.o pdd.o sparse_cover.o mpq.o utils.o dynamic_bitset.o fp_mat.o
 
 LIBS = $(GMP_LIB_FLAG) -lgmp -lcddgmp
 INCLUDES = $(GMP_INCLUDE_FLAG)

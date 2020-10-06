@@ -2,6 +2,7 @@
 #include <map>
 #include <cassert>
 #include <algorithm>
+#include <math.h>
 #include "octahedron.h"
 #include "utils.h"
 #include "mpq.h"
@@ -156,14 +157,6 @@ bool vertices_divided_by_orthant(const mpq_t* v1, const mpq_t* v2, const int K) 
         }
     }
     return false;
-}
-
-void print_Vertex(Vertex &vertex) {
-  cout << "printing vertex" << endl;
-  for (auto &v : vertex.v_double) {
-    cout << v << " ";
-  }
-  cout << endl;
 }
 
 struct OctahedronToV_Helper {
@@ -378,7 +371,6 @@ struct OctahedronToV_Helper {
 
     void visit_vertex() {
         ASRTF(!to_visit.empty(), "No vertices left to visit.");
-        //        cout << "visiting vertex" << endl;
         auto vertex_iter = to_visit.begin();
         Vertex vertex = *vertex_iter;
 
@@ -386,15 +378,6 @@ struct OctahedronToV_Helper {
         visited.insert(vertex);
 
         vector<vector<int>> directions = generate_directions(vertex);
-        //        cout << "directions size " << directions.size() << endl;
-
-        //        for (auto& dir : directions) {
-        //            cout << "print direction" << endl;
-        //            for (auto& el : dir) {
-        //                cout << el << " ";
-        //            }
-        //            cout << endl;
-        //        }
 
         do_precomputation_for_vertex(vertex);
 
@@ -523,12 +506,10 @@ struct OctahedronToV_Helper {
 
                 vector<int>& new_hyperplanes = new_hyperplanes_all[dir_i];
                 if (new_hyperplanes.empty()) {
-                  //                    cout << "setting new cur_t " <<
-                  //                    mpq_get_d(cur_t) << endl;
-                  new_hyperplanes.push_back(hi);
-                  mpq_set(closest_t_all[dir_i], cur_t);
-                  closest_t_double_all[dir_i] = mpq_get_d(closest_t_all[dir_i]);
-                  continue;
+                    new_hyperplanes.push_back(hi);
+                    mpq_set(closest_t_all[dir_i], cur_t);
+                    closest_t_double_all[dir_i] = mpq_get_d(closest_t_all[dir_i]);
+                    continue;
                 }
                 int comp = mpq_cmp(cur_t, closest_t_all[dir_i]);
                 if (comp == 0) {
@@ -575,8 +556,6 @@ struct OctahedronToV_Helper {
             // In that case we should just skip this vertex.
             Vertex new_vertex {new_v, new_v_double, new_hyperplanes, vertex_count};
             bool save_adjacency = vertices_divided_by_orthant(vertex.v, new_v, K);
-            //            cout << "here save adjacency is " << save_adjacency <<
-            //            endl;
 
             // TODO[gleb] I can optimize this code by using incidence as a vertex identifier.
             // In that case I will not need to create final vertex and very quickly check for existence.
@@ -794,23 +773,9 @@ OctahedronV compute_V_with_cdd(const int K, const vector<double *> &A) {
 
 map<Quadrant, QuadrantInfo>
 compute_quadrants_with_cdd(const int K, const vector<double *> &A) {
-  ASRTF(1 <= K && K <= 5, "K should be within allowed range.");
+  ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
 
-  vector<Quadrant> quadrants{{}};
-  for (int i = 0; i < K; i++) {
-    vector<Quadrant> next_quadrants;
-    next_quadrants.reserve(quadrants.size() * 2);
-
-    for (auto &quadrant : quadrants) {
-      quadrant.push_back(MINUS);
-      next_quadrants.push_back(quadrant);
-      quadrant.back() = PLUS;
-      next_quadrants.push_back(quadrant);
-    }
-    quadrants = next_quadrants;
-  }
-  ASRTF((int)quadrants.size() == POW2[K],
-        "Sanity checking number of quadrants.");
+  const vector<Quadrant> &quadrants = K2QUADRANTS[K];
 
   const int NUM_H = (int)A.size();
 
@@ -818,11 +783,7 @@ compute_quadrants_with_cdd(const int K, const vector<double *> &A) {
   cdd_A->representation = dd_Inequality;
 
   for (int i = 0; i < NUM_H; i++) {
-    mpq_t *cdd_row = cdd_A->matrix[i];
-    const double *row = A[i];
-    for (int j = 0; j < K + 1; j++) {
-      mpq_set_d(cdd_row[j], row[j]);
-    }
+    mpq_arr_set_d(K + 1, cdd_A->matrix[i], A[i]);
   }
 
   map<Quadrant, QuadrantInfo> quadrant2info;
@@ -878,11 +839,7 @@ compute_max_pool_quadrants_with_cdd(const int K, const vector<double *> &A) {
   cdd_A->representation = dd_Inequality;
 
   for (int i = 0; i < NUM_H; i++) {
-    mpq_t *cdd_row = cdd_A->matrix[i];
-    const double *row = A[i];
-    for (int j = 0; j < K + 1; j++) {
-      mpq_set_d(cdd_row[j], row[j]);
-    }
+    mpq_arr_set_d(K + 1, cdd_A->matrix[i], A[i]);
   }
 
   vector<QuadrantInfo> quadrant_infos;
@@ -931,4 +888,100 @@ compute_max_pool_quadrants_with_cdd(const int K, const vector<double *> &A) {
 
   dd_FreeMatrix(cdd_A);
   return quadrant_infos;
+}
+
+map<Quadrant, vector<mpq_t *>>
+compute_tanh_quadrants_with_cdd(const int K, const vector<double *> &A) {
+  ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
+
+  const vector<Quadrant> &quadrants = K2QUADRANTS[K];
+
+  const int NUM_H = (int)A.size();
+
+  // Total NUM_H + 3 * K inequalities:
+  // - NUM_H original inequalities
+  // - K inequalities for a quadrant
+  // - 2 * K inequalities for y (2 per quadrant)
+  dd_MatrixPtr cdd_A = dd_CreateMatrix(NUM_H + 3 * K, 2 * K + 1);
+  cdd_A->representation = dd_Inequality;
+
+  for (int i = 0; i < NUM_H; i++) {
+    mpq_arr_set_d(K + 1, cdd_A->matrix[i], A[i]);
+  }
+
+  map<Quadrant, vector<mpq_t *>> quadrant2vertices;
+  for (const auto &quadrant : quadrants) {
+    for (int xi = 0; xi < K; xi++) {
+      mpq_t *row = cdd_A->matrix[NUM_H + xi];
+      mpq_arr_set_zero(2 * K + 1, row);
+      if (quadrant[xi] == MINUS) {
+        mpq_set_si(row[xi + 1], -1, 1);
+      } else {
+        mpq_set_si(row[xi + 1], 1, 1);
+      }
+    }
+    for (int xi = 0; xi < K; xi++) {
+      mpq_t *row_lb = cdd_A->matrix[NUM_H + K + 2 * xi];
+      mpq_t *row_ub = cdd_A->matrix[NUM_H + K + 2 * xi + 1];
+      mpq_arr_set_zero(2 * K + 1, row_lb);
+      mpq_arr_set_zero(2 * K + 1, row_ub);
+      mpq_set_si(row_lb[xi + 1 + K], 1, 1);
+      mpq_set_si(row_ub[xi + 1 + K], -1, 1);
+      double x;
+      if (quadrant[xi] == MINUS) {
+        x = -A[LOWER_BOUND_INDEX[K][xi]][0];
+        assert(x < 0 && "x should be negative");
+      } else {
+        x = A[UPPER_BOUND_INDEX[K][xi]][0];
+        assert(x > 0 && "x should be positive");
+      }
+      double y = tanh(x);
+      // One of the lines is x * dy + b
+      // dy is the derivative of tanh
+      double dy = 1 - y * y;
+      double b = y - x * dy;
+
+      // Another line has coefficient y / x.
+      double k = abs(y / x);
+
+      if (quadrant[xi] == MINUS) {
+        // In the minus branch:
+        // y >= dy * x + b equivalent -b - dy * x + y >= 0
+        // y <= k * x equivalent k * x - y >= 0
+        mpq_set_d(row_lb[0], -b);
+        mpq_set_d(row_lb[xi + 1], -dy);
+        mpq_set_d(row_ub[xi + 1], k);
+      } else {
+        // In the plus branch:
+        // y >= k * x equivalent -k * x + y >= 0
+        // y <= dy * x + b equivalent b + dy * x - y >= 0
+        mpq_set_d(row_lb[xi + 1], -k);
+        mpq_set_d(row_ub[0], b);
+        mpq_set_d(row_ub[xi + 1], dy);
+      }
+    }
+    dd_ErrorType err = dd_NoError;
+    dd_PolyhedraPtr poly = dd_DDMatrix2Poly(cdd_A, &err);
+
+    ASRTF(err == dd_NoError,
+          "Converting matrix to polytope failed with error " + to_string(err));
+
+    dd_MatrixPtr cdd_V = dd_CopyGenerators(poly);
+    const size_t num_v = cdd_V->rowsize;
+
+    vector<mpq_t *> V(num_v);
+
+    for (size_t v = 0; v < num_v; v++) {
+      ASRTF(!mpq_cmp_si(cdd_V->matrix[v][0], 1, 1), "Polytope is not bounded.");
+      V[v] = mpq_arr_copy(2 * K + 1, cdd_V->matrix[v]);
+    }
+
+    dd_FreePolyhedra(poly);
+    dd_FreeMatrix(cdd_V);
+
+    quadrant2vertices[quadrant] = V;
+  }
+
+  dd_FreeMatrix(cdd_A);
+  return quadrant2vertices;
 }

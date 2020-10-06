@@ -1,10 +1,9 @@
-#include "fconv.h"
-#include "fkpool.h"
-#include "fkrelu.h"
-#include "fp_mat.h"
-#include "sparse_cover.h"
-#include "utils.h"
 #include <string.h>
+#include "utils.h"
+#include "fconv.h"
+#include "relaxation.h"
+#include "sparse_cover.h"
+#include "fp_mat.h"
 
 vector<double *> mat_external_to_internal_format(const MatDouble &cmat) {
   vector<double *> A = fp_mat_create(cmat.rows, cmat.cols);
