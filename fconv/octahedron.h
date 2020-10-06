@@ -29,3 +29,5 @@ OctahedronV compute_V_with_cdd(int K, const vector<double*>& A);
 map<Quadrant, QuadrantInfo> compute_quadrants_with_cdd(int K, const vector<double*>& A);
 
 vector<QuadrantInfo> compute_max_pool_quadrants_with_cdd(const int K, const vector<double*>& A);
+
+map<Quadrant, vector<mpq_t*>> compute_tanh_quadrants_with_cdd(const int K, const vector<double*>& A);

@@ -1,8 +1,7 @@
 #include <string.h>
 #include "utils.h"
 #include "fconv.h"
-#include "fkrelu.h"
-#include "fkpool.h"
+#include "relaxation.h"
 #include "sparse_cover.h"
 #include "fp_mat.h"
 

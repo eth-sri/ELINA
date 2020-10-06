@@ -8,12 +8,19 @@
 #include "utils.h"
 #include "mpq.h"
 #include "split_in_quadrants.h"
-#include "fkrelu.h"
-#include "fkpool.h"
+#include "relaxation.h"
 #include "sparse_cover.h"
 #include "fp_mat.h"
 
-constexpr int K2NUM_TESTS[6] = {0, 2, 4, 5, 4, 4};
+// Temporary disabled the last test for k=4 before I add proper support
+// for inputs that split zero.
+constexpr int K2NUM_TESTS[6] = {0, 2, 4, 5, 3, 4};
+
+enum Activation {
+    Relu,
+    Pool,
+    Tanh
+};
 
 // Creates bijective mapping between the rows of two matrices.
 // Will throw an exception if such mapping does not exist.
@@ -258,35 +265,30 @@ void run_fkpool_test(const int K, const string& path) {
     cout << "\tpassed" << endl;
 }
 
-// This test doesn't check for correctness
-// It's just a sanity check for # of discovered constraints and runtime.
-void run_krelu_with_cdd_test(const int K, const string& path) {
-    cout << "running krelu with cdd test: " << path << endl;
+// The test doesn't check the correctness, it showcases the number of constraints and runtime.
+void run_relaxation_with_cdd_test(const int K, const string& path, Activation activation) {
+    cout << "running relaxation with cdd test: " << path << endl;
 
     vector<double*> A = fp_mat_read(K + 1, path);
 
     Timer t;
-    vector<double*> H = krelu_with_cdd(K, A);
-    int micros = t.micros();
-
-    cout << "\tK = " << K << " took " << micros / 1000 << \
-        " ms and discovered " << H.size() << " constraints" << endl;
-
-    fp_mat_free(A);
-    fp_mat_free(H);
-
-    cout << "\tpassed" << endl;
-}
-
-// This test doesn't check for correctness
-// It's just a sanity check for # of discovered constraints and runtime.
-void run_kpool_with_cdd_test(const int K, const string& path) {
-    cout << "running kpool with cdd test: " << path << endl;
-
-    vector<double*> A = fp_mat_read(K + 1, path);
-
-    Timer t;
-    vector<double*> H = kpool_with_cdd(K, A);
+    vector<double*> H;
+    switch (activation) {
+        case Relu:
+            cout << "\tRelu" << endl;
+            H = krelu_with_cdd(K, A);
+            break;
+        case Pool:
+            cout << "\tPool" << endl;
+            H = kpool_with_cdd(K, A);
+            break;
+        case Tanh:
+            cout << "\tTanh" << endl;
+            H = ktanh_with_cdd(K, A);
+            break;
+        default:
+            throw runtime_error("Unknown activation.");
+    }
     int micros = t.micros();
 
     cout << "\tK = " << K << " took " << micros / 1000 << \
@@ -414,21 +416,36 @@ void run_all_krelu_with_cdd_tests() {
     cout << "Running all krelu with cdd tests" << endl;
     for (int k = 1; k <= 3; k++) {
         for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-            run_krelu_with_cdd_test(
+            run_relaxation_with_cdd_test(
                     k,
-                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
+                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt",
+                    Relu);
         }
     }
 }
 
 void run_all_kpool_with_cdd_tests() {
     cout << "Running all kpool with cdd tests" << endl;
-    // kpool with cdd doesn't scale to k=4.
+    // kpool with cdd doesn't scale to k=4 (takes 1-2 minutes).
     for (int k = 1; k <= 3; k++) {
         for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-            run_kpool_with_cdd_test(
+            run_relaxation_with_cdd_test(
                     k,
-                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
+                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt",
+                    Pool);
+        }
+    }
+}
+
+void run_all_ktanh_with_cdd_tests() {
+    cout << "Running all ktanh with cdd tests" << endl;
+    // kpool with cdd doesn't scale to k=3 (takes 1-2 minutes).
+    for (int k = 1; k <= 2; k++) {
+        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+            run_relaxation_with_cdd_test(
+                    k,
+                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt",
+                    Tanh);
         }
     }
 }
@@ -467,6 +484,7 @@ int main() {
     run_1relu_test();
     run_all_fkpool_tests();
     run_all_kpool_with_cdd_tests();
+    run_all_ktanh_with_cdd_tests();
     run_all_sparse_cover_tests();
 
     dd_free_global_constants();

@@ -16,13 +16,27 @@ mpq_t* mpq_arr_create(const int n) {
     return arr;
 }
 
-mpq_t* mpq_arr_copy(const int n, const mpq_t* src) {
-    assert(n > 0 && "n should be positive.");
+mpq_t* mpq_arr_copy(const int n, mpq_t* src) {
+    assert(n >= 0 && "n should be non-negative.");
     mpq_t* arr = mpq_arr_create(n);
     for (int i = 0; i < n; i++) {
         mpq_set(arr[i], src[i]);
     }
     return arr;
+}
+
+void mpq_arr_set(const int n, mpq_t* dst, mpq_t* src) {
+    assert(n >= 0 && "n should be non-negative.");
+    for (int i = 0; i < n; i++) {
+        mpq_set(dst[i], src[i]);
+    }
+}
+
+void mpq_arr_set_d(const int n, mpq_t* dst, double* src) {
+    assert(n >= 0 && "n should be non-negative.");
+    for (int i = 0; i < n; i++) {
+        mpq_set_d(dst[i], src[i]);
+    }
 }
 
 mpq_t* mpq_arr_resize(const int new_n, const int old_n, mpq_t* arr) {
@@ -67,7 +81,7 @@ bool mpq_arr_equal(const int n, mpq_t* first, mpq_t* second) {
     return true;
 }
 
-void mpq_arr_print(const int n, const mpq_t* arr) {
+void mpq_arr_print(const int n, mpq_t* arr) {
     for (int i = 0; i < n; i++) {
         cout << mpq_get_d(arr[i]) << " ";
     }
