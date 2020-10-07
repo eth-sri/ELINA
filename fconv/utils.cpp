@@ -64,3 +64,11 @@ vector<int> compute_maximal_indexes(const vector<set_t>& incidence) {
     sort(maximal.begin(), maximal.end());
     return maximal;
 }
+
+// A simple wrapper that has error control.
+dd_PolyhedraPtr cdd_Matrix_to_Poly(dd_MatrixPtr A) {
+    dd_ErrorType err = dd_NoError;
+    dd_PolyhedraPtr poly = dd_DDMatrix2Poly(A, &err);
+    ASRTF(err == dd_NoError, "Converting matrix to polytope failed with error " + to_string(err));
+    return poly;
+}

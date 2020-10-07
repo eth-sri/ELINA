@@ -714,11 +714,8 @@ OctahedronV compute_V_with_cdd(const int K, const vector<double *> &A) {
 
   dd_MatrixPtr cdd_hrep = fp_mat_to_cdd(K + 1, A);
   cdd_hrep->representation = dd_Inequality;
-  dd_ErrorType err = dd_NoError;
 
-  dd_PolyhedraPtr poly = dd_DDMatrix2Poly(cdd_hrep, &err);
-  ASRTF(err == dd_NoError,
-        "Converting matrix to polytope failed with error " + to_string(err));
+  dd_PolyhedraPtr poly = cdd_Matrix_to_Poly(cdd_hrep);
   dd_MatrixPtr cdd_vrep = dd_CopyGenerators(poly);
 
   int num_v = cdd_vrep->rowsize;
@@ -797,11 +794,7 @@ compute_quadrants_with_cdd(const int K, const vector<double *> &A) {
         mpq_set_si(row[xi + 1], 1, 1);
       }
     }
-    dd_ErrorType err = dd_NoError;
-    dd_PolyhedraPtr poly = dd_DDMatrix2Poly(cdd_A, &err);
-
-    ASRTF(err == dd_NoError,
-          "Converting matrix to polytope failed with error " + to_string(err));
+    dd_PolyhedraPtr poly = cdd_Matrix_to_Poly(cdd_A);
 
     dd_MatrixPtr cdd_V = dd_CopyGenerators(poly);
     dd_SetFamilyPtr cdd_incidence = dd_CopyIncidence(poly);
@@ -857,12 +850,8 @@ compute_max_pool_quadrants_with_cdd(const int K, const vector<double *> &A) {
       row_i++;
     }
     assert(row_i == NUM_H + K - 1 && "row_i should be equal NUM_H + K - 1.");
-    dd_ErrorType err = dd_NoError;
-    dd_PolyhedraPtr poly = dd_DDMatrix2Poly(cdd_A, &err);
 
-    ASRTF(err == dd_NoError,
-          "Converting matrix to polytope failed with error " + to_string(err));
-
+    dd_PolyhedraPtr poly = cdd_Matrix_to_Poly(cdd_A);
     dd_MatrixPtr cdd_V = dd_CopyGenerators(poly);
     dd_SetFamilyPtr cdd_incidence = dd_CopyIncidence(poly);
     const size_t num_v = cdd_V->rowsize;
@@ -890,6 +879,60 @@ compute_max_pool_quadrants_with_cdd(const int K, const vector<double *> &A) {
   return quadrant_infos;
 }
 
+void precompute_for_tanh(const int K, const vector<double *> &A,
+                         vector<mpq_t *> &x_arr, vector<mpq_t *> &y_arr,
+                         vector<mpq_t *> &dy_arr, vector<mpq_t *> &b_arr,
+                         vector<mpq_t *> &k_arr) {
+  x_arr = mpq_mat_create(2, K);
+  y_arr = mpq_mat_create(2, K);
+  dy_arr = mpq_mat_create(2, K);
+  b_arr = mpq_mat_create(2, K);
+  k_arr = mpq_mat_create(2, K);
+
+  // This computations are important to do in exact precision,
+  // because in that case we can practically demonstrate dimension trick.
+
+  mpq_t one;
+  mpq_init(one);
+  mpq_set_si(one, 1, 1);
+  for (int p = 0; p <= 1; p++) {
+    for (int xi = 0; xi < K; xi++) {
+      double x_fp = 0;
+      if (p == 0) {
+        x_fp = -A[LOWER_BOUND_INDEX[K][xi]][0];
+        assert(x_fp < 0 && "x should be negative");
+      } else {
+        x_fp = A[UPPER_BOUND_INDEX[K][xi]][0];
+        assert(x_fp > 0 && "x should be positive");
+      }
+      double y_fp = tanh(x_fp);
+
+      mpq_t &x = x_arr[p][xi];
+      mpq_t &y = y_arr[p][xi];
+      mpq_t &dy = dy_arr[p][xi];
+      mpq_t &b = b_arr[p][xi];
+      mpq_t &k = k_arr[p][xi];
+
+      mpq_set_d(x, x_fp);
+      mpq_set_d(y, y_fp);
+
+      // One of the lines is x * dy + b
+      // dy is the derivative of tanh: dy = 1 - y^2
+      mpq_mul(dy, y, y);
+      mpq_sub(dy, one, dy);
+
+      // b = y - x * dy
+      mpq_mul(b, x, dy);
+      mpq_sub(b, y, b);
+
+      // Another line has coefficient abs(y / x).
+      mpq_div(k, y, x);
+      mpq_abs(k, k);
+    }
+  }
+  mpq_clear(one);
+}
+
 map<Quadrant, vector<mpq_t *>>
 compute_tanh_quadrants_with_cdd(const int K, const vector<double *> &A) {
   ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
@@ -909,6 +952,9 @@ compute_tanh_quadrants_with_cdd(const int K, const vector<double *> &A) {
     mpq_arr_set_d(K + 1, cdd_A->matrix[i], A[i]);
   }
 
+  vector<mpq_t *> x_arr, y_arr, dy_arr, b_arr, k_arr;
+  precompute_for_tanh(K, A, x_arr, y_arr, dy_arr, b_arr, k_arr);
+
   map<Quadrant, vector<mpq_t *>> quadrant2vertices;
   for (const auto &quadrant : quadrants) {
     for (int xi = 0; xi < K; xi++) {
@@ -927,45 +973,25 @@ compute_tanh_quadrants_with_cdd(const int K, const vector<double *> &A) {
       mpq_arr_set_zero(2 * K + 1, row_ub);
       mpq_set_si(row_lb[xi + 1 + K], 1, 1);
       mpq_set_si(row_ub[xi + 1 + K], -1, 1);
-      double x;
-      if (quadrant[xi] == MINUS) {
-        x = -A[LOWER_BOUND_INDEX[K][xi]][0];
-        assert(x < 0 && "x should be negative");
-      } else {
-        x = A[UPPER_BOUND_INDEX[K][xi]][0];
-        assert(x > 0 && "x should be positive");
-      }
-      double y = tanh(x);
-      // One of the lines is x * dy + b
-      // dy is the derivative of tanh
-      double dy = 1 - y * y;
-      double b = y - x * dy;
-
-      // Another line has coefficient y / x.
-      double k = abs(y / x);
 
       if (quadrant[xi] == MINUS) {
         // In the minus branch:
         // y >= dy * x + b equivalent -b - dy * x + y >= 0
         // y <= k * x equivalent k * x - y >= 0
-        mpq_set_d(row_lb[0], -b);
-        mpq_set_d(row_lb[xi + 1], -dy);
-        mpq_set_d(row_ub[xi + 1], k);
+        mpq_neg(row_lb[0], b_arr[0][xi]);
+        mpq_neg(row_lb[xi + 1], dy_arr[0][xi]);
+        mpq_set(row_ub[xi + 1], k_arr[0][xi]);
       } else {
         // In the plus branch:
         // y >= k * x equivalent -k * x + y >= 0
         // y <= dy * x + b equivalent b + dy * x - y >= 0
-        mpq_set_d(row_lb[xi + 1], -k);
-        mpq_set_d(row_ub[0], b);
-        mpq_set_d(row_ub[xi + 1], dy);
+        mpq_neg(row_lb[xi + 1], k_arr[1][xi]);
+        mpq_set(row_ub[0], b_arr[1][xi]);
+        mpq_set(row_ub[xi + 1], dy_arr[1][xi]);
       }
     }
-    dd_ErrorType err = dd_NoError;
-    dd_PolyhedraPtr poly = dd_DDMatrix2Poly(cdd_A, &err);
 
-    ASRTF(err == dd_NoError,
-          "Converting matrix to polytope failed with error " + to_string(err));
-
+    dd_PolyhedraPtr poly = cdd_Matrix_to_Poly(cdd_A);
     dd_MatrixPtr cdd_V = dd_CopyGenerators(poly);
     const size_t num_v = cdd_V->rowsize;
 
@@ -982,6 +1008,97 @@ compute_tanh_quadrants_with_cdd(const int K, const vector<double *> &A) {
     quadrant2vertices[quadrant] = V;
   }
 
+  mpq_mat_free(K, x_arr);
+  mpq_mat_free(K, y_arr);
+  mpq_mat_free(K, dy_arr);
+  mpq_mat_free(K, b_arr);
+  mpq_mat_free(K, k_arr);
+
   dd_FreeMatrix(cdd_A);
+
+  return quadrant2vertices;
+}
+
+map<Quadrant, vector<mpq_t *>>
+compute_tanh_quadrants_with_cdd_dimension_trick(const int K,
+                                                const vector<double *> &A) {
+  ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
+
+  const vector<Quadrant> &quadrants = K2QUADRANTS[K];
+
+  const int NUM_H = (int)A.size();
+
+  dd_MatrixPtr cdd_A = dd_CreateMatrix(NUM_H + K, K + 1);
+  cdd_A->representation = dd_Inequality;
+
+  for (int i = 0; i < NUM_H; i++) {
+    mpq_arr_set_d(K + 1, cdd_A->matrix[i], A[i]);
+  }
+
+  vector<mpq_t *> x_arr, y_arr, dy_arr, b_arr, k_arr;
+  precompute_for_tanh(K, A, x_arr, y_arr, dy_arr, b_arr, k_arr);
+
+  map<Quadrant, vector<mpq_t *>> quadrant2vertices;
+  for (const auto &quadrant : quadrants) {
+    for (int xi = 0; xi < K; xi++) {
+      mpq_t *row = cdd_A->matrix[NUM_H + xi];
+      mpq_arr_set_zero(K + 1, row);
+      if (quadrant[xi] == MINUS) {
+        mpq_set_si(row[xi + 1], -1, 1);
+      } else {
+        mpq_set_si(row[xi + 1], 1, 1);
+      }
+    }
+    dd_PolyhedraPtr poly = cdd_Matrix_to_Poly(cdd_A);
+
+    dd_MatrixPtr cdd_V = dd_CopyGenerators(poly);
+    const size_t num_v = cdd_V->rowsize;
+
+    vector<mpq_t *> V;
+    for (size_t vi = 0; vi < num_v; vi++) {
+      const size_t base = V.size();
+      mpq_t *v = cdd_V->matrix[vi];
+      V.push_back(mpq_arr_create(2 * K + 1));
+      mpq_arr_set(K + 1, V[base], v);
+      for (int xi = 0; xi < K; xi++) {
+        if (!mpq_cmp(v[xi + 1], x_arr[quadrant[xi]][xi])) {
+          // In case x has extreme value both lower and upper bound of y
+          // have the same value - thus y can be set directly.
+          for (size_t i = base; i < V.size(); i++) {
+            mpq_set(V[i][xi + 1 + K], y_arr[quadrant[xi]][xi]);
+          }
+          continue;
+        }
+        const size_t num = V.size() - base;
+        for (size_t i = base; i < base + num; i++) {
+          mpq_t *first = V[i];
+          mpq_t *second = mpq_arr_copy(2 * K + 1, first);
+          V.push_back(second);
+
+          mpq_mul(first[xi + 1 + K], first[xi + 1], dy_arr[quadrant[xi]][xi]);
+          mpq_add(first[xi + 1 + K], first[xi + 1 + K],
+                  b_arr[quadrant[xi]][xi]);
+
+          mpq_mul(second[xi + 1 + K], second[xi + 1], k_arr[quadrant[xi]][xi]);
+        }
+        assert(V.size() - base == 2 * num &&
+               "The number of new vertices should've doubled.");
+      }
+    }
+
+    dd_FreePolyhedra(poly);
+    dd_FreeMatrix(cdd_V);
+
+    quadrant2vertices[quadrant] = V;
+  }
+
+  mpq_mat_free(K, x_arr);
+  mpq_mat_free(K, y_arr);
+  mpq_mat_free(K, dy_arr);
+  mpq_mat_free(K, b_arr);
+  mpq_mat_free(K, k_arr);
+
+  dd_FreeMatrix(cdd_A);
+
   return quadrant2vertices;
 }

@@ -77,30 +77,28 @@ void verify_that_octahedron_and_all_xi_split_zero(const int K, const vector<doub
 }
 
 vector<double*> cdd_compute_inequalities_from_vertices(dd_MatrixPtr vertices) {
-  dd_ErrorType err = dd_NoError;
-  dd_PolyhedraPtr poly = dd_DDMatrix2Poly(vertices, &err);
-  ASRTF(err == dd_NoError,
-        "Converting matrix to polytope failed with error " + to_string(err));
+    vertices->representation = dd_Generator;
+    dd_PolyhedraPtr poly = cdd_Matrix_to_Poly(vertices);
 
-  dd_MatrixPtr inequalities = dd_CopyInequalities(poly);
-  // Note that linearities are quite rare.
-  set_type linearities = inequalities->linset;
+    dd_MatrixPtr inequalities = dd_CopyInequalities(poly);
+    // Note that linearities are quite rare.
+    set_type linearities = inequalities->linset;
 
-  const int num_ineq = inequalities->rowsize;
-  const int dim = inequalities->colsize;
-  vector<double *> H = fp_mat_create(num_ineq + set_card(linearities), dim);
-  int counter = 0;
-  for (int ineq = 0; ineq < num_ineq; ineq++) {
-    for (int j = 0; j < dim; j++) {
-      H[counter][j] = mpq_get_d(inequalities->matrix[ineq][j]);
-    }
-    counter++;
-    if (set_member(ineq + 1, linearities)) {
-      for (int j = 0; j < dim; j++) {
-        H[counter][j] = -H[counter - 1][j];
-      }
-      counter++;
-    }
+    const int num_ineq = inequalities->rowsize;
+    const int dim = inequalities->colsize;
+    vector<double*> H = fp_mat_create(num_ineq + set_card(linearities), dim);
+    int counter = 0;
+    for (int ineq = 0; ineq < num_ineq; ineq++) {
+        for (int j = 0; j < dim; j++) {
+            H[counter][j] = mpq_get_d(inequalities->matrix[ineq][j]);
+        }
+        counter++;
+        if (set_member(ineq + 1, linearities)) {
+            for (int j = 0; j < dim; j++) {
+                H[counter][j] = -H[counter - 1][j];
+            }
+            counter++;
+        }
     }
     assert(
             counter == num_ineq + set_card(linearities) &&
@@ -208,7 +206,6 @@ vector<double*> krelu_with_cdd(const int K, const vector<double*>& A) {
     }
 
     dd_MatrixPtr vertices = dd_CreateMatrix(num_vertices, 2 * K + 1);
-    vertices->representation = dd_Generator;
     size_t counter = 0;
 
     for (auto &entry : quadrant2info) {
@@ -356,7 +353,6 @@ vector<double*> kpool_with_cdd(const int K, const vector<double*>& A) {
     }
 
     dd_MatrixPtr vertices = dd_CreateMatrix(num_vertices, K + 2);
-    vertices->representation = dd_Generator;
     size_t counter = 0;
 
     for (int xi = 0; xi < K; xi++) {
@@ -391,7 +387,6 @@ vector<double *> ktanh_with_cdd(int K, const vector<double *> &A) {
   }
 
   dd_MatrixPtr vertices = dd_CreateMatrix(num_vertices, 2 * K + 1);
-  vertices->representation = dd_Generator;
   size_t counter = 0;
   for (auto &entry : quadrant2vertices) {
     for (mpq_t *v : entry.second) {

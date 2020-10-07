@@ -88,6 +88,14 @@ void mpq_arr_print(const int n, mpq_t* arr) {
     cout << endl;
 }
 
+vector<mpq_t*> mpq_mat_create(const int rows, const int cols) {
+    vector<mpq_t*> mat(rows);
+    for (int i = 0; i < rows; i++) {
+        mat[i] = mpq_arr_create(cols);
+    }
+    return mat;
+}
+
 vector<mpq_t*> mpq_mat_copy(const int n, const vector<mpq_t*>& src) {
     assert(n >= 0 && "n should be non-negative.");
     vector<mpq_t*> copy(src.size());
@@ -159,4 +167,13 @@ vector<mpq_t*> mpq_mat_from_fp(const int n, const vector<double*>& A) {
         }
     }
     return mpq_A;
+}
+
+void mpq_mat_print(const int n, const vector<mpq_t*>& mat) {
+    for (size_t i = 0; i < mat.size(); i++) {
+        for (int j = 0; j < n; j++) {
+            cout << mpq_get_d(mat[i][j]) << " ";
+        }
+        cout << endl;
+    }
 }

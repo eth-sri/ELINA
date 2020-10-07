@@ -377,6 +377,40 @@ void run_sparse_cover_test(const int N, const int K) {
     cout << "\tpassed" << endl;
 }
 
+void run_tanh_quadrants_with_cdd_dimension_trick_test(const int K,
+                                                      const string &path) {
+  cout << "running tanh quadrants with cdd dimension trick test: " << path
+       << endl;
+
+  vector<double *> A = fp_mat_read(K + 1, path);
+
+  Timer t_fast;
+  map<Quadrant, vector<mpq_t *>> quadrant2vertices_fast =
+      compute_tanh_quadrants_with_cdd_dimension_trick(K, A);
+  int micros_fast = t_fast.micros();
+
+  Timer t_slow;
+  map<Quadrant, vector<mpq_t *>> quadrant2vertices_slow =
+      compute_tanh_quadrants_with_cdd(K, A);
+  int micros_slow = t_slow.micros();
+
+  cout << "\tAcceleration is " << (double)micros_slow / micros_fast << endl;
+  cout << "\tFrom " << micros_slow / 1000 << " ms to " << micros_fast / 1000
+       << " ms" << endl;
+
+  const vector<Quadrant> &quadrants = K2QUADRANTS[K];
+
+  for (const auto &q : quadrants) {
+    const vector<mpq_t *> &V_fast = quadrant2vertices_fast[q];
+    const vector<mpq_t *> &V_slow = quadrant2vertices_slow[q];
+    get_bijective_mapping_for_matrix_rows(2 * K + 1, V_fast, V_slow);
+    mpq_mat_free(2 * K + 1, V_fast);
+    mpq_mat_free(2 * K + 1, V_slow);
+  }
+
+  cout << "\tpassed" << endl;
+}
+
 void run_all_octahedron_tests() {
     cout << "Running all fast V octahedron tests" << endl;
     for (int k = 2; k <= 4; k++) {
@@ -460,10 +494,19 @@ void run_all_sparse_cover_tests() {
     cout << "Running all sparse cover tests" << endl;
     run_sparse_cover_test(50, 3);
     run_sparse_cover_test(100, 3);
-    run_sparse_cover_test(150, 3);
-    run_sparse_cover_test(30, 4);
-    run_sparse_cover_test(50, 4);
-    run_sparse_cover_test(30, 5);
+    run_sparse_cover_test(25, 4);
+    run_sparse_cover_test(20, 5);
+}
+
+void run_all_tanh_quadrants_with_cdd_dimension_trick_tests() {
+  cout << "Running all tanh quadrant with cdd dimension trick tests" << endl;
+  // k = 4 is somewhat slow (several seconds), so doing tests until k = 3.
+  for (int k = 1; k <= 3; k++) {
+    for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+      run_tanh_quadrants_with_cdd_dimension_trick_test(
+          k, "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
+    }
+  }
 }
 
 void handler(int sig) {
@@ -491,6 +534,7 @@ int main() {
     run_all_fkpool_tests();
     run_all_kpool_with_cdd_tests();
     run_all_ktanh_with_cdd_tests();
+    run_all_tanh_quadrants_with_cdd_dimension_trick_tests();
     run_all_sparse_cover_tests();
 
     dd_free_global_constants();

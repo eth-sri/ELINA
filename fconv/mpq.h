@@ -23,6 +23,8 @@ bool mpq_arr_equal(int n, mpq_t* first, mpq_t* second);
 
 void mpq_arr_print(int n, mpq_t* arr);
 
+vector<mpq_t*> mpq_mat_create(int rows, int cols);
+
 vector<mpq_t*> mpq_mat_copy(int n, const vector<mpq_t*>& src);
 
 void mpq_mat_free(int n, const vector<mpq_t*>& mat);
@@ -32,3 +34,5 @@ vector<mpq_t*> mpq_mat_mul_with_transpose(int n, const vector<mpq_t*>& A, const 
 vector<double*> mpq_mat_to_fp(int n, const vector<mpq_t*>& mpq_A);
 
 vector<mpq_t*> mpq_mat_from_fp(int n, const vector<double*>& A);
+
+void mpq_mat_print(const int n, const vector<mpq_t*>& mat);

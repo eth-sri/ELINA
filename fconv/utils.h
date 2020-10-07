@@ -25,7 +25,11 @@ public:
 
 using Adj = pair<int, int>;
 
-enum Polarity { MINUS, PLUS };
+enum Polarity {
+  // Can be used for array indexing so values shouldn't be changed.
+  MINUS = 0,
+  PLUS = 1
+};
 
 using Quadrant = vector<Polarity>;
 
@@ -36,6 +40,8 @@ struct QuadrantInfo {
 };
 
 vector<int> compute_maximal_indexes(const vector<set_t>& incidence);
+
+dd_PolyhedraPtr cdd_Matrix_to_Poly(dd_MatrixPtr A);
 
 constexpr int POW2[11] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
 
