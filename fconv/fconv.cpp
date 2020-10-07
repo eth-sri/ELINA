@@ -55,7 +55,7 @@ MatDouble compute_relaxation(MatDouble input_hrep,
     vector<double*> H;
     switch (type) {
         case ReluFast:
-            H = fkrelu(K, A);
+            H = fast_relaxation_through_decomposition(K, A, Relu);
             break;
         case ReluCDD:
             H = krelu_with_cdd(K, A);
