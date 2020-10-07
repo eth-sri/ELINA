@@ -31,6 +31,8 @@ enum Polarity {
   PLUS = 1
 };
 
+enum Activation { Relu, Pool, Tanh };
+
 using Quadrant = vector<Polarity>;
 
 struct QuadrantInfo {

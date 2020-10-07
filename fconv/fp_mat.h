@@ -6,6 +6,8 @@
 
 using namespace std;
 
+double *fp_arr_copy(const int n, double *src);
+
 vector<double*> fp_mat_create(int rows, int cols);
 
 void fp_mat_free(const vector<double*>& mat);

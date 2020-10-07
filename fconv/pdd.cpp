@@ -219,6 +219,9 @@ void PDD_batch_intersect(PDD& pdd, vector<double*>& H_new) {
 PDD PDD_intersect_two_PDDs(PDD& pdd1, PDD& pdd2) {
     ASRTF(pdd1.dim == pdd2.dim, "Dimensions of two PDDs should match.");
 
+    PDD_debug_consistency_check(pdd1);
+    PDD_debug_consistency_check(pdd2);
+
     const vector<double*>& H1 = pdd1.H;
     const vector<double*>& H2 = pdd2.H;
 
@@ -318,4 +321,19 @@ void PDD_adjust_H_for_soundness_finite_polytope(const int dim,
         }
         h[0] -= min_adjustment;
     }
+}
+
+void PDD_debug_consistency_check(const PDD& pdd) {
+#ifndef NDEBUG
+    assert(pdd.dim > 0 && "Dimension should be positive.");
+    assert(pdd.V.size() == pdd.incidence.size() && "V.size() should equal incidence.size().");
+    if (pdd.H.empty()) {
+        assert(pdd.V.empty() && "If no constraints - V should be empty.");
+        return;
+    }
+    for (set_t inc : pdd.incidence) {
+        assert(set_size(inc) == (int) pdd.H.size() &&
+                "The size of incidence should equal number of constraints.");
+    }
+#endif
 }

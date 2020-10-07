@@ -23,3 +23,5 @@ PDD PDD_intersect_all(vector<PDD>& pdds);
 void PDD_adjust_H_for_soundness_finite_polytope(const int dim,
                                                 vector<double*>& H,
                                                 const vector<double*>& V);
+
+void PDD_debug_consistency_check(const PDD& pdd);

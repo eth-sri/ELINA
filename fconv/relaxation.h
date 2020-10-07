@@ -1,10 +1,13 @@
 #pragma once
 
 #include <vector>
+#include "utils.h"
 
 using namespace std;
 
-vector<double *> fkrelu(int K, const vector<double *> &A);
+vector<double*> fast_relaxation_through_decomposition(int K,
+                                                      const vector<double*>& A,
+                                                      Activation activation);
 
 vector<double*> krelu_with_cdd(int K, const vector<double*>& A);
 

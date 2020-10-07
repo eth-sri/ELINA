@@ -16,8 +16,6 @@
 // for inputs that split zero.
 constexpr int K2NUM_TESTS[6] = {0, 2, 4, 5, 3, 4};
 
-enum Activation { Relu, Pool, Tanh };
-
 // Creates bijective mapping between the rows of two matrices.
 // Will throw an exception if such mapping does not exist.
 vector<int> get_bijective_mapping_for_matrix_rows(
@@ -174,7 +172,8 @@ void run_fkrelu_test(const int K, const string& path) {
     vector<double *> A = fp_mat_read(K + 1, path);
 
     Timer t;
-    vector<double *> H_double = fkrelu(K, A);
+    vector<double *> H_double =
+        fast_relaxation_through_decomposition(K, A, Relu);
     int micros = t.micros();
 
     cout << "\tK = " << K << " took " << micros / 1000 << " ms and discovered "
@@ -271,6 +270,47 @@ void run_fkpool_test(const int K, const string& path) {
     cout << "\tpassed" << endl;
 }
 
+void run_fktanh_test(const int K, const string &path) {
+  cout << "running fktanh test: " << path << endl;
+
+  vector<double *> A = fp_mat_read(K + 1, path);
+
+  Timer t;
+  vector<double *> H_double = fast_relaxation_through_decomposition(K, A, Tanh);
+  int micros = t.micros();
+
+  cout << "\tK = " << K << " took " << micros / 1000 << " ms and discovered "
+       << H_double.size() << " constraints" << endl;
+
+  vector<mpq_t *> H = mpq_mat_from_fp(2 * K + 1, H_double);
+
+  map<Quadrant, vector<mpq_t *>> quadrant2vertices =
+      compute_tanh_quadrants_with_cdd_dimension_trick(K, A);
+
+  vector<mpq_t *> V;
+  for (auto &entry : quadrant2vertices) {
+    for (auto v : entry.second) {
+      V.push_back(v);
+    }
+  }
+
+  vector<mpq_t *> V_x_H = mpq_mat_mul_with_transpose(2 * K + 1, V, H);
+  for (const auto &row : V_x_H) {
+    for (size_t i = 0; i < H.size(); i++) {
+      ASRTF(mpq_sgn(row[i]) >= 0,
+            "All discovered constraints should be sound with respect to V");
+    }
+  }
+
+  mpq_mat_free(2 * K + 1, H);
+  mpq_mat_free(2 * K + 1, V);
+  mpq_mat_free(H.size(), V_x_H);
+  fp_mat_free(A);
+  fp_mat_free(H_double);
+
+  cout << "\tpassed" << endl;
+}
+
 // The test doesn't check the correctness, it showcases the number of constraints and runtime.
 void run_relaxation_with_cdd_test(const int K, const string &path,
                                   Activation activation) {
@@ -336,7 +376,7 @@ void run_1relu_test() {
     expected[2][1] = 0.5;
     expected[2][2] = -1;
 
-    vector<double *> out = fkrelu(1, inp);
+    vector<double *> out = fast_relaxation_through_decomposition(1, inp, Relu);
 
     ASRTF(out.size() == 3, "Expected that output has 3 rows.");
     for (int i = 0; i < 3; i++) {
@@ -434,25 +474,35 @@ void run_all_split_in_quadrants_tests() {
 }
 
 void run_all_fkrelu_tests() {
-    cout << "Running all fkrelu tests" << endl;
-    for (int k = 1; k <= 4; k++) {
-        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-            run_fkrelu_test(
-                    k,
-                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
-        }
+  cout << "Running all fkrelu tests" << endl;
+  for (int k = 1; k <= 4; k++) {
+    for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+      run_fkrelu_test(k, "octahedron_hrep/k" + to_string(k) + "/" +
+                             to_string(i) + ".txt");
     }
+  }
 }
 
 void run_all_fkpool_tests() {
-    cout << "Running all fkpool tests" << endl;
-    for (int k = 1; k <= 4; k++) {
-        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-            run_fkpool_test(
-                    k,
-                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
-        }
+  cout << "Running all fkpool tests" << endl;
+  for (int k = 1; k <= 4; k++) {
+    for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+      run_fkpool_test(k, "octahedron_hrep/k" + to_string(k) + "/" +
+                             to_string(i) + ".txt");
     }
+  }
+}
+
+void run_all_fktanh_tests() {
+  cout << "Running all fktanh tests" << endl;
+  // TODO[gleb] Generalize for k = 1 as well
+  // Test checks for k=4 take quite some time, so limiting to k=3.
+  for (int k = 2; k <= 3; k++) {
+    for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+      run_fktanh_test(k, "octahedron_hrep/k" + to_string(k) + "/" +
+                             to_string(i) + ".txt");
+    }
+  }
 }
 
 void run_all_krelu_with_cdd_tests() {
@@ -533,6 +583,7 @@ int main() {
     run_1relu_test();
     run_all_fkpool_tests();
     run_all_kpool_with_cdd_tests();
+    run_all_fktanh_tests();
     run_all_ktanh_with_cdd_tests();
     run_all_tanh_quadrants_with_cdd_dimension_trick_tests();
     run_all_sparse_cover_tests();

@@ -120,12 +120,14 @@ vector<double*> cdd_compute_inequalities_from_vertices(dd_MatrixPtr vertices) {
     return H;
 }
 
-vector<double *> fkrelu(const int K, const vector<double *> &A) {
-  ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
+vector<double *>
+fast_relaxation_through_decomposition(const int K, const vector<double *> &A,
+                                      Activation activation) {
   verify_that_octahedron_and_all_xi_split_zero(K, A);
-  if (K == 1) {
+  if (K == 1 && activation == Relu) {
     return relu_1(-A[0][0], A[1][0]);
   }
+  ASRTF(2 <= K && K <= 4, "K should be within allowed range.");
   OctahedronV oct = compute_octahedron_V(K, A);
 
   // Split in quadrants takes care of memory management of input vertices.
@@ -191,7 +193,19 @@ vector<double *> fkrelu(const int K, const vector<double *> &A) {
     set_free(is_maximal);
     quadrant2pdd[quadrant] = {K + 1, V, H, incidence_H_to_V};
   }
-  return decomposition(K, quadrant2pdd);
+
+  // Lower and upper bounds are needed for decomposition of tanh and sigmoid
+  // functions.
+  vector<double> x_lb(K);
+  vector<double> x_ub(K);
+  for (int xi = 0; xi < K; xi++) {
+    x_lb[xi] = -A[LOWER_BOUND_INDEX[K][xi]][0];
+    x_ub[xi] = A[UPPER_BOUND_INDEX[K][xi]][0];
+  }
+
+  vector<double *> res = decomposition(K, quadrant2pdd, activation, x_lb, x_ub);
+
+  return res;
 }
 
 vector<double*> krelu_with_cdd(const int K, const vector<double*>& A) {
