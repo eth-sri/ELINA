@@ -37,6 +37,8 @@ MatDouble fktanh(MatDouble input_hrep);
 
 MatDouble ktanh_with_cdd(MatDouble input_hrep);
 
+MatDouble ksigm_with_cdd(MatDouble input_hrep);
+
 MatInt generate_sparse_cover(int N, int K);
 
 #ifdef __cplusplus

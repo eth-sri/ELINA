@@ -388,32 +388,32 @@ vector<double*> kpool_with_cdd(const int K, const vector<double*>& A) {
     return H;
 }
 
-vector<double *> ktanh_with_cdd(int K, const vector<double *> &A) {
-  ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
-  verify_that_octahedron_and_all_xi_split_zero(K, A);
+vector<double*> ktasi_with_cdd(int K, const vector<double*>& A, Activation activation) {
+    ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
+    ASRTF(activation == Tanh || activation == Sigm, "Only Tanh and Sigm are supported.");
+    verify_that_octahedron_and_all_xi_split_zero(K, A);
 
-  map<Quadrant, vector<mpq_t *>> quadrant2vertices =
-      compute_tanh_quadrants_with_cdd(K, A);
+    map<Quadrant, vector<mpq_t *>> quadrant2vertices =
+        compute_tasi_quadrants_with_cdd(K, A, activation);
 
-  size_t num_vertices = 0;
-  for (auto &entry : quadrant2vertices) {
-    num_vertices += entry.second.size();
-  }
-
-  dd_MatrixPtr vertices = dd_CreateMatrix(num_vertices, 2 * K + 1);
-  size_t counter = 0;
-  for (auto &entry : quadrant2vertices) {
-    for (mpq_t *v : entry.second) {
-      mpq_arr_set(2 * K + 1, vertices->matrix[counter], v);
-      counter++;
+    size_t num_vertices = 0;
+    for (auto &entry : quadrant2vertices) {
+      num_vertices += entry.second.size();
     }
-    mpq_mat_free(K + 1, entry.second);
-  }
-  assert(counter == num_vertices &&
-         "Counter should equal the number of vertices.");
 
-  vector<double *> H = cdd_compute_inequalities_from_vertices(vertices);
-  dd_FreeMatrix(vertices);
+    dd_MatrixPtr vertices = dd_CreateMatrix(num_vertices, 2 * K + 1);
+    size_t counter = 0;
+    for (auto &entry : quadrant2vertices) {
+      for (mpq_t *v : entry.second) {
+        mpq_arr_set(2 * K + 1, vertices->matrix[counter], v);
+        counter++;
+      }
+      mpq_mat_free(K + 1, entry.second);
+    }
+    assert(counter == num_vertices && "Counter should equal the number of vertices.");
 
-  return H;
+    vector<double*> H = cdd_compute_inequalities_from_vertices(vertices);
+    dd_FreeMatrix(vertices);
+
+    return H;
 }

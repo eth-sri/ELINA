@@ -42,9 +42,11 @@ MatDouble compute_relaxation(MatDouble input_hrep,
     } else if (activation == Pool && version == CDD) {
       H = kpool_with_cdd(K, A);
     } else if (activation == Tanh && version == Fast) {
-      H = fast_relaxation_through_decomposition(K, A, Tanh);
+      H = fast_relaxation_through_decomposition(K, A, activation);
     } else if (activation == Tanh && version == CDD) {
-      H = ktanh_with_cdd(K, A);
+      H = ktasi_with_cdd(K, A, activation);
+    } else if (activation == Sigm && version == CDD) {
+      H = ktasi_with_cdd(K, A, activation);
     } else {
       throw runtime_error("Unknown activation function and version.");
     }
@@ -81,6 +83,10 @@ MatDouble fktanh(MatDouble input_hrep) {
 
 MatDouble ktanh_with_cdd(MatDouble input_hrep) {
     return compute_relaxation(input_hrep, Tanh, CDD);
+}
+
+MatDouble ksigm_with_cdd(MatDouble input_hrep) {
+    return compute_relaxation(input_hrep, Sigm, CDD);
 }
 
 MatInt generate_sparse_cover(const int N, const int K) {

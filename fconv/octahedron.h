@@ -32,9 +32,12 @@ compute_quadrants_with_cdd(int K, const vector<double *> &A);
 vector<QuadrantInfo>
 compute_max_pool_quadrants_with_cdd(const int K, const vector<double *> &A);
 
+// Tanh/Sigmoid
 map<Quadrant, vector<mpq_t *>>
-compute_tanh_quadrants_with_cdd(const int K, const vector<double *> &A);
+compute_tasi_quadrants_with_cdd(const int K, const vector<double *> &A,
+                                Activation activation);
 
+// Tanh/Sigmoid
 map<Quadrant, vector<mpq_t *>>
-compute_tanh_quadrants_with_cdd_dimension_trick(const int K,
-                                                const vector<double *> &A);
+compute_tasi_quadrants_with_cdd_dim(const int K, const vector<double *> &A,
+                                    Activation activation);
