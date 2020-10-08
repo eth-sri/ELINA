@@ -8,6 +8,7 @@
 #include <iostream>
 #include "asrt.h"
 #include "dynamic_bitset.h"
+#include "fconv.h"
 
 // I consider to be a zero everything that is abs(x) <= EPS.
 constexpr double EPS = 1.0E-7;
@@ -44,6 +45,10 @@ struct QuadrantInfo {
 vector<int> compute_maximal_indexes(const vector<set_t>& incidence);
 
 dd_PolyhedraPtr cdd_Matrix_to_Poly(dd_MatrixPtr A);
+
+vector<double*> mat_external_to_internal_format(const MatDouble &cmat);
+
+MatDouble mat_internal_to_external_format(const int n, const vector<double*>& A);
 
 constexpr int POW2[11] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
 

@@ -5,23 +5,6 @@
 #include "sparse_cover.h"
 #include "fp_mat.h"
 
-vector<double *> mat_external_to_internal_format(const MatDouble &cmat) {
-  vector<double *> A = fp_mat_create(cmat.rows, cmat.cols);
-  for (int i = 0; i < cmat.rows; i++) {
-    memcpy(A[i], &(cmat.data[i * cmat.cols]), cmat.cols * sizeof(double));
-  }
-  return A;
-}
-
-MatDouble mat_internal_to_external_format(const int n,
-                                          const vector<double *> &A) {
-  auto mat = (double *)calloc(A.size() * n, sizeof(double));
-  for (int i = 0; i < (int)A.size(); i++) {
-    memcpy(&(mat[i * n]), A[i], n * sizeof(double));
-  }
-  return {(int)A.size(), n, mat};
-}
-
 MatDouble new_MatDouble(int rows, int cols, const double *data) {
     ASRTF(rows > 0, "Only rows > 0 is allowed");
     ASRTF(cols > 0, "Only cols > 0 is allowed");
@@ -40,55 +23,64 @@ void free_MatInt(MatInt cmat) {
     free((int *) cmat.data);
 }
 
-enum RelaxationType { ReluFast, ReluCDD, PoolFast, PoolCDD };
+enum Version { Fast, CDD };
 
-MatDouble compute_relaxation(MatDouble input_hrep, RelaxationType type) {
-  dd_set_global_constants();
-  const int K = input_hrep.cols - 1;
-  vector<double *> A = mat_external_to_internal_format(input_hrep);
+MatDouble compute_relaxation(MatDouble input_hrep,
+                             Activation activation,
+                             Version version) {
+    dd_set_global_constants();
+    const int K = input_hrep.cols - 1;
+    vector<double*> A = mat_external_to_internal_format(input_hrep);
 
-  vector<double *> H;
-  switch (type) {
-  case ReluFast:
-    H = fast_relaxation_through_decomposition(K, A, Relu);
-    break;
-  case ReluCDD:
-    H = krelu_with_cdd(K, A);
-    break;
-  case PoolFast:
-    H = fkpool(K, A);
-    break;
-  case PoolCDD:
-    H = kpool_with_cdd(K, A);
-    break;
-  default:
-    throw runtime_error("Unknown relaxation type.");
-  }
+    vector<double*> H;
+    if (activation == Relu && version == Fast) {
+      H = fast_relaxation_through_decomposition(K, A, Relu);
+    } else if (activation == Relu && version == CDD) {
+      H = krelu_with_cdd(K, A);
+    } else if (activation == Pool && version == Fast) {
+      H = fkpool(K, A);
+    } else if (activation == Pool && version == CDD) {
+      H = kpool_with_cdd(K, A);
+    } else if (activation == Tanh && version == Fast) {
+      H = fast_relaxation_through_decomposition(K, A, Tanh);
+    } else if (activation == Tanh && version == CDD) {
+      H = ktanh_with_cdd(K, A);
+    } else {
+      throw runtime_error("Unknown activation function and version.");
+    }
 
-  MatDouble out = (type == PoolFast || type == PoolCDD)
-                      ? mat_internal_to_external_format(K + 2, H)
-                      : mat_internal_to_external_format(2 * K + 1, H);
+    MatDouble out = (activation == Pool) ?
+            mat_internal_to_external_format(K + 2, H) :
+            mat_internal_to_external_format(2 * K + 1, H);
 
-  fp_mat_free(A);
-  fp_mat_free(H);
-  dd_free_global_constants();
-  return out;
+    fp_mat_free(A);
+    fp_mat_free(H);
+    dd_free_global_constants();
+    return out;
 }
 
 MatDouble fkrelu(MatDouble input_hrep) {
-  return compute_relaxation(input_hrep, ReluFast);
+    return compute_relaxation(input_hrep, Relu, Fast);
 }
 
 MatDouble krelu_with_cdd(MatDouble input_hrep) {
-  return compute_relaxation(input_hrep, ReluCDD);
+    return compute_relaxation(input_hrep, Relu, CDD);
 }
 
 MatDouble fkpool(MatDouble input_hrep) {
-  return compute_relaxation(input_hrep, PoolFast);
+    return compute_relaxation(input_hrep, Pool, Fast);
 }
 
 MatDouble kpool_with_cdd(MatDouble input_hrep) {
-  return compute_relaxation(input_hrep, PoolCDD);
+    return compute_relaxation(input_hrep, Pool, CDD);
+}
+
+MatDouble fktanh(MatDouble input_hrep) {
+    return compute_relaxation(input_hrep, Tanh, Fast);
+}
+
+MatDouble ktanh_with_cdd(MatDouble input_hrep) {
+    return compute_relaxation(input_hrep, Tanh, CDD);
 }
 
 MatInt generate_sparse_cover(const int N, const int K) {

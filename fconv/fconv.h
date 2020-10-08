@@ -1,15 +1,15 @@
 #pragma once
 
 typedef struct {
-  const int rows;
-  const int cols;
-  const double *data;
+    int rows;
+    int cols;
+    double *data;
 } MatDouble;
 
 typedef struct {
-  const int rows;
-  const int cols;
-  const int *data;
+    int rows;
+    int cols;
+    int *data;
 } MatInt;
 
 #ifdef __cplusplus
@@ -32,6 +32,10 @@ MatDouble krelu_with_cdd(MatDouble input_hrep);
 MatDouble fkpool(MatDouble input_hrep);
 
 MatDouble kpool_with_cdd(MatDouble input_hrep);
+
+MatDouble fktanh(MatDouble input_hrep);
+
+MatDouble ktanh_with_cdd(MatDouble input_hrep);
 
 MatInt generate_sparse_cover(int N, int K);
 
