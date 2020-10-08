@@ -17,6 +17,8 @@
 // for inputs that split zero.
 constexpr int K2NUM_TESTS[6] = {0, 2, 4, 5, 3, 4};
 
+const string activation2str[4] = {"Relu", "Pool", "Tanh", "Sigm"};
+
 vector<mpq_t*> mpq_mat_from_MatDouble(const MatDouble& cmat) {
     vector<mpq_t*> mat = mpq_mat_create(cmat.rows, cmat.cols);
     for (int i = 0; i < cmat.rows; i++) {
@@ -173,20 +175,22 @@ void run_split_in_quadrants_test(const int K, const string& path) {
     cout << "\tpassed" << endl;
 }
 
-void run_tanh_quadrants_with_cdd_dimension_trick_test(const int K, const string& path) {
-    cout << "running tanh quadrants with cdd dimension trick test: " << path << endl;
+void run_tasi_quadrants_with_cdd_dim_test(const int K, const string& path, Activation activation) {
+    cout << "running " << activation2str[activation] << \
+        " quadrants with cdd dim test: " << path << endl;
+
     dd_set_global_constants();
 
     vector<double*> A = fp_mat_read(K + 1, path);
 
     Timer t_fast;
     map<Quadrant, vector<mpq_t*>> quadrant2vertices_fast =
-            compute_tanh_quadrants_with_cdd_dimension_trick(K, A);
+            compute_tasi_quadrants_with_cdd_dim(K, A, activation);
     int micros_fast = t_fast.micros();
 
     Timer t_slow;
     map<Quadrant, vector<mpq_t*>> quadrant2vertices_slow =
-            compute_tanh_quadrants_with_cdd(K, A);
+            compute_tasi_quadrants_with_cdd(K, A, activation);
     int micros_slow = t_slow.micros();
 
     cout << "\tAcceleration is " << (double) micros_slow / micros_fast << endl;
@@ -331,7 +335,7 @@ void run_fktanh_test(const int K, const string& path) {
 
     dd_set_global_constants();
     map<Quadrant, vector<mpq_t*>> quadrant2vertices =
-            compute_tanh_quadrants_with_cdd_dimension_trick(K, A_int);
+            compute_tasi_quadrants_with_cdd_dim(K, A_int, Tanh);
     dd_free_global_constants();
 
     vector<mpq_t*> V_mpq;
@@ -360,7 +364,7 @@ void run_fktanh_test(const int K, const string& path) {
 
 // The test doesn't check the correctness, it showcases the number of constraints and runtime.
 void run_relaxation_with_cdd_test(const int K, const string& path, Activation activation) {
-    cout << "running relaxation with cdd test: " << path << endl;
+    cout << "running " << activation2str[activation] << " with cdd test: " << path << endl;
 
     vector<double*> A_int = fp_mat_read(K + 1, path);
     MatDouble A_ext = mat_internal_to_external_format(K + 1, A_int);
@@ -369,16 +373,16 @@ void run_relaxation_with_cdd_test(const int K, const string& path, Activation ac
     MatDouble H_ext;
     switch (activation) {
         case Relu:
-            cout << "\tRelu" << endl;
             H_ext = krelu_with_cdd(A_ext);
             break;
         case Pool:
-            cout << "\tPool" << endl;
             H_ext = kpool_with_cdd(A_ext);
             break;
         case Tanh:
-            cout << "\tTanh" << endl;
             H_ext = ktanh_with_cdd(A_ext);
+            break;
+        case Sigm:
+            H_ext = ksigm_with_cdd(A_ext);
             break;
         default:
             throw runtime_error("Unknown activation.");
@@ -484,6 +488,18 @@ void run_all_split_in_quadrants_tests() {
         }
     }
 }
+void run_all_tasi_quadrants_with_cdd_dim_tests(Activation activation) {
+    cout << "Running all " << activation2str[activation] << " quadrant with cdd dim tests" << endl;
+    // k = 4 is somewhat slow (several seconds), so doing tests until k = 3.
+    for (int k = 1; k <= 3; k++) {
+        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+            run_tasi_quadrants_with_cdd_dim_test(
+                    k,
+                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt",
+                    activation);
+        }
+    }
+}
 
 void run_all_fkrelu_tests() {
     cout << "Running all fkrelu tests" << endl;
@@ -520,40 +536,14 @@ void run_all_fktanh_tests() {
     }
 }
 
-void run_all_krelu_with_cdd_tests() {
-    cout << "Running all krelu with cdd tests" << endl;
-    for (int k = 1; k <= 3; k++) {
+void run_all_relaxation_cdd_tests(Activation activation, int max_k) {
+    cout << "Running all cdd tests for " << activation2str[activation] << endl;
+    for (int k = 1; k <= max_k; k++) {
         for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
             run_relaxation_with_cdd_test(
                     k,
                     "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt",
-                    Relu);
-        }
-    }
-}
-
-void run_all_kpool_with_cdd_tests() {
-    cout << "Running all kpool with cdd tests" << endl;
-    // kpool with cdd doesn't scale to k=4 (takes 1-2 minutes).
-    for (int k = 1; k <= 3; k++) {
-        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-            run_relaxation_with_cdd_test(
-                    k,
-                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt",
-                    Pool);
-        }
-    }
-}
-
-void run_all_ktanh_with_cdd_tests() {
-    cout << "Running all ktanh with cdd tests" << endl;
-    // kpool with cdd doesn't scale to k=3 (takes 1-2 minutes).
-    for (int k = 1; k <= 2; k++) {
-        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-            run_relaxation_with_cdd_test(
-                    k,
-                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt",
-                    Tanh);
+                    activation);
         }
     }
 }
@@ -565,19 +555,6 @@ void run_all_sparse_cover_tests() {
     run_sparse_cover_test(25, 4);
     run_sparse_cover_test(20, 5);
 }
-
-void run_all_tanh_quadrants_with_cdd_dimension_trick_tests() {
-    cout << "Running all tanh quadrant with cdd dimension trick tests" << endl;
-    // k = 4 is somewhat slow (several seconds), so doing tests until k = 3.
-    for (int k = 1; k <= 3; k++) {
-        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-            run_tanh_quadrants_with_cdd_dimension_trick_test(
-                    k,
-                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
-        }
-    }
-}
-
 
 void handler(int sig) {
     void *array[10];
@@ -597,13 +574,15 @@ int main() {
 
     run_all_octahedron_tests();
     run_all_split_in_quadrants_tests();
-    run_all_tanh_quadrants_with_cdd_dimension_trick_tests();
+    run_all_tasi_quadrants_with_cdd_dim_tests(Tanh);
+    run_all_tasi_quadrants_with_cdd_dim_tests(Sigm);
     run_all_fkrelu_tests();
     run_all_fkpool_tests();
     run_all_fktanh_tests();
-    run_all_krelu_with_cdd_tests();
-    run_all_kpool_with_cdd_tests();
-    run_all_ktanh_with_cdd_tests();
+    run_all_relaxation_cdd_tests(Relu, 3); // k=4 ~20 minutes
+    run_all_relaxation_cdd_tests(Pool, 3); // k=4 1-2 minutes
+    run_all_relaxation_cdd_tests(Tanh, 2); // k=3 1-2 minutes
+    run_all_relaxation_cdd_tests(Sigm, 2); // k=3 1-2 minutes
     run_1relu_test();
     run_all_sparse_cover_tests();
 

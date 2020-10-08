@@ -27,15 +27,17 @@ public:
 using Adj = pair<int, int>;
 
 enum Polarity {
-    // Can be used for array indexing so values shouldn't be changed.
+    // Can be used for array indexing so order shouldn't change.
     MINUS = 0,
     PLUS = 1
 };
 
 enum Activation {
-    Relu,
-    Pool,
-    Tanh
+    // Can be used for array indexing so order shouldn't change.
+    Relu = 0,
+    Pool = 1,
+    Tanh = 2,
+    Sigm = 3
 };
 
 using Quadrant = vector<Polarity>;

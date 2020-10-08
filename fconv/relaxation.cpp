@@ -378,11 +378,13 @@ vector<double*> kpool_with_cdd(const int K, const vector<double*>& A) {
     return H;
 }
 
-vector<double*> ktanh_with_cdd(int K, const vector<double*>& A) {
+vector<double*> ktasi_with_cdd(int K, const vector<double*>& A, Activation activation) {
     ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
+    ASRTF(activation == Tanh || activation == Sigm, "Only Tanh and Sigm are supported.");
     verify_that_octahedron_and_all_xi_split_zero(K, A);
 
-    map<Quadrant, vector<mpq_t*>> quadrant2vertices = compute_tanh_quadrants_with_cdd(K, A);
+    map<Quadrant, vector<mpq_t*>> quadrant2vertices = \
+        compute_tasi_quadrants_with_cdd(K, A, activation);
 
     size_t num_vertices = 0;
     for (auto& entry : quadrant2vertices) {
