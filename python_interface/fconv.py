@@ -55,28 +55,20 @@ free_MatInt_c.argtype = MatInt_c
 free_MatInt_c.restype = None
 
 fkrelu_c = fconv_api.fkrelu
-fkrelu_c.argtype = [MatDouble_c]
-fkrelu_c.restype = MatDouble_c
-
 krelu_with_cdd_c = fconv_api.krelu_with_cdd
-krelu_with_cdd_c.argtype = [MatDouble_c]
-krelu_with_cdd_c.restype = MatDouble_c
-
 fkpool_c = fconv_api.fkpool
-fkpool_c.argtype = [MatDouble_c]
-fkpool_c.restype = MatDouble_c
-
 kpool_with_cdd_c = fconv_api.kpool_with_cdd
-kpool_with_cdd_c.argtype = [MatDouble_c]
-kpool_with_cdd_c.restype = MatDouble_c
-
 fktanh_c = fconv_api.fktanh
-fktanh_c.argtype = [MatDouble_c]
-fktanh_c.restype = MatDouble_c
-
 ktanh_with_cdd_c = fconv_api.ktanh_with_cdd
-ktanh_with_cdd_c.argtype = [MatDouble_c]
-ktanh_with_cdd_c.restype = MatDouble_c
+fksigm_c = fconv_api.fktanh
+ksigm_with_cdd_c = fconv_api.ktanh_with_cdd
+
+for relaxation_c in [fkrelu_c, krelu_with_cdd_c,
+                     fkpool_c, kpool_with_cdd_c,
+                     fktanh_c, ktanh_with_cdd_c,
+                     fksigm_c, ksigm_with_cdd_c]:
+    relaxation_c.argtype = [MatDouble_c]
+    relaxation_c.restype = MatDouble_c
 
 generate_sparse_cover_c = fconv_api.generate_sparse_cover
 generate_sparse_cover_c.argtype = [c_int, c_int]
@@ -97,7 +89,7 @@ def _compute_relaxation(inp_hrep: np.ndarray, activation: str, version: str) -> 
         x2  <= 0.25
         -x2 <= 0.75
     """
-    assert activation in ["relu", "pool", "tanh"]
+    assert activation in ["relu", "pool", "tanh", "sigm"]
     assert version in ["fast", "cdd"]
 
     rows, cols = inp_hrep.shape
@@ -120,6 +112,10 @@ def _compute_relaxation(inp_hrep: np.ndarray, activation: str, version: str) -> 
         out_hrep = fktanh_c(inp_hrep)
     elif activation == "tanh" and version == "cdd":
         out_hrep = ktanh_with_cdd_c(inp_hrep)
+    elif activation == "sigm" and version == "fast":
+        out_hrep = fksigm_c(inp_hrep)
+    elif activation == "sigm" and version == "cdd":
+        out_hrep = ksigm_with_cdd_c(inp_hrep)
     else:
         raise Exception("Unknown activation/version", activation, version)
 
@@ -157,6 +153,14 @@ def fktanh(inp_hrep: np.ndarray) -> np.ndarray:
 
 def ktanh_with_cdd(inp_hrep: np.ndarray) -> np.ndarray:
     return _compute_relaxation(inp_hrep, "tanh", "cdd")
+
+
+def fksigm(inp_hrep: np.ndarray) -> np.ndarray:
+    return _compute_relaxation(inp_hrep, "sigm", "fast")
+
+
+def ksigm_with_cdd(inp_hrep: np.ndarray) -> np.ndarray:
+    return _compute_relaxation(inp_hrep, "sigm", "cdd")
 
 
 def generate_sparse_cover(n, k):

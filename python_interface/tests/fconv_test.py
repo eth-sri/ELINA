@@ -55,7 +55,7 @@ def hrep2volume(hrep: np.ndarray, number_type: str) -> float:
 
 
 def test_volume_difference(filename, activation):
-    assert activation in ["relu", "pool", "tanh"]
+    assert activation in ["relu", "pool", "tanh", "sigm"]
     print("volume test for:", activation, filename)
     hrep = read_matrix(filename)
 
@@ -66,6 +66,8 @@ def test_volume_difference(filename, activation):
         res_fast = fkpool(hrep)
     elif activation == "tanh":
         res_fast = fktanh(hrep)
+    elif activation == "sigm":
+        res_fast = fksigm(hrep)
     time_fast = time() - time_fast
 
     time_cdd = time()
@@ -75,6 +77,8 @@ def test_volume_difference(filename, activation):
         res_cdd = kpool_with_cdd(hrep)
     elif activation == "tanh":
         res_cdd = ktanh_with_cdd(hrep)
+    elif activation == "sigm":
+        res_cdd = ksigm_with_cdd(hrep)
     time_cdd = time() - time_cdd
 
     res_concat = np.concatenate([res_cdd, res_fast], axis=0)
@@ -103,3 +107,5 @@ test_volume_difference("k3/1.txt", "pool")
 test_volume_difference("k3/2.txt", "pool")
 test_volume_difference("k2/1.txt", "tanh")
 test_volume_difference("k2/2.txt", "tanh")
+test_volume_difference("k2/1.txt", "sigm")
+test_volume_difference("k2/2.txt", "sigm")

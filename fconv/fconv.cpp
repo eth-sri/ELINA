@@ -48,6 +48,8 @@ MatDouble compute_relaxation(MatDouble input_hrep,
         H = fast_relaxation_through_decomposition(K, A, activation);
     } else if (activation == Tanh && version == CDD) {
         H = ktasi_with_cdd(K, A, activation);
+    } else if (activation == Sigm && version == Fast) {
+        H = fast_relaxation_through_decomposition(K, A, activation);
     } else if (activation == Sigm && version == CDD) {
         H = ktasi_with_cdd(K, A, activation);
     }
@@ -87,6 +89,10 @@ MatDouble fktanh(MatDouble input_hrep) {
 
 MatDouble ktanh_with_cdd(MatDouble input_hrep) {
     return compute_relaxation(input_hrep, Tanh, CDD);
+}
+
+MatDouble fksigm(MatDouble input_hrep) {
+    return compute_relaxation(input_hrep, Sigm, Fast);
 }
 
 MatDouble ksigm_with_cdd(MatDouble input_hrep) {

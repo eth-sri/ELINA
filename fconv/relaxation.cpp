@@ -120,8 +120,11 @@ vector<double*> cdd_compute_inequalities_from_vertices(dd_MatrixPtr vertices) {
     return H;
 }
 
-vector<double*> fast_relaxation_through_decomposition(const int K, const vector<double*>& A,
+vector<double*> fast_relaxation_through_decomposition(const int K,
+                                                      const vector<double*>& A,
                                                       Activation activation) {
+    ASRTF(activation == Relu || activation == Tanh || activation == Sigm,
+          "Activation should be Relu, Tanh or Sigm.");
     verify_that_octahedron_and_all_xi_split_zero(K, A);
     if (K == 1 && activation == Relu) {
         return relu_1(-A[0][0], A[1][0]);
