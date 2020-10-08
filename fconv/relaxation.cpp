@@ -120,92 +120,95 @@ vector<double*> cdd_compute_inequalities_from_vertices(dd_MatrixPtr vertices) {
     return H;
 }
 
-vector<double *>
-fast_relaxation_through_decomposition(const int K, const vector<double *> &A,
-                                      Activation activation) {
-  verify_that_octahedron_and_all_xi_split_zero(K, A);
-  if (K == 1 && activation == Relu) {
-    return relu_1(-A[0][0], A[1][0]);
-  }
-  ASRTF(2 <= K && K <= 4, "K should be within allowed range.");
-  OctahedronV oct = compute_octahedron_V(K, A);
-
-  // Split in quadrants takes care of memory management of input vertices.
-  map<Quadrant, QuadrantInfo> quadrant2info =
-      split_in_quadrants(oct.V, oct.incidence, oct.orthant_adjacencies, K);
-
-  map<Quadrant, PDD> quadrant2pdd;
-  for (auto &pair : quadrant2info) {
-    const Quadrant &quadrant = pair.first;
-    vector<mpq_t *> &V_mpq = pair.second.V;
-
-    if (V_mpq.empty()) {
-      // Input in the quadrant is the empty set.
-      quadrant2pdd[quadrant] = {K + 1, {}, {}, {}};
-      continue;
+vector<double*> fast_relaxation_through_decomposition(const int K,
+                                                      const vector<double*>& A,
+                                                      Activation activation) {
+    ASRTF(activation == Relu || activation == Tanh || activation == Sigm,
+          "Activation should be Relu, Tanh or Sigm.");
+    verify_that_octahedron_and_all_xi_split_zero(K, A);
+    if (K == 1 && activation == Relu) {
+        return relu_1(-A[0][0], A[1][0]);
     }
+    ASRTF(2 <= K && K <= 4, "K should be within allowed range.");
+    OctahedronV oct = compute_octahedron_V(K, A);
 
-    vector<double *> V = mpq_mat_to_fp(K + 1, V_mpq);
-    mpq_mat_free(K + 1, V_mpq);
+    // Split in quadrants takes care of memory management of input vertices.
+    map<Quadrant, QuadrantInfo> quadrant2info =
+        split_in_quadrants(oct.V, oct.incidence, oct.orthant_adjacencies, K);
 
-    const vector<set_t> &incidence_V_to_H = pair.second.V_to_H_incidence;
-    assert(incidence_V_to_H.size() == V.size() &&
-           "Incidence_V_to_H.size() should equal V.size()");
-    vector<set_t> incidence_H_to_V_with_redundancy =
-        set_arr_transpose(incidence_V_to_H);
-    set_arr_free(incidence_V_to_H);
-    assert(incidence_H_to_V_with_redundancy.size() == A.size() + K &&
-           "Incidence_H_to_V_with_redundancy.size() should equal A.size() + K");
-    vector<int> maximal_H =
-        compute_maximal_indexes(incidence_H_to_V_with_redundancy);
-    set_t is_maximal = set_create(incidence_H_to_V_with_redundancy.size());
-    for (auto i : maximal_H) {
-      set_enable_bit(is_maximal, i);
-    }
+    map<Quadrant, PDD> quadrant2pdd;
+    for (auto &pair : quadrant2info) {
+      const Quadrant &quadrant = pair.first;
+      vector<mpq_t *> &V_mpq = pair.second.V;
 
-    vector<double *> H(maximal_H.size());
-    vector<set_t> incidence_H_to_V(maximal_H.size());
-
-    int count = 0;
-    for (size_t i = 0; i < incidence_H_to_V_with_redundancy.size(); i++) {
-      if (!set_test_bit(is_maximal, i)) {
-        set_free(incidence_H_to_V_with_redundancy[i]);
+      if (V_mpq.empty()) {
+        // Input in the quadrant is the empty set.
+        quadrant2pdd[quadrant] = {K + 1, {}, {}, {}};
         continue;
       }
-      double *h = (double *)calloc(K + 1, sizeof(double));
-      H[count] = h;
-      incidence_H_to_V[count] = incidence_H_to_V_with_redundancy[i];
-      count++;
-      if (i < A.size()) {
-        memcpy(h, A[i], sizeof(double) * (K + 1));
-      } else {
-        int xi = i - (int)A.size();
-        assert(0 <= xi && xi < K && "Sanity checking the range of xi.");
-        if (quadrant[xi] == MINUS) {
-          h[xi + 1] = -1;
+
+      vector<double *> V = mpq_mat_to_fp(K + 1, V_mpq);
+      mpq_mat_free(K + 1, V_mpq);
+
+      const vector<set_t> &incidence_V_to_H = pair.second.V_to_H_incidence;
+      assert(incidence_V_to_H.size() == V.size() &&
+             "Incidence_V_to_H.size() should equal V.size()");
+      vector<set_t> incidence_H_to_V_with_redundancy =
+          set_arr_transpose(incidence_V_to_H);
+      set_arr_free(incidence_V_to_H);
+      assert(
+          incidence_H_to_V_with_redundancy.size() == A.size() + K &&
+          "Incidence_H_to_V_with_redundancy.size() should equal A.size() + K");
+      vector<int> maximal_H =
+          compute_maximal_indexes(incidence_H_to_V_with_redundancy);
+      set_t is_maximal = set_create(incidence_H_to_V_with_redundancy.size());
+      for (auto i : maximal_H) {
+        set_enable_bit(is_maximal, i);
+      }
+
+      vector<double *> H(maximal_H.size());
+      vector<set_t> incidence_H_to_V(maximal_H.size());
+
+      int count = 0;
+      for (size_t i = 0; i < incidence_H_to_V_with_redundancy.size(); i++) {
+        if (!set_test_bit(is_maximal, i)) {
+          set_free(incidence_H_to_V_with_redundancy[i]);
+          continue;
+        }
+        double *h = (double *)calloc(K + 1, sizeof(double));
+        H[count] = h;
+        incidence_H_to_V[count] = incidence_H_to_V_with_redundancy[i];
+        count++;
+        if (i < A.size()) {
+          memcpy(h, A[i], sizeof(double) * (K + 1));
         } else {
-          h[xi + 1] = 1;
+          int xi = i - (int)A.size();
+          assert(0 <= xi && xi < K && "Sanity checking the range of xi.");
+          if (quadrant[xi] == MINUS) {
+            h[xi + 1] = -1;
+          } else {
+            h[xi + 1] = 1;
+          }
         }
       }
+      assert(count == (int)maximal_H.size() &&
+             "count should equal maximal_H.size()");
+      set_free(is_maximal);
+      quadrant2pdd[quadrant] = {K + 1, V, H, incidence_H_to_V};
     }
-    assert(count == (int)maximal_H.size() &&
-           "count should equal maximal_H.size()");
-    set_free(is_maximal);
-    quadrant2pdd[quadrant] = {K + 1, V, H, incidence_H_to_V};
-  }
 
-  // Lower and upper bounds are needed for decomposition of tanh and sigmoid
-  // functions.
-  vector<double> x_lb(K);
-  vector<double> x_ub(K);
-  for (int xi = 0; xi < K; xi++) {
-    x_lb[xi] = -A[LOWER_BOUND_INDEX[K][xi]][0];
-    x_ub[xi] = A[UPPER_BOUND_INDEX[K][xi]][0];
-  }
+    // Lower and upper bounds are needed for decomposition of tanh and sigmoid functions.
+    vector<double> x_lb(K);
+    vector<double> x_ub(K);
+    for (int xi = 0; xi < K; xi++) {
+        x_lb[xi] = -A[LOWER_BOUND_INDEX[K][xi]][0];
+        x_ub[xi] = A[UPPER_BOUND_INDEX[K][xi]][0];
+    }
 
-  vector<double *> res = decomposition(K, quadrant2pdd, activation, x_lb, x_ub);
+    vector<double *> res =
+        decomposition(K, quadrant2pdd, activation, x_lb, x_ub);
 
-  return res;
+    return res;
 }
 
 vector<double*> krelu_with_cdd(const int K, const vector<double*>& A) {

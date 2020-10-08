@@ -329,49 +329,49 @@ void run_fkpool_test(const int K, const string& path) {
     cout << "\tpassed" << endl;
 }
 
-void run_fktanh_test(const int K, const string &path) {
-  cout << "running fktanh test: " << path << endl;
+void run_fktasi_test(const int K, const string& path, Activation activation) {
+    cout << "running fast " << activation2str[activation] << " test: " << path << endl;
 
-  vector<double *> A_int = fp_mat_read(K + 1, path);
-  MatDouble A_ext = mat_internal_to_external_format(K + 1, A_int);
+    vector<double*> A_int = fp_mat_read(K + 1, path);
+    MatDouble A_ext = mat_internal_to_external_format(K + 1, A_int);
 
-  Timer t;
-  MatDouble H_ext = fktanh(A_ext);
-  int micros = t.micros();
+    Timer t;
+    MatDouble H_ext = (activation == Tanh) ? fktanh(A_ext) : fksigm(A_ext);
+    int micros = t.micros();
 
-  cout << "\tK = " << K << " took " << micros / 1000 << " ms and discovered "
-       << H_ext.rows << " constraints" << endl;
+    cout << "\tK = " << K << " took " << micros / 1000 << \
+        " ms and discovered " << H_ext.rows << " constraints" << endl;
 
-  vector<mpq_t *> H_mpq = mpq_mat_from_MatDouble(H_ext);
+    vector<mpq_t*> H_mpq = mpq_mat_from_MatDouble(H_ext);
 
-  dd_set_global_constants();
-  map<Quadrant, vector<mpq_t *>> quadrant2vertices =
-      compute_tasi_quadrants_with_cdd_dim(K, A_int, Tanh);
-  dd_free_global_constants();
+    dd_set_global_constants();
+    map<Quadrant, vector<mpq_t *>> quadrant2vertices =
+        compute_tasi_quadrants_with_cdd_dim(K, A_int, activation);
+    dd_free_global_constants();
 
-  vector<mpq_t *> V_mpq;
-  for (auto &entry : quadrant2vertices) {
-    for (auto v : entry.second) {
-      V_mpq.push_back(v);
+    vector<mpq_t*> V_mpq;
+    for (auto &entry : quadrant2vertices) {
+      for (auto v : entry.second) {
+        V_mpq.push_back(v);
+      }
     }
-  }
 
-  vector<mpq_t *> V_x_H = mpq_mat_mul_with_transpose(2 * K + 1, V_mpq, H_mpq);
-  for (const auto &row : V_x_H) {
-    for (size_t i = 0; i < H_mpq.size(); i++) {
-      ASRTF(mpq_sgn(row[i]) >= 0,
-            "All discovered constraints should be sound with respect to V");
+    vector<mpq_t*> V_x_H = mpq_mat_mul_with_transpose(2 * K + 1, V_mpq, H_mpq);
+    for (const auto& row : V_x_H) {
+        for (size_t i = 0; i < H_mpq.size(); i++) {
+          ASRTF(mpq_sgn(row[i]) >= 0,
+                "All discovered constraints should be sound with respect to V");
+        }
     }
-  }
 
-  mpq_mat_free(2 * K + 1, H_mpq);
-  mpq_mat_free(2 * K + 1, V_mpq);
-  mpq_mat_free(H_mpq.size(), V_x_H);
-  fp_mat_free(A_int);
-  free_MatDouble(A_ext);
-  free_MatDouble(H_ext);
+    mpq_mat_free(2 * K + 1, H_mpq);
+    mpq_mat_free(2 * K + 1, V_mpq);
+    mpq_mat_free(H_mpq.size(), V_x_H);
+    fp_mat_free(A_int);
+    free_MatDouble(A_ext);
+    free_MatDouble(H_ext);
 
-  cout << "\tpassed" << endl;
+    cout << "\tpassed" << endl;
 }
 
 // The test doesn't check the correctness, it showcases the number of constraints and runtime.
@@ -538,16 +538,17 @@ void run_all_fkpool_tests() {
     }
 }
 
-void run_all_fktanh_tests() {
-  cout << "Running all fktanh tests" << endl;
-  // TODO[gleb] Generalize for k = 1 as well
-  // Test checks for k=4 take quite some time, so limiting to k=3.
-  for (int k = 2; k <= 3; k++) {
-    for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-      run_fktanh_test(k, "octahedron_hrep/k" + to_string(k) + "/" +
-                             to_string(i) + ".txt");
+void run_all_fktasi_tests(Activation activation) {
+    cout << "Running all fast " << activation2str[activation] << " tests" << endl;
+    // TODO[gleb] Generalize for k = 1 as well
+    // Test checks for k=4 take quite some time, so limiting to k=3.
+    for (int k = 2; k <= 3; k++) {
+      for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+        run_fktasi_test(
+            k, "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt",
+            activation);
+      }
     }
-  }
 }
 
 void run_all_relaxation_cdd_tests(Activation activation, int max_k) {
@@ -592,7 +593,8 @@ int main() {
     run_all_tasi_quadrants_with_cdd_dim_tests(Sigm);
     run_all_fkrelu_tests();
     run_all_fkpool_tests();
-    run_all_fktanh_tests();
+    run_all_fktasi_tests(Tanh);
+    run_all_fktasi_tests(Sigm);
     run_all_relaxation_cdd_tests(Relu, 3); // k=4 ~20 minutes
     run_all_relaxation_cdd_tests(Pool, 3); // k=4 1-2 minutes
     run_all_relaxation_cdd_tests(Tanh, 2); // k=3 1-2 minutes

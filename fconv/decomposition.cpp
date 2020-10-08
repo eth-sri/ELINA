@@ -55,8 +55,8 @@ void project_to_relu_y_branch(const int xi, PDD &pdd_dual,
   set_enable_all(incidence[incidence.size() - 1]);
 }
 
-void project_to_tanh_y_branch(const int xi, PDD &pdd_dual,
-                              const double x_bound) {
+void project_to_tasi_y_branch(const int xi, PDD &pdd_dual, const double x_bound,
+                              Activation activation) {
   ASRTF(x_bound != 0, "x_bound has to be either negative or positive.");
   const int dim = pdd_dual.dim;
   pdd_dual.dim++;
@@ -73,35 +73,63 @@ void project_to_tanh_y_branch(const int xi, PDD &pdd_dual,
   }
   vector<set_t> &incidence = pdd_dual.incidence;
 
-  double y_bound = tanh(x_bound);
-  double dy = 1 - y_bound * y_bound;
-  double b = y_bound - x_bound * dy;
-  double k = abs(y_bound / x_bound);
+  double y_bound, k_lb, b_lb, k_ub, b_ub;
+  if (activation == Tanh) {
+    y_bound = tanh(x_bound);
+    if (x_bound < 0) {
+      k_lb = 1 - y_bound * y_bound;
+      b_lb = y_bound - x_bound * k_lb;
+      k_ub = y_bound / x_bound;
+      b_ub = 0;
+    } else {
+      k_lb = y_bound / x_bound;
+      b_lb = 0;
+      k_ub = 1 - y_bound * y_bound;
+      b_ub = y_bound - x_bound * k_ub;
+    }
+  } else {
+    // Numerically stable sigmoid
+    // http://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/
+    if (x_bound < 0) {
+      y_bound = exp(x_bound);
+      y_bound = y_bound / (1 + y_bound);
+      k_lb = y_bound * (1 - y_bound);
+      b_lb = y_bound - x_bound * k_lb;
+      k_ub = (y_bound - 0.5) / x_bound;
+      b_ub = 0.5;
+    } else {
+      y_bound = 1 / (1 + exp(-x_bound));
+      k_lb = (y_bound - 0.5) / x_bound;
+      b_lb = 0.5;
+      k_ub = y_bound * (1 - y_bound);
+      b_ub = y_bound - x_bound * k_ub;
+    }
+  }
 
   vector<double *> V_new;
   V_new.reserve(V.size() * 2);
-  vector<int> map1(V.size());
-  vector<int> map2(V.size());
+  vector<int> map_lb(V.size());
+  vector<int> map_ub(V.size());
 
   for (size_t i = 0; i < V.size(); i++) {
-    double *v = (double *)realloc(V[i], sizeof(double) * (dim + 1));
-    double x_cur = v[xi + 1];
-    if (v[xi + 1] == x_bound) {
+    double *v_lb = (double *)realloc(V[i], sizeof(double) * (dim + 1));
+    double x_cur = v_lb[xi + 1];
+    if (x_cur == x_bound) {
       // Both lower and upper bound would map to the same y.
-      v[dim] = y_bound;
-      map1[i] = V_new.size();
-      map2[i] = V_new.size();
-      V_new.push_back(v);
+      v_lb[dim] = y_bound;
+      map_lb[i] = V_new.size();
+      map_ub[i] = V_new.size();
+      V_new.push_back(v_lb);
       continue;
     }
-    double *v2 = fp_arr_copy(dim + 1, v);
-    v[dim] = dy * x_cur + b;
-    v2[dim] = k * x_cur;
+    double *v_ub = fp_arr_copy(dim + 1, v_lb);
+    v_lb[dim] = k_lb * x_cur + b_lb;
+    v_ub[dim] = k_ub * x_cur + b_ub;
 
-    map1[i] = V_new.size();
-    V_new.push_back(v);
-    map2[i] = V_new.size();
-    V_new.push_back(v2);
+    map_lb[i] = V_new.size();
+    V_new.push_back(v_lb);
+    map_ub[i] = V_new.size();
+    V_new.push_back(v_ub);
   }
 
   for (size_t i = 0; i < H.size(); i++) {
@@ -112,30 +140,19 @@ void project_to_tanh_y_branch(const int xi, PDD &pdd_dual,
   H[H.size() - 2] = (double *)calloc(dim + 1, sizeof(double));
   H[H.size() - 1] = (double *)calloc(dim + 1, sizeof(double));
 
-  double *h1 = H[H.size() - 2];
-  double *h2 = H[H.size() - 1];
+  double *h_lb = H[H.size() - 2];
+  double *h_ub = H[H.size() - 1];
 
-  // Note that order h1 and h2 matters because according
-  // to it the incidence information will be adjusted.
-  if (x_bound < 0) {
-    // In the minus branch:
-    // y >= dy * x + b equivalent -b - dy * x + y >= 0
-    h1[0] = -b;
-    h1[xi + 1] = -dy;
-    h1[dim] = 1;
-    // y <= k * x equivalent k * x - y >= 0
-    h2[xi + 1] = k;
-    h2[dim] = -1;
-  } else {
-    // In the plus branch:
-    // y <= dy * x + b equivalent b + dy * x - y >= 0
-    h1[0] = b;
-    h1[xi + 1] = dy;
-    h1[dim] = -1;
-    // y >= k * x equivalent -k * x + y >= 0
-    h2[xi + 1] = -k;
-    h2[dim] = 1;
-  }
+  // In the minus branch:
+  // y >= k * x + b equivalent -b - k * x + y >= 0
+  h_lb[0] = -b_lb;
+  h_lb[xi + 1] = -k_lb;
+  h_lb[dim] = 1;
+
+  // y <= k * x + b equivalent b + k * x - y >= 0
+  h_ub[0] = b_ub;
+  h_ub[xi + 1] = k_ub;
+  h_ub[dim] = -1;
 
   vector<set_t> incidence_new = set_arr_create(H.size(), V_new.size());
 
@@ -144,20 +161,21 @@ void project_to_tanh_y_branch(const int xi, PDD &pdd_dual,
     set_t inc_new = incidence_new[h];
     for (size_t v = 0; v < V.size(); v++) {
       if (set_test_bit(inc, v)) {
-        set_enable_bit(inc_new, map1[v]);
-        set_enable_bit(inc_new, map2[v]);
+        // Note that they can map to the same vertex, but it's okay.
+        set_enable_bit(inc_new, map_lb[v]);
+        set_enable_bit(inc_new, map_ub[v]);
       }
     }
   }
 
-  set_t inc1 = incidence_new[H.size() - 2];
-  set_t inc2 = incidence_new[H.size() - 1];
+  set_t inc_lb = incidence_new[H.size() - 2];
+  set_t inc_ub = incidence_new[H.size() - 1];
 
-  for (int v : map1) {
-    set_enable_bit(inc1, v);
+  for (int v : map_lb) {
+    set_enable_bit(inc_lb, v);
   }
-  for (int v : map2) {
-    set_enable_bit(inc2, v);
+  for (int v : map_ub) {
+    set_enable_bit(inc_ub, v);
   }
 
   pdd_dual.H = V_new;
@@ -188,9 +206,12 @@ PDD decomposition_recursive(Quadrant &quadrant,
     if (activation == Relu) {
       project_to_relu_y_branch(xi, pdd_minus, MINUS);
       project_to_relu_y_branch(xi, pdd_plus, PLUS);
+    } else if (activation == Tanh) {
+      project_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], Tanh);
+      project_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], Tanh);
     } else {
-      project_to_tanh_y_branch(xi, pdd_minus, x_lb[xi]);
-      project_to_tanh_y_branch(xi, pdd_plus, x_ub[xi]);
+      project_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], Sigm);
+      project_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], Sigm);
     }
 
     PDD_debug_consistency_check(pdd_minus);
@@ -211,8 +232,6 @@ vector<double *> decomposition(const int K,
   ASRTF(2 <= K && K <= 5, "Only 2 <= K <= 5 are currently supported.");
   ASRTF((int)quadrant2pdd.size() == POW2[K],
         "Sanity check - the number of quadrants should be 2^K.");
-  ASRTF(activation == Relu || activation == Tanh,
-        "Activation should be Relu or Tanh.");
 
   Quadrant quadrant{};
   quadrant.reserve(K);
