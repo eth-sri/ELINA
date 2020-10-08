@@ -55,16 +55,26 @@ def hrep2volume(hrep: np.ndarray, number_type: str) -> float:
 
 
 def test_volume_difference(filename, activation):
-    assert activation in ["relu", "pool"]
+    assert activation in ["relu", "pool", "tanh"]
     print("volume test for:", activation, filename)
     hrep = read_matrix(filename)
 
     time_fast = time()
-    res_fast = fkrelu(hrep) if activation == "relu" else fkpool(hrep)
+    if activation == "relu":
+        res_fast = fkrelu(hrep)
+    elif activation == "pool":
+        res_fast = fkpool(hrep)
+    elif activation == "tanh":
+        res_fast = fktanh(hrep)
     time_fast = time() - time_fast
 
     time_cdd = time()
-    res_cdd = krelu_with_cdd(hrep) if activation == "relu" else kpool_with_cdd(hrep)
+    if activation == "relu":
+        res_cdd = krelu_with_cdd(hrep)
+    elif activation == "pool":
+        res_cdd = kpool_with_cdd(hrep)
+    elif activation == "tanh":
+        res_cdd = ktanh_with_cdd(hrep)
     time_cdd = time() - time_cdd
 
     res_concat = np.concatenate([res_cdd, res_fast], axis=0)
@@ -86,7 +96,10 @@ def test_volume_difference(filename, activation):
 
 # Unfortunately library for computing volume often fails due to numerical errors.
 # Thus it is possible to perform this test only for some of the inputs.
+# TODO[gleb] Add tests for k = 1
 test_volume_difference("k3/1.txt", "relu")
 test_volume_difference("k3/5.txt", "relu")
 test_volume_difference("k3/1.txt", "pool")
 test_volume_difference("k3/2.txt", "pool")
+test_volume_difference("k2/1.txt", "tanh")
+test_volume_difference("k2/2.txt", "tanh")
