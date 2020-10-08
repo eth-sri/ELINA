@@ -70,12 +70,20 @@ kpool_with_cdd_c = fconv_api.kpool_with_cdd
 kpool_with_cdd_c.argtype = [MatDouble_c]
 kpool_with_cdd_c.restype = MatDouble_c
 
+fktanh_c = fconv_api.fktanh
+fktanh_c.argtype = [MatDouble_c]
+fktanh_c.restype = MatDouble_c
+
+ktanh_with_cdd_c = fconv_api.ktanh_with_cdd
+ktanh_with_cdd_c.argtype = [MatDouble_c]
+ktanh_with_cdd_c.restype = MatDouble_c
+
 generate_sparse_cover_c = fconv_api.generate_sparse_cover
 generate_sparse_cover_c.argtype = [c_int, c_int]
 generate_sparse_cover_c.restype = MatInt_c
 
 
-def _compute_relaxation(inp_hrep: np.ndarray, type: str) -> np.ndarray:
+def _compute_relaxation(inp_hrep: np.ndarray, activation: str, version: str) -> np.ndarray:
     """
     Input in format b + Ax >= 0. The input has to be octahedron in a certain format.
     An example of possible inp is:
@@ -89,6 +97,8 @@ def _compute_relaxation(inp_hrep: np.ndarray, type: str) -> np.ndarray:
         x2  <= 0.25
         -x2 <= 0.75
     """
+    assert activation in ["relu", "pool", "tanh"]
+    assert version in ["fast", "cdd"]
 
     rows, cols = inp_hrep.shape
     k = cols - 1
@@ -98,16 +108,20 @@ def _compute_relaxation(inp_hrep: np.ndarray, type: str) -> np.ndarray:
 
     inp_hrep = new_MatDouble_c(rows, cols, data_c)
 
-    if type == "relu_fast":
+    if activation == "relu" and version == "fast":
         out_hrep = fkrelu_c(inp_hrep)
-    elif type == "relu_cdd":
+    elif activation == "relu" and version == "cdd":
         out_hrep = krelu_with_cdd_c(inp_hrep)
-    elif type == "pool_fast":
+    elif activation == "pool" and version == "fast":
         out_hrep = fkpool_c(inp_hrep)
-    elif type == "pool_cdd":
+    elif activation == "pool" and version == "cdd":
         out_hrep = kpool_with_cdd_c(inp_hrep)
+    elif activation == "tanh" and version == "fast":
+        out_hrep = fktanh_c(inp_hrep)
+    elif activation == "tanh" and version == "cdd":
+        out_hrep = ktanh_with_cdd_c(inp_hrep)
     else:
-        raise Exception("Unknown relaxation type", type)
+        raise Exception("Unknown activation/version", activation, version)
 
     out = [0] * (out_hrep.rows * out_hrep.cols)
     for i in range(out_hrep.rows * out_hrep.cols):
@@ -122,19 +136,27 @@ def _compute_relaxation(inp_hrep: np.ndarray, type: str) -> np.ndarray:
 
 
 def fkrelu(inp_hrep: np.ndarray) -> np.ndarray:
-    return _compute_relaxation(inp_hrep, "relu_fast")
+    return _compute_relaxation(inp_hrep, "relu", "fast")
 
 
 def krelu_with_cdd(inp_hrep: np.ndarray) -> np.ndarray:
-    return _compute_relaxation(inp_hrep, "relu_cdd")
+    return _compute_relaxation(inp_hrep, "relu", "cdd")
 
 
 def fkpool(inp_hrep: np.ndarray) -> np.ndarray:
-    return _compute_relaxation(inp_hrep, "pool_fast")
+    return _compute_relaxation(inp_hrep, "pool", "fast")
 
 
 def kpool_with_cdd(inp_hrep: np.ndarray) -> np.ndarray:
-    return _compute_relaxation(inp_hrep, "pool_cdd")
+    return _compute_relaxation(inp_hrep, "pool", "cdd")
+
+
+def fktanh(inp_hrep: np.ndarray) -> np.ndarray:
+    return _compute_relaxation(inp_hrep, "tanh", "fast")
+
+
+def ktanh_with_cdd(inp_hrep: np.ndarray) -> np.ndarray:
+    return _compute_relaxation(inp_hrep, "tanh", "cdd")
 
 
 def generate_sparse_cover(n, k):
