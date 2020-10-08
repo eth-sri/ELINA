@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cassert>
+#include <string.h>
 #include "utils.h"
 #include "setoper.h"
 #include "cdd.h"
@@ -71,4 +72,20 @@ dd_PolyhedraPtr cdd_Matrix_to_Poly(dd_MatrixPtr A) {
     dd_PolyhedraPtr poly = dd_DDMatrix2Poly(A, &err);
     ASRTF(err == dd_NoError, "Converting matrix to polytope failed with error " + to_string(err));
     return poly;
+}
+
+vector<double*> mat_external_to_internal_format(const MatDouble &cmat) {
+    vector<double*> A = fp_mat_create(cmat.rows, cmat.cols);
+    for (int i = 0; i < cmat.rows; i++) {
+        memcpy(A[i], &(cmat.data[i * cmat.cols]), cmat.cols * sizeof(double));
+    }
+    return A;
+}
+
+MatDouble mat_internal_to_external_format(const int n, const vector<double*>& A) {
+    auto mat = (double *) calloc(A.size() * n, sizeof(double));
+    for (int i = 0; i < (int) A.size(); i++) {
+        memcpy(&(mat[i * n]), A[i], n * sizeof(double));
+    }
+    return {(int) A.size(), n, mat};
 }

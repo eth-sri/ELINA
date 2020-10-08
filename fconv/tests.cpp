@@ -4,6 +4,7 @@
 #include <set>
 #include <map>
 #include <unistd.h>
+#include "fconv.h"
 #include "octahedron.h"
 #include "utils.h"
 #include "mpq.h"
@@ -15,6 +16,14 @@
 // Temporary disabled the last test for k=4 before I add proper support
 // for inputs that split zero.
 constexpr int K2NUM_TESTS[6] = {0, 2, 4, 5, 3, 4};
+
+vector<mpq_t*> mpq_mat_from_MatDouble(const MatDouble& cmat) {
+    vector<mpq_t*> mat = mpq_mat_create(cmat.rows, cmat.cols);
+    for (int i = 0; i < cmat.rows; i++) {
+        mpq_arr_set_d(cmat.cols, mat[i], &(cmat.data[i * cmat.cols]));
+    }
+    return mat;
+}
 
 // Creates bijective mapping between the rows of two matrices.
 // Will throw an exception if such mapping does not exist.
@@ -45,6 +54,7 @@ vector<int> get_bijective_mapping_for_matrix_rows(
 
 void run_octahedron_test(const int K, const string& path) {
     cout << "running octahedron test: " << path << endl;
+    dd_set_global_constants();
 
     vector<double*> A = fp_mat_read(K + 1, path);
 
@@ -98,11 +108,13 @@ void run_octahedron_test(const int K, const string& path) {
     mpq_mat_free(K + 1, slow.V);
     fp_mat_free(A);
 
+    dd_set_global_constants();
     cout << "\tpassed" << endl;
 }
 
 void run_split_in_quadrants_test(const int K, const string& path) {
     cout << "running split in quadrants test: " << path << endl;
+    dd_set_global_constants();
 
     vector<double*> A = fp_mat_read(K + 1, path);
     const int num_h = (int) A.size();
@@ -157,28 +169,66 @@ void run_split_in_quadrants_test(const int K, const string& path) {
     }
     fp_mat_free(A);
 
+    dd_free_global_constants();
+    cout << "\tpassed" << endl;
+}
+
+void run_tanh_quadrants_with_cdd_dimension_trick_test(const int K, const string& path) {
+    cout << "running tanh quadrants with cdd dimension trick test: " << path << endl;
+    dd_set_global_constants();
+
+    vector<double*> A = fp_mat_read(K + 1, path);
+
+    Timer t_fast;
+    map<Quadrant, vector<mpq_t*>> quadrant2vertices_fast =
+            compute_tanh_quadrants_with_cdd_dimension_trick(K, A);
+    int micros_fast = t_fast.micros();
+
+    Timer t_slow;
+    map<Quadrant, vector<mpq_t*>> quadrant2vertices_slow =
+            compute_tanh_quadrants_with_cdd(K, A);
+    int micros_slow = t_slow.micros();
+
+    cout << "\tAcceleration is " << (double) micros_slow / micros_fast << endl;
+    cout << "\tFrom " << micros_slow / 1000 << " ms to " << micros_fast / 1000 << " ms" << endl;
+
+    const vector<Quadrant>& quadrants = K2QUADRANTS[K];
+
+    for (const auto& q : quadrants) {
+        const vector<mpq_t*>& V_fast = quadrant2vertices_fast[q];
+        const vector<mpq_t*>& V_slow = quadrant2vertices_slow[q];
+        get_bijective_mapping_for_matrix_rows(2 * K + 1, V_fast, V_slow);
+        mpq_mat_free(2 * K + 1, V_fast);
+        mpq_mat_free(2 * K + 1, V_slow);
+    }
+
+    dd_free_global_constants();
     cout << "\tpassed" << endl;
 }
 
 void run_fkrelu_test(const int K, const string& path) {
     cout << "running fkrelu test: " << path << endl;
 
-    vector<double*> A = fp_mat_read(K + 1, path);
+    vector<double*> A_int = fp_mat_read(K + 1, path);
+
+    MatDouble A_ext = mat_internal_to_external_format(K + 1, A_int);
 
     Timer t;
-    vector<double*> H_double = fast_relaxation_through_decomposition(K, A, Relu);
+    MatDouble H_ext = fkrelu(A_ext);
     int micros = t.micros();
 
     cout << "\tK = " << K << " took " << micros / 1000 << \
-        " ms and discovered " << H_double.size() << " constraints" << endl;
+        " ms and discovered " << H_ext.rows << " constraints" << endl;
 
-    vector<mpq_t*> H = mpq_mat_from_fp(2 * K + 1, H_double);
+    vector<mpq_t*> H_mpq = mpq_mat_from_MatDouble(H_ext);
 
-    map<Quadrant, QuadrantInfo> quadrant2info = compute_quadrants_with_cdd(K, A);
+    dd_set_global_constants();
+    map<Quadrant, QuadrantInfo> quadrant2info = compute_quadrants_with_cdd(K, A_int);
+    dd_free_global_constants();
 
     // Now I will compute the final V. This will allow me to verify that produced constraints do not
     // violate any of the original vertices and thus I produce a sound overapproximation.
-    vector<mpq_t*> V;
+    vector<mpq_t*> V_mpq;
     for (auto& entry : quadrant2info) {
         const auto& quadrant = entry.first;
         auto& V_quadrant = entry.second.V;
@@ -193,23 +243,24 @@ void run_fkrelu_test(const int K, const string& path) {
                     mpq_set(v[1 + i + K], v[1 + i]);
                 }
             }
-            V.push_back(v);
+            V_mpq.push_back(v);
         }
         set_arr_free(entry.second.V_to_H_incidence);
     }
 
-    vector<mpq_t*> V_x_H = mpq_mat_mul_with_transpose(2 * K + 1, V, H);
+    vector<mpq_t*> V_x_H = mpq_mat_mul_with_transpose(2 * K + 1, V_mpq, H_mpq);
     for (const auto& row : V_x_H) {
-        for (size_t i = 0; i < H.size(); i++) {
+        for (size_t i = 0; i < H_mpq.size(); i++) {
             ASRTF(mpq_sgn(row[i]) >= 0, "All discovered constraints should be sound with respect to V");
         }
     }
 
-    mpq_mat_free(2 * K + 1, H);
-    mpq_mat_free(2 * K + 1, V);
-    mpq_mat_free(H.size(), V_x_H);
-    fp_mat_free(A);
-    fp_mat_free(H_double);
+    mpq_mat_free(2 * K + 1, H_mpq);
+    mpq_mat_free(2 * K + 1, V_mpq);
+    mpq_mat_free(H_mpq.size(), V_x_H);
+    fp_mat_free(A_int);
+    free_MatDouble(A_ext);
+    free_MatDouble(H_ext);
 
     cout << "\tpassed" << endl;
 }
@@ -217,44 +268,48 @@ void run_fkrelu_test(const int K, const string& path) {
 void run_fkpool_test(const int K, const string& path) {
     cout << "running fkpool test: " << path << endl;
 
-    vector<double*> A = fp_mat_read(K + 1, path);
+    vector<double*> A_int = fp_mat_read(K + 1, path);
+    MatDouble A_ext = mat_internal_to_external_format(K + 1, A_int);
 
     Timer t;
-    vector<double*> H_double = fkpool(K, A);
+    MatDouble H_ext = fkpool(A_ext);
     int micros = t.micros();
 
     cout << "\tK = " << K << " took " << micros / 1000 << \
-        " ms and discovered " << H_double.size() << " constraints" << endl;
+        " ms and discovered " << H_ext.rows << " constraints" << endl;
 
-    vector<mpq_t*> H = mpq_mat_from_fp(K + 2, H_double);
+    vector<mpq_t*> H_mpq = mpq_mat_from_MatDouble(H_ext);
 
-    vector<QuadrantInfo> quadrant_infos = compute_max_pool_quadrants_with_cdd(K, A);
+    dd_set_global_constants();
+    vector<QuadrantInfo> quadrant_infos = compute_max_pool_quadrants_with_cdd(K, A_int);
+    dd_free_global_constants();
 
     // Now I will compute the final V. This will allow me to verify that produced constraints do not
     // violate any of the original vertices and thus I produce a sound overapproximation.
-    vector<mpq_t*> V;
+    vector<mpq_t*> V_mpq;
     for (int xi = 0; xi < K; xi++) {
         auto& V_quadrant = quadrant_infos[xi].V;
         for (auto v : V_quadrant) {
             v = mpq_arr_resize(K + 2, K + 1, v);
             mpq_set(v[K + 1], v[xi + 1]);
-            V.push_back(v);
+            V_mpq.push_back(v);
         }
         set_arr_free(quadrant_infos[xi].V_to_H_incidence);
     }
 
-    vector<mpq_t*> V_x_H = mpq_mat_mul_with_transpose(K + 2, V, H);
+    vector<mpq_t*> V_x_H = mpq_mat_mul_with_transpose(K + 2, V_mpq, H_mpq);
     for (const auto& row : V_x_H) {
-        for (size_t i = 0; i < H.size(); i++) {
+        for (size_t i = 0; i < H_mpq.size(); i++) {
             ASRTF(mpq_sgn(row[i]) >= 0, "All discovered constraints should be sound with respect to V");
         }
     }
 
-    mpq_mat_free(K + 2, H);
-    mpq_mat_free(K + 2, V);
-    mpq_mat_free(H.size(), V_x_H);
-    fp_mat_free(A);
-    fp_mat_free(H_double);
+    mpq_mat_free(K + 2, H_mpq);
+    mpq_mat_free(K + 2, V_mpq);
+    mpq_mat_free(H_mpq.size(), V_x_H);
+    fp_mat_free(A_int);
+    free_MatDouble(A_ext);
+    free_MatDouble(H_ext);
 
     cout << "\tpassed" << endl;
 }
@@ -262,38 +317,43 @@ void run_fkpool_test(const int K, const string& path) {
 void run_fktanh_test(const int K, const string& path) {
     cout << "running fktanh test: " << path << endl;
 
-    vector<double*> A = fp_mat_read(K + 1, path);
+    vector<double*> A_int = fp_mat_read(K + 1, path);
+    MatDouble A_ext = mat_internal_to_external_format(K + 1, A_int);
 
     Timer t;
-    vector<double*> H_double = fast_relaxation_through_decomposition(K, A, Tanh);
+    MatDouble H_ext = fktanh(A_ext);
     int micros = t.micros();
 
     cout << "\tK = " << K << " took " << micros / 1000 << \
-        " ms and discovered " << H_double.size() << " constraints" << endl;
+        " ms and discovered " << H_ext.rows << " constraints" << endl;
 
-    vector<mpq_t*> H = mpq_mat_from_fp(2 * K + 1, H_double);
+    vector<mpq_t*> H_mpq = mpq_mat_from_MatDouble(H_ext);
 
-    map<Quadrant, vector<mpq_t*>> quadrant2vertices = compute_tanh_quadrants_with_cdd_dimension_trick(K, A);
+    dd_set_global_constants();
+    map<Quadrant, vector<mpq_t*>> quadrant2vertices =
+            compute_tanh_quadrants_with_cdd_dimension_trick(K, A_int);
+    dd_free_global_constants();
 
-    vector<mpq_t*> V;
+    vector<mpq_t*> V_mpq;
     for (auto& entry : quadrant2vertices) {
         for (auto v : entry.second) {
-            V.push_back(v);
+            V_mpq.push_back(v);
         }
     }
 
-    vector<mpq_t*> V_x_H = mpq_mat_mul_with_transpose(2 * K + 1, V, H);
+    vector<mpq_t*> V_x_H = mpq_mat_mul_with_transpose(2 * K + 1, V_mpq, H_mpq);
     for (const auto& row : V_x_H) {
-        for (size_t i = 0; i < H.size(); i++) {
+        for (size_t i = 0; i < H_mpq.size(); i++) {
             ASRTF(mpq_sgn(row[i]) >= 0, "All discovered constraints should be sound with respect to V");
         }
     }
 
-    mpq_mat_free(2 * K + 1, H);
-    mpq_mat_free(2 * K + 1, V);
-    mpq_mat_free(H.size(), V_x_H);
-    fp_mat_free(A);
-    fp_mat_free(H_double);
+    mpq_mat_free(2 * K + 1, H_mpq);
+    mpq_mat_free(2 * K + 1, V_mpq);
+    mpq_mat_free(H_mpq.size(), V_x_H);
+    fp_mat_free(A_int);
+    free_MatDouble(A_ext);
+    free_MatDouble(H_ext);
 
     cout << "\tpassed" << endl;
 }
@@ -302,22 +362,23 @@ void run_fktanh_test(const int K, const string& path) {
 void run_relaxation_with_cdd_test(const int K, const string& path, Activation activation) {
     cout << "running relaxation with cdd test: " << path << endl;
 
-    vector<double*> A = fp_mat_read(K + 1, path);
+    vector<double*> A_int = fp_mat_read(K + 1, path);
+    MatDouble A_ext = mat_internal_to_external_format(K + 1, A_int);
 
     Timer t;
-    vector<double*> H;
+    MatDouble H_ext;
     switch (activation) {
         case Relu:
             cout << "\tRelu" << endl;
-            H = krelu_with_cdd(K, A);
+            H_ext = krelu_with_cdd(A_ext);
             break;
         case Pool:
             cout << "\tPool" << endl;
-            H = kpool_with_cdd(K, A);
+            H_ext = kpool_with_cdd(A_ext);
             break;
         case Tanh:
             cout << "\tTanh" << endl;
-            H = ktanh_with_cdd(K, A);
+            H_ext = ktanh_with_cdd(A_ext);
             break;
         default:
             throw runtime_error("Unknown activation.");
@@ -325,10 +386,11 @@ void run_relaxation_with_cdd_test(const int K, const string& path, Activation ac
     int micros = t.micros();
 
     cout << "\tK = " << K << " took " << micros / 1000 << \
-        " ms and discovered " << H.size() << " constraints" << endl;
+        " ms and discovered " << H_ext.rows << " constraints" << endl;
 
-    fp_mat_free(A);
-    fp_mat_free(H);
+    fp_mat_free(A_int);
+    free_MatDouble(A_ext);
+    free_MatDouble(H_ext);
 
     cout << "\tpassed" << endl;
 }
@@ -381,57 +443,25 @@ void run_sparse_cover_test(const int N, const int K) {
     cout << "running sparse cover test: N " << N << " K " << K << endl;
 
     Timer t;
-    vector<vector<int>> cover = sparse_cover(N, K);
+    MatInt cover = generate_sparse_cover(N, K);
     int micros = t.micros();
 
     cout << "\ttook " << micros / 1000 \
-        << " ms and generated " << cover.size() \
+        << " ms and generated " << cover.rows \
         << " combinations" << endl;
 
-    for (const auto& comb : cover) {
-        ASRTF((int) comb.size() == K, "Combination size should equal K.");
-        for (auto elem : comb) {
-            ASRTF(0 <= elem && elem < N, "Every element of combination should be within range.");
-        }
-        for (int i = 0; i < K - 1; i++) {
-            ASRTF(comb[i] < comb[i + 1], "Element of combination should be in ascending order.");
+    ASRTF(cover.cols == K, "Combination size should be K.");
+    for (int i = 0; i < cover.rows; i++) {
+        for (int j = 0; j < K - 1; j++) {
+            int elem = cover.data[i * cover.cols + j];
+            int elem_next = cover.data[i * cover.cols + j + 1];
+            ASRTF(elem < elem_next, "Should be ascending order.");
+            ASRTF(0 <= elem && elem_next < N, "Elements should be within range.");
         }
     }
 
     cout << "\tpassed" << endl;
 }
-
-void run_tanh_quadrants_with_cdd_dimension_trick_test(const int K, const string& path) {
-    cout << "running tanh quadrants with cdd dimension trick test: " << path << endl;
-
-    vector<double*> A = fp_mat_read(K + 1, path);
-
-    Timer t_fast;
-    map<Quadrant, vector<mpq_t*>> quadrant2vertices_fast =
-            compute_tanh_quadrants_with_cdd_dimension_trick(K, A);
-    int micros_fast = t_fast.micros();
-
-    Timer t_slow;
-    map<Quadrant, vector<mpq_t*>> quadrant2vertices_slow =
-            compute_tanh_quadrants_with_cdd(K, A);
-    int micros_slow = t_slow.micros();
-
-    cout << "\tAcceleration is " << (double) micros_slow / micros_fast << endl;
-    cout << "\tFrom " << micros_slow / 1000 << " ms to " << micros_fast / 1000 << " ms" << endl;
-
-    const vector<Quadrant>& quadrants = K2QUADRANTS[K];
-
-    for (const auto& q : quadrants) {
-        const vector<mpq_t*>& V_fast = quadrant2vertices_fast[q];
-        const vector<mpq_t*>& V_slow = quadrant2vertices_slow[q];
-        get_bijective_mapping_for_matrix_rows(2 * K + 1, V_fast, V_slow);
-        mpq_mat_free(2 * K + 1, V_fast);
-        mpq_mat_free(2 * K + 1, V_slow);
-    }
-
-    cout << "\tpassed" << endl;
-}
-
 
 void run_all_octahedron_tests() {
     cout << "Running all fast V octahedron tests" << endl;
@@ -564,20 +594,18 @@ void handler(int sig) {
 
 int main() {
     signal(SIGSEGV, handler);
-    dd_set_global_constants();
 
     run_all_octahedron_tests();
     run_all_split_in_quadrants_tests();
-    run_all_fkrelu_tests();
-    run_all_krelu_with_cdd_tests();
-    run_1relu_test();
-    run_all_fkpool_tests();
-    run_all_kpool_with_cdd_tests();
-    run_all_fktanh_tests();
-    run_all_ktanh_with_cdd_tests();
     run_all_tanh_quadrants_with_cdd_dimension_trick_tests();
+    run_all_fkrelu_tests();
+    run_all_fkpool_tests();
+    run_all_fktanh_tests();
+    run_all_krelu_with_cdd_tests();
+    run_all_kpool_with_cdd_tests();
+    run_all_ktanh_with_cdd_tests();
+    run_1relu_test();
     run_all_sparse_cover_tests();
 
-    dd_free_global_constants();
     return 0;
 }
