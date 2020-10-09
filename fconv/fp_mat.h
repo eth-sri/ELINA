@@ -6,7 +6,9 @@
 
 using namespace std;
 
-vector<double*> fp_mat_create(const int rows, const int cols);
+double* fp_arr_copy(const int n, double* src);
+
+vector<double*> fp_mat_create(int rows, int cols);
 
 void fp_mat_free(const vector<double*>& mat);
 
@@ -18,4 +20,4 @@ vector<double*> fp_mat_read(int cols, const string& path);
 
 void fp_mat_print(int n, const vector<double*>& mat);
 
-dd_MatrixPtr fp_mat_to_cdd(const int n, const vector<double*>& A);
+dd_MatrixPtr fp_mat_to_cdd(int n, const vector<double*>& A);

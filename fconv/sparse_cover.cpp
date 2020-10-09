@@ -29,7 +29,9 @@ bool intersects_too_much(const int K, const vector<int>& first, const vector<int
 
 vector<vector<int>> sparse_cover(const int N, const int K) {
     ASRTF(3 <= K && K <= 5, "K is not within allowed range.");
-    ASRTF(K <= N, "N is not within allowed range.");
+    if (N < K) {
+        return {};
+    }
 
     vector<vector<int>> all_selected_combs;
     vector<bool> v(N);
