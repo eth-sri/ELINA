@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cassert>
+#include <string.h>
 #include "utils.h"
 #include "setoper.h"
 #include "cdd.h"
@@ -65,47 +66,26 @@ vector<int> compute_maximal_indexes(const vector<set_t>& incidence) {
     return maximal;
 }
 
-vector<double *> cdd_compute_inequalities_from_vertices(dd_MatrixPtr vertices) {
-  dd_ErrorType err = dd_NoError;
-  dd_PolyhedraPtr poly = dd_DDMatrix2Poly(vertices, &err);
-  ASRTF(err == dd_NoError,
-        "Converting matrix to polytope failed with error " + to_string(err));
+// A simple wrapper that has error control.
+dd_PolyhedraPtr cdd_Matrix_to_Poly(dd_MatrixPtr A) {
+    dd_ErrorType err = dd_NoError;
+    dd_PolyhedraPtr poly = dd_DDMatrix2Poly(A, &err);
+    ASRTF(err == dd_NoError, "Converting matrix to polytope failed with error " + to_string(err));
+    return poly;
+}
 
-  dd_MatrixPtr inequalities = dd_CopyInequalities(poly);
-  // Note that linearities are quite rare.
-  set_type linearities = inequalities->linset;
+vector<double*> mat_external_to_internal_format(const MatDouble &cmat) {
+    vector<double*> A = fp_mat_create(cmat.rows, cmat.cols);
+    for (int i = 0; i < cmat.rows; i++) {
+        memcpy(A[i], &(cmat.data[i * cmat.cols]), cmat.cols * sizeof(double));
+    }
+    return A;
+}
 
-  const int num_ineq = inequalities->rowsize;
-  const int dim = inequalities->colsize;
-  vector<double *> H = fp_mat_create(num_ineq + set_card(linearities), dim);
-  int counter = 0;
-  for (int ineq = 0; ineq < num_ineq; ineq++) {
-    for (int j = 0; j < dim; j++) {
-      H[counter][j] = mpq_get_d(inequalities->matrix[ineq][j]);
+MatDouble mat_internal_to_external_format(const int n, const vector<double*>& A) {
+    auto mat = (double *) calloc(A.size() * n, sizeof(double));
+    for (int i = 0; i < (int) A.size(); i++) {
+        memcpy(&(mat[i * n]), A[i], n * sizeof(double));
     }
-    counter++;
-    if (set_member(ineq + 1, linearities)) {
-      for (int j = 0; j < dim; j++) {
-        H[counter][j] = -H[counter - 1][j];
-      }
-      counter++;
-    }
-  }
-  assert(counter == num_ineq + set_card(linearities) &&
-         "Counter should equal num_ineq + number of linearities");
-
-  for (auto h : H) {
-    double abs_coef = 0;
-    for (int i = 0; i < dim; i++) {
-      abs_coef = max(abs(h[i]), abs_coef);
-    }
-    ASRTF(abs_coef != 0, "Inequality cannot consist fully of zeros.");
-    for (int i = 0; i < dim; i++) {
-      h[i] /= abs_coef;
-    }
-  }
-
-  dd_FreePolyhedra(poly);
-  dd_FreeMatrix(inequalities);
-  return H;
+    return {(int) A.size(), n, mat};
 }

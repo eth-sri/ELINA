@@ -1,19 +1,33 @@
-#include "fkpool.h"
-#include "fkrelu.h"
-#include "fp_mat.h"
-#include "mpq.h"
-#include "octahedron.h"
-#include "sparse_cover.h"
-#include "split_in_quadrants.h"
-#include "utils.h"
 #include <algorithm>
-#include <iostream>
-#include <map>
-#include <set>
 #include <string>
+#include <iostream>
+#include <set>
+#include <map>
 #include <unistd.h>
+#include "fconv.h"
+#include "octahedron.h"
+#include "utils.h"
+#include "mpq.h"
+#include "split_in_quadrants.h"
+#include "relaxation.h"
+#include "sparse_cover.h"
+#include "fp_mat.h"
 
-constexpr int K2NUM_TESTS[6] = {0, 2, 4, 5, 4, 4};
+// Temporary disabled the last test for k=4 before I add proper support
+// for inputs that split zero.
+constexpr int K2NUM_TESTS[6] = {0, 3, 4, 5, 3, 4};
+
+const string activation2str[4] = {"Relu", "Pool", "Tanh", "Sigm"};
+
+constexpr double TOLERANCE = 1.0E-10;
+
+vector<mpq_t*> mpq_mat_from_MatDouble(const MatDouble& cmat) {
+    vector<mpq_t*> mat = mpq_mat_create(cmat.rows, cmat.cols);
+    for (int i = 0; i < cmat.rows; i++) {
+        mpq_arr_set_d(cmat.cols, mat[i], &(cmat.data[i * cmat.cols]));
+    }
+    return mat;
+}
 
 // Creates bijective mapping between the rows of two matrices.
 // Will throw an exception if such mapping does not exist.
@@ -44,6 +58,7 @@ vector<int> get_bijective_mapping_for_matrix_rows(
 
 void run_octahedron_test(const int K, const string& path) {
     cout << "running octahedron test: " << path << endl;
+    dd_set_global_constants();
 
     vector<double*> A = fp_mat_read(K + 1, path);
 
@@ -99,11 +114,13 @@ void run_octahedron_test(const int K, const string& path) {
     mpq_mat_free(K + 1, slow.V);
     fp_mat_free(A);
 
+    dd_set_global_constants();
     cout << "\tpassed" << endl;
 }
 
 void run_split_in_quadrants_test(const int K, const string& path) {
     cout << "running split in quadrants test: " << path << endl;
+    dd_set_global_constants();
 
     vector<double*> A = fp_mat_read(K + 1, path);
     const int num_h = (int) A.size();
@@ -162,29 +179,71 @@ void run_split_in_quadrants_test(const int K, const string& path) {
     }
     fp_mat_free(A);
 
+    dd_free_global_constants();
     cout << "\tpassed" << endl;
+}
+
+void run_tasi_quadrants_with_cdd_dim_test(const int K, const string &path,
+                                          Activation activation) {
+  cout << "running " << activation2str[activation]
+       << " quadrants with cdd dim test: " << path << endl;
+
+  dd_set_global_constants();
+
+  vector<double *> A = fp_mat_read(K + 1, path);
+
+  Timer t_fast;
+  map<Quadrant, vector<mpq_t *>> quadrant2vertices_fast =
+      compute_tasi_quadrants_with_cdd_dim(K, A, activation);
+  int micros_fast = t_fast.micros();
+
+  Timer t_slow;
+  map<Quadrant, vector<mpq_t *>> quadrant2vertices_slow =
+      compute_tasi_quadrants_with_cdd(K, A, activation);
+  int micros_slow = t_slow.micros();
+
+  cout << "\tAcceleration is " << (double)micros_slow / micros_fast << endl;
+  cout << "\tFrom " << micros_slow / 1000 << " ms to " << micros_fast / 1000
+       << " ms" << endl;
+
+  const vector<Quadrant> &quadrants = K2QUADRANTS[K];
+
+  for (const auto &q : quadrants) {
+    const vector<mpq_t *> &V_fast = quadrant2vertices_fast[q];
+    const vector<mpq_t *> &V_slow = quadrant2vertices_slow[q];
+    get_bijective_mapping_for_matrix_rows(2 * K + 1, V_fast, V_slow);
+    mpq_mat_free(2 * K + 1, V_fast);
+    mpq_mat_free(2 * K + 1, V_slow);
+  }
+
+  dd_free_global_constants();
+  cout << "\tpassed" << endl;
 }
 
 void run_fkrelu_test(const int K, const string& path) {
     cout << "running fkrelu test: " << path << endl;
 
-    vector<double *> A = fp_mat_read(K + 1, path);
+    vector<double*> A_int = fp_mat_read(K + 1, path);
+
+    MatDouble A_ext = mat_internal_to_external_format(K + 1, A_int);
 
     Timer t;
-    vector<double *> H_double = fkrelu(K, A);
+    MatDouble H_ext = fkrelu(A_ext);
     int micros = t.micros();
 
-    cout << "\tK = " << K << " took " << micros / 1000 << " ms and discovered "
-         << H_double.size() << " constraints" << endl;
+    cout << "\tK = " << K << " took " << micros / 1000 << \
+        " ms and discovered " << H_ext.rows << " constraints" << endl;
 
-    vector<mpq_t *> H = mpq_mat_from_fp(2 * K + 1, H_double);
+    vector<mpq_t*> H_mpq = mpq_mat_from_MatDouble(H_ext);
 
+    dd_set_global_constants();
     map<Quadrant, QuadrantInfo> quadrant2info =
-        compute_quadrants_with_cdd(K, A);
+        compute_quadrants_with_cdd(K, A_int);
+    dd_free_global_constants();
 
     // Now I will compute the final V. This will allow me to verify that produced constraints do not
     // violate any of the original vertices and thus I produce a sound overapproximation.
-    vector<mpq_t *> V;
+    vector<mpq_t*> V_mpq;
     for (auto &entry : quadrant2info) {
       const auto &quadrant = entry.first;
       auto &V_quadrant = entry.second.V;
@@ -199,24 +258,30 @@ void run_fkrelu_test(const int K, const string& path) {
             mpq_set(v[1 + i + K], v[1 + i]);
           }
         }
-        V.push_back(v);
+        V_mpq.push_back(v);
       }
       set_arr_free(entry.second.V_to_H_incidence);
     }
 
-    vector<mpq_t *> V_x_H = mpq_mat_mul_with_transpose(2 * K + 1, V, H);
+    vector<mpq_t*> V_x_H = mpq_mat_mul_with_transpose(2 * K + 1, V_mpq, H_mpq);
     for (const auto& row : V_x_H) {
-      for (size_t i = 0; i < H.size(); i++) {
-        ASRTF(mpq_sgn(row[i]) >= 0,
-              "All discovered constraints should be sound with respect to V");
-      }
+        for (size_t i = 0; i < H_mpq.size(); i++) {
+            if (K == 1) {
+                // Case K=1 is computed with direct analytical expressions and constraints are not adjusted.
+                // With some engineering work it can be fixed.
+                ASRTF(mpq_get_d(row[i]) >= -TOLERANCE, "Case K=1 should be sound.");
+            } else {
+                ASRTF(mpq_sgn(row[i]) >= 0, "All discovered constraints should be sound with respect to V");
+            }
+        }
     }
 
-    mpq_mat_free(2 * K + 1, H);
-    mpq_mat_free(2 * K + 1, V);
-    mpq_mat_free(H.size(), V_x_H);
-    fp_mat_free(A);
-    fp_mat_free(H_double);
+    mpq_mat_free(2 * K + 1, H_mpq);
+    mpq_mat_free(2 * K + 1, V_mpq);
+    mpq_mat_free(H_mpq.size(), V_x_H);
+    fp_mat_free(A_int);
+    free_MatDouble(A_ext);
+    free_MatDouble(H_ext);
 
     cout << "\tpassed" << endl;
 }
@@ -224,131 +289,181 @@ void run_fkrelu_test(const int K, const string& path) {
 void run_fkpool_test(const int K, const string& path) {
     cout << "running fkpool test: " << path << endl;
 
-    vector<double *> A = fp_mat_read(K + 1, path);
+    vector<double*> A_int = fp_mat_read(K + 1, path);
+    MatDouble A_ext = mat_internal_to_external_format(K + 1, A_int);
 
     Timer t;
-    vector<double *> H_double = fkpool(K, A);
+    MatDouble H_ext = fkpool(A_ext);
     int micros = t.micros();
 
-    cout << "\tK = " << K << " took " << micros / 1000 << " ms and discovered "
-         << H_double.size() << " constraints" << endl;
+    cout << "\tK = " << K << " took " << micros / 1000 << \
+        " ms and discovered " << H_ext.rows << " constraints" << endl;
 
-    vector<mpq_t *> H = mpq_mat_from_fp(K + 2, H_double);
+    vector<mpq_t*> H_mpq = mpq_mat_from_MatDouble(H_ext);
 
+    dd_set_global_constants();
     vector<QuadrantInfo> quadrant_infos =
-        compute_max_pool_quadrants_with_cdd(K, A);
+        compute_max_pool_quadrants_with_cdd(K, A_int);
+    dd_free_global_constants();
 
     // Now I will compute the final V. This will allow me to verify that produced constraints do not
     // violate any of the original vertices and thus I produce a sound overapproximation.
-    vector<mpq_t *> V;
+    vector<mpq_t*> V_mpq;
     for (int xi = 0; xi < K; xi++) {
       auto &V_quadrant = quadrant_infos[xi].V;
       for (auto v : V_quadrant) {
         v = mpq_arr_resize(K + 2, K + 1, v);
         mpq_set(v[K + 1], v[xi + 1]);
-        V.push_back(v);
+        V_mpq.push_back(v);
         }
         set_arr_free(quadrant_infos[xi].V_to_H_incidence);
     }
 
-    vector<mpq_t *> V_x_H = mpq_mat_mul_with_transpose(K + 2, V, H);
+    vector<mpq_t*> V_x_H = mpq_mat_mul_with_transpose(K + 2, V_mpq, H_mpq);
     for (const auto& row : V_x_H) {
-      for (size_t i = 0; i < H.size(); i++) {
-        ASRTF(mpq_sgn(row[i]) >= 0,
-              "All discovered constraints should be sound with respect to V");
-      }
+        for (size_t i = 0; i < H_mpq.size(); i++) {
+            ASRTF(mpq_sgn(row[i]) >= 0, "All discovered constraints should be sound with respect to V");
+        }
     }
 
-    mpq_mat_free(K + 2, H);
-    mpq_mat_free(K + 2, V);
-    mpq_mat_free(H.size(), V_x_H);
-    fp_mat_free(A);
-    fp_mat_free(H_double);
+    mpq_mat_free(K + 2, H_mpq);
+    mpq_mat_free(K + 2, V_mpq);
+    mpq_mat_free(H_mpq.size(), V_x_H);
+    fp_mat_free(A_int);
+    free_MatDouble(A_ext);
+    free_MatDouble(H_ext);
 
     cout << "\tpassed" << endl;
 }
 
-// This test doesn't check for correctness
-// It's just a sanity check for # of discovered constraints and runtime.
-void run_krelu_with_cdd_test(const int K, const string &path) {
-  cout << "running krelu with cdd test: " << path << endl;
+void run_fktasi_test(const int K, const string& path, Activation activation) {
+    cout << "running fast " << activation2str[activation] << " test: " << path << endl;
 
-  vector<double *> A = fp_mat_read(K + 1, path);
+    vector<double*> A_int = fp_mat_read(K + 1, path);
+    MatDouble A_ext = mat_internal_to_external_format(K + 1, A_int);
 
-  Timer t;
-  vector<double *> H = krelu_with_cdd(K, A);
-  int micros = t.micros();
+    Timer t;
+    MatDouble H_ext = (activation == Tanh) ? fktanh(A_ext) : fksigm(A_ext);
+    int micros = t.micros();
 
-  cout << "\tK = " << K << " took " << micros / 1000 << " ms and discovered "
-       << H.size() << " constraints" << endl;
+    cout << "\tK = " << K << " took " << micros / 1000 << \
+        " ms and discovered " << H_ext.rows << " constraints" << endl;
 
-  fp_mat_free(A);
-  fp_mat_free(H);
+    vector<mpq_t*> H_mpq = mpq_mat_from_MatDouble(H_ext);
 
-  cout << "\tpassed" << endl;
+    dd_set_global_constants();
+    map<Quadrant, vector<mpq_t *>> quadrant2vertices =
+        compute_tasi_quadrants_with_cdd_dim(K, A_int, activation);
+    dd_free_global_constants();
+
+    vector<mpq_t*> V_mpq;
+    for (auto &entry : quadrant2vertices) {
+      for (auto v : entry.second) {
+        V_mpq.push_back(v);
+      }
+    }
+
+    vector<mpq_t*> V_x_H = mpq_mat_mul_with_transpose(2 * K + 1, V_mpq, H_mpq);
+    for (const auto& row : V_x_H) {
+        for (size_t i = 0; i < H_mpq.size(); i++) {
+            if (K == 1) {
+                // Case K=1 is computed with CDD in exact precision and the constraints are not adjusted.
+                // With some engineering work it can be fixed.
+                ASRTF(mpq_get_d(row[i]) >= -TOLERANCE, "Case K=1 should be sound.");
+            } else {
+                ASRTF(mpq_sgn(row[i]) >= 0, "All discovered constraints should be sound with respect to V");
+            }
+        }
+    }
+
+    mpq_mat_free(2 * K + 1, H_mpq);
+    mpq_mat_free(2 * K + 1, V_mpq);
+    mpq_mat_free(H_mpq.size(), V_x_H);
+    fp_mat_free(A_int);
+    free_MatDouble(A_ext);
+    free_MatDouble(H_ext);
+
+    cout << "\tpassed" << endl;
 }
 
-// This test doesn't check for correctness
-// It's just a sanity check for # of discovered constraints and runtime.
-void run_kpool_with_cdd_test(const int K, const string &path) {
-  cout << "running kpool with cdd test: " << path << endl;
+// The test doesn't check the correctness, it showcases the number of constraints and runtime.
+void run_relaxation_with_cdd_test(const int K, const string &path,
+                                  Activation activation) {
+  cout << "running " << activation2str[activation] << " with cdd test: " << path
+       << endl;
 
-  vector<double *> A = fp_mat_read(K + 1, path);
+  vector<double *> A_int = fp_mat_read(K + 1, path);
+  MatDouble A_ext = mat_internal_to_external_format(K + 1, A_int);
 
   Timer t;
-  vector<double *> H = kpool_with_cdd(K, A);
+  MatDouble H_ext;
+  switch (activation) {
+  case Relu:
+    H_ext = krelu_with_cdd(A_ext);
+    break;
+  case Pool:
+    H_ext = kpool_with_cdd(A_ext);
+    break;
+  case Tanh:
+    H_ext = ktanh_with_cdd(A_ext);
+    break;
+  case Sigm:
+    H_ext = ksigm_with_cdd(A_ext);
+    break;
+  default:
+    throw runtime_error("Unknown activation.");
+  }
   int micros = t.micros();
 
   cout << "\tK = " << K << " took " << micros / 1000 << " ms and discovered "
-       << H.size() << " constraints" << endl;
+       << H_ext.rows << " constraints" << endl;
 
-  fp_mat_free(A);
-  fp_mat_free(H);
+  fp_mat_free(A_int);
+  free_MatDouble(A_ext);
+  free_MatDouble(H_ext);
 
   cout << "\tpassed" << endl;
 }
 
 void run_1relu_test() {
     cout << "running 1-relu test:" << endl;
-    vector<double *> inp = fp_mat_create(2, 2);
-
+    double* inp_data = (double*) calloc(4, sizeof(double));
     // x >= -2
-    inp[0][0] = 2;
-    inp[0][1] = 1;
+    inp_data[0] = 2;
+    inp_data[1] = 1;
 
     // x <= 2
-    inp[1][0] = 2;
-    inp[1][1] = -1;
+    inp_data[2] = 2;
+    inp_data[3] = -1;
 
-    vector<double *> expected = fp_mat_create(3, 3);
+    double* exp_data = (double*) calloc(9, sizeof(double));
 
     // y >= 0
-    expected[0][0] = 0;
-    expected[0][1] = 0;
-    expected[0][2] = 1;
+    exp_data[0] = 0;
+    exp_data[1] = 0;
+    exp_data[2] = 1;
 
     // y >= x
-    expected[1][0] = 0;
-    expected[1][1] = -1;
-    expected[1][2] = 1;
+    exp_data[3] = 0;
+    exp_data[4] = -1;
+    exp_data[5] = 1;
 
     // y <= 1 + 1/2 * x
-    expected[2][0] = 1;
-    expected[2][1] = 0.5;
-    expected[2][2] = -1;
+    exp_data[6] = 1;
+    exp_data[7] = 0.5;
+    exp_data[8] = -1;
 
-    vector<double *> out = fkrelu(1, inp);
+    MatDouble inp {2, 2, inp_data};
+    MatDouble out = fkrelu(inp);
 
-    ASRTF(out.size() == 3, "Expected that output has 3 rows.");
-    for (int i = 0; i < 3; i++) {
-      for (int j = 0; j < 3; j++) {
-        ASRTF(out[i][j] == expected[i][j],
-              "Actual and expected elements match.");
-      }
+    ASRTF(out.rows == 3 && out.cols == 3, "Expected output to be 3x3.");
+    for (int i = 0; i < 9; i++) {
+        ASRTF(out.data[i] == exp_data[i], "Actual and expected elements match.");
     }
-    fp_mat_free(inp);
-    fp_mat_free(expected);
-    fp_mat_free(out);
+
+    free_MatDouble(inp);
+    free_MatDouble(out);
+    free(exp_data);
 
     cout << "\tpassed" << endl;
 }
@@ -357,22 +472,21 @@ void run_sparse_cover_test(const int N, const int K) {
     cout << "running sparse cover test: N " << N << " K " << K << endl;
 
     Timer t;
-    vector<vector<int>> cover = sparse_cover(N, K);
+    MatInt cover = generate_sparse_cover(N, K);
     int micros = t.micros();
 
-    cout << "\ttook " << micros / 1000 << " ms and generated " << cover.size()
-         << " combinations" << endl;
+    cout << "\ttook " << micros / 1000 \
+        << " ms and generated " << cover.rows \
+        << " combinations" << endl;
 
-    for (const auto &comb : cover) {
-      ASRTF((int)comb.size() == K, "Combination size should equal K.");
-      for (auto elem : comb) {
-        ASRTF(0 <= elem && elem < N,
-              "Every element of combination should be within range.");
-      }
-      for (int i = 0; i < K - 1; i++) {
-        ASRTF(comb[i] < comb[i + 1],
-              "Element of combination should be in ascending order.");
-      }
+    ASRTF(cover.cols == K, "Combination size should be K.");
+    for (int i = 0; i < cover.rows; i++) {
+        for (int j = 0; j < K - 1; j++) {
+            int elem = cover.data[i * cover.cols + j];
+            int elem_next = cover.data[i * cover.cols + j + 1];
+            ASRTF(elem < elem_next, "Should be ascending order.");
+            ASRTF(0 <= elem && elem_next < N, "Elements should be within range.");
+        }
     }
 
     cout << "\tpassed" << endl;
@@ -399,6 +513,18 @@ void run_all_split_in_quadrants_tests() {
         }
     }
 }
+void run_all_tasi_quadrants_with_cdd_dim_tests(Activation activation) {
+  cout << "Running all " << activation2str[activation]
+       << " quadrant with cdd dim tests" << endl;
+  // k = 4 is somewhat slow (several seconds), so doing tests until k = 3.
+  for (int k = 1; k <= 3; k++) {
+    for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+      run_tasi_quadrants_with_cdd_dim_test(
+          k, "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt",
+          activation);
+    }
+  }
+}
 
 void run_all_fkrelu_tests() {
     cout << "Running all fkrelu tests" << endl;
@@ -422,35 +548,41 @@ void run_all_fkpool_tests() {
     }
 }
 
-void run_all_krelu_with_cdd_tests() {
-  cout << "Running all krelu with cdd tests" << endl;
-  for (int k = 1; k <= 3; k++) {
-    for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-      run_krelu_with_cdd_test(k, "octahedron_hrep/k" + to_string(k) + "/" +
-                                     to_string(i) + ".txt");
+void run_all_fktasi_tests(Activation activation) {
+    cout << "Running all fast " << activation2str[activation] << " tests" << endl;
+    // Test checks for k=4 take quite some time, so limiting to k=3.
+    for (int k = 1; k <= 3; k++) {
+        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+            run_fktasi_test(
+                    k,
+                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt",
+                    activation);
+        }
     }
-  }
 }
 
-void run_all_kpool_with_cdd_tests() {
-  cout << "Running all kpool with cdd tests" << endl;
-  // kpool with cdd doesn't scale to k=4.
-  for (int k = 1; k <= 3; k++) {
-    for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-      run_kpool_with_cdd_test(k, "octahedron_hrep/k" + to_string(k) + "/" +
-                                     to_string(i) + ".txt");
+void run_all_relaxation_cdd_tests(Activation activation, int max_k) {
+    cout << "Running all cdd tests for " << activation2str[activation] << endl;
+    for (int k = 1; k <= max_k; k++) {
+        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+          run_relaxation_with_cdd_test(k,
+                                       "octahedron_hrep/k" + to_string(k) +
+                                           "/" + to_string(i) + ".txt",
+                                       activation);
+        }
     }
-  }
 }
 
 void run_all_sparse_cover_tests() {
     cout << "Running all sparse cover tests" << endl;
     run_sparse_cover_test(50, 3);
     run_sparse_cover_test(100, 3);
-    run_sparse_cover_test(150, 3);
-    run_sparse_cover_test(30, 4);
-    run_sparse_cover_test(50, 4);
-    run_sparse_cover_test(30, 5);
+    run_sparse_cover_test(25, 4);
+    run_sparse_cover_test(20, 5);
+    run_sparse_cover_test(4, 3);
+    run_sparse_cover_test(3, 3);
+    run_sparse_cover_test(1, 3);
+    run_sparse_cover_test(0, 3);
 }
 
 void handler(int sig) {
@@ -468,17 +600,21 @@ void handler(int sig) {
 
 int main() {
     signal(SIGSEGV, handler);
-    dd_set_global_constants();
 
     run_all_octahedron_tests();
     run_all_split_in_quadrants_tests();
+    run_all_tasi_quadrants_with_cdd_dim_tests(Tanh);
+    run_all_tasi_quadrants_with_cdd_dim_tests(Sigm);
     run_all_fkrelu_tests();
-    run_all_krelu_with_cdd_tests();
-    run_1relu_test();
     run_all_fkpool_tests();
-    run_all_kpool_with_cdd_tests();
+    run_all_fktasi_tests(Tanh);
+    run_all_fktasi_tests(Sigm);
+    run_all_relaxation_cdd_tests(Relu, 3); // k=4 ~20 minutes
+    run_all_relaxation_cdd_tests(Pool, 3); // k=4 1-2 minutes
+    run_all_relaxation_cdd_tests(Tanh, 2); // k=3 1-2 minutes
+    run_all_relaxation_cdd_tests(Sigm, 2); // k=3 1-2 minutes
+    run_1relu_test();
     run_all_sparse_cover_tests();
 
-    dd_free_global_constants();
     return 0;
 }

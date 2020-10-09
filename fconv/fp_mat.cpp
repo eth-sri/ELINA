@@ -3,12 +3,19 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <string.h>
 #include "fp_mat.h"
 #include "asrt.h"
 #include "setoper.h"
 #include "cdd.h"
 
 using namespace std;
+
+double* fp_arr_copy(const int n, double* src) {
+    auto arr = (double*) calloc(n, sizeof(double));
+    memcpy(arr, src, n * sizeof(double));
+    return arr;
+}
 
 vector<double*> fp_mat_create(const int rows, const int cols) {
     vector<double*> mat(rows);

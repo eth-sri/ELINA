@@ -1,5 +1,6 @@
 #include <map>
 #include <cassert>
+#include <math.h>
 #include "pdd.h"
 #include "utils.h"
 #include "fp_mat.h"
@@ -54,27 +55,168 @@ void project_to_relu_y_branch(const int xi, PDD &pdd_dual,
   set_enable_all(incidence[incidence.size() - 1]);
 }
 
-PDD decomposition_recursive(Quadrant &quadrant,
-                            const map<Quadrant, PDD> &quadrant2pdd,
-                            const int K) {
-  if ((int)quadrant.size() == K) {
-    PDD pdd = quadrant2pdd.at(quadrant);
-    assert(pdd.V.size() == pdd.incidence.size() &&
-           "Consistency checking V.size() equals incidence.size().");
-    if (!pdd.V.empty()) {
-      assert((int)pdd.H.size() == set_size(pdd.incidence[0]) &&
-             "H.size() should equal size of incidence[0].");
+void project_to_tasi_y_branch(const int xi, PDD &pdd_dual, const double x_bound,
+                              Activation activation) {
+  ASRTF(x_bound != 0, "x_bound has to be either negative or positive.");
+  const int dim = pdd_dual.dim;
+  pdd_dual.dim++;
+
+  // Intentionally swapped because PDD here is given in the dual view.
+  vector<double *> &V = pdd_dual.H;
+  vector<double *> &H = pdd_dual.V;
+
+  if (V.empty()) {
+    // There are no vertices - the further convex hull with an empty vertex set
+    // would not change the vertex set, thus I'm leaving it empty.
+    assert(H.empty() && "Consistency checking that H is empty.");
+    return;
+  }
+  vector<set_t> &incidence = pdd_dual.incidence;
+
+  double y_bound, k_lb, b_lb, k_ub, b_ub;
+  if (activation == Tanh) {
+    y_bound = tanh(x_bound);
+    if (x_bound < 0) {
+      k_lb = 1 - y_bound * y_bound;
+      b_lb = y_bound - x_bound * k_lb;
+      k_ub = y_bound / x_bound;
+      b_ub = 0;
+    } else {
+      k_lb = y_bound / x_bound;
+      b_lb = 0;
+      k_ub = 1 - y_bound * y_bound;
+      b_ub = y_bound - x_bound * k_ub;
     }
+  } else {
+    // Numerically stable sigmoid
+    // http://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/
+    if (x_bound < 0) {
+      y_bound = exp(x_bound);
+      y_bound = y_bound / (1 + y_bound);
+      k_lb = y_bound * (1 - y_bound);
+      b_lb = y_bound - x_bound * k_lb;
+      k_ub = (y_bound - 0.5) / x_bound;
+      b_ub = 0.5;
+    } else {
+      y_bound = 1 / (1 + exp(-x_bound));
+      k_lb = (y_bound - 0.5) / x_bound;
+      b_lb = 0.5;
+      k_ub = y_bound * (1 - y_bound);
+      b_ub = y_bound - x_bound * k_ub;
+    }
+  }
+
+  vector<double *> V_new;
+  V_new.reserve(V.size() * 2);
+  vector<int> map_lb(V.size());
+  vector<int> map_ub(V.size());
+
+  for (size_t i = 0; i < V.size(); i++) {
+    double *v_lb = (double *)realloc(V[i], sizeof(double) * (dim + 1));
+    double x_cur = v_lb[xi + 1];
+    if (x_cur == x_bound) {
+      // Both lower and upper bound would map to the same y.
+      v_lb[dim] = y_bound;
+      map_lb[i] = V_new.size();
+      map_ub[i] = V_new.size();
+      V_new.push_back(v_lb);
+      continue;
+    }
+    double *v_ub = fp_arr_copy(dim + 1, v_lb);
+    v_lb[dim] = k_lb * x_cur + b_lb;
+    v_ub[dim] = k_ub * x_cur + b_ub;
+
+    map_lb[i] = V_new.size();
+    V_new.push_back(v_lb);
+    map_ub[i] = V_new.size();
+    V_new.push_back(v_ub);
+  }
+
+  for (size_t i = 0; i < H.size(); i++) {
+    H[i] = (double *)realloc(H[i], sizeof(double) * (dim + 1));
+    H[i][dim] = 0;
+  }
+  H.resize(H.size() + 2);
+  H[H.size() - 2] = (double *)calloc(dim + 1, sizeof(double));
+  H[H.size() - 1] = (double *)calloc(dim + 1, sizeof(double));
+
+  double *h_lb = H[H.size() - 2];
+  double *h_ub = H[H.size() - 1];
+
+  // In the minus branch:
+  // y >= k * x + b equivalent -b - k * x + y >= 0
+  h_lb[0] = -b_lb;
+  h_lb[xi + 1] = -k_lb;
+  h_lb[dim] = 1;
+
+  // y <= k * x + b equivalent b + k * x - y >= 0
+  h_ub[0] = b_ub;
+  h_ub[xi + 1] = k_ub;
+  h_ub[dim] = -1;
+
+  vector<set_t> incidence_new = set_arr_create(H.size(), V_new.size());
+
+  for (size_t h = 0; h < H.size() - 2; h++) {
+    set_t inc = incidence[h];
+    set_t inc_new = incidence_new[h];
+    for (size_t v = 0; v < V.size(); v++) {
+      if (set_test_bit(inc, v)) {
+        // Note that they can map to the same vertex, but it's okay.
+        set_enable_bit(inc_new, map_lb[v]);
+        set_enable_bit(inc_new, map_ub[v]);
+      }
+    }
+  }
+
+  set_t inc_lb = incidence_new[H.size() - 2];
+  set_t inc_ub = incidence_new[H.size() - 1];
+
+  for (int v : map_lb) {
+    set_enable_bit(inc_lb, v);
+  }
+  for (int v : map_ub) {
+    set_enable_bit(inc_ub, v);
+  }
+
+  pdd_dual.H = V_new;
+  // Since incidence is reference it is important
+  // that I free it _before_ I update incidence in pdd.
+  set_arr_free(incidence);
+  pdd_dual.incidence = incidence_new;
+}
+
+PDD decomposition_recursive(Quadrant &quadrant,
+                            const map<Quadrant, PDD> &quadrant2pdd, const int K,
+                            Activation activation, const vector<double> &x_lb,
+                            const vector<double> &x_ub) {
+  const int xi = (int)quadrant.size();
+  if (xi == K) {
+    PDD pdd = quadrant2pdd.at(quadrant);
+    PDD_debug_consistency_check(pdd);
     return pdd;
   } else {
     quadrant.push_back(MINUS);
-    PDD pdd_minus = decomposition_recursive(quadrant, quadrant2pdd, K);
+    PDD pdd_minus = decomposition_recursive(quadrant, quadrant2pdd, K,
+                                            activation, x_lb, x_ub);
     quadrant.back() = PLUS;
-    PDD pdd_plus = decomposition_recursive(quadrant, quadrant2pdd, K);
+    PDD pdd_plus = decomposition_recursive(quadrant, quadrant2pdd, K,
+                                           activation, x_lb, x_ub);
     quadrant.pop_back();
 
-    project_to_relu_y_branch(quadrant.size(), pdd_minus, MINUS);
-    project_to_relu_y_branch(quadrant.size(), pdd_plus, PLUS);
+    if (activation == Relu) {
+      project_to_relu_y_branch(xi, pdd_minus, MINUS);
+      project_to_relu_y_branch(xi, pdd_plus, PLUS);
+    } else if (activation == Tanh) {
+      project_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], Tanh);
+      project_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], Tanh);
+    } else {
+      project_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], Sigm);
+      project_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], Sigm);
+    }
+
+    PDD_debug_consistency_check(pdd_minus);
+    PDD_debug_consistency_check(pdd_plus);
+
     PDD res = PDD_intersect_two_PDDs(pdd_minus, pdd_plus);
 
     return res;
@@ -83,14 +225,18 @@ PDD decomposition_recursive(Quadrant &quadrant,
 
 // TODO[gleb] Add support for multiple passes.
 vector<double *> decomposition(const int K,
-                               const map<Quadrant, PDD> &quadrant2pdd) {
+                               const map<Quadrant, PDD> &quadrant2pdd,
+                               Activation activation,
+                               const vector<double> &x_lb,
+                               const vector<double> &x_ub) {
   ASRTF(2 <= K && K <= 5, "Only 2 <= K <= 5 are currently supported.");
   ASRTF((int)quadrant2pdd.size() == POW2[K],
         "Sanity check - the number of quadrants should be 2^K.");
 
   Quadrant quadrant{};
   quadrant.reserve(K);
-  PDD res = decomposition_recursive(quadrant, quadrant2pdd, K);
+  PDD res = decomposition_recursive(quadrant, quadrant2pdd, K, activation, x_lb,
+                                    x_ub);
   vector<double *> &H = res.V;
   vector<double *> &V = res.H;
 
