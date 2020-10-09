@@ -19,6 +19,8 @@ constexpr int K2NUM_TESTS[6] = {0, 2, 4, 5, 3, 4};
 
 const string activation2str[4] = {"Relu", "Pool", "Tanh", "Sigm"};
 
+constexpr double TOLERANCE = 1.0E-10;
+
 vector<mpq_t*> mpq_mat_from_MatDouble(const MatDouble& cmat) {
     vector<mpq_t*> mat = mpq_mat_create(cmat.rows, cmat.cols);
     for (int i = 0; i < cmat.rows; i++) {
@@ -348,7 +350,13 @@ void run_fktasi_test(const int K, const string& path, Activation activation) {
     vector<mpq_t*> V_x_H = mpq_mat_mul_with_transpose(2 * K + 1, V_mpq, H_mpq);
     for (const auto& row : V_x_H) {
         for (size_t i = 0; i < H_mpq.size(); i++) {
-            ASRTF(mpq_sgn(row[i]) >= 0, "All discovered constraints should be sound with respect to V");
+            if (K == 1) {
+                // Case K=1 is computed with CDD in exact precision and the constraints are not adjusted.
+                // With some engineering work it can be fixed.
+                ASRTF(mpq_get_d(row[i]) >= -TOLERANCE, "Case K=1 should be sound.");
+            } else {
+                ASRTF(mpq_sgn(row[i]) >= 0, "All discovered constraints should be sound with respect to V");
+            }
         }
     }
 
@@ -401,44 +409,43 @@ void run_relaxation_with_cdd_test(const int K, const string& path, Activation ac
 
 void run_1relu_test() {
     cout << "running 1-relu test:" << endl;
-    vector<double*> inp = fp_mat_create(2, 2);
-
+    double* inp_data = (double*) calloc(4, sizeof(double));
     // x >= -2
-    inp[0][0] = 2;
-    inp[0][1] = 1;
+    inp_data[0] = 2;
+    inp_data[1] = 1;
 
     // x <= 2
-    inp[1][0] = 2;
-    inp[1][1] = -1;
+    inp_data[2] = 2;
+    inp_data[3] = -1;
 
-    vector<double*> expected = fp_mat_create(3, 3);
+    double* exp_data = (double*) calloc(9, sizeof(double));
 
     // y >= 0
-    expected[0][0] = 0;
-    expected[0][1] = 0;
-    expected[0][2] = 1;
+    exp_data[0] = 0;
+    exp_data[1] = 0;
+    exp_data[2] = 1;
 
     // y >= x
-    expected[1][0] = 0;
-    expected[1][1] = -1;
-    expected[1][2] = 1;
+    exp_data[3] = 0;
+    exp_data[4] = -1;
+    exp_data[5] = 1;
 
     // y <= 1 + 1/2 * x
-    expected[2][0] = 1;
-    expected[2][1] = 0.5;
-    expected[2][2] = -1;
+    exp_data[6] = 1;
+    exp_data[7] = 0.5;
+    exp_data[8] = -1;
 
-    vector<double*> out = fast_relaxation_through_decomposition(1, inp, Relu);
+    MatDouble inp {2, 2, inp_data};
+    MatDouble out = fkrelu(inp);
 
-    ASRTF(out.size() == 3, "Expected that output has 3 rows.");
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            ASRTF(out[i][j] == expected[i][j], "Actual and expected elements match.");
-        }
+    ASRTF(out.rows == 3 && out.cols == 3, "Expected output to be 3x3.");
+    for (int i = 0; i < 9; i++) {
+        ASRTF(out.data[i] == exp_data[i], "Actual and expected elements match.");
     }
-    fp_mat_free(inp);
-    fp_mat_free(expected);
-    fp_mat_free(out);
+
+    free_MatDouble(inp);
+    free_MatDouble(out);
+    free(exp_data);
 
     cout << "\tpassed" << endl;
 }
@@ -525,9 +532,8 @@ void run_all_fkpool_tests() {
 
 void run_all_fktasi_tests(Activation activation) {
     cout << "Running all fast " << activation2str[activation] << " tests" << endl;
-    // TODO[gleb] Generalize for k = 1 as well
     // Test checks for k=4 take quite some time, so limiting to k=3.
-    for (int k = 2; k <= 3; k++) {
+    for (int k = 1; k <= 3; k++) {
         for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
             run_fktasi_test(
                     k,
