@@ -100,12 +100,14 @@ def test_volume_difference(filename, activation):
 
 # Unfortunately library for computing volume often fails due to numerical errors.
 # Thus it is possible to perform this test only for some of the inputs.
-# TODO[gleb] Add tests for k = 1
+test_volume_difference("k1/1.txt", "relu")
+test_volume_difference("k1/2.txt", "relu")
 test_volume_difference("k3/1.txt", "relu")
 test_volume_difference("k3/5.txt", "relu")
 test_volume_difference("k3/1.txt", "pool")
 test_volume_difference("k3/2.txt", "pool")
-test_volume_difference("k2/1.txt", "tanh")
-test_volume_difference("k2/2.txt", "tanh")
-test_volume_difference("k2/1.txt", "sigm")
-test_volume_difference("k2/2.txt", "sigm")
+for activation in ["tanh", "sigm"]:
+    test_volume_difference("k1/1.txt", activation)
+    test_volume_difference("k1/2.txt", activation)
+    test_volume_difference("k2/1.txt", activation)
+    test_volume_difference("k2/2.txt", activation)

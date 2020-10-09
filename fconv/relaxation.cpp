@@ -123,13 +123,16 @@ vector<double*> cdd_compute_inequalities_from_vertices(dd_MatrixPtr vertices) {
 vector<double*> fast_relaxation_through_decomposition(const int K,
                                                       const vector<double*>& A,
                                                       Activation activation) {
+    ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
     ASRTF(activation == Relu || activation == Tanh || activation == Sigm,
           "Activation should be Relu, Tanh or Sigm.");
     verify_that_octahedron_and_all_xi_split_zero(K, A);
     if (K == 1 && activation == Relu) {
         return relu_1(-A[0][0], A[1][0]);
     }
-    ASRTF(2 <= K && K <= 4, "K should be within allowed range.");
+    if (K == 1) {
+        return ktasi_with_cdd(K, A, activation);
+    }
     OctahedronV oct = compute_octahedron_V(K, A);
 
     // Split in quadrants takes care of memory management of input vertices.
