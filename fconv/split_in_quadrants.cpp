@@ -38,14 +38,14 @@ void split_in_quadrants_recursive(
         // Incidence here is V to H.
         vector<set_t>& incidence,
         vector<mpq_t*>& vrep,
-        map<Quadrant, QuadrantInfo>& quadrant2info,
+        map<Quadrant, VInc_mpq>& quadrant2vinc,
         const int K,
         const int NUM_H) {
     const int xi = (int) quadrant.size();
     assert(incidence.size() == vrep.size() && "The size of incidence should equal the size of vrep.");
 
     if (xi == K) {
-        quadrant2info[quadrant] = {K + 1, vrep, incidence};
+        quadrant2vinc[quadrant] = {K + 1, vrep, incidence};
         return;
     }
 
@@ -282,14 +282,14 @@ void split_in_quadrants_recursive(
 
     quadrant.push_back(MINUS);
     split_in_quadrants_recursive(quadrant, adj_minus, incidence_minus, vrep_minus,
-                                 quadrant2info, K, NUM_H);
+                                 quadrant2vinc, K, NUM_H);
     quadrant.back() = PLUS;
     split_in_quadrants_recursive(quadrant, adj_plus, incidence_plus, vrep_plus,
-                                 quadrant2info, K, NUM_H);
+                                 quadrant2vinc, K, NUM_H);
     quadrant.pop_back();
 }
 
-map<Quadrant, QuadrantInfo> split_in_quadrants(vector<mpq_t*>& V,
+map<Quadrant, VInc_mpq> split_in_quadrants(vector<mpq_t*>& V,
                                                vector<set_t>& incidence,
                                                const vector<Adj>& orthant_adjacencies,
                                                const int K) {
@@ -304,8 +304,8 @@ map<Quadrant, QuadrantInfo> split_in_quadrants(vector<mpq_t*>& V,
 
     Quadrant quadrant {};
     quadrant.reserve(K);
-    map<Quadrant, QuadrantInfo> quadrant2info;
-    split_in_quadrants_recursive(quadrant, orthant_adjacencies, incidence, V, quadrant2info, K, NUM_H);
+    map<Quadrant, VInc_mpq> quadrant2vinc;
+    split_in_quadrants_recursive(quadrant, orthant_adjacencies, incidence, V, quadrant2vinc, K, NUM_H);
 
-    return quadrant2info;
+    return quadrant2vinc;
 }

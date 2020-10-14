@@ -24,20 +24,17 @@ void project_to_relu_y_branch(const int xi, PDD& pdd_dual, const Polarity polari
     vector<set_t>& incidence = pdd_dual.incidence;
 
     for (size_t i = 0; i < V.size(); i++) {
-        V[i] = (double*) realloc(V[i], sizeof(double) * (dim + 1));
-        if (polarity == MINUS) {
-            V[i][dim] = 0;
-        } else {
+        V[i] = fp_arr_resize(dim + 1, dim, V[i]);
+        if (polarity == PLUS) {
             V[i][dim] = V[i][xi + 1];
         }
     }
     for (size_t i = 0; i < H.size(); i++) {
-        H[i] = (double*) realloc(H[i], sizeof(double) * (dim + 1));
-        H[i][dim] = 0;
+        H[i] = fp_arr_resize(dim + 1, dim, H[i]);
     }
     H.resize(H.size() + 2);
-    H[H.size() - 2] = (double*) calloc(dim + 1, sizeof(double));
-    H[H.size() - 1] = (double*) calloc(dim + 1, sizeof(double));
+    H[H.size() - 2] = fp_arr_create(dim + 1);
+    H[H.size() - 1] = fp_arr_create(dim + 1);
 
     H[H.size() - 2][dim] = 1;
     H[H.size() - 1][dim] = -1;
@@ -113,7 +110,7 @@ void project_to_tasi_y_branch(const int xi,
     vector<int> map_ub(V.size());
 
     for (size_t i = 0; i < V.size(); i++) {
-        double* v_lb = (double*) realloc(V[i], sizeof(double) * (dim + 1));
+        double* v_lb = fp_arr_resize(dim + 1, dim, V[i]);
         double x_cur = v_lb[xi + 1];
         if (x_cur == x_bound) {
             // Both lower and upper bound would map to the same y.
@@ -134,12 +131,11 @@ void project_to_tasi_y_branch(const int xi,
     }
 
     for (size_t i = 0; i < H.size(); i++) {
-        H[i] = (double*) realloc(H[i], sizeof(double) * (dim + 1));
-        H[i][dim] = 0;
+        H[i] = fp_arr_resize(dim + 1, dim, H[i]);
     }
     H.resize(H.size() + 2);
-    H[H.size() - 2] = (double*) calloc(dim + 1, sizeof(double));
-    H[H.size() - 1] = (double*) calloc(dim + 1, sizeof(double));
+    H[H.size() - 2] = fp_arr_create(dim + 1);
+    H[H.size() - 1] = fp_arr_create(dim + 1);
 
     double* h_lb = H[H.size() - 2];
     double* h_ub = H[H.size() - 1];
