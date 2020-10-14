@@ -40,12 +40,22 @@ enum Activation {
     Sigm = 3
 };
 
+struct DD_mpq {
+    int dim;
+    vector<mpq_t*> V;
+    // Since the input H is given in doubles, here H is also in doubles.
+    vector<double*> H;
+    vector<set_t> V_to_H_incidence;
+};
+
 using Quadrant = vector<Polarity>;
 
-struct QuadrantInfo {
-  int dim;
-  vector<mpq_t *> V;
-  vector<set_t> V_to_H_incidence;
+struct VInc_mpq {
+    int dim;
+    vector<mpq_t*> V;
+    // Normally used for quadrants where
+    // H consists of the shared A plus K constraints that define quadrant
+    vector<set_t> V_to_H_incidence;
 };
 
 vector<int> compute_maximal_indexes(const vector<set_t>& incidence);
@@ -55,6 +65,8 @@ dd_PolyhedraPtr cdd_Matrix_to_Poly(dd_MatrixPtr A);
 vector<double*> mat_external_to_internal_format(const MatDouble &cmat);
 
 MatDouble mat_internal_to_external_format(const int n, const vector<double*>& A);
+
+int coef2index(const vector<int>& coef);
 
 constexpr int POW2[11] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
 

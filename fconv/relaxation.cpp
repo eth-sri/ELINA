@@ -1,8 +1,10 @@
 #include <map>
 #include <cassert>
 #include <cstring>
+#include <cmath>
 #include "relaxation.h"
 #include "octahedron.h"
+#include "quadrants.h"
 #include "split_in_quadrants.h"
 #include "decomposition.h"
 #include "pdd.h"
@@ -107,7 +109,7 @@ vector<double*> cdd_compute_inequalities_from_vertices(dd_MatrixPtr vertices) {
     for (auto h : H) {
         double abs_coef = 0;
         for (int i = 0; i < dim; i++) {
-          abs_coef = max(abs(h[i]), abs_coef);
+            abs_coef = max(fabs(h[i]), abs_coef);
         }
         ASRTF(abs_coef != 0, "Inequality cannot consist fully of zeros.");
         for (int i = 0; i < dim; i++) {
@@ -133,71 +135,70 @@ vector<double*> fast_relaxation_through_decomposition(const int K,
     if (K == 1) {
         return ktasi_with_cdd(K, A, activation);
     }
-    OctahedronV oct = compute_octahedron_V(K, A);
+    OctahedronV oct = get_octahedron_V(K, A);
 
     // Split in quadrants takes care of memory management of input vertices.
-    map<Quadrant, QuadrantInfo> quadrant2info =
-        split_in_quadrants(oct.V, oct.incidence, oct.orthant_adjacencies, K);
+    map<Quadrant, VInc_mpq> quadrant2vinc = split_in_quadrants(oct.V,
+                                                               oct.incidence,
+                                                               oct.orthant_adjacencies,
+                                                               K);
 
     map<Quadrant, PDD> quadrant2pdd;
-    for (auto &pair : quadrant2info) {
-      const Quadrant &quadrant = pair.first;
-      vector<mpq_t *> &V_mpq = pair.second.V;
+    for (auto& entry : quadrant2vinc) {
+        const Quadrant& quadrant = entry.first;
+        vector<mpq_t*>& V_mpq = entry.second.V;
 
-      if (V_mpq.empty()) {
-        // Input in the quadrant is the empty set.
-        quadrant2pdd[quadrant] = {K + 1, {}, {}, {}};
-        continue;
-      }
-
-      vector<double *> V = mpq_mat_to_fp(K + 1, V_mpq);
-      mpq_mat_free(K + 1, V_mpq);
-
-      const vector<set_t> &incidence_V_to_H = pair.second.V_to_H_incidence;
-      assert(incidence_V_to_H.size() == V.size() &&
-             "Incidence_V_to_H.size() should equal V.size()");
-      vector<set_t> incidence_H_to_V_with_redundancy =
-          set_arr_transpose(incidence_V_to_H);
-      set_arr_free(incidence_V_to_H);
-      assert(
-          incidence_H_to_V_with_redundancy.size() == A.size() + K &&
-          "Incidence_H_to_V_with_redundancy.size() should equal A.size() + K");
-      vector<int> maximal_H =
-          compute_maximal_indexes(incidence_H_to_V_with_redundancy);
-      set_t is_maximal = set_create(incidence_H_to_V_with_redundancy.size());
-      for (auto i : maximal_H) {
-        set_enable_bit(is_maximal, i);
-      }
-
-      vector<double *> H(maximal_H.size());
-      vector<set_t> incidence_H_to_V(maximal_H.size());
-
-      int count = 0;
-      for (size_t i = 0; i < incidence_H_to_V_with_redundancy.size(); i++) {
-        if (!set_test_bit(is_maximal, i)) {
-          set_free(incidence_H_to_V_with_redundancy[i]);
-          continue;
+        if (V_mpq.empty()) {
+            // Input in the quadrant is the empty set.
+            quadrant2pdd[quadrant] = {K + 1, {}, {}, {}};
+            continue;
         }
-        double *h = (double *)calloc(K + 1, sizeof(double));
-        H[count] = h;
-        incidence_H_to_V[count] = incidence_H_to_V_with_redundancy[i];
-        count++;
-        if (i < A.size()) {
-          memcpy(h, A[i], sizeof(double) * (K + 1));
-        } else {
-          int xi = i - (int)A.size();
-          assert(0 <= xi && xi < K && "Sanity checking the range of xi.");
-          if (quadrant[xi] == MINUS) {
-            h[xi + 1] = -1;
-          } else {
-            h[xi + 1] = 1;
-          }
+
+        vector<double*> V = mpq_mat_to_fp(K + 1, V_mpq);
+        mpq_mat_free(K + 1, V_mpq);
+
+        const vector<set_t>& incidence_V_to_H = entry.second.V_to_H_incidence;
+        assert(
+                incidence_V_to_H.size() == V.size() &&
+                "Incidence_V_to_H.size() should equal V.size()");
+        vector<set_t> incidence_H_to_V = set_arr_transpose(incidence_V_to_H);
+        set_arr_free(incidence_V_to_H);
+        assert(
+                incidence_H_to_V.size() == A.size() + K &&
+                "Incidence_H_to_V.size() should equal A.size() + K");
+        vector<int> irredund_idx = compute_maximal_indexes(incidence_H_to_V);
+        set_t is_irredund = set_create(incidence_H_to_V.size());
+        for (auto i : irredund_idx) {
+            set_enable_bit(is_irredund, i);
         }
-      }
-      assert(count == (int)maximal_H.size() &&
-             "count should equal maximal_H.size()");
-      set_free(is_maximal);
-      quadrant2pdd[quadrant] = {K + 1, V, H, incidence_H_to_V};
+
+        vector<double*> H_irredund = fp_mat_create(irredund_idx.size(), K + 1);
+        vector<set_t> incidence_irredund(irredund_idx.size());
+
+        size_t count = 0;
+        for (size_t i = 0; i < incidence_H_to_V.size(); i++) {
+            if (!set_test_bit(is_irredund, i)) {
+                set_free(incidence_H_to_V[i]);
+                continue;
+            }
+            double* h = H_irredund[count];
+            incidence_irredund[count] = incidence_H_to_V[i];
+            count++;
+            if (i < A.size()) {
+                fp_arr_set(K + 1, h, A[i]);
+            } else {
+                int xi = i - (int) A.size();
+                assert(0 <= xi && xi < K && "Sanity checking the range of xi.");
+                if (quadrant[xi] == MINUS) {
+                    h[xi + 1] = -1;
+                }  else {
+                    h[xi + 1] = 1;
+                }
+            }
+        }
+        assert(count == irredund_idx.size() && "count should equal maximal_H.size()");
+        set_free(is_irredund);
+        quadrant2pdd[quadrant] = {K + 1, V, H_irredund, incidence_irredund};
     }
 
     // Lower and upper bounds are needed for decomposition of tanh and sigmoid functions.
@@ -217,36 +218,35 @@ vector<double*> fast_relaxation_through_decomposition(const int K,
 vector<double*> krelu_with_cdd(const int K, const vector<double*>& A) {
     // No need to verify since CDD can work with input in any format.
     ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
-    map<Quadrant, QuadrantInfo> quadrant2info =
-        compute_quadrants_with_cdd(K, A);
+    map<Quadrant, VInc_mpq> quadrant2vinc = get_quadrants_cdd(K, A);
 
     size_t num_vertices = 0;
-    for (auto &entry : quadrant2info) {
-      num_vertices += entry.second.V.size();
+    for (auto& entry : quadrant2vinc) {
+        num_vertices += entry.second.V.size();
     }
 
     dd_MatrixPtr vertices = dd_CreateMatrix(num_vertices, 2 * K + 1);
     size_t counter = 0;
 
-    for (auto &entry : quadrant2info) {
-      const auto &quadrant = entry.first;
-      auto &V_quadrant = entry.second.V;
+    for (auto& entry : quadrant2vinc) {
+        const auto& quadrant = entry.first;
+        auto& V_quadrant = entry.second.V;
 
-      for (const auto &v : V_quadrant) {
-        mpq_t *v_projection = vertices->matrix[counter];
-        counter++;
-        mpq_arr_set(K + 1, v_projection, v);
-        for (int i = 0; i < K; i++) {
-          if (quadrant[i] == PLUS) {
-            // Only need to set for the case of PLUS,
-            // because in case of MINUS there should be 0.
-            // And it is already there automatically.
-            mpq_set(v_projection[1 + i + K], v[1 + i]);
-          }
+        for (const auto& v : V_quadrant) {
+            mpq_t* v_projection = vertices->matrix[counter];
+            counter++;
+            mpq_arr_set(K + 1, v_projection, v);
+            for (int i = 0; i < K; i++) {
+                if (quadrant[i] == PLUS) {
+                    // Only need to set for the case of PLUS,
+                    // because in case of MINUS there should be 0.
+                    // And it is already there automatically.
+                    mpq_set(v_projection[1 + i + K], v[1 + i]);
+                }
+            }
         }
-      }
-      mpq_mat_free(K + 1, V_quadrant);
-      set_arr_free(entry.second.V_to_H_incidence);
+        mpq_mat_free(K + 1, V_quadrant);
+        set_arr_free(entry.second.V_to_H_incidence);
     }
     assert(counter == num_vertices && "Counter should equal the number of vertices.");
 
@@ -262,92 +262,81 @@ vector<double*> fkpool(const int K, const vector<double*>& A) {
         return pool_1(A);
     }
 
-    // TODO[gleb] Implement specialized fast compute_max_pool_quadrants.
-    vector<QuadrantInfo> quadrant_infos =
-        compute_max_pool_quadrants_with_cdd(K, A);
-    assert((int)quadrant_infos.size() == K &&
-           "Number of quadrants should be K.");
+    vector<DD_mpq> quadrants = get_pool_quadrants(K, A);
+    assert((int) quadrants.size() == K && "Number of quadrants should be K.");
 
-    vector<PDD> quadrant_pdds;
+    vector<PDD> quadrants_pdds;
     for (int xi = 0; xi < K; xi++) {
-      vector<mpq_t *> &V_mpq = quadrant_infos[xi].V;
+        vector<mpq_t*>& V_mpq = quadrants[xi].V;
+        vector<double*>& H = quadrants[xi].H;
 
-      if (V_mpq.empty()) {
-        quadrant_pdds.push_back({K + 2, {}, {}, {}});
-        continue;
+        if (V_mpq.empty()) {
+            quadrants_pdds.push_back({K + 2, {}, {}, {}});
+            continue;
         }
 
         vector<double*> V = mpq_mat_to_fp(K + 1, V_mpq);
         mpq_mat_free(K + 1, V_mpq);
         for (size_t i = 0; i < V.size(); i++) {
-          V[i] = (double *)realloc(V[i], (K + 2) * sizeof(double));
-          V[i][K + 1] = V[i][xi + 1];
+            V[i] = fp_arr_resize(K + 2, K + 1, V[i]);
+            V[i][K + 1] = V[i][xi + 1];
         }
 
-        const vector<set_t> &incidence_V_to_H =
-            quadrant_infos[xi].V_to_H_incidence;
+        const vector<set_t>& incidence_V_to_H = quadrants[xi].V_to_H_incidence;
         assert(
                 incidence_V_to_H.size() == V.size() &&
                 "Incidence_V_to_H.size() should equal V.size()");
-        vector<set_t> incidence_H_to_V_with_redundancy =
-            set_arr_transpose(incidence_V_to_H);
+        vector<set_t> incidence_H_to_V = set_arr_transpose(incidence_V_to_H);
         set_arr_free(incidence_V_to_H);
-        assert(incidence_H_to_V_with_redundancy.size() == A.size() + K - 1 &&
-               "Incidence_H_to_V_with_redundancy.size() should equal A.size() "
-               "+ K - 1");
+        assert(
+                incidence_H_to_V.size() == H.size() &&
+                "Incidence_H_to_V.size() should equal H.size()");
 
-        vector<int> maximal_H =
-            compute_maximal_indexes(incidence_H_to_V_with_redundancy);
-        set_t is_maximal = set_create(incidence_H_to_V_with_redundancy.size());
-        for (auto i : maximal_H) {
-          set_enable_bit(is_maximal, i);
+        vector<int> irredund_idx = compute_maximal_indexes(incidence_H_to_V);
+        set_t is_irredund = set_create(incidence_H_to_V.size());
+        for (auto i : irredund_idx) {
+            set_enable_bit(is_irredund, i);
         }
 
-        // maximal_H.size() + 2 because there will also be new equality y = xi.
-        vector<double *> H = fp_mat_create(maximal_H.size() + 2, K + 2);
-        vector<set_t> incidence_H_to_V(maximal_H.size() + 2);
+        // irredund_idx.size() + 2 because there will also be new equality y = xi.
+        vector<double*> H_irredund(irredund_idx.size() + 2);
+        vector<set_t> incidence_irredund(irredund_idx.size() + 2);
 
-        int count = 0;
-        for (size_t i = 0; i < incidence_H_to_V_with_redundancy.size(); i++) {
-          if (!set_test_bit(is_maximal, i)) {
-            set_free(incidence_H_to_V_with_redundancy[i]);
-            continue;
-          }
-          double *h = H[count];
-          incidence_H_to_V[count] = incidence_H_to_V_with_redundancy[i];
-          count++;
-          if (i < A.size()) {
-            memcpy(h, A[i], sizeof(double) * (K + 1));
-          } else {
-            int xj = i - (int)A.size();
-            if (xj >= xi) {
-              xj++;
+        size_t count = 0;
+        for (size_t i = 0; i < incidence_H_to_V.size(); i++) {
+            if (!set_test_bit(is_irredund, i)) {
+                free(H[i]);
+                set_free(incidence_H_to_V[i]);
+                continue;
             }
-            assert(0 <= xj && xj < K && "Sanity checking the range of xj.");
-            // xi >= xj
-            h[xi + 1] = 1;
-            h[xj + 1] = -1;
-          }
+            H_irredund[count] = fp_arr_resize(K + 2, K + 1, H[i]);
+            incidence_irredund[count] = incidence_H_to_V[i];
+            count++;
         }
-        assert(count == (int)maximal_H.size() &&
-               "count should equal maximal_H.size()");
-        set_free(is_maximal);
+        assert(count == irredund_idx.size() && "count should equal irredund_idx.size()");
+        set_free(is_irredund);
 
         // y = xi
-        H[count][xi + 1] = 1;
-        H[count][K + 1] = -1;
-        H[count + 1][xi + 1] = -1;
-        H[count + 1][K + 1] = 1;
+        double* h1 = fp_arr_create(K + 2);
+        double* h2 = fp_arr_create(K + 2);
+        h1[xi + 1] = 1;
+        h1[K + 1] = -1;
+        h2[xi + 1] = -1;
+        h2[K + 1] = 1;
+        set_t inc1 = set_create(V.size());
+        set_t inc2 = set_create(V.size());
+        set_enable_all(inc1);
+        set_enable_all(inc2);
 
-        incidence_H_to_V[count] = set_create(V.size());
-        set_enable_all(incidence_H_to_V[count]);
-        incidence_H_to_V[count + 1] = set_create(V.size());
-        set_enable_all(incidence_H_to_V[count + 1]);
+        H_irredund[count] = h1;
+        H_irredund[count + 1] = h2;
+        incidence_irredund[count] = inc1;
+        incidence_irredund[count + 1] = inc2;
 
-        quadrant_pdds.push_back({K + 2, V, H, incidence_H_to_V});
+        quadrants_pdds.push_back({K + 2, V, H_irredund, incidence_irredund});
     }
 
-    PDD res = PDD_intersect_all(quadrant_pdds);
+    PDD res = PDD_intersect_all(quadrants_pdds);
     vector<double*>& H = res.V;
     vector<double*>& V = res.H;
     PDD_adjust_H_for_soundness_finite_polytope(K + 2, H, V);
@@ -362,29 +351,27 @@ vector<double*> kpool_with_cdd(const int K, const vector<double*>& A) {
     // No need to verify since CDD can work with input in any format.
     ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
 
-    vector<QuadrantInfo> quadrant_infos =
-        compute_max_pool_quadrants_with_cdd(K, A);
-    assert((int)quadrant_infos.size() == K &&
-           "Number of quadrants should be K.");
+    vector<DD_mpq> quadrants = get_pool_quadrants_cdd(K, A);
+    assert((int) quadrants.size() == K && "Number of quadrants should be K.");
 
     size_t num_vertices = 0;
-    for (auto &info : quadrant_infos) {
-      num_vertices += info.V.size();
+    for (auto& dd : quadrants) {
+        num_vertices += dd.V.size();
     }
 
     dd_MatrixPtr vertices = dd_CreateMatrix(num_vertices, K + 2);
     size_t counter = 0;
 
     for (int xi = 0; xi < K; xi++) {
-      auto &V_quadrant = quadrant_infos[xi].V;
-      for (mpq_t *v : V_quadrant) {
-        mpq_t *v_projection = vertices->matrix[counter];
-        counter++;
-        mpq_arr_set(K + 1, v_projection, v);
-        mpq_set(v_projection[K + 1], v[xi + 1]);
+        auto& V_quadrant = quadrants[xi].V;
+        for (mpq_t* v : V_quadrant) {
+            mpq_t *v_projection = vertices->matrix[counter];
+            counter++;
+            mpq_arr_set(K + 1, v_projection, v);
+            mpq_set(v_projection[K + 1], v[xi + 1]);
         }
         mpq_mat_free(K + 1, V_quadrant);
-        set_arr_free(quadrant_infos[xi].V_to_H_incidence);
+        set_arr_free(quadrants[xi].V_to_H_incidence);
     }
     assert(counter == num_vertices && "Counter should equal the number of vertices.");
 
@@ -399,22 +386,21 @@ vector<double*> ktasi_with_cdd(int K, const vector<double*>& A, Activation activ
     ASRTF(activation == Tanh || activation == Sigm, "Only Tanh and Sigm are supported.");
     verify_that_octahedron_and_all_xi_split_zero(K, A);
 
-    map<Quadrant, vector<mpq_t *>> quadrant2vertices =
-        compute_tasi_quadrants_with_cdd(K, A, activation);
+    map<Quadrant, vector<mpq_t*>> quadrant2V = get_tasi_quadrants_cdd(K, A, activation);
 
     size_t num_vertices = 0;
-    for (auto &entry : quadrant2vertices) {
-      num_vertices += entry.second.size();
+    for (auto& entry : quadrant2V) {
+        num_vertices += entry.second.size();
     }
 
     dd_MatrixPtr vertices = dd_CreateMatrix(num_vertices, 2 * K + 1);
     size_t counter = 0;
-    for (auto &entry : quadrant2vertices) {
-      for (mpq_t *v : entry.second) {
-        mpq_arr_set(2 * K + 1, vertices->matrix[counter], v);
-        counter++;
-      }
-      mpq_mat_free(K + 1, entry.second);
+    for (auto& entry : quadrant2V) {
+        for (mpq_t* v : entry.second) {
+            mpq_arr_set(2 * K + 1, vertices->matrix[counter], v);
+            counter++;
+        }
+        mpq_mat_free(K + 1, entry.second);
     }
     assert(counter == num_vertices && "Counter should equal the number of vertices.");
 
