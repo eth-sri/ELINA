@@ -11,9 +11,28 @@
 
 using namespace std;
 
+double* fp_arr_create(const int n) {
+    return (double*) calloc(n, sizeof(double));
+}
+
 double* fp_arr_copy(const int n, double* src) {
     auto arr = (double*) calloc(n, sizeof(double));
     memcpy(arr, src, n * sizeof(double));
+    return arr;
+}
+
+void fp_arr_set(const int n, double* dst, double* src) {
+    memcpy(dst, src, n * sizeof(double));
+}
+
+double* fp_arr_resize(const int new_n, const int old_n, double* arr) {
+    if (new_n == old_n) {
+        return arr;
+    }
+    arr = (double*) realloc(arr, new_n * sizeof(double));
+    for (int i = old_n; i < new_n; i++) {
+        arr[i] = 0;
+    }
     return arr;
 }
 
@@ -21,6 +40,14 @@ vector<double*> fp_mat_create(const int rows, const int cols) {
     vector<double*> mat(rows);
     for (int i = 0; i < rows; i++) {
         mat[i] = (double*) calloc(cols, sizeof(double));
+    }
+    return mat;
+}
+
+vector<double*> fp_mat_copy(const int cols, const vector<double*>& src) {
+    vector<double*> mat(src.size());
+    for (size_t i = 0; i < src.size(); i++) {
+        mat[i] = fp_arr_copy(cols, src[i]);
     }
     return mat;
 }
@@ -72,20 +99,20 @@ vector<double*> fp_mat_read(const int cols, const string& path) {
     return mat;
 }
 
-void fp_mat_print(const int n, const vector<double*>& mat) {
+void fp_mat_print(const int cols, const vector<double*>& mat) {
     for (size_t i = 0; i < mat.size(); i++) {
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < cols; j++) {
             cout << mat[i][j] << " ";
         }
         cout << endl;
     }
 }
 
-dd_MatrixPtr fp_mat_to_cdd(const int n, const vector<double*>& A) {
-    dd_MatrixPtr cdd_A = dd_CreateMatrix(A.size(), n);
+dd_MatrixPtr fp_mat_to_cdd(const int cols, const vector<double*>& A) {
+    dd_MatrixPtr cdd_A = dd_CreateMatrix(A.size(), cols);
     ASRTF(cdd_A != nullptr, "Failed to create cdd_A.");
     for (int i = 0; i < (int) A.size(); i++) {
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < cols; j++) {
             dd_set_d(cdd_A->matrix[i][j], A[i][j]);
         }
     }

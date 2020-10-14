@@ -89,3 +89,22 @@ MatDouble mat_internal_to_external_format(const int n, const vector<double*>& A)
     }
     return {(int) A.size(), n, mat};
 }
+
+int coef2index(const vector<int>& coef) {
+    const int K = (int) coef.size();
+    int index = 0;
+    int offset = 1;
+    for (int i = K - 1; i >= 0; i--) {
+        if (coef[i] == 0) {
+            index += offset;
+        } else if (coef[i] == -1) {
+            index += 2 * offset;
+        }
+        offset *= 3;
+    }
+    assert(index != offset / 2 && "Index cannot be in the middle because it means coefs are all zero.");
+    if (index > offset / 2) {
+        index--;
+    }
+    return index;
+}

@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include "fconv.h"
 #include "octahedron.h"
+#include "quadrants.h"
 #include "utils.h"
 #include "mpq.h"
 #include "split_in_quadrants.h"
@@ -20,6 +21,11 @@ constexpr int K2NUM_TESTS[6] = {0, 3, 4, 5, 3, 4};
 const string activation2str[4] = {"Relu", "Pool", "Tanh", "Sigm"};
 
 constexpr double TOLERANCE = 1.0E-10;
+
+void print_acceleration_info(int micros_fast, int micros_slow) {
+    cout << "\tAcceleration is " << (double) micros_slow / micros_fast << endl;
+    cout << "\tFrom " << micros_slow / 1000 << " ms to " << micros_fast / 1000 << " ms" << endl;
+}
 
 vector<mpq_t*> mpq_mat_from_MatDouble(const MatDouble& cmat) {
     vector<mpq_t*> mat = mpq_mat_create(cmat.rows, cmat.cols);
@@ -63,21 +69,21 @@ void run_octahedron_test(const int K, const string& path) {
     vector<double*> A = fp_mat_read(K + 1, path);
 
     Timer t_fast;
-    OctahedronV fast = compute_octahedron_V(K, A);
+    OctahedronV fast = get_octahedron_V(K, A);
     int micros_fast = t_fast.micros();
     Timer t_slow;
-    OctahedronV slow = compute_V_with_cdd(K, A);
+    OctahedronV slow = get_octahedron_V_cdd(K, A);
     int micros_slow = t_slow.micros();
 
-    cout << "\tAcceleration is " << (double) micros_slow / micros_fast << endl;
-    cout << "\tFrom " << micros_slow / 1000 << " ms to " << micros_fast / 1000 << " ms" << endl;
+    print_acceleration_info(micros_fast, micros_slow);
 
     vector<int> mapping = get_bijective_mapping_for_matrix_rows(K + 1, fast.V, slow.V);
 
     set<Adj> adjacencies_set(fast.orthant_adjacencies.begin(), fast.orthant_adjacencies.end());
 
     // Comparing adjacencies
-    ASRTF(fast.orthant_adjacencies.size() == slow.orthant_adjacencies.size(), "The size of adjacencies should match.");
+    ASRTF(fast.orthant_adjacencies.size() == slow.orthant_adjacencies.size(),
+          "The size of adjacencies should match.");
     vector<Adj> adjacencies_mapped;
     for (const auto& adj : fast.orthant_adjacencies) {
         int first = min(mapping[adj.first], mapping[adj.second]);
@@ -124,24 +130,22 @@ void run_split_in_quadrants_test(const int K, const string& path) {
     const int num_h = (int) A.size();
 
     Timer t_fast;
-    OctahedronV oct_fast = compute_octahedron_V(K, A);
-    map<Quadrant, QuadrantInfo> fast = split_in_quadrants(
-            oct_fast.V,
-            oct_fast.incidence,
-            oct_fast.orthant_adjacencies,
-            K);
+    OctahedronV oct_fast = get_octahedron_V(K, A);
+    map<Quadrant, VInc_mpq> fast = split_in_quadrants(oct_fast.V,
+                                                    oct_fast.incidence,
+                                                    oct_fast.orthant_adjacencies,
+                                                    K);
     int micros_fast = t_fast.micros();
 
     Timer t_slow;
-    map<Quadrant, QuadrantInfo> slow = compute_quadrants_with_cdd(K, A);
+    map<Quadrant, VInc_mpq> slow = get_quadrants_cdd(K, A);
     int micros_slow = t_slow.micros();
 
-    cout << "\tAcceleration is " << (double) micros_slow / micros_fast << endl;
-    cout << "\tFrom " << micros_slow / 1000 << " ms to " << micros_fast / 1000 << " ms" << endl;
+    print_acceleration_info(micros_fast, micros_slow);
 
     for (auto& p : slow) {
-        QuadrantInfo mine = fast.find(p.first)->second;
-        QuadrantInfo gt = p.second;
+        VInc_mpq mine = fast.find(p.first)->second;
+        VInc_mpq gt = p.second;
 
         ASRTF(mine.V.size() == gt.V.size(), "Sizes should match.");
 
@@ -177,7 +181,36 @@ void run_split_in_quadrants_test(const int K, const string& path) {
     cout << "\tpassed" << endl;
 }
 
-void run_tasi_quadrants_with_cdd_dim_test(const int K, const string& path, Activation activation) {
+void run_pool_quadrants_test(const int K, const string& path) {
+    cout << "running pool quadrants test: " << path << endl;
+    dd_set_global_constants();
+
+    vector<double*> A = fp_mat_read(K + 1, path);
+
+    Timer t_fast;
+    vector<DD_mpq> quadrants_fast = get_pool_quadrants(K, A);
+    int micros_fast = t_fast.micros();
+
+    Timer t_slow;
+    vector<DD_mpq> quadrants_slow = get_pool_quadrants_cdd(K, A);
+    int micros_slow = t_slow.micros();
+
+    print_acceleration_info(micros_fast, micros_slow);
+
+    ASRTF((int) quadrants_fast.size() == K, "Number of quadrants should be K.");
+    ASRTF((int) quadrants_slow.size() == K, "Number of quadrants should be K.");
+
+    for (int i = 0; i < K; i++) {
+        // Note that due to different computation logic we cannot compare
+        // H or incidences - we only compare vertices.
+        get_bijective_mapping_for_matrix_rows(K + 1, quadrants_fast[i].V, quadrants_slow[i].V);
+    }
+
+    dd_free_global_constants();
+    cout << "\tpassed" << endl;
+}
+
+void run_tasi_quadrants_cdd_dim_test(const int K, const string& path, Activation activation) {
     cout << "running " << activation2str[activation] << \
         " quadrants with cdd dim test: " << path << endl;
 
@@ -186,23 +219,18 @@ void run_tasi_quadrants_with_cdd_dim_test(const int K, const string& path, Activ
     vector<double*> A = fp_mat_read(K + 1, path);
 
     Timer t_fast;
-    map<Quadrant, vector<mpq_t*>> quadrant2vertices_fast =
-            compute_tasi_quadrants_with_cdd_dim(K, A, activation);
+    map<Quadrant, vector<mpq_t*>> quadrant2V_fast = get_tasi_quadrants_cdd_dim(K, A, activation);
     int micros_fast = t_fast.micros();
 
     Timer t_slow;
-    map<Quadrant, vector<mpq_t*>> quadrant2vertices_slow =
-            compute_tasi_quadrants_with_cdd(K, A, activation);
+    map<Quadrant, vector<mpq_t*>> quadrant2V_slow = get_tasi_quadrants_cdd(K, A, activation);
     int micros_slow = t_slow.micros();
 
-    cout << "\tAcceleration is " << (double) micros_slow / micros_fast << endl;
-    cout << "\tFrom " << micros_slow / 1000 << " ms to " << micros_fast / 1000 << " ms" << endl;
+    print_acceleration_info(micros_fast, micros_slow);
 
-    const vector<Quadrant>& quadrants = K2QUADRANTS[K];
-
-    for (const auto& q : quadrants) {
-        const vector<mpq_t*>& V_fast = quadrant2vertices_fast[q];
-        const vector<mpq_t*>& V_slow = quadrant2vertices_slow[q];
+    for (auto q : K2QUADRANTS[K]) {
+        vector<mpq_t*>& V_fast = quadrant2V_fast[q];
+        vector<mpq_t*>& V_slow = quadrant2V_slow[q];
         get_bijective_mapping_for_matrix_rows(2 * K + 1, V_fast, V_slow);
         mpq_mat_free(2 * K + 1, V_fast);
         mpq_mat_free(2 * K + 1, V_slow);
@@ -229,13 +257,13 @@ void run_fkrelu_test(const int K, const string& path) {
     vector<mpq_t*> H_mpq = mpq_mat_from_MatDouble(H_ext);
 
     dd_set_global_constants();
-    map<Quadrant, QuadrantInfo> quadrant2info = compute_quadrants_with_cdd(K, A_int);
+    map<Quadrant, VInc_mpq> quadrant2vinc = get_quadrants_cdd(K, A_int);
     dd_free_global_constants();
 
     // Now I will compute the final V. This will allow me to verify that produced constraints do not
     // violate any of the original vertices and thus I produce a sound overapproximation.
     vector<mpq_t*> V_mpq;
-    for (auto& entry : quadrant2info) {
+    for (auto& entry : quadrant2vinc) {
         const auto& quadrant = entry.first;
         auto& V_quadrant = entry.second.V;
 
@@ -293,20 +321,21 @@ void run_fkpool_test(const int K, const string& path) {
     vector<mpq_t*> H_mpq = mpq_mat_from_MatDouble(H_ext);
 
     dd_set_global_constants();
-    vector<QuadrantInfo> quadrant_infos = compute_max_pool_quadrants_with_cdd(K, A_int);
+    vector<DD_mpq> quadrants = get_pool_quadrants_cdd(K, A_int);
     dd_free_global_constants();
 
     // Now I will compute the final V. This will allow me to verify that produced constraints do not
     // violate any of the original vertices and thus I produce a sound overapproximation.
     vector<mpq_t*> V_mpq;
     for (int xi = 0; xi < K; xi++) {
-        auto& V_quadrant = quadrant_infos[xi].V;
+        auto& V_quadrant = quadrants[xi].V;
         for (auto v : V_quadrant) {
             v = mpq_arr_resize(K + 2, K + 1, v);
             mpq_set(v[K + 1], v[xi + 1]);
             V_mpq.push_back(v);
         }
-        set_arr_free(quadrant_infos[xi].V_to_H_incidence);
+        set_arr_free(quadrants[xi].V_to_H_incidence);
+        fp_mat_free(quadrants[xi].H);
     }
 
     vector<mpq_t*> V_x_H = mpq_mat_mul_with_transpose(K + 2, V_mpq, H_mpq);
@@ -342,12 +371,11 @@ void run_fktasi_test(const int K, const string& path, Activation activation) {
     vector<mpq_t*> H_mpq = mpq_mat_from_MatDouble(H_ext);
 
     dd_set_global_constants();
-    map<Quadrant, vector<mpq_t*>> quadrant2vertices =
-            compute_tasi_quadrants_with_cdd_dim(K, A_int, activation);
+    map<Quadrant, vector<mpq_t*>> quadrant2V = get_tasi_quadrants_cdd_dim(K, A_int, activation);
     dd_free_global_constants();
 
     vector<mpq_t*> V_mpq;
-    for (auto& entry : quadrant2vertices) {
+    for (auto& entry : quadrant2V) {
         for (auto v : entry.second) {
             V_mpq.push_back(v);
         }
@@ -377,7 +405,7 @@ void run_fktasi_test(const int K, const string& path, Activation activation) {
 }
 
 // The test doesn't check the correctness, it showcases the number of constraints and runtime.
-void run_relaxation_with_cdd_test(const int K, const string& path, Activation activation) {
+void run_relaxation_cdd_test(const int K, const string& path, Activation activation) {
     cout << "running " << activation2str[activation] << " with cdd test: " << path << endl;
 
     vector<double*> A_int = fp_mat_read(K + 1, path);
@@ -501,12 +529,24 @@ void run_all_split_in_quadrants_tests() {
         }
     }
 }
-void run_all_tasi_quadrants_with_cdd_dim_tests(Activation activation) {
+
+void run_all_pool_quadrants_tests() {
+    cout << "Running all pool quadrants tests" << endl;
+    for (int k = 2; k <= 4; k++) {
+        for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
+            run_pool_quadrants_test(
+                    k,
+                    "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt");
+        }
+    }
+}
+
+void run_all_tasi_quadrants_cdd_dim_tests(Activation activation) {
     cout << "Running all " << activation2str[activation] << " quadrant with cdd dim tests" << endl;
     // k = 4 is somewhat slow (several seconds), so doing tests until k = 3.
     for (int k = 1; k <= 3; k++) {
         for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-            run_tasi_quadrants_with_cdd_dim_test(
+            run_tasi_quadrants_cdd_dim_test(
                     k,
                     "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt",
                     activation);
@@ -553,7 +593,7 @@ void run_all_relaxation_cdd_tests(Activation activation, int max_k) {
     cout << "Running all cdd tests for " << activation2str[activation] << endl;
     for (int k = 1; k <= max_k; k++) {
         for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-            run_relaxation_with_cdd_test(
+            run_relaxation_cdd_test(
                     k,
                     "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt",
                     activation);
@@ -591,8 +631,9 @@ int main() {
 
     run_all_octahedron_tests();
     run_all_split_in_quadrants_tests();
-    run_all_tasi_quadrants_with_cdd_dim_tests(Tanh);
-    run_all_tasi_quadrants_with_cdd_dim_tests(Sigm);
+    run_all_pool_quadrants_tests();
+    run_all_tasi_quadrants_cdd_dim_tests(Tanh);
+    run_all_tasi_quadrants_cdd_dim_tests(Sigm);
     run_all_fkrelu_tests();
     run_all_fkpool_tests();
     run_all_fktasi_tests(Tanh);
