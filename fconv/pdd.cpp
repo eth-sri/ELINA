@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cmath>
 #include "pdd.h"
 #include "fp_mat.h"
 
@@ -147,13 +148,13 @@ PDD_VInc PDD_batch_intersect_helper(PDD& pdd, const vector<double*>& H_new) {
             }
             const double* V_in = pdd.V[in];
 
-            double* v = (double*) calloc(dim, sizeof(double));
+            double* v = fp_arr_create(dim);
             double abs_coef = 0;
             double out_coef = in_x_H[argmin_h];
             double in_coef = -out_x_H[argmin_h];
             for (int i = 0; i < dim; i++) {
                 double val = out_coef * V_out[i] + in_coef * V_in[i];
-                abs_coef = max(abs(val), abs_coef);
+                abs_coef = max(fabs(val), abs_coef);
                 v[i] = val;
             }
             assert(abs_coef >= 0 && "abs_coef can't be negative.");
@@ -313,7 +314,7 @@ void PDD_adjust_H_for_soundness_finite_polytope(const int dim,
             double accum_abs = 0;
             for (int i = 0; i < dim; i++) {
                 accum += h[i] * v[i];
-                accum_abs += abs(h[i] * v[i]);
+                accum_abs += fabs(h[i] * v[i]);
             }
             constexpr double REL_ERR = 8.8817842e-16; // 1 / 2^50.
             double adjustment = accum - REL_ERR * accum_abs;
