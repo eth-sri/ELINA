@@ -60,8 +60,8 @@ fkpool_c = fconv_api.fkpool
 kpool_with_cdd_c = fconv_api.kpool_with_cdd
 fktanh_c = fconv_api.fktanh
 ktanh_with_cdd_c = fconv_api.ktanh_with_cdd
-fksigm_c = fconv_api.fktanh
-ksigm_with_cdd_c = fconv_api.ktanh_with_cdd
+fksigm_c = fconv_api.fksigm
+ksigm_with_cdd_c = fconv_api.ksigm_with_cdd
 
 for relaxation_c in [fkrelu_c, krelu_with_cdd_c,
                      fkpool_c, kpool_with_cdd_c,
