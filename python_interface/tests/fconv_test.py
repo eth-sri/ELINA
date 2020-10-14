@@ -27,6 +27,21 @@ from fconv import *
 from time import time
 
 
+activation2fast = {
+    "relu": fkrelu,
+    "pool": fkpool,
+    "tanh": fktanh,
+    "sigm": fksigm
+}
+
+activation2cdd = {
+    "relu": krelu_with_cdd,
+    "pool": kpool_with_cdd,
+    "tanh": ktanh_with_cdd,
+    "sigm": ksigm_with_cdd
+}
+
+
 def read_matrix(filename) -> np.ndarray:
     f = open("../../fconv/octahedron_hrep/" + filename, "r")
     arr = [list(map(float, l.strip().split())) for l in f.readlines()]
@@ -54,31 +69,66 @@ def hrep2volume(hrep: np.ndarray, number_type: str) -> float:
     return scipy.spatial.ConvexHull(vertices).volume
 
 
-def test_volume_difference(filename, activation):
+def compute_k1_relaxation(hrep, activation):
+    # This function is not applicable to Pool relaxation
+    assert activation in ["relu", "tanh", "sigm"]
+    K = hrep.shape[1] - 1
+    final = []
+    for xi in range(K):
+        inp_1d = []
+        for h in hrep:
+            skip = False
+            for j in range(K):
+                if j == xi:
+                    continue
+                if h[j + 1] != 0:
+                    skip = True
+            if not skip:
+                inp_1d.append([h[0], h[xi + 1]])
+        inp_1d = np.array(inp_1d)
+        assert inp_1d.shape == (2, 2)
+        out_1d = activation2cdd[activation](inp_1d)
+        assert out_1d.shape[1] == 3
+        out = []
+        for h_1d in out_1d:
+            h = [0] * (2 * K + 1)
+            h[0] = h_1d[0]
+            h[xi + 1] = h_1d[1]
+            h[xi + 1 + K] = h_1d[2]
+            out.append(h)
+        out = np.array(out)
+        final.append(out)
+    final = np.vstack(final)
+    return final
+
+
+def test_volume_k1(filename, activation):
+    assert activation in ["relu", "tanh", "sigm"]
+    print("k1 volume test", activation, filename)
+    hrep = read_matrix(filename)
+
+    res_fast = activation2fast[activation](hrep)
+    res_1d = compute_k1_relaxation(hrep, activation)
+
+    volume_fast = hrep2volume(res_fast, "float")
+    volume_1d = hrep2volume(res_1d, "float")
+
+    over_approximation = round(volume_1d / volume_fast, 4)
+
+    print("\tComparison with 1k volume (higher is better)", over_approximation)
+
+
+def test_volume_optimal(filename, activation):
     assert activation in ["relu", "pool", "tanh", "sigm"]
-    print("volume test for:", activation, filename)
+    print("optimal volume test", activation, filename)
     hrep = read_matrix(filename)
 
     time_fast = time()
-    if activation == "relu":
-        res_fast = fkrelu(hrep)
-    elif activation == "pool":
-        res_fast = fkpool(hrep)
-    elif activation == "tanh":
-        res_fast = fktanh(hrep)
-    elif activation == "sigm":
-        res_fast = fksigm(hrep)
+    res_fast = activation2fast[activation](hrep)
     time_fast = time() - time_fast
 
     time_cdd = time()
-    if activation == "relu":
-        res_cdd = krelu_with_cdd(hrep)
-    elif activation == "pool":
-        res_cdd = kpool_with_cdd(hrep)
-    elif activation == "tanh":
-        res_cdd = ktanh_with_cdd(hrep)
-    elif activation == "sigm":
-        res_cdd = ksigm_with_cdd(hrep)
+    res_cdd = activation2cdd[activation](hrep)
     time_cdd = time() - time_cdd
 
     res_concat = np.concatenate([res_cdd, res_fast], axis=0)
@@ -100,14 +150,18 @@ def test_volume_difference(filename, activation):
 
 # Unfortunately library for computing volume often fails due to numerical errors.
 # Thus it is possible to perform this test only for some of the inputs.
-test_volume_difference("k1/1.txt", "relu")
-test_volume_difference("k1/2.txt", "relu")
-test_volume_difference("k3/1.txt", "relu")
-test_volume_difference("k3/5.txt", "relu")
-test_volume_difference("k3/1.txt", "pool")
-test_volume_difference("k3/2.txt", "pool")
+test_volume_optimal("k1/1.txt", "relu")
+test_volume_optimal("k1/2.txt", "relu")
+test_volume_optimal("k3/1.txt", "relu")
+test_volume_optimal("k3/5.txt", "relu")
+test_volume_optimal("k3/1.txt", "pool")
+test_volume_optimal("k3/2.txt", "pool")
 for activation in ["tanh", "sigm"]:
-    test_volume_difference("k1/1.txt", activation)
-    test_volume_difference("k1/2.txt", activation)
-    test_volume_difference("k2/1.txt", activation)
-    test_volume_difference("k2/2.txt", activation)
+    test_volume_optimal("k1/1.txt", activation)
+    test_volume_optimal("k1/2.txt", activation)
+    test_volume_optimal("k2/1.txt", activation)
+    test_volume_optimal("k2/2.txt", activation)
+
+for activation in ["relu", "tanh", "sigm"]:
+    for filename in ["k2/1.txt", "k2/2.txt", "k2/3.txt"]:
+        test_volume_k1(filename, activation)
