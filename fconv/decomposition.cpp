@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void project_to_relu_y_branch(const int xi, PDD& pdd_dual, const Polarity polarity) {
+void lift_to_relu_y_branch(const int xi, PDD& pdd_dual, const Polarity polarity) {
     const int dim = pdd_dual.dim;
     pdd_dual.dim++;
 
@@ -51,7 +51,7 @@ void project_to_relu_y_branch(const int xi, PDD& pdd_dual, const Polarity polari
     set_enable_all(incidence[incidence.size() - 1]);
 }
 
-void project_to_tasi_y_branch(const int xi,
+void lift_to_tasi_y_branch(const int xi,
                               PDD& pdd_dual,
                               const double x_bound,
                               Activation activation) {
@@ -75,15 +75,15 @@ void project_to_tasi_y_branch(const int xi,
     if (activation == Tanh) {
         y_bound = tanh(x_bound);
         if (x_bound < 0) {
-            k_lb = 1 - y_bound * y_bound;
-            b_lb = y_bound - x_bound * k_lb;
+            k_lb = 1;
+            b_lb = 0;
             k_ub = y_bound / x_bound;
             b_ub = 0;
         } else {
             k_lb = y_bound / x_bound;
             b_lb = 0;
-            k_ub = 1 - y_bound * y_bound;
-            b_ub = y_bound - x_bound * k_ub;
+            k_ub = 1;
+            b_ub = 0;
         }
     } else {
         // Numerically stable sigmoid
@@ -91,16 +91,16 @@ void project_to_tasi_y_branch(const int xi,
         if (x_bound < 0) {
             y_bound = exp(x_bound);
             y_bound = y_bound / (1 + y_bound);
-            k_lb = y_bound * (1 - y_bound);
-            b_lb = y_bound - x_bound * k_lb;
+            k_lb = 0.25;
+            b_lb = 0.5;
             k_ub = (y_bound - 0.5) / x_bound;
             b_ub = 0.5;
         } else {
             y_bound = 1 / (1 + exp(-x_bound));
             k_lb = (y_bound - 0.5) / x_bound;
             b_lb = 0.5;
-            k_ub = y_bound * (1 - y_bound);
-            b_ub = y_bound - x_bound * k_ub;
+            k_ub = 0.25;
+            b_ub = 0.5;
         }
     }
 
@@ -112,9 +112,9 @@ void project_to_tasi_y_branch(const int xi,
     for (size_t i = 0; i < V.size(); i++) {
         double* v_lb = fp_arr_resize(dim + 1, dim, V[i]);
         double x_cur = v_lb[xi + 1];
-        if (x_cur == x_bound) {
+        if (x_cur == 0) {
             // Both lower and upper bound would map to the same y.
-            v_lb[dim] = y_bound;
+            v_lb[dim] = activation == Tanh ? 0 : 0.5;
             map_lb[i] = V_new.size();
             map_ub[i] = V_new.size();
             V_new.push_back(v_lb);
@@ -199,14 +199,14 @@ PDD decomposition_recursive(Quadrant& quadrant, const map<Quadrant, PDD>& quadra
         quadrant.pop_back();
 
         if (activation == Relu) {
-            project_to_relu_y_branch(xi, pdd_minus, MINUS);
-            project_to_relu_y_branch(xi, pdd_plus, PLUS);
+            lift_to_relu_y_branch(xi, pdd_minus, MINUS);
+            lift_to_relu_y_branch(xi, pdd_plus, PLUS);
         } else if (activation == Tanh) {
-            project_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], Tanh);
-            project_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], Tanh);
+            lift_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], Tanh);
+            lift_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], Tanh);
         } else {
-            project_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], Sigm);
-            project_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], Sigm);
+            lift_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], Sigm);
+            lift_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], Sigm);
         }
 
         PDD_debug_consistency_check(pdd_minus);

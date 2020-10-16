@@ -107,7 +107,7 @@ def test_volume_k1(filename, activation):
     print("k1 volume test", activation, filename)
     hrep = read_matrix(filename)
 
-    res_fast = activation2fast[activation](hrep)
+    res_fast = activation2cdd[activation](hrep)
     res_1d = compute_k1_relaxation(hrep, activation)
 
     volume_fast = hrep2volume(res_fast, "float")
@@ -115,7 +115,7 @@ def test_volume_k1(filename, activation):
 
     over_approximation = round(volume_1d / volume_fast, 4)
 
-    print("\tComparison with 1k volume (higher is better)", over_approximation)
+    print("\tComparison with k1 volume (higher is better)", over_approximation)
 
 
 def test_volume_optimal(filename, activation):
@@ -163,5 +163,5 @@ for activation in ["tanh", "sigm"]:
     test_volume_optimal("k2/2.txt", activation)
 
 for activation in ["relu", "tanh", "sigm"]:
-    for filename in ["k2/1.txt", "k2/2.txt", "k2/3.txt"]:
+    for filename in ["k2/1.txt", "k2/2.txt"]:
         test_volume_k1(filename, activation)
