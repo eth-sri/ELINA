@@ -83,35 +83,57 @@ Interface for the layers of a neural network
 		virtual bool hasInternalModel() const { return false; }
 	};
 
-        // NeuralNetwork(std::vector<Layer*> layers);
-        NeuralNetwork(const size_t inputSize);
-        /*NeuralNetwork(NeuralNetwork&& other) :
-                layers(std::move(other.layers)),
-        maxLayerSize(other.maxLayerSize),
-                concreteBoundsS(std::move(other.concreteBoundsS)),
-        concreteBoundsD(std::move(other.concreteBoundsD)),
-                annoyingNeurons(other.annoyingNeurons),
-        annoyingNeuronList(other.annoyingNeuronList),
-        annoyingNeuronList2(other.annoyingNeuronList2)
-        {
-                other.annoyingNeuronList = nullptr;
-                other.annoyingNeuronList2 = nullptr;
-                other.annoyingNeurons = nullptr;
-        };*/
-        NeuralNetwork(const NeuralNetwork&) = delete;
+
+	//! Constructor
+	/*!
+	  Constructs a new (pre-trained) network to be checked
+
+	  \param inputSize Number of elements of the input layer
+	*/
+	NeuralNetwork(const size_t inputSize);
+
+	NeuralNetwork(const NeuralNetwork&) = delete;
+
 	~NeuralNetwork();
+
+	
+	//! Adds a new layer in the network
+	/*!
+	  Constructs a new neural network to be checked
+
+	  \param layer A layer, as prototyped earlier in this file.
+	  \returns The layer id that was assigned to this layer.
+	*/
 	int addLayer(Layer* layer);
+
         const Layer *operator[](const size_t i) const { return layers[i]; }
-        template <typename T>
-        int operator()(const std::vector<Intv<T>> &input, const int label,
-                       bool sound);
-        template <typename T>
+
+        //! Tries to verify a box.
+	/*!
+	  \param input A vector containing the interval for each input element
+	  \param label Label in which the image is supposed to classify
+	  \param sound Whether to use sound arithmetic.
+	  \returns An integer indicating the certification level (see gpupoly.h for details).
+	 */
+	template <typename T>
+	int operator()(const std::vector<Intv<T>>& input, const int label, bool sound);
+
+	//! Get a reference to the current concrete bounds of a layer
+	template <typename T>
 	Vector<T>& getConcreteBounds(int layer);
+
+	//! Orders a reevaluation (via back-substitution) of the concrete bounds of a layer
+	/*!
+	  \param layer Id of the layer to be reevaluated
+	  \param al A NeuronFilter indicating a stopping criteria for the back-substitution
+	  \param up If true, reevaluates the upper bound, otherwise the lower bound.
+	  \param sound Whether to use sound arithmetic.
+	 */
 	template <typename T>
 	void reEvaluateLayer(int layer, const NeuronFilter<T>& al, bool up, bool sound)
 	{
-          evaluateAffine(getConcreteBounds<T>(layer), al, layer, up, sound);
-        }
+		evaluateAffine(getConcreteBounds<T>(layer), al, layer, up, sound);
+	}
 private:
 
 
@@ -122,7 +144,9 @@ private:
 	std::vector<std::shared_ptr<Vector<double>>> concreteBoundsD;
 	std::vector<std::shared_ptr<Vector<float>>> concreteBoundsS;
 
-        int* annoyingNeurons;
+
+
+	int* annoyingNeurons;
 	int* annoyingNeuronList;
 	int* annoyingNeuronList2;
 
@@ -146,7 +170,6 @@ private:
                        const std::shared_ptr<const Vector<T>> &b = nullptr);
 
         template <typename T>
-        bool run(const Vector<T> &input, const int label, bool skipNonModels,
-                 bool sound, bool precise);
+	bool run(const Vector<T>& input, const int label, bool skipNonModels, bool sound, bool precise);
 };
 

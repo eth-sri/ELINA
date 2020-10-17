@@ -15,33 +15,32 @@ By default, GPUPoly tries to deliver level 2 certifications, and will therefore 
 Conversely, it is possible to make GPUPoly search for stronger certification levels using the `STRONG_FP_SOUNDNESS` compile option. If GPUPoly is compiled with this option, the letter `S` will appear after its version number (instead of `W`), and it will output certification levels of 0, 3 or 4. If the floating-point soundness parameter is disabled, SALSa has the same behaviour with or without the `STRONG_FP_SOUNDNESS` option. 
 
 ## Building the library
-The library can be built using CMake on both Windows and linux architectures. In both cases, the project `gpupolyExample` allows to check that the library is built and works correctly.
+The library is built with ELINA, but can also be built using CMake on both Windows and linux architectures. 
 
 ### Windows
 The library can be built using Visual Studio 2019 and the plugins `GitHub.VisualStudio` and `Visual Studio Tools for CMake`. With this configuration, it is possible to clone the repository from the start window of the IDE, and to compile and run it directly.
 
 For older versions of Visual Studio, the CMake GUI can be used to create a Visual Studio project that can be used to compile and use the library.
 
-The compilation creates a library `gpupoly.dll` and an executable `gpupolyExample.exe` that can be run to test the library.
+The compilation creates a library `gpupoly.dll`
 
 ### Linux
 The library can be built from the command line:
 
 ```
-git clone https://github.com/fserre/gpupoly.git
-cd gpupoly
+git clone https://github.com/eth-sri/ELINA
+cd ELINA/gpupoly
 cmake .
 make
 make install
-./gpupolyExample
 ```
 
 ## Using the library
 ### C and C++
-The header file `include/gpupoly.h` contains the binding functions for the library. An example of use is provided in `test/example.cpp`.
+The header file `gpupoly.h` contains the binding functions for the library. An example of use is provided in `example.cpp`.
 
 ### Python
-After a succesful build, the build directory should contain the file `gpupoly.py` that contains python bindings. The file `python/example_tf.py` contains an example that trains a network using TensorFlow 2, and that uses SALSa to test its robustness.
+After a succesful build, the build directory should contain the file `gpupoly.py` that contains python bindings.
 
 ### ONNX
 The (python) script onnx2gpupoly.py allows to load an onnx network for use within GPUPoly.

@@ -232,8 +232,7 @@ struct SplashScreen
 {
 	SplashScreen()
 	{
-          std::cout << "GPUPoly GPU " << VERSION_MAJOR << "." << VERSION_MINOR
-                    << "." << VERSION_PATCH;
+		std::cout << "GPUPoly " << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_PATCH;
 #ifdef STRONG_FP_SOUNDNESS
 		std::cout << "S";
 #else
@@ -242,17 +241,9 @@ struct SplashScreen
 #ifndef NDEBUG
 		std::cout << " Debug";
 #endif
-                std::cout << " (built " << __DATE__ << " " << __TIME__
-                          << ") - Copyright (C) 2020 Francois Serre"
-                          << std::endl;
-                std::cout
-                    << "This program comes with ABSOLUTELY NO WARRANTY. This "
-                       "is free software, and you are welcome to redistribute "
-                       "it and to modify it under the terms of the GNU GPLv3+ "
-                       "<http://gnu.org/licenses/gpl.html>."
-                    << std::endl
-                    << std::endl;
-        }
+		std::cout << " (built " << __DATE__ << " " << __TIME__ << ") - Copyright (C) 2020 Department of Computer Science, ETH Zurich." << std::endl;
+		std::cout << "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it and to modify it under the terms of the GNU LGPLv3." << std::endl << std::endl;
+	}
 } ss;
 
 

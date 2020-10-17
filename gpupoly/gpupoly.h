@@ -48,59 +48,45 @@ extern "C" {
 	GPUPOLY_EXPORT NeuralNetwork* create(
 		int inputSize
 	);
-        /*! \name Verifies an image
-          Checks if an image (or more precisely, an input box) entirely
-          classifies as a given label Once this function has been called with a
-          network, no additionnal layer should be added (i.e. it is necessary to
-          clean and recreate a network) It is of course possible to call this
-          function multiple times on the same network.
+	/*! \name Verifies an image
+	  Checks if an image (or more precisely, an input box) entirely classifies as a given label
+	  Once this function has been called with a network, no additionnal layer should be added (i.e. it is necessary to clean and recreate a network)
+	  It is of course possible to call this function multiple times on the same network.
 
-          Depending on GPUPoly configuration, this function can deliver
-          different certification levels, listed here in increasing strength
-          order: 0. No certification: GPUPoly was not able to prove that the
-          whole input box classifies as the given label.
-                1. Certification without floating-point soundness. This yields
-          no formal guarantee, but is in practice likely to mean 2.
-                2. Certified for an infinitly precise evaluation. If a box is
-          certified with this level, any element of the box will classify to the
-          given label, as long as the inference is computed using infinitly
-          precise arithmetic.
-                3. Certified for an evaluation that uses double precision
-          IEEE758 arithmetic, with any summation order and any rounding mode.
-                4. Certified for an evaluation that uses single precision
-          IEEE758 arithmetic, with any summation order and any rounding mode.
+	  Depending on GPUPoly configuration, this function can deliver different certification levels, listed here in increasing strength order:
+		0. No certification: GPUPoly was not able to prove that the whole input box classifies as the given label.
+		1. Certification without floating-point soundness. This yields no formal guarantee, but is in practice likely to mean 2.
+		2. Certified for an infinitly precise evaluation. If a box is certified with this level, any element of the box will classify to the given label, as long as the inference is computed using infinitly precise arithmetic.
+		3. Certified for an evaluation that uses double precision IEEE754 arithmetic, with any summation order and any rounding mode.
+		4. Certified for an evaluation that uses single precision IEEE754 arithmetic, with any summation order and any rounding mode.
 
-          By default, GPUPoly tries to deliver level 2 certifications, and will
-          therefore output a result that will be either 0 or 2. The parameter
-          soundness allows to disable floating-point soundness to speed up the
-          computation (which then becomes roughly twice or three times faster).
-          This mode doesn't offer any formal guarantee anymore, but yields in
-          practice the same results. Without floating point soundness, GPUPoly
-          outputs certification levels that can be 0 or 1. Conversely, it is
-          possible to make GPUPoly search for stronger certification levels
-          using the `STRONG_FP_SOUNDNESS` compile option. If GPUPoly is compiled
-          with this option, the letter `S` will appear after its version number
-          (instead of `W`), and it will output certification levels of 0, 3
-          or 4. If the floating-point soundness parameter is disabled, GPUPoly
-          has the same behaviour with or without the `STRONG_FP_SOUNDNESS`
-          option.
-          */
+	  By default, GPUPoly tries to deliver level 2 certifications, and will therefore output a result that will be either 0 or 2. The parameter soundness allows to disable floating-point soundness to speed up the computation (which then becomes roughly twice or three times faster). This mode doesn't offer any formal guarantee anymore, but yields in practice the same results. Without floating point soundness, GPUPoly outputs certification levels that can be 0 or 1.
+	  Conversely, it is possible to make GPUPoly search for stronger certification levels using the `STRONG_FP_SOUNDNESS` compile option. If GPUPoly is compiled with this option, the letter `S` will appear after its version number (instead of `W`), and it will output certification levels of 0, 3 or 4. If the floating-point soundness parameter is disabled, GPUPoly has the same behaviour with or without the `STRONG_FP_SOUNDNESS` option.
+	  */
 
-        //!@{
+      //!@{
 
-        //! Creates a new network.
-        /*!
-          \param nn Handle to the network
-          \param dataDown An array of inputSize doubles that represent the lower
-          bound of the box \param dataUp An array of inputSize doubles that
-          represent the upper bound of the box \param expectedLabel Label in
-          which the image is supposed to classify \param soundness Whether to
-          use sound arithmetic. \returns An integer indicating the certification
-          level.
-         */
+	//! Tries to certify a box.
+	/*!
+	  \param nn Handle to the network
+	  \param dataDown An array of inputSize floats that represent the lower bound of the box
+	  \param dataUp An array of inputSize floats that represent the upper bound of the box
+	  \param expectedLabel Label in which the image is supposed to classify
+	  \param soundness Whether to use sound arithmetic.
+	  \returns An integer indicating the certification level.
+	 */
         GPUPOLY_EXPORT int test_s(NeuralNetwork *nn, const float *dataDown,
                                   const float *dataUp, int expectedLabel,
                                   bool soundness = true);
+        //! Creates a new network.
+	/*!
+	  \param nn Handle to the network
+	  \param dataDown An array of inputSize doubles that represent the lower bound of the box
+	  \param dataUp An array of inputSize doubles that represent the upper bound of the box
+	  \param expectedLabel Label in which the image is supposed to classify
+	  \param soundness Whether to use sound arithmetic.
+	  \returns An integer indicating the certification level.
+	 */
         GPUPOLY_EXPORT int test_d(NeuralNetwork *nn, const double *dataDown,
                                   const double *dataUp, int expectedLabel,
                                   bool soundness = true);
