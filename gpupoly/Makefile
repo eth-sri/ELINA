@@ -10,7 +10,7 @@ INCLDIR = $(ELINA_PREFIX)/include
 
 LIBS = -lcublas
 
-INCLUDES = -Iinclude/ -Isrc/ -I.
+INCLUDES = -Igenerated/ -I.
 
 
 INSTALL = install
