@@ -26,37 +26,37 @@ bindings.o : bindings.cu
 	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o bindings.o bindings.cu $(LIBS)
 
 maxpool2d.o : layers/maxpool2d.h layers/maxpool2d.cu
-	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o maxpool2d.o src/layers/maxpool2d.cu $(LIBS)
+	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o maxpool2d.o layers/maxpool2d.cu $(LIBS)
 	
 affineexpr.o : affineexpr.h affineexpr.cu
-	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o affineexpr.o src/affineexpr.cu $(LIBS)
+	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o affineexpr.o affineexpr.cu $(LIBS)
 
 conv2d.o: layers/conv2d.h layers/conv2d.cu
-	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o conv2d.o src/layers/conv2d.cu $(LIBS)
+	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o conv2d.o layers/conv2d.cu $(LIBS)
 
 dense.o: layers/dense.h layers/dense.cu
-	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o dense.o src/layers/dense.cu $(LIBS)
+	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o dense.o layers/dense.cu $(LIBS)
 
 mmm.o : mmm.cu
-	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o mmm.o src/mmm.cu $(LIBS)
+	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o mmm.o mmm.cu $(LIBS)
 
 mvm.o : mvm.cu
-	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o mvm.o src/mvm.cu $(LIBS)
+	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o mvm.o mvm.cu $(LIBS)
 
 network.o : network.h network.cu
-	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o network.o src/network.cu $(LIBS)
+	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o network.o network.cu $(LIBS)
 	
 relu.o: layers/relu.h layers/relu.cu
-	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o relu.o src/layers/relu.cu $(LIBS)
+	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o relu.o layers/relu.cu $(LIBS)
 	
 matrix.o : matrix.h matrix.cu
-	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o matrix.o src/matrix.cu $(LIBS)
+	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o matrix.o matrix.cu $(LIBS)
 	
 vector.o : vector.h vector.cu
-	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o vector.o src/vector.cu $(LIBS)
+	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o vector.o vector.cu $(LIBS)
 
 filters.o : filters.h filters.cu
-	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o filters.o src/filters.cu $(LIBS)
+	$(CC) -ccbin g++ -c --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o filters.o filters.cu $(LIBS)
 
 libgpupoly.so : $(OBJS) 
 	$(CC) -ccbin g++ -shared $(CC_ELINA_DYLIB) --compiler-options "$(CXXFLAGS)" -arch=sm_61 $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
