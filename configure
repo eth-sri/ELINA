@@ -538,7 +538,7 @@ USE_DEEPPOLY = $use_deeppoly
 USE_FCONV = $use_fconv
 CDD_PREFIX = $cdd_prefix
 
-# if defined to VECTOR, compile GPUPoly (the GPU version of DeepPoly)
+# if defined to VECTOR, compile fppoly_gpu (a GPU version of DeepPoly)
 IS_CUDA = $is_cuda
 
 # if defined, compile with Gurobi library
