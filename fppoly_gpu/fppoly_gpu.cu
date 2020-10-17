@@ -18,7 +18,7 @@
  *
  *  @file fppoly_gpu.cu
  *  @author Christoph Müller
- *  @brief Main file of GPUPoly, all control logic is here.
+ *  @brief Main file of fppoly_gpu, all control logic is here.
  */
 
 #include <iostream>
