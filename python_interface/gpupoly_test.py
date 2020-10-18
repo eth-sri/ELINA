@@ -59,7 +59,7 @@ elif (nn.input_size==3072):
     mean = np.array(mean).reshape([1, 3, 1, 1])
 else:
     print("Unknown dataset size:"+str(nn.input_size))
-    exit(1)
+    sys.exit(1)
 
 
 print("Network and dataset loaded; running inference...")
