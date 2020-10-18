@@ -29,7 +29,6 @@ where options include:
   -use-opam            use opam to install ELINA
   -no-warn-overflow    Silence all output relating to sound overflow
   -use-cuda            compile gpu version of DeepPoly
-  -use-gpupoly         compile GPUPoly
   -use-gurobi          use gurobi for spatial constraints
   -use-fconv		   use fconv for computing convex hull
 
@@ -64,7 +63,6 @@ has_apron=0
 has_vector=0
 has_cdd=0
 has_cuda=0
-use_gpupoly=0
 use_gurobi=0
 use_fconv=0
 extra_elina_options=""
@@ -113,8 +111,6 @@ while : ; do
          has_cuda=1;;
         -use-gurobi|--use-gurobi)
          use_gurobi=1;;
-        -use-gpupoly|--use-gpupoly)
-         use_gpupoly=1;;
         -use-fconv|--use-fconv)
          use_fconv=1 && has_cdd=1;;
         -use-opam|--use-opam)
@@ -538,14 +534,12 @@ IS_VECTOR = $is_vector
 # if define to USE_DEEPPOLY, compile DeepPoly
 USE_DEEPPOLY = $use_deeppoly
 
-# if define to USE_GPUPOLY, compile GPUPoly
-USE_GPUPOLY = $use_gpupoly
 
 # if define to USE_FCONV, compile Fconv
 USE_FCONV = $use_fconv
 CDD_PREFIX = $cdd_prefix
 
-# if defined to VECTOR, compile fppoly_gpu (a GPU version of DeepPoly)
+# if defined to VECTOR, compile GPUPoly (a GPU version of DeepPoly)
 IS_CUDA = $is_cuda
 
 # if defined, compile with Gurobi library
