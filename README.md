@@ -16,7 +16,7 @@ Contributors
 
 * Christoph Müller - christoph.mueller@inf.ethz.ch
 
-* Francois Serre - serref@inf.ethz.ch
+* Francois Serre (contact for GPUPoly) - serref@inf.ethz.ch
 
 * Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
 
