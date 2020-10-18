@@ -18,7 +18,7 @@
  *
  *  @file fppoly_gpu.h
  *  @author Christoph Müller
- *  @brief Provides interface to GPUPoly, defines structures.
+ *  @brief Provides interface to fppoly_gpu, defines structures.
  */
 
 #ifndef __FPPOLY_GPU_H_INCLUDED__

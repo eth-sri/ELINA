@@ -14,7 +14,7 @@ Contributors
 
 * [Jingxuan He](https://www.sri.inf.ethz.ch/people/jingxuan) (contact for Lait) - jingxuan.he@inf.ethz.ch
 
-* Christoph Müller (contact for GPUPoly) - christoph.mueller@inf.ethz.ch
+* Christoph Müller (contact for fppoly_gpu) - christoph.mueller@inf.ethz.ch
 
 * Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
 
