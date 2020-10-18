@@ -53,9 +53,9 @@ endif
 ifneq ($(USE_DEEPPOLY),)
 	(cd fppoly; make all)
 endif
-ifneq ($(IS_CUDA),)
-	(cd fppoly_gpu; make all)
-endif
+#ifneq ($(IS_CUDA),)
+#	(cd fppoly_gpu; make all)
+#endif
 ifneq ($(USE_FCONV),)
 	(cd fconv; make all)
 endif
@@ -77,9 +77,9 @@ endif
 ifneq ($(USE_DEEPPOLY),)
 	(cd fppoly; make install)
 endif
-ifneq ($(IS_CUDA),)
-	(cd fppoly_gpu; make install)
-endif
+#ifneq ($(IS_CUDA),)
+#	(cd fppoly_gpu; make install)
+#endif
 ifneq ($(USE_FCONV),)
 	(cd fconv; make install)
 endif
@@ -118,9 +118,9 @@ endif
 ifneq ($(USE_GPUPOLY),)
 	(cd gpupoly; make clean)
 endif
-ifneq ($(IS_CUDA),)
-	(cd fppoly_gpu; make clean)
-endif
+#ifneq ($(IS_CUDA),)
+#	(cd fppoly_gpu; make clean)
+#endif
 ifneq ($(HAS_OCAML),) 
 	(cd ocaml_interface; make clean)
 endif
