@@ -271,12 +271,13 @@ static inline zonotope_noise_symbol_t* zonotope_noise_symbol_add(zonotope_intern
     /* Pretty print an affine term */
     static inline void zonotope_aaterm_fprint(zonotope_internal_t *pr, FILE* stream, zonotope_aaterm_t *ptr)
     {
-      if ((ptr->inf != INFINITY) && (ptr->inf == ptr->sup)) {
-        // elina_scalar_fprint(stream,ptr->sup);
-        fprintf(stream, "%.*g", elina_scalar_print_prec, ptr->sup + 0.0);
-      } else {
-        printf("[%.20f, %.20f]\n", -ptr->inf, ptr->sup);
-      }
+        if ((ptr->inf!=INFINITY) && (-ptr->inf==ptr->sup)){
+            //elina_scalar_fprint(stream,ptr->sup);
+	    fprintf(stream,"%.*g",elina_scalar_print_prec,ptr->sup + 0.0);
+        }
+        else {
+	     printf("[%.20f, %.20f]\n",-ptr->inf,ptr->sup);
+        }
         fprintf(stream,".");
         zonotope_noise_symbol_fprint(stream,ptr->pnsym);
     }
@@ -290,9 +291,10 @@ static inline zonotope_noise_symbol_t* zonotope_noise_symbol_add(zonotope_intern
         }
         
         zonotope_aaterm_t* p;
-        if ((expr->c_inf != INFINITY) && (expr->c_inf == expr->c_sup)) {
-          fprintf(stream, "%.20f", expr->c_sup);
-        } else {
+        if ((expr->c_inf!=INFINITY) && (-expr->c_inf==expr->c_sup)){
+	    fprintf(stream,"%.20f",expr->c_sup);
+        }
+        else{
           fprintf(stream,"[%.20f,%.20f]",-expr->c_inf,expr->c_sup);
         }
         /* Print values */

@@ -54,13 +54,10 @@ ifneq ($(USE_DEEPPOLY),)
 	(cd fppoly; make all)
 endif
 ifneq ($(IS_CUDA),)
-	(cd fppoly_gpu; make all)
+	(cd gpupoly; make all)
 endif
 ifneq ($(USE_FCONV),)
 	(cd fconv; make all)
-endif
-ifneq ($(USE_GPUPOLY),)
-	(cd gpupoly; cmake .; make all)
 endif
 
 install:
@@ -78,13 +75,10 @@ ifneq ($(USE_DEEPPOLY),)
 	(cd fppoly; make install)
 endif
 ifneq ($(IS_CUDA),)
-	(cd fppoly_gpu; make install)
+	(cd gpupoly; make install)
 endif
 ifneq ($(USE_FCONV),)
 	(cd fconv; make install)
-endif
-ifneq ($(USE_GPUPOLY),)
-	(cd gpupoly; make install)
 endif
 	(cd apron_interface; make install)
 ifneq ($(HAS_OCAML),) 
@@ -115,11 +109,8 @@ endif
 ifneq ($(USE_FCONV),)
 	(cd fconv; make clean)
 endif
-ifneq ($(USE_GPUPOLY),)
-	(cd gpupoly; make clean)
-endif
 ifneq ($(IS_CUDA),)
-	(cd fppoly_gpu; make clean)
+	(cd gpupoly; make clean)
 endif
 ifneq ($(HAS_OCAML),) 
 	(cd ocaml_interface; make clean)
