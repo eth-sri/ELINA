@@ -16,7 +16,7 @@
 #  CONTRACT, TORT OR OTHERWISE).
 
 
-## @file gpupoly_test.py
+## @file python_interface/gpupoly_test.py
 ## @author Fran&ccedil;ois Serre
 ## @brief Example of use of the ONNX frontend for GPUPoly.
 #

@@ -15,18 +15,18 @@
 #  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 #  CONTRACT, TORT OR OTHERWISE).
 
-## @file python/gpupoly.py
+## @file python_interface/gpupoly.py
 ## @author Fran&ccedil;ois Serre
 ## @brief Python bindings for the GPUPoly library.
 #
-#  Defines the class Network, an interface to use the GPUPoly GPU library from Python.
+#  Defines the class Network, an interface to use the GPUPoly library from Python.
 #
 
 import ctypes.util
 import os
 import numpy as np
 
-## Python friendly interface to the GPUPoly GPU library.
+## Python friendly interface to the GPUPoly library.
 class Network:
     if os.name == 'nt':
         os.add_dll_directory("${CUDAToolkit_BIN_DIR}")
@@ -34,7 +34,7 @@ class Network:
         _lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('gpupoly'))
     else:
         #_lib=ctypes.cdll.LoadLibrary('${GPUPoly_BINARY_DIR}/dpGPUlib.so')
-        _lib=ctypes.cdll.LoadLibrary('/local/home/francois/vs/SALSa/out/libgpupoly.so')
+        _lib=ctypes.cdll.LoadLibrary('libgpupoly.so')
 
     _lib.create.argtypes = [ctypes.c_int]
     _lib.create.restype = ctypes.c_void_p
