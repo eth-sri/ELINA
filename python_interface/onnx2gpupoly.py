@@ -16,11 +16,11 @@
 #  CONTRACT, TORT OR OTHERWISE).
 
 
-## @file python/onnx2gpupoly.py
+## @file python_interface/onnx2gpupoly.py
 ## @author Fran&ccedil;ois Serre
-## @brief Onnx bindings for the GPUPoly GPU library.
+## @brief Onnx parser for the GPUPoly library.
 #
-#  This example loads an ONNX network, and uses the GPUPoly library to check its robustness.
+#  Defines a function that parses an ONNX network, and returns a GPUPoly network handle that can be used to certify images.
 #
 
 
@@ -226,10 +226,10 @@ def onnx2gpupoly(graph):
 
 
         if (layer.op_type == "Transpose"):
-            inputIndex, inputShape=getLayer(layer.input[0])
-            print(f"({inputIndex}) <- Transpose({inputIndex}) : {inputShape}")
-            return inputIndex, inputShape
-            raise "Transpose is not supported."
+            #inputIndex, inputShape=getLayer(layer.input[0])
+            #print(f"({inputIndex}) <- Transpose({inputIndex}) : {inputShape}")
+            #return inputIndex, inputShape
+            raise NotImplementedError("Transpose is not supported.")
         raise NotImplementedError(f"Unknown layer: {layer.op_type}")
 
         # raise
