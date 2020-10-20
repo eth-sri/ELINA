@@ -111,6 +111,7 @@ layer_t * create_layer(size_t size, bool is_activation){
 	layer->h_t_sup = NULL;
 	layer->c_t_inf = NULL;
 	layer->c_t_sup = NULL;
+	layer->is_concat = false;
 	return layer;
 }
 
@@ -454,6 +455,40 @@ double *get_upper_bound_for_linexpr0(elina_manager_t *man, elina_abstract0_t *el
 		}
 	}
 	return res;
+}
+
+
+void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element, size_t * predecessors, size_t num_predecessors){
+    //printf("FC start here %zu %zu %zu %zu\n",num_in_neurons,num_out_neurons,predecessors[0],num_predecessors);
+    //fflush(stdout);
+    fppoly_t *fp = fppoly_of_abstract0(element);
+    size_t numlayers = fp->numlayers;
+    size_t i, j, k, num_out_neurons = 0;
+    for(i=0; i < num_predecessors; i++){
+      size_t pred = predecessors[i];
+      num_out_neurons = num_out_neurons + fp->layers[pred-1]->dims;
+    }
+    fppoly_add_new_layer(fp,num_out_neurons, predecessors, num_predecessors, false);
+    fp->layers[numlayers]->is_concat = true;
+    neuron_t **out_neurons = fp->layers[numlayers]->neurons;
+    k = 0;
+    for(i=0; i < num_predecessors; i++){
+	size_t pred = predecessors[i];
+        size_t num_in_neurons = fp->layers[pred-1]->dims;
+        for(j=0; j < num_in_neurons; j++){
+		double coeff = 1.0;
+		out_neurons[k]->lexpr = create_sparse_expr(&coeff, 0, &j, 1);
+		out_neurons[k]->uexpr = out_neurons[k]->lexpr;
+		k++;
+       }
+    }
+    
+    update_state_using_previous_layers_parallel(man,fp,numlayers);
+    
+    //printf("return here2\n");
+    //fppoly_fprint(stdout,man,fp,NULL);
+    //fflush(stdout);
+    return;
 }
 
 

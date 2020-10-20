@@ -71,6 +71,8 @@ void add_cst_expr(fppoly_internal_t *pr, expr_t * exprA, expr_t *exprB);
 
 void add_expr(fppoly_internal_t *pr,expr_t * exprA, expr_t * exprB);
 
+expr_t * extract_subexpr(expr_t * expr, size_t index_start, size_t num_neurons);
+
 expr_t * lexpr_replace_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons, bool is_activation);
 
 expr_t * uexpr_replace_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons, bool is_activation);
