@@ -447,7 +447,7 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 				size_t pred = predecessors[i]-1;
 				size_t num_neurons = fp->layers[pred]->dims;
 				if(pred < common_predecessor){
-					pred = common_predecessor;
+					common_predecessor = pred;
 				}
 				sub_expr[i] = extract_subexpr(lexpr,index_start, num_neurons);
 				index_start = index_start + num_neurons;
@@ -563,7 +563,7 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
                                 size_t pred = predecessors[i]-1;
                                 size_t num_neurons = fp->layers[pred]->dims;
                                 if(pred < common_predecessor){
-                                        pred = common_predecessor;
+                                        common_predecessor = pred;
                                 }
                                 sub_expr[i] = extract_subexpr(uexpr,index_start, num_neurons);
                                 index_start = index_start + num_neurons;
