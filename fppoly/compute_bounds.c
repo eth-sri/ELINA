@@ -427,7 +427,7 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 		
 		k = layerno-1;
 	}
-	else if(fp->layers[layerno]->num_predecessors==2){
+	else if((fp->layers[layerno]->is_concat == true) || (fp->layers[layerno]->num_predecessors==2)){
 		k = layerno;
 	}
 	else{
@@ -435,8 +435,45 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	}	
 	double res = INFINITY;
 	while(k >=0){
-	
-		if(fp->layers[k]->num_predecessors==2){
+	        if(fp->layers[k]->is_concat==true){
+			//sort_expr(lexpr);
+			size_t i;
+			size_t *predecessors = fp->layers[k]->predecessors;
+			size_t num_predecessors = fp->layers[k]->num_predecessors;
+			size_t common_predecessor = UINT_MAX;
+			expr_t ** sub_expr = (expr_t**)malloc(num_predecessors*sizeof(expr_t*));
+			size_t index_start = 0;
+			for(i=0; i < num_predecessors; i++){
+				size_t pred = predecessors[i]-1;
+				size_t num_neurons = fp->layers[pred]->dims;
+				if(pred < common_predecessor){
+					common_predecessor = pred;
+				}
+				sub_expr[i] = extract_subexpr(lexpr,index_start, num_neurons);
+				index_start = index_start + num_neurons;
+			}
+			for(i=0; i < num_predecessors; i++){
+				size_t iter = predecessors[i]-1;
+				while(iter!=common_predecessor){
+					get_lb_using_predecessor_layer(pr,fp, &sub_expr[i],  iter);
+					iter = fp->layers[iter]->predecessors[0]-1;
+				}
+			}
+			double inf_cst = lexpr->inf_cst;
+			double sup_cst = lexpr->sup_cst;
+			free_expr(lexpr);
+			lexpr = copy_expr(sub_expr[0]);
+			for(i=1; i < num_predecessors; i++){
+				add_expr(pr, lexpr, sub_expr[i]);
+				free_expr(sub_expr[i]);
+			}	
+			lexpr->inf_cst = lexpr->inf_cst + inf_cst;
+			lexpr->sup_cst = lexpr->sup_cst + sup_cst;
+			free_expr(sub_expr[0]);
+			free(sub_expr);
+			k = common_predecessor;
+		}
+		else if(fp->layers[k]->num_predecessors==2){
 				expr_t * lexpr_copy = copy_expr(lexpr);
 				lexpr_copy->inf_cst = 0;
 				lexpr_copy->sup_cst = 0;
@@ -506,7 +543,7 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	if(fp->numlayers==layerno){
 		k = layerno-1;
 	}
-	else if(fp->layers[layerno]->num_predecessors==2){
+	else if((fp->layers[layerno]->is_concat == true) || (fp->layers[layerno]->num_predecessors==2)){
 		k = layerno;
 	}
 	else{
@@ -514,7 +551,47 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	}	
 	double res =INFINITY;
 	while(k >=0){
-		if(fp->layers[k]->num_predecessors==2){
+		if(fp->layers[k]->is_concat==true){
+                        //sort_expr(lexpr);
+                        size_t i;
+                        size_t *predecessors = fp->layers[k]->predecessors;
+                        size_t num_predecessors = fp->layers[k]->num_predecessors;
+                        size_t common_predecessor = UINT_MAX;
+                        expr_t ** sub_expr = (expr_t**)malloc(num_predecessors*sizeof(expr_t*));
+                        size_t index_start = 0;
+                        for(i=0; i < num_predecessors; i++){
+                                size_t pred = predecessors[i]-1;
+                                size_t num_neurons = fp->layers[pred]->dims;
+                                if(pred < common_predecessor){
+                                        common_predecessor = pred;
+                                }
+                                sub_expr[i] = extract_subexpr(uexpr,index_start, num_neurons);
+                                index_start = index_start + num_neurons;
+                        }
+                        for(i=0; i < num_predecessors; i++){
+                                size_t iter = predecessors[i]-1;
+                                while(iter!=common_predecessor){
+                                        get_ub_using_predecessor_layer(pr,fp, &sub_expr[i],  iter);
+                                        iter = fp->layers[iter]->predecessors[0]-1;
+                                }
+                        }
+			double inf_cst = uexpr->inf_cst;
+			double sup_cst = uexpr->sup_cst;
+                        free_expr(uexpr);
+                        uexpr = copy_expr(sub_expr[0]);
+                        for(i=1; i < num_predecessors; i++){
+                                add_expr(pr, uexpr, sub_expr[i]);
+                                free_expr(sub_expr[i]);
+                        }
+                        free_expr(sub_expr[0]);
+                        free(sub_expr);
+			uexpr->inf_cst = uexpr->inf_cst + inf_cst;
+			uexpr->sup_cst = uexpr->sup_cst + sup_cst;
+                        k = common_predecessor;
+                }
+
+		
+		else if(fp->layers[k]->num_predecessors==2){
 				expr_t * uexpr_copy = copy_expr(uexpr);
 				uexpr_copy->inf_cst = 0;
 				uexpr_copy->sup_cst = 0;
