@@ -5,6 +5,7 @@
 #include "octahedron.h"
 #include "fp_mat.h"
 #include "mpq.h"
+#include "curve_bounds.h"
 
 using namespace std;
 
@@ -138,140 +139,41 @@ vector<DD_mpq> get_pool_quadrants(const int K, const vector<double*>& A) {
     return quadrants;
 }
 
-struct Line {
-    mpq_t k;
-    mpq_t b;
-
-    void init() {
-        mpq_init(k);
-        mpq_init(b);
-    }
-
-    void free() {
-        mpq_clear(k);
-        mpq_clear(b);
-    }
-
-    void xy(const mpq_t& x, mpq_t& y) {
-        mpq_mul(y, x, k);
-        mpq_add(y, y, b);
-    }
-};
-
 struct SegmentCons {
-    Line lb;
-    Line ub;
+    mpq_t k_lb, b_lb, k_ub, b_ub;
 
     void init() {
-        lb.init();
-        ub.init();
+        mpq_inits(k_lb, b_lb, k_ub, b_ub, NULL);
     }
 
     void free() {
-        lb.free();
-        ub.free();
+        mpq_clears(k_lb, b_lb, k_ub, b_ub, NULL);
+    }
+
+    void lb(const mpq_t& x, mpq_t& y) {
+        mpq_mul(y, x, k_lb);
+        mpq_add(y, y, b_lb);
+    }
+
+    void ub(const mpq_t& x, mpq_t& y) {
+        mpq_mul(y, x, k_ub);
+        mpq_add(y, y, b_ub);
     }
 };
 
-void line_tanh_derivative(Line& line, double x_fp) {
-    mpq_t x, y, one;
-    mpq_inits(x, y, one, NULL);
-    mpq_set_si(one, 1, 1);
+SegmentCons get_tasi_constraints(double x_lb, double x_ub, Activation activation) {
+    ASRTF(x_lb < x_ub, "lb should be smaller than ub");
 
-    mpq_set_d(x, x_fp);
-    mpq_set_d(y, tanh(x_fp));
-
-    // dy = 1 - y^2
-    mpq_mul(line.k, y, y);
-    mpq_sub(line.k, one, line.k);
-
-    mpq_mul(line.b, x, line.k);
-    mpq_sub(line.b, y, line.b);
-
-    mpq_clears(x, y, one, NULL);
-}
-
-void mpq_set_sigm(mpq_t& y, double x_fp) {
-    mpq_t one;
-    mpq_init(one);
-    mpq_set_si(one, 1, 1);
-
-    // y = 1 / (1 + e^(-x))
-    mpq_set_d(y, exp(-x_fp));
-    mpq_add(y, one, y);
-    mpq_div(y, one, y);
-
-    mpq_clear(one);
-}
-
-void line_sigm_derivative(Line& line, double x_fp) {
-    mpq_t x, y, one;
-    mpq_inits(x, y, one, NULL);
-    mpq_set_si(one, 1, 1);
-
-    mpq_set_d(x, x_fp);
-    mpq_set_sigm(y, x_fp);
-
-    // dy = (1 - y) * y
-    mpq_sub(line.k, one, y);
-    mpq_mul(line.k, y, line.k);
-
-    mpq_mul(line.b, x, line.k);
-    mpq_sub(line.b, y, line.b);
-
-    mpq_clears(x, y, one, NULL);
-}
-
-void line_chord(Line& line, mpq_t& x1, mpq_t& x2, mpq_t& y1, mpq_t& y2) {
-    ASRTF(mpq_cmp(x1, x2) != 0, "x1 and x2 can't be equal.");
-
-    // k = (y2 - y1) / (x2 - x1)
-    mpq_sub(line.k, y2, y1);
-    mpq_sub(line.b, x2, x1);
-    mpq_div(line.k, line.k, line.b);
-
-    // b = y1 - k * x1
-    mpq_mul(line.b, x1, line.k);
-    mpq_sub(line.b, y1, line.b);
-}
-
-SegmentCons get_tasi_constraints(double x_lb_fp, double x_ub_fp, Activation activation) {
-    ASRTF(x_lb_fp < x_ub_fp, "lb should be smaller than ub");
-    if (x_lb_fp < 0) {
-        ASRTF(x_ub_fp <= 0, "Input can't split zero.");
-    }
-    mpq_t x_lb, x_ub, y_lb, y_ub;
-    mpq_inits(x_lb, x_ub, y_lb, y_ub, NULL);
-    mpq_set_d(x_lb, x_lb_fp);
-    mpq_set_d(x_ub, x_ub_fp);
+    double k_lb, b_lb, k_ub, b_ub;
+    compute_S_curve_bounds(x_lb, x_ub, activation==Sigm, &k_lb, &b_lb, &k_ub, &b_ub);
 
     SegmentCons sc;
     sc.init();
-    if (activation == Tanh) {
-        mpq_set_d(y_lb, tanh(x_lb_fp));
-        mpq_set_d(y_ub, tanh(x_ub_fp));
-    } else {
-        mpq_set_sigm(y_lb, x_lb_fp);
-        mpq_set_sigm(y_ub, x_ub_fp);
-    }
+    mpq_set_d(sc.k_lb, k_lb);
+    mpq_set_d(sc.b_lb, b_lb);
+    mpq_set_d(sc.k_ub, k_ub);
+    mpq_set_d(sc.b_ub, b_ub);
 
-    if (x_lb_fp < 0) {
-        if (activation == Tanh) {
-            line_tanh_derivative(sc.lb, x_ub_fp);
-        } else {
-            line_sigm_derivative(sc.lb, x_ub_fp);
-        }
-        line_chord(sc.ub, x_lb, x_ub, y_lb, y_ub);
-    } else {
-        line_chord(sc.lb, x_lb, x_ub, y_lb, y_ub);
-        if (activation == Tanh) {
-            line_tanh_derivative(sc.ub, x_lb_fp);
-        } else {
-            line_sigm_derivative(sc.ub, x_lb_fp);
-        }
-    }
-
-    mpq_clears(x_lb, x_ub, y_lb, y_ub, NULL);
     return sc;
 }
 
@@ -332,13 +234,13 @@ map<Quadrant, vector<mpq_t*>> get_tasi_quadrants_cdd(
             mpq_arr_set_zero(2 * K + 1, row_ub);
 
             // Lower bound y >= kx + b equivalent -b - kx + y >= 0
-            mpq_neg(row_lb[0], sc.lb.b);
-            mpq_neg(row_lb[xi + 1], sc.lb.k);
+            mpq_neg(row_lb[0], sc.b_lb);
+            mpq_neg(row_lb[xi + 1], sc.k_lb);
             mpq_set_si(row_lb[xi + 1 + K], 1, 1);
 
             // Upper bound y <= kx + b equivalent b + kx - y >= 0
-            mpq_set(row_ub[0], sc.ub.b);
-            mpq_set(row_ub[xi + 1], sc.ub.k);
+            mpq_set(row_ub[0], sc.b_ub);
+            mpq_set(row_ub[xi + 1], sc.k_ub);
             mpq_set_si(row_ub[xi + 1 + K], -1, 1);
         }
 
@@ -412,8 +314,8 @@ map<Quadrant, vector<mpq_t*>> get_tasi_quadrants_cdd_lift(
             mpq_arr_set(K + 1, V[base], v_base);
             for (int xi = 0; xi < K; xi++) {
                 SegmentCons sc = segment_cons[xi][quadrant[xi]];
-                sc.lb.xy(v_base[xi + 1], y_lb);
-                sc.ub.xy(v_base[xi + 1], y_ub);
+                sc.lb(v_base[xi + 1], y_lb);
+                sc.ub(v_base[xi + 1], y_ub);
 
                 int cmp = mpq_cmp(y_lb, y_ub);
                 ASRTF(cmp <= 0, "Unsoundness detected.");

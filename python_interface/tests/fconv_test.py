@@ -102,7 +102,7 @@ def compute_k1_relaxation(hrep, activation):
     return final
 
 
-def test_volume_k1(filename, activation):
+def test_volume_k1(filename, activation, precision="float"):
     assert activation in ["relu", "tanh", "sigm"]
     print("k1 volume test", activation, filename)
     hrep = read_matrix(filename)
@@ -110,15 +110,15 @@ def test_volume_k1(filename, activation):
     res_fast = activation2cdd[activation](hrep)
     res_1d = compute_k1_relaxation(hrep, activation)
 
-    volume_fast = hrep2volume(res_fast, "float")
-    volume_1d = hrep2volume(res_1d, "float")
+    volume_fast = hrep2volume(res_fast, precision)
+    volume_1d = hrep2volume(res_1d, precision)
 
     over_approximation = round(volume_1d / volume_fast, 4)
 
     print("\tComparison with k1 volume (higher is better)", over_approximation)
 
 
-def test_volume_optimal(filename, activation):
+def test_volume_optimal(filename, activation, precision="float"):
     assert activation in ["relu", "pool", "tanh", "sigm"]
     print("optimal volume test", activation, filename)
     hrep = read_matrix(filename)
@@ -133,9 +133,9 @@ def test_volume_optimal(filename, activation):
 
     res_concat = np.concatenate([res_cdd, res_fast], axis=0)
 
-    volume_cdd = hrep2volume(res_cdd, "float")
-    volume_fast = hrep2volume(res_fast, "float")
-    volume_concat = hrep2volume(res_concat, "float")
+    volume_cdd = hrep2volume(res_cdd, precision)
+    volume_fast = hrep2volume(res_fast, precision)
+    volume_concat = hrep2volume(res_concat, precision)
 
     over_approximation = round(volume_fast / volume_cdd, 4)
     soundness = round(volume_concat / volume_cdd, 4)
@@ -156,12 +156,11 @@ test_volume_optimal("k3/1.txt", "relu")
 test_volume_optimal("k3/5.txt", "relu")
 test_volume_optimal("k3/1.txt", "pool")
 test_volume_optimal("k3/2.txt", "pool")
+
 for activation in ["tanh", "sigm"]:
-    test_volume_optimal("k1/1.txt", activation)
-    test_volume_optimal("k1/2.txt", activation)
-    test_volume_optimal("k2/1.txt", activation)
-    test_volume_optimal("k2/2.txt", activation)
+    for filename in ["k1/1.txt", "k1/2.txt", "k2/1.txt", "k2/2.txt"]:
+        test_volume_optimal(filename, activation, "fraction")
 
 for activation in ["relu", "tanh", "sigm"]:
     for filename in ["k2/1.txt", "k2/2.txt"]:
-        test_volume_k1(filename, activation)
+        test_volume_k1(filename, activation, "fraction")
