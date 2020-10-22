@@ -400,7 +400,7 @@ vector<double*> ktasi_with_cdd(int K, const vector<double*>& A, Activation activ
             mpq_arr_set(2 * K + 1, vertices->matrix[counter], v);
             counter++;
         }
-        mpq_mat_free(K + 1, entry.second);
+        mpq_mat_free(2 * K + 1, entry.second);
     }
     assert(counter == num_vertices && "Counter should equal the number of vertices.");
 
