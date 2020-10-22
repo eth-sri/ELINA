@@ -4,10 +4,11 @@
 #include "pdd.h"
 #include "utils.h"
 #include "fp_mat.h"
+#include "curve_bounds.h"
 
 using namespace std;
 
-void project_to_relu_y_branch(const int xi, PDD& pdd_dual, const Polarity polarity) {
+void lift_to_relu_y_branch(const int xi, PDD& pdd_dual, const Polarity polarity) {
     const int dim = pdd_dual.dim;
     pdd_dual.dim++;
 
@@ -51,7 +52,7 @@ void project_to_relu_y_branch(const int xi, PDD& pdd_dual, const Polarity polari
     set_enable_all(incidence[incidence.size() - 1]);
 }
 
-void project_to_tasi_y_branch(const int xi,
+void lift_to_tasi_y_branch(const int xi,
                               PDD& pdd_dual,
                               const double x_bound,
                               Activation activation) {
@@ -71,38 +72,10 @@ void project_to_tasi_y_branch(const int xi,
     }
     vector<set_t>& incidence = pdd_dual.incidence;
 
-    double y_bound, k_lb, b_lb, k_ub, b_ub;
-    if (activation == Tanh) {
-        y_bound = tanh(x_bound);
-        if (x_bound < 0) {
-            k_lb = 1 - y_bound * y_bound;
-            b_lb = y_bound - x_bound * k_lb;
-            k_ub = y_bound / x_bound;
-            b_ub = 0;
-        } else {
-            k_lb = y_bound / x_bound;
-            b_lb = 0;
-            k_ub = 1 - y_bound * y_bound;
-            b_ub = y_bound - x_bound * k_ub;
-        }
-    } else {
-        // Numerically stable sigmoid
-        // http://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/
-        if (x_bound < 0) {
-            y_bound = exp(x_bound);
-            y_bound = y_bound / (1 + y_bound);
-            k_lb = y_bound * (1 - y_bound);
-            b_lb = y_bound - x_bound * k_lb;
-            k_ub = (y_bound - 0.5) / x_bound;
-            b_ub = 0.5;
-        } else {
-            y_bound = 1 / (1 + exp(-x_bound));
-            k_lb = (y_bound - 0.5) / x_bound;
-            b_lb = 0.5;
-            k_ub = y_bound * (1 - y_bound);
-            b_ub = y_bound - x_bound * k_ub;
-        }
-    }
+    double x_lb = min(0.0, x_bound);
+    double x_ub = max(0.0, x_bound);
+    double k_lb, b_lb, k_ub, b_ub;
+    compute_S_curve_bounds(x_lb, x_ub, activation==Sigm, &k_lb, &b_lb, &k_ub, &b_ub);
 
     vector<double*> V_new;
     V_new.reserve(V.size() * 2);
@@ -112,22 +85,20 @@ void project_to_tasi_y_branch(const int xi,
     for (size_t i = 0; i < V.size(); i++) {
         double* v_lb = fp_arr_resize(dim + 1, dim, V[i]);
         double x_cur = v_lb[xi + 1];
-        if (x_cur == x_bound) {
-            // Both lower and upper bound would map to the same y.
-            v_lb[dim] = y_bound;
-            map_lb[i] = V_new.size();
-            map_ub[i] = V_new.size();
-            V_new.push_back(v_lb);
-            continue;
-        }
-        double* v_ub = fp_arr_copy(dim + 1, v_lb);
-        v_lb[dim] = k_lb * x_cur + b_lb;
-        v_ub[dim] = k_ub * x_cur + b_ub;
-
+        double lb = k_lb * x_cur + b_lb;
+        double ub = k_ub * x_cur + b_ub;
+        ASRTF(lb <= ub, "Unsoundness detected.");
+        v_lb[dim] = lb;
         map_lb[i] = V_new.size();
         V_new.push_back(v_lb);
-        map_ub[i] = V_new.size();
-        V_new.push_back(v_ub);
+        if (lb == ub) {
+            map_ub[i] = map_lb[i];
+        } else {
+            double* v_ub = fp_arr_copy(dim + 1, v_lb);
+            v_ub[dim] = ub;
+            map_ub[i] = V_new.size();
+            V_new.push_back(v_ub);
+        }
     }
 
     for (size_t i = 0; i < H.size(); i++) {
@@ -199,14 +170,11 @@ PDD decomposition_recursive(Quadrant& quadrant, const map<Quadrant, PDD>& quadra
         quadrant.pop_back();
 
         if (activation == Relu) {
-            project_to_relu_y_branch(xi, pdd_minus, MINUS);
-            project_to_relu_y_branch(xi, pdd_plus, PLUS);
-        } else if (activation == Tanh) {
-            project_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], Tanh);
-            project_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], Tanh);
+            lift_to_relu_y_branch(xi, pdd_minus, MINUS);
+            lift_to_relu_y_branch(xi, pdd_plus, PLUS);
         } else {
-            project_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], Sigm);
-            project_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], Sigm);
+            lift_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], activation);
+            lift_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], activation);
         }
 
         PDD_debug_consistency_check(pdd_minus);

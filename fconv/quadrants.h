@@ -15,6 +15,6 @@ map<Quadrant, vector<mpq_t*>> get_tasi_quadrants_cdd(int K,
                                                      Activation activation);
 
 // Tanh/Sigmoid
-map<Quadrant, vector<mpq_t*>> get_tasi_quadrants_cdd_dim(int K,
+map<Quadrant, vector<mpq_t*>> get_tasi_quadrants_cdd_lift(int K,
                                                          const vector<double*>& A,
                                                          Activation activation);
