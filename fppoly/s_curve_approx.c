@@ -1,5 +1,5 @@
 #include "s_curve_approx.h"
-
+#include "curve_bounds.h"
 
 void compute_chord_slope(double *slope_inf, double *slope_sup, double f_sup_l, double f_sup_u, 
 			 double f_inf_l, double f_inf_u, double inf_l, double inf_u, double sup_l, double sup_u){
@@ -248,8 +248,10 @@ void handle_s_curve_layer(elina_manager_t *man, elina_abstract0_t* element, size
 	neuron_t **in_neurons = fp->layers[k]->neurons;
 	size_t i;
 	for(i=0; i < num_neurons; i++){
-		out_neurons[i]->lexpr = create_s_curve_expr(pr,out_neurons[i], in_neurons[i], i, true, is_sigmoid);
-		out_neurons[i]->uexpr = create_s_curve_expr(pr, out_neurons[i], in_neurons[i], i, false, is_sigmoid);
+		double k_lb, k_ub, b_lb, b_ub;
+		compute_S_curve_bounds(out_neurons[i]->lb, out_neurons[i]->ub, is_sigmoid, &k_lb, &b_lb, &k_ub, &b_ub);
+		out_neurons[i]->lexpr = create_sparse_expr(&k_lb, b_lb, &i, 1);
+		out_neurons[i]->uexpr = create_sparse_expr(&k_ub, b_ub, &i, 1);
 	}
 }
 
