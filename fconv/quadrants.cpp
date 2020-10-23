@@ -1,5 +1,5 @@
 #include "quadrants.h"
-#include "curve_bounds.h"
+#include "../fppoly/curve_bounds.h"
 #include "fp_mat.h"
 #include "mpq.h"
 #include "octahedron.h"

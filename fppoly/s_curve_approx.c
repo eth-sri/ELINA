@@ -250,7 +250,12 @@ void handle_s_curve_layer(elina_manager_t *man, elina_abstract0_t* element, size
 	int k = predecessors[0]-1;
 	neuron_t **in_neurons = fp->layers[k]->neurons;
 	size_t i;
-        for (i = 0; i < num_neurons; i++) {
+	for(i=0; i < num_neurons; i++) {
+          //        out_neurons[i]->lexpr =
+          //        create_s_curve_expr(pr,out_neurons[i], in_neurons[i], i,
+          //        true, is_sigmoid); out_neurons[i]->uexpr =
+          //        create_s_curve_expr(pr, out_neurons[i], in_neurons[i], i,
+          //        false, is_sigmoid);
           double k_lb, k_ub, b_lb, b_ub;
           compute_S_curve_bounds(out_neurons[i]->lb, out_neurons[i]->ub,
                                  is_sigmoid, &k_lb, &b_lb, &k_ub, &b_ub);
