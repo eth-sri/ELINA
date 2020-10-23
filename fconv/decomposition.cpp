@@ -1,4 +1,4 @@
-#include "curve_bounds.h"
+#include "../fppoly/curve_bounds.h"
 #include "fp_mat.h"
 #include "pdd.h"
 #include "utils.h"

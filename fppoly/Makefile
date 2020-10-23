@@ -56,6 +56,8 @@ all : libfppoly.so
 libfppoly.so : $(OBJS) $(FPPOLYH)
 	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
+test_curve_bounds: test_curve_bounds.c curve_bounds.o
+	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 fppoly.o : fppoly.h fppoly.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o fppoly.o fppoly.c $(LIBS)
