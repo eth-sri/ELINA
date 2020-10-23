@@ -4,7 +4,7 @@
 #include "pdd.h"
 #include "utils.h"
 #include "fp_mat.h"
-#include "curve_bounds.h"
+#include "../fppoly/curve_bounds.h"
 
 using namespace std;
 

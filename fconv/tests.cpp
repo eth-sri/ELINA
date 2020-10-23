@@ -5,7 +5,6 @@
 #include <map>
 #include <unistd.h>
 #include <random>
-#include "curve_bounds.h"
 #include "fconv.h"
 #include "octahedron.h"
 #include "quadrants.h"
@@ -628,116 +627,6 @@ void handler(int sig) {
     exit(1);
 }
 
-
-// Returns the soundness margin. For soundness should be non-negative.
-double line_s_curve_soundness_margin(double x, double k, double b, bool is_upper, bool is_sigm) {
-    double y = is_sigm ? 1 / (1 + exp(-x)) : tanh(x);
-    double margin = k * x + b - y;
-    if (!is_upper) {
-        margin = -margin;
-    }
-    return margin;
-}
-
-double min_margin_concave_region(double k, double b, double x_lb, double x_ub, bool is_upper, bool is_sigm) {
-    if ((is_upper && x_ub <= 0) || (!is_upper && x_lb >= 0)) {
-        // Sufficiently big number.
-        return 1;
-    }
-
-    double x_left, x_right;
-    if (is_upper) {
-        x_left = max(0.0, x_lb);
-        x_right = x_ub;
-    } else {
-        x_left = x_lb;
-        x_right = min(0.0, x_ub);
-    }
-
-    double v_left = line_s_curve_soundness_margin(x_left, k, b, is_upper, is_sigm);
-    double v_right = line_s_curve_soundness_margin(x_right, k, b, is_upper, is_sigm);
-
-    while (x_right - x_left > EPS) {
-        double x_left_third = x_left + (x_right - x_left) / 3;
-        double x_right_third = x_right - (x_right - x_left) / 3;
-
-        double v_left_third = line_s_curve_soundness_margin(x_left_third, k, b, is_upper, is_sigm);
-        double v_right_third = line_s_curve_soundness_margin(x_right_third, k, b, is_upper, is_sigm);
-
-        ASRTF((v_left_third <= v_left + EPS / 20 || v_left_third <= v_right + EPS / 20) &&
-                (v_right_third <= v_left + EPS / 20 || v_right_third <= v_right + EPS / 20),
-                "Function expected to be unimodal.");
-
-        if (v_left_third > v_right_third) {
-            x_left = x_left_third;
-            v_left = v_left_third;
-        } else {
-            x_right = x_right_third;
-            v_right = v_right_third;
-        }
-    }
-    return min(v_left, v_right);
-}
-
-double min_margin_convex_region_and_zero(double k, double b, double x_lb, double x_ub, bool is_upper, bool is_sigm) {
-    if ((is_upper && x_lb > 0) || (!is_upper && x_ub < 0)) {
-        return 1;
-    }
-
-    double x_left, x_right;
-    if (is_upper) {
-        x_left = x_lb;
-        x_right = min(0.0, x_ub);
-    } else {
-        x_left = max(0.0, x_lb);
-        x_right = x_ub;
-    }
-
-    double v_left = line_s_curve_soundness_margin(x_left, k, b, is_upper, is_sigm);
-    double v_right = line_s_curve_soundness_margin(x_right, k, b, is_upper, is_sigm);
-    return min(v_left, v_right);
-}
-
-void test_S_curve_bounds(double lb, double ub, int N_samples, bool is_sigm) {
-    string activation = is_sigm ? "Sigm" : "Tanh";
-    cout << "running S curve bounds test lb " << lb << " ub " << ub \
-        << " N " << N_samples << " for " << activation << endl;
-    uniform_real_distribution<double> uniform(lb, ub);
-    default_random_engine eng;
-    eng.seed(std::chrono::system_clock::now().time_since_epoch().count());
-
-
-    for (int i = 0; i < N_samples; i++) {
-        double x1 = uniform(eng);
-        double x2 = uniform(eng);
-        double x_lb = min(x1, x2);
-        double x_ub = max(x1, x2);
-
-        double k_lb, b_lb, k_ub, b_ub;
-        compute_S_curve_bounds(x_lb, x_ub, is_sigm, &k_lb, &b_lb, &k_ub, &b_ub);
-
-        double m_lb_concave = min_margin_concave_region(k_lb, b_lb, x_lb, x_ub, false, is_sigm);
-        double m_lb_convex = min_margin_convex_region_and_zero(k_lb, b_lb, x_lb, x_ub, false, is_sigm);
-        double m_ub_concave = min_margin_concave_region(k_ub, b_ub, x_lb, x_ub, true, is_sigm);
-        double m_ub_convex = min_margin_convex_region_and_zero(k_ub, b_ub, x_lb, x_ub, true, is_sigm);
-        double margins[] = {m_lb_concave, m_lb_convex, m_ub_concave, m_ub_convex};
-        double min_margin = *min_element(margins, margins + 4);
-        ASRTF(min_margin >= EPS,
-              "Failed x_lb " + to_string(x_lb) + " x_ub " + to_string(x_ub) + " margin " + to_string(min_margin));
-    }
-    cout << "\tpassed" << endl;
-}
-
-void run_all_S_curve_bounds_tests() {
-    cout << "Running all S curve bound tests" << endl;
-    vector<double> bounds = {0.1, 1, 10, 100, 1000};
-    constexpr int N_samples = 10000;
-    for (auto bound : bounds) {
-        test_S_curve_bounds(-bound, bound, N_samples, false);
-        test_S_curve_bounds(-bound, bound, N_samples, true);
-    }
-}
-
 int main() {
     signal(SIGSEGV, handler);
 
@@ -756,7 +645,6 @@ int main() {
     run_all_relaxation_cdd_tests(Sigm, 2); // k=3 1-2 minutes
     run_1relu_test();
     run_all_sparse_cover_tests();
-    run_all_S_curve_bounds_tests();
 
     return 0;
 }
