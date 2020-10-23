@@ -23,7 +23,7 @@
 #
 
 cmake_minimum_required (VERSION 3.8)
-project ("GPUPoly" VERSION 0.9.0 LANGUAGES CXX CUDA)
+project ("GPUPoly" VERSION 0.10.0 LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CUDA_STANDARD 14)
@@ -37,14 +37,11 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN yes)
 configure_file("config.h.in" "config.h")
 add_library (gpupoly SHARED "bindings.cu" "layers/maxpool2d.cu" "affineexpr.cu" "layers/conv2d.cu" "layers/dense.cu" "mmm.cu" "mvm.cu" "network.cu" "layers/relu.cu" "matrix.cu" "vector.cu" "filters.cu")
-set_target_properties(gpupoly PROPERTIES
-	VERSION 0.9.0
-	SOVERSION 0.9)
+set_target_properties(gpupoly PROPERTIES VERSION 0.10.0 SOVERSION 0.10)
 generate_export_header(gpupoly)
+target_include_directories (gpupoly PRIVATE .)
 target_include_directories (gpupoly PRIVATE ${PROJECT_BINARY_DIR})
-target_include_directories(gpupoly PRIVATE src)
-target_include_directories(gpupoly PRIVATE include)
-target_link_libraries(gpupoly CUDA::cublas)
+target_link_libraries(gpupoly CUDA::cublas) 
 install(TARGETS gpupoly)
 
 

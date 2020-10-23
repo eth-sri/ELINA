@@ -34,7 +34,7 @@ class Network:
         _lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('gpupoly'))
     else:
         #_lib=ctypes.cdll.LoadLibrary('${GPUPoly_BINARY_DIR}/dpGPUlib.so')
-        _lib=ctypes.cdll.LoadLibrary('libgpupoly.so')
+        _lib=ctypes.cdll.LoadLibrary('/local/home/francois/vs/gpupoly/build/Linux-GCC-Release/libgpupoly.so')
 
     _lib.create.argtypes = [ctypes.c_int]
     _lib.create.restype = ctypes.c_void_p
