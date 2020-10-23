@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 const double PRECISION = 1.0E-7;
 
@@ -230,12 +231,16 @@ void compute_S_curve_bounds(double x_lb, double x_ub, bool is_sigm,
         abort();
     }
 
-    if (x_lb == x_ub) {
-        double y = is_sigm ? sigm(x_lb) : tanh(x_lb);
+    if (x_ub - x_lb <= 1.0E-5) {
+        if (is_sigm) {
+            *b_lb = sigm(x_lb);
+            *b_ub = sigm(x_ub);
+        } else {
+            *b_lb = tanh(x_lb);
+            *b_ub = tanh(x_ub);
+        }
         *k_lb = 0;
-        *b_lb = y;
         *k_ub = 0;
-        *b_ub = y;
     } else {
         if ((is_sigm && x_lb <= -SIGM_LIM) || (!is_sigm && x_lb <= -TANH_LIM)) {
             *k_lb = 0;
@@ -252,6 +257,6 @@ void compute_S_curve_bounds(double x_lb, double x_ub, bool is_sigm,
     }
 
     // Adjusting for numerical soundness (with big safe margin).
-    *b_lb -= 100 * PRECISION;
-    *b_ub += 100 * PRECISION;
+    *b_lb -= 1.0E-5;
+    *b_ub += 1.0E-5;
 }
