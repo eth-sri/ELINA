@@ -14,3 +14,7 @@ ocaml_interface/elina_poly_caml.c
 ocaml_interface/tmp/
 
 Makefile.config
+/.vs
+/gpupoly/.idea
+/gpupoly/out/build
+/python_interface/.idea

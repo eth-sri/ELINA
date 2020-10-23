@@ -25,10 +25,11 @@
 
    Implementation of the methods of ReLU layer.
   */
-#include "../intv.h"
-#include "filters.h"
 #include "relu.h"
+#include "../intv.h"
+#include "../filters.h"
 #include <type_traits>
+
 
 template<> inline Vector<double>& ReLU::activCst<double>() { return activCstD; }
 template<> inline Vector<double>& ReLU::activFac<double>() { return activFacD; }

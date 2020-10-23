@@ -25,10 +25,10 @@
    Implementation of the methods of the class MaxPool2D. Definition of this class can be found in src/layers/maxpool2d.h.
   */
 
-#include "filters.h"
 #include "maxpool2d.h"
-#include <cmath>
+#include "../filters.h"
 #include <limits>
+#include <cmath>
 
 template<> inline Vector<double>& MaxPool2D::modelCst<double>() { return modelCstD; }
 template<> inline Vector<double>& MaxPool2D::modelFac<double>() { return modelFacD; }
