@@ -126,10 +126,70 @@ double margin_in_segm(double x_lb, double x_ub, double k_lb, double b_lb,
   return min_margin;
 }
 
-void test_S_curve_bounds(double LB, double UB, int N_samples, bool is_sigm) {
-  printf("Running test lb %f ub %f samples %d for %s\n", LB, UB, N_samples,
-         is_sigm ? "Sigm" : "Tanh");
+void get_old_deeppoly_bound(double *k, double *b, double x_lb, double x_ub,
+                            bool is_upper, bool is_sigm) {
+  double y_lb, y_ub, k_lb, k_ub;
+  if (is_sigm) {
+    y_lb = 1 / (1 + exp(-x_lb));
+    y_ub = 1 / (1 + exp(-x_ub));
+    k_lb = (1 - y_lb) * y_lb;
+    k_ub = (1 - y_ub) * y_ub;
+  } else {
+    y_lb = tanh(x_lb);
+    y_ub = tanh(x_ub);
+    k_lb = 1 - y_lb * y_lb;
+    k_ub = 1 - y_ub * y_ub;
+  }
+  double b_lb = y_lb - k_lb * x_lb;
+  double b_ub = y_ub - k_ub * x_ub;
+  if ((x_ub <= 0 && is_upper) || (0 <= x_lb && !is_upper)) {
+    *k = (y_ub - y_lb) / (x_ub - x_lb);
+    *b = y_ub - *k * x_ub;
+    return;
+  }
+  if (x_ub <= 0) {
+    *k = k_lb;
+    *b = b_lb;
+    return;
+  }
+  if (0 <= x_lb) {
+    *k = k_ub;
+    *b = b_ub;
+    return;
+  }
+  *k = min(k_lb, k_ub);
+  if (is_upper) {
+    *b = y_ub - *k * x_ub;
+  } else {
+    *b = y_lb - *k * x_lb;
+  }
+}
 
+double area_lb_ub(double x_lb, double x_ub, double k_lb, double b_lb,
+                  double k_ub, double b_ub) {
+  double lb1 = x_lb * k_lb + b_lb;
+  double lb2 = x_ub * k_lb + b_lb;
+  double ub1 = x_lb * k_ub + b_ub;
+  double ub2 = x_ub * k_ub + b_ub;
+  if (lb1 > ub1 + 10 * EPS || lb2 > ub2 + 10 * EPS) {
+    printf("area_lb_ub lines not sound");
+    abort();
+  }
+  double y_min = min(lb1, lb2);
+  double y_max = max(ub1, ub2);
+  double area = y_max - y_min;
+  area -= (max(lb1, lb2) - y_min) / 2;
+  area -= (y_max - min(ub1, ub2)) / 2;
+  return area;
+}
+
+void test_S_curve_bounds(double LB, double UB, int N_samples, bool is_sigm) {
+  printf("Running test lb %0.4f ub %0.4f samples %d for %s\n", LB, UB,
+         N_samples, is_sigm ? "Sigm" : "Tanh");
+
+  double ratio_min = 0;
+  double ratio_max = 0;
+  double ratio_sum = 0;
   for (int i = 0; i < N_samples; i++) {
     double x_lb = d_rand(LB, UB);
     double x_ub = d_rand(LB, UB);
@@ -149,7 +209,50 @@ void test_S_curve_bounds(double LB, double UB, int N_samples, bool is_sigm) {
              is_sigm ? "Sigm" : "Tanh");
       abort();
     }
+
+    double k_lb2, b_lb2, k_ub2, b_ub2;
+    get_old_deeppoly_bound(&k_lb2, &b_lb2, x_lb, x_ub, false, is_sigm);
+    get_old_deeppoly_bound(&k_ub2, &b_ub2, x_lb, x_ub, true, is_sigm);
+    double min_margin2 =
+        margin_in_segm(x_lb, x_ub, k_lb2, b_lb2, k_ub2, b_ub2, is_sigm);
+
+    if (min_margin < EPS) {
+      printf("Failed x_lb %f x_ub %f for %s with margin %f\n", x_lb, x_ub,
+             is_sigm ? "Sigm" : "Tanh", min_margin);
+      abort();
+    }
+
+    // The old deeppoly code is used just in this test to estimate the quality
+    // of approximation and is not made sound thus -EPS.
+    if (min_margin2 < -EPS) {
+      printf("Warning old dp x_lb %f x_ub %f for %s has margin %f\n", x_lb,
+             x_ub, is_sigm ? "Sigm" : "Tanh", min_margin2);
+    }
+
+    double area = area_lb_ub(x_lb, x_ub, k_lb, b_lb, k_ub, b_ub);
+    double area2 = area_lb_ub(x_lb, x_ub, k_lb2, b_lb2, k_ub2, b_ub2);
+    if (area == 0) {
+      continue;
+    }
+
+    double ratio = area2 / area;
+    //        if (ratio < 0.5) {
+    //            double delta = x_ub - x_lb;
+    //            printf("delta %f x_lb %f x_ub %f ratio %f \n"
+    //                   "k_lb %f b_lb %f k_ub %f b_ub %f \n",
+    //                   delta, x_lb, x_ub, ratio, k_lb, b_lb, k_ub, b_ub);
+    //        }
+    if (i == 0 || ratio < ratio_min) {
+      ratio_min = ratio;
+    }
+    if (i == 0 || ratio > ratio_max) {
+      ratio_max = ratio;
+    }
+    ratio_sum += ratio;
   }
+
+  printf("\tratios with old deeppoly bounds min %f max %0.4f mean %0.4f\n",
+         ratio_min, ratio_max, ratio_sum / N_samples);
   printf("\tpassed\n");
 }
 
