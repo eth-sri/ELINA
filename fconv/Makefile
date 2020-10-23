@@ -26,7 +26,7 @@ INCLDIR = $(ELINA_PREFIX)/include
 INSTALL = install
 INSTALLd = install -d
 
-OBJS = fconv.o relaxation.o decomposition.o split_in_quadrants.o octahedron.o quadrants.o pdd.o sparse_cover.o mpq.o utils.o dynamic_bitset.o fp_mat.o curve_bounds.o
+OBJS = fconv.o relaxation.o decomposition.o split_in_quadrants.o octahedron.o quadrants.o pdd.o sparse_cover.o mpq.o utils.o dynamic_bitset.o fp_mat.o S_curve.o
 
 LIBS = $(GMP_LIB_FLAG) -lgmp -lcddgmp
 INCLUDES = $(GMP_INCLUDE_FLAG)
@@ -54,9 +54,6 @@ $(SOINST): $(OBJS)
 
 tests: tests.cpp $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(LIBS)
-
-curve_bounds.o : ../fppoly/curve_bounds.h ../fppoly/curve_bounds.c
-	$(CXX) -c $(CXXFLAGS) -o curve_bounds.o ../fppoly/curve_bounds.c
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(CDDFLAGS) $(CPPFLAGS) $(INCLUDES) -c $< -o $@

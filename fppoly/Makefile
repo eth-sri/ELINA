@@ -29,7 +29,7 @@ INCLDIR = $(ELINA_PREFIX)/include
 INSTALL = install
 INSTALLd = install -d
 
-OBJS = fppoly.o backsubstitute.o compute_bounds.o expr.o relu_approx.o curve_bounds.o s_curve_approx.o parabola_approx.o log_approx.o pool_approx.o lstm_approx.o maxpool_convex_hull.o
+OBJS = fppoly.o backsubstitute.o compute_bounds.o expr.o relu_approx.o s_curve_approx.o parabola_approx.o log_approx.o pool_approx.o lstm_approx.o maxpool_convex_hull.o
 
 ifeq ($(IS_APRON),)
 LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize  -L../elina_zonotope -lzonotope $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -lpthread -lcdd
@@ -56,9 +56,6 @@ all : libfppoly.so
 libfppoly.so : $(OBJS) $(FPPOLYH)
 	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
-test_curve_bounds: test_curve_bounds.c curve_bounds.o
-	$(CC) $(CFLAGS) -o $@ $^ -lm
-
 fppoly.o : fppoly.h fppoly.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o fppoly.o fppoly.c $(LIBS)
 
@@ -73,9 +70,6 @@ expr.o : expr.h expr.c
 
 relu_approx.o : relu_approx.h relu_approx.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o relu_approx.o relu_approx.c $(LIBS)
-
-curve_bounds.o : curve_bounds.h curve_bounds.c
-	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o curve_bounds.o curve_bounds.c $(LIBS)
 
 s_curve_approx.o : s_curve_approx.h s_curve_approx.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o s_curve_approx.o s_curve_approx.c $(LIBS)
