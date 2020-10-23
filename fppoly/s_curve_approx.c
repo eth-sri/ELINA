@@ -252,7 +252,7 @@ void handle_s_curve_layer(elina_manager_t *man, elina_abstract0_t* element, size
 	size_t i;
         for (i = 0; i < num_neurons; i++) {
           double k_lb, k_ub, b_lb, b_ub;
-          compute_S_curve_bounds(out_neurons[i]->lb, out_neurons[i]->ub,
+          compute_S_curve_bounds(in_neurons[i]->lb, in_neurons[i]->ub,
                                  is_sigmoid, &k_lb, &b_lb, &k_ub, &b_ub);
           out_neurons[i]->lexpr = create_sparse_expr(&k_lb, b_lb, &i, 1);
           out_neurons[i]->uexpr = create_sparse_expr(&k_ub, b_ub, &i, 1);
