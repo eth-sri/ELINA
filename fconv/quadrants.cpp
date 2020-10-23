@@ -1,11 +1,11 @@
-#include "quadrants.h"
-#include "../fppoly/curve_bounds.h"
-#include "fp_mat.h"
-#include "mpq.h"
-#include "octahedron.h"
 #include <algorithm>
 #include <cassert>
 #include <math.h>
+#include "quadrants.h"
+#include "octahedron.h"
+#include "fp_mat.h"
+#include "mpq.h"
+#include "S_curve.h"
 
 using namespace std;
 
@@ -161,32 +161,28 @@ struct SegmentCons {
     }
 };
 
-SegmentCons get_tasi_constraints(double x_lb, double x_ub,
-                                 Activation activation) {
-  ASRTF(x_lb < x_ub, "lb should be smaller than ub");
+SegmentCons get_tasi_constraints(double x_bound, Activation activation) {
+    ASRTF(x_bound != 0, "x_bound should be zero.");
 
-  double k_lb, b_lb, k_ub, b_ub;
-  compute_S_curve_bounds(x_lb, x_ub, activation == Sigm, &k_lb, &b_lb, &k_ub,
-                         &b_ub);
+    double k_lb, b_lb, k_ub, b_ub;
+    compute_curve_bounds(x_bound, activation == Sigm, k_lb, b_lb, k_ub, b_ub);
 
-  SegmentCons sc;
-  sc.init();
-  mpq_set_d(sc.k_lb, k_lb);
-  mpq_set_d(sc.b_lb, b_lb);
-  mpq_set_d(sc.k_ub, k_ub);
-  mpq_set_d(sc.b_ub, b_ub);
+    SegmentCons sc;
+    sc.init();
+    mpq_set_d(sc.k_lb, k_lb);
+    mpq_set_d(sc.b_lb, b_lb);
+    mpq_set_d(sc.k_ub, k_ub);
+    mpq_set_d(sc.b_ub, b_ub);
 
-  return sc;
+    return sc;
 }
 
 SegmentCons** create_all_segment_cons(int K, const vector<double*>& A, Activation activation) {
     SegmentCons** segment_cons = (SegmentCons**) calloc(K, sizeof(SegmentCons*));
     for (int xi = 0; xi < K; xi++) {
         segment_cons[xi] = (SegmentCons*) calloc(2, sizeof(SegmentCons));
-        segment_cons[xi][0] = get_tasi_constraints(
-            -A[LOWER_BOUND_INDEX[K][xi]][0], 0, activation);
-        segment_cons[xi][1] =
-            get_tasi_constraints(0, A[UPPER_BOUND_INDEX[K][xi]][0], activation);
+        segment_cons[xi][0] = get_tasi_constraints(-A[LOWER_BOUND_INDEX[K][xi]][0], activation);
+        segment_cons[xi][1] = get_tasi_constraints(A[UPPER_BOUND_INDEX[K][xi]][0], activation);
     }
     return segment_cons;
 }
