@@ -251,29 +251,66 @@ void handle_s_curve_layer(elina_manager_t *man, elina_abstract0_t* element, size
 	neuron_t **in_neurons = fp->layers[k]->neurons;
 	size_t i;
 	for(i=0; i < num_neurons; i++) {
-        out_neurons[i]->lexpr = create_s_curve_expr(pr, out_neurons[i], in_neurons[i], i, true, is_sigmoid);
-        out_neurons[i]->uexpr = create_s_curve_expr(pr, out_neurons[i], in_neurons[i], i, false, is_sigmoid);
-        //        if (in_neurons[i]->ub - in_neurons[i]->lb < 0.01) {
-        //            out_neurons[i]->lexpr = create_s_curve_expr(pr,
-        //            out_neurons[i], in_neurons[i], i, true, is_sigmoid);
-        //            out_neurons[i]->uexpr = create_s_curve_expr(pr,
-        //            out_neurons[i], in_neurons[i], i, false, is_sigmoid);
-        //        } else {
-        //            double k_lb, b_lb, k_ub, b_ub;
-        //            compute_S_curve_bounds(in_neurons[i]->lb,
-        //            in_neurons[i]->ub, is_sigmoid,
-        //                                   &k_lb, &b_lb, &k_ub, &b_ub);
-        //            out_neurons[i]->lexpr = create_sparse_expr(&k_lb, b_lb,
-        //            &i, 1); out_neurons[i]->lexpr->inf_coeff[0] = k_lb;
-        //            out_neurons[i]->lexpr->sup_coeff[0] = k_lb;
-        //            out_neurons[i]->lexpr->inf_cst = b_lb;
-        //            out_neurons[i]->lexpr->sup_cst = b_lb;
-        //            out_neurons[i]->uexpr = create_sparse_expr(&k_ub, b_ub,
-        //            &i, 1); out_neurons[i]->uexpr->inf_coeff[0] = k_ub;
-        //            out_neurons[i]->uexpr->sup_coeff[0] = k_ub;
-        //            out_neurons[i]->lexpr->inf_cst = b_ub;
-        //            out_neurons[i]->uexpr->sup_cst = b_ub;
-        //        }
+          // out_neurons[i]->lexpr = create_s_curve_expr(pr, out_neurons[i],
+          // in_neurons[i], i, true, is_sigmoid); out_neurons[i]->uexpr =
+          // create_s_curve_expr(pr, out_neurons[i], in_neurons[i], i, false,
+          // is_sigmoid);
+          if (in_neurons[i]->ub - in_neurons[i]->lb < 0.01) {
+            out_neurons[i]->lexpr = create_s_curve_expr(
+                pr, out_neurons[i], in_neurons[i], i, true, is_sigmoid);
+            out_neurons[i]->uexpr = create_s_curve_expr(
+                pr, out_neurons[i], in_neurons[i], i, false, is_sigmoid);
+          } else {
+            double lb = in_neurons[i]->lb;
+            double ub = in_neurons[i]->ub;
+            fesetround(FE_DOWNWARD);
+            double e_sup_l = is_sigmoid ? -exp(ub) : -tanh(ub);
+            double e_inf_l = is_sigmoid ? -exp(-lb) : -tanh(-lb);
+
+            fesetround(FE_UPWARD);
+            double e_sup_u = is_sigmoid ? exp(ub) : tanh(ub);
+            double e_inf_u = is_sigmoid ? exp(-lb) : tanh(-lb);
+            double f_sup_l, f_sup_u;
+            double f_inf_l, f_inf_u;
+            double den_sup_l, den_sup_u;
+            double den_inf_l, den_inf_u;
+
+            if (is_sigmoid) {
+              den_sup_l = -1 + e_sup_l;
+              den_sup_u = 1 + e_sup_u;
+              den_inf_l = -1 + e_inf_l;
+              den_inf_u = 1 + e_inf_u;
+              elina_double_interval_div(&f_sup_l, &f_sup_u, e_sup_l, e_sup_u,
+                                        den_sup_l, den_sup_u);
+              elina_double_interval_div(&f_inf_l, &f_inf_u, e_inf_l, e_inf_u,
+                                        den_inf_l, den_inf_u);
+            } else {
+              f_inf_l = e_inf_l;
+              f_inf_u = e_inf_u;
+              f_sup_l = e_sup_l;
+              f_sup_u = e_sup_u;
+              den_inf_l = e_inf_l;
+              den_inf_u = e_inf_u;
+              den_sup_l = e_sup_l;
+              den_sup_u = e_sup_u;
+            }
+
+            double k_lb, b_lb, k_ub, b_ub;
+            compute_S_curve_bounds(in_neurons[i]->lb, in_neurons[i]->ub,
+                                   is_sigmoid, &k_lb, &b_lb, &k_ub, &b_ub);
+            out_neurons[i]->lexpr = create_sparse_expr(&k_lb, b_lb, &i, 1);
+            out_neurons[i]->lb = f_inf_l;
+            //            out_neurons[i]->lexpr->inf_coeff[0] = k_lb;
+            //            out_neurons[i]->lexpr->sup_coeff[0] = k_lb;
+            //            out_neurons[i]->lexpr->inf_cst = b_lb;
+            //            out_neurons[i]->lexpr->sup_cst = b_lb;
+            out_neurons[i]->uexpr = create_sparse_expr(&k_ub, b_ub, &i, 1);
+            out_neurons[i]->ub = f_sup_u;
+            //            out_neurons[i]->uexpr->inf_coeff[0] = k_ub;
+            //            out_neurons[i]->uexpr->sup_coeff[0] = k_ub;
+            //            out_neurons[i]->lexpr->inf_cst = b_ub;
+            //            out_neurons[i]->uexpr->sup_cst = b_ub;
+          }
         }
 }
 
