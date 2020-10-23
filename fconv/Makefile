@@ -43,7 +43,6 @@ SOINST = libfconv.so
 FCONVH = fconv.h
 
 CXXFLAGS := -std=c++14 -Wall -Wextra -Wpedantic -flto -mfma -mavx2 -DGMPRATIONAL -fPIC
-
 ifeq ($(DEBUG),)
 	CXXFLAGS := $(CXXFLAGS) -DNDEBUG -O3 -march=native
 endif
@@ -55,6 +54,9 @@ $(SOINST): $(OBJS)
 
 tests: tests.cpp $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(LIBS)
+
+curve_bounds.o : ../fppoly/curve_bounds.h ../fppoly/curve_bounds.c
+	$(CXX) -c $(CXXFLAGS) -o curve_bounds.o ../fppoly/curve_bounds.c
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(CDDFLAGS) $(CPPFLAGS) $(INCLUDES) -c $< -o $@
