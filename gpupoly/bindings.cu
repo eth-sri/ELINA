@@ -149,6 +149,10 @@ void evalAffineExpr_d(NeuralNetwork* nn, double* dest, int layer, int m, const d
 	evalAffineExpr(nn, dest, layer, m, A, b, backsubstitute, soundness);
 }
 
+int getOutputSize(NeuralNetwork* nn, int layer)
+{
+	return (*nn)[layer]->outputSize;
+}
 int addReLU(NeuralNetwork* nn, int parent)
 {
 	size_t inputSize = (*nn)[parent]->outputSize;
