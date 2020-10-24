@@ -26,7 +26,7 @@
   */
 
 #include "maxpool2d.h"
-#include "filters.h"
+#include "../filters.h"
 #include <limits>
 #include <cmath>
 

@@ -73,6 +73,11 @@ __global__ void setFinal(T* A, int* rows, int label, size_t outputSize, size_t N
 template <typename T>
 void NeuralNetwork::evaluateAffine(Vector<T>& dest, const NeuronFilter<T>& al, int layer, bool up, bool sound, const std::shared_ptr<const Matrix<T>>& A, const std::shared_ptr<const Vector<T>>& b)
 {
+	if (!annoyingNeuronList)
+		gpuErrchk(cudaMalloc((void**)&annoyingNeuronList, maxLayerSize * sizeof(int)));
+	if (!annoyingNeuronList2)
+		gpuErrchk(cudaMalloc((void**)&annoyingNeuronList2, maxLayerSize * sizeof(int)));
+
 	int an = al.listCriticalNeurons(annoyingNeuronList, dest, annoyingNeurons);
 	if (an)
 	{
@@ -221,6 +226,7 @@ bool NeuralNetwork::run(const Vector<T>& input, const int label,bool skipNonMode
 		evaluateAffine<T>(res, ContainsZero<T>(), layers.size() - 1, false,sound, finalA);
 	return res.isPositive();
 }
+
 
 
 template <>

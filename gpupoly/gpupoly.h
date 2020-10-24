@@ -75,7 +75,7 @@ extern "C" {
 	  \param soundness Whether to use sound arithmetic.
 	  \returns An integer indicating the certification level.
 	 */
-	GPUPOLY_EXPORT int test_s(
+	GPUPOLY_DEPRECATED_EXPORT int test_s(
 		NeuralNetwork* nn,
 		const float* dataDown,
 		const float* dataUp,
@@ -91,7 +91,7 @@ extern "C" {
 	  \param soundness Whether to use sound arithmetic.
 	  \returns An integer indicating the certification level.
 	 */
-	GPUPOLY_EXPORT int test_d(
+	GPUPOLY_DEPRECATED_EXPORT int test_d(
 		NeuralNetwork* nn,
 		const double* dataDown,
 		const double* dataUp,
@@ -99,6 +99,121 @@ extern "C" {
 		bool soundness = true
 	);
 	//!\}
+
+
+	//! Sets the concrete bounds of a layer.
+	//!@{
+	//! Sets the single precision concrete bounds of a layer.
+	/*!
+	  \param nn Handle to the network
+	  \param dataDown An array of inputSize floats that represent the lower bound of the box
+	  \param dataUp An array of inputSize floats that represent the upper bound of the box
+	  \param layer Index of the layer
+	 */
+	GPUPOLY_EXPORT void setLayerBox_s(
+		NeuralNetwork* nn,
+		const float* dataDown,
+		const float* dataUp,
+		int layer
+	);
+	//! Sets the double precision concrete bounds of a layer.
+	/*!
+	  \param nn Handle to the network
+	  \param dataDown An array of inputSize doubles that represent the lower bound of the box
+	  \param dataUp An array of inputSize doubles that represent the upper bound of the box
+	  \param layer Index of the layer
+	 */
+	GPUPOLY_EXPORT void setLayerBox_d(
+		NeuralNetwork* nn,
+		const double* dataDown,
+		const double* dataUp,
+		int layer
+	);
+	//!\}
+
+
+	//! Propagates forward the concrete bounds by interval analysis. Activation layers have their approximation models computed.
+	//!@{
+	//! Propagates forward single precision bounds.
+	/*!
+	  \param nn Handle to the network
+	  \param layer Index of the layer
+	  \param refineActivationsInput If true, and layer is an activation layer, then the input is first refined first via the appropriate back-substitution.
+	  \param soundness Whether to use sound (but slower) arithmetic.
+	 */
+	GPUPOLY_EXPORT void relax_s(
+		NeuralNetwork* nn, 
+		int layer, 
+		bool refineActivationsInput,
+		bool soundness
+	);
+	//! Propagates forward double precision bounds.
+	/*!
+	  \param nn Handle to the network
+	  \param layer Index of the layer
+	  \param refineActivationsInput If true, and layer is an activation layer, then the input is first refined first via the appropriate back-substitution.
+	  \param soundness Whether to use sound (but slower) arithmetic.
+	*/
+	GPUPOLY_EXPORT void relax_d(
+		NeuralNetwork* nn,
+		int layer,
+		bool refineActivationsInput,
+		bool soundness
+	);
+	//!\}
+
+	//! Evaluate the concrete bounds of a list of affine expressions.
+	/*!
+		Evaluate the concrete bounds of a list of m affine expressions of the neurons of a given layer via back-substitution, using the concrete bounds of the last box that was tested.
+		The	affine expressions have the form Ax+b, where A is a m*n matrix, b a vector of size m, and x represents the n neurons of the layer layerId.
+	*/
+	//!@{
+	//! Evaluate single precision expressions.
+	/*!
+	  \param nn Handle to the network
+	  \param dest An array of 2*m floats where the (interleaved) result will be written.
+	  \param layer Index of the layer
+	  \param m Number of expressions
+	  \param A Content of the matrix A in row major order. A has m rows, and its number of columns equals the outputSize of the layer.
+	  \param b Content of the vector b. b has m elements.
+	  \param backsubstitute If 0, only evaluate with the concrete bounds of layer. If 1, always backsubstitute back to the inputs. If 2, backsubstitute until 0 is not strictly included within the bounds.
+	  \param soundness Whether to use sound (but slower) arithmetic.
+	 */
+	GPUPOLY_EXPORT void evalAffineExpr_s(
+		NeuralNetwork* nn,
+		float* dest,
+		int layer,
+		int m,
+		const float* A,
+		const float* b,
+		int backsubstitute,
+		bool soundness
+	);
+	//! Evaluate double precision expressions.
+	/*!
+	  \param nn Handle to the network
+	  \param dest An array of 2*m doubles where the (interleaved) result will be written.
+	  \param layer Index of the layer
+	  \param m Number of expressions
+	  \param A Content of the matrix A in row major order. A has m rows, and its number of columns equals the outputSize of the layer.
+	  \param b Content of the vector b. b has m elements.
+	  \param backsubstitute If 0, only evaluate with the concrete bounds of layer. If 1, always backsubstitute back to the inputs. If 2, backsubstitute until 0 is not strictly included within the bounds.
+	  \param soundness Whether to use sound (but slower) arithmetic.
+	 */
+	GPUPOLY_EXPORT void evalAffineExpr_d(
+		NeuralNetwork* nn,
+		double* dest,
+		int layer,
+		int m,
+		const double* A,
+		const double* b,
+		int backsubstitute,
+		bool soundness
+	);
+	//!\}
+
+	//! Gets the dimention of a given layer.
+	GPUPOLY_EXPORT int getOutputSize(NeuralNetwork* nn, int layer);
 
 	//! Cleans the network
 	/*!

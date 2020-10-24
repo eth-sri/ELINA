@@ -23,7 +23,7 @@
    \brief Implementation of the API functions.
    \author Fran&ccedil;ois Serre
 
-    Implementation of the API functions defined in include/gpupoly.h. They work as a proxy for the NeuralNetwork class, where the actual algorithm is implemented.
+	Implementation of the API functions defined in include/gpupoly.h. They work as a proxy for the NeuralNetwork class, where the actual algorithm is implemented.
   */
 
 
@@ -60,7 +60,7 @@ int test_d(NeuralNetwork* nn, const double* dataDown, const double* dataUp, int 
 	std::vector<Intv<double>> candidate(size);
 	for (size_t i = 0; i < size; i++)
 		candidate[i] = Intv<double>(dataDown[i], dataUp[i]);
-	return nn->operator()(candidate, expectedLabel,soundness);
+	return nn->operator()(candidate, expectedLabel, soundness);
 }
 
 int test_s(NeuralNetwork* nn, const float* dataDown, const float* dataUp, int expectedLabel, bool soundness)
@@ -72,6 +72,87 @@ int test_s(NeuralNetwork* nn, const float* dataDown, const float* dataUp, int ex
 	return nn->operator()(candidate, expectedLabel, soundness);
 }
 
+
+void setLayerBox_s(
+	NeuralNetwork* nn,
+	const float* dataDown,
+	const float* dataUp,
+	int layer
+)
+{
+	size_t size = (*nn)[layer]->outputSize;
+	std::vector<Intv<float>> candidate(size);
+	for (size_t i = 0; i < size; i++)
+		candidate[i] = Intv<float>(dataDown[i], dataUp[i]);
+	nn->getConcreteBounds<float>(layer) = candidate;
+}
+
+void setLayerBox_d(
+	NeuralNetwork* nn,
+	const double* dataDown,
+	const double* dataUp,
+	int layer
+)
+{
+	size_t size = (*nn)[layer]->outputSize;
+	std::vector<Intv<double>> candidate(size);
+	for (size_t i = 0; i < size; i++)
+		candidate[i] = Intv<double>(dataDown[i], dataUp[i]);
+	nn->getConcreteBounds<double>(layer) = candidate;
+}
+
+
+void relax_s(NeuralNetwork* nn, int layer, bool refineActivationsInput, bool soundness)
+{
+	(*nn)[layer]->eval(nn->getConcreteBounds<float>(layer), soundness, refineActivationsInput);
+}
+
+
+void relax_d(NeuralNetwork* nn, int layer, bool refineActivationsInput, bool soundness)
+{
+	(*nn)[layer]->eval(nn->getConcreteBounds<double>(layer), soundness, refineActivationsInput);
+}
+
+template <typename T>
+void evalAffineExpr(NeuralNetwork* nn, T* dest, int layer, int m, const T* A, const T* b, int backsubstitute, bool soundness)
+{
+	size_t n = (*nn)[layer]->outputSize;
+	std::shared_ptr<Matrix<T>> mA = A ? std::make_shared<Matrix<T>>(m, n, A) : nullptr;
+	std::shared_ptr<Vector<T>> vb = b ? std::make_shared<Vector<T>>(m, b) : nullptr;
+	Vector<T> res;
+	if (mA)
+		mA->mvm(res, nn->getConcreteBounds<T>(layer));
+	else
+		res = nn->getConcreteBounds<T>(layer);
+	if (vb)
+		Vector<T>::add(res, res, *vb);
+	if (backsubstitute==1)
+	{
+		nn->evaluateAffine<T>(res, AlwaysKeep<T>(), layer, true, soundness, mA, vb);
+		nn->evaluateAffine<T>(res, AlwaysKeep<T>(), layer, false, soundness, mA, vb);
+	}
+	else if (backsubstitute == 2)
+	{
+		nn->evaluateAffine<T>(res, ContainsZero<T>(), layer, true, soundness, mA, vb);
+		nn->evaluateAffine<T>(res, ContainsZero<T>(), layer, false, soundness, mA, vb);
+	}
+	gpuErrchk(cudaMemcpy(dest, res.data(), res.memSize(), cudaMemcpyDeviceToHost));
+}
+
+void evalAffineExpr_s(NeuralNetwork* nn, float* dest, int layer, int m, const float* A, const float* b, int backsubstitute, bool soundness)
+{
+	 evalAffineExpr(nn, dest, layer, m, A, b, backsubstitute, soundness);
+}
+
+void evalAffineExpr_d(NeuralNetwork* nn, double* dest, int layer, int m, const double* A, const double* b, int backsubstitute, bool soundness)
+{
+	evalAffineExpr(nn, dest, layer, m, A, b, backsubstitute, soundness);
+}
+
+int getOutputSize(NeuralNetwork* nn, int layer)
+{
+	return (*nn)[layer]->outputSize;
+}
 int addReLU(NeuralNetwork* nn, int parent)
 {
 	size_t inputSize = (*nn)[parent]->outputSize;
@@ -79,7 +160,7 @@ int addReLU(NeuralNetwork* nn, int parent)
 }
 
 int addBias_d(
-	NeuralNetwork* nn, 
+	NeuralNetwork* nn,
 	int parent,
 	const double* data // Constant vector to be added to the input. Contains as many elements as the input.
 )
@@ -89,7 +170,7 @@ int addBias_d(
 }
 
 int addBias_s(
-	NeuralNetwork* nn, 
+	NeuralNetwork* nn,
 	int parent,
 	const float* data // Constant vector to be added to the input. Contains as many elements as the input.
 )
@@ -137,15 +218,15 @@ int addConv2D_d(
 {
 	if (input_shape[0] != 1)
 		throw (-1); // for now, batch is not supported.
-	NeuralNetwork::Layer* conv= new Conv2D<double>(*nn,
-			channels_first,
-			filters,
-			kernel_shape[0], kernel_shape[1],
-			input_shape[1], input_shape[2], input_shape[3],
-			stride_shape[0], stride_shape[1],
-			padding[0], padding[1],
-			Matrix<double>(kernel_shape[0] * kernel_shape[1], input_shape[3] * filters, data),
-			parent);
+	NeuralNetwork::Layer* conv = new Conv2D<double>(*nn,
+		channels_first,
+		filters,
+		kernel_shape[0], kernel_shape[1],
+		input_shape[1], input_shape[2], input_shape[3],
+		stride_shape[0], stride_shape[1],
+		padding[0], padding[1],
+		Matrix<double>(kernel_shape[0] * kernel_shape[1], input_shape[3] * filters, data),
+		parent);
 	return nn->addLayer(conv);
 	/*size_t m = binding[prev].outputSize;
 	std::vector<double> bias(m);
@@ -223,7 +304,7 @@ int addMaxPool2D(
 }
 int addParSum(
 	NeuralNetwork* nn,
-	int parent1, 
+	int parent1,
 	int parent2
 )
 {
@@ -233,7 +314,7 @@ int addParSum(
 
 int addConcat(
 	NeuralNetwork* nn,
-	int parent1, 
+	int parent1,
 	int parent2
 )
 {
