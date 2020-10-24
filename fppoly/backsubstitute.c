@@ -30,8 +30,8 @@ void * update_state_using_previous_layers(void *args){
 
 void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t *fp, size_t layerno){
 	//size_t NUM_THREADS = get_nprocs();
-  	size_t NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
-	nn_thread_t args[NUM_THREADS];
+        size_t NUM_THREADS = 1; // sysconf(_SC_NPROCESSORS_ONLN);
+        nn_thread_t args[NUM_THREADS];
 	pthread_t threads[NUM_THREADS];
 	size_t num_out_neurons = fp->layers[layerno]->dims;
 	size_t i;
