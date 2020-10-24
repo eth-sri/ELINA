@@ -566,6 +566,8 @@ expr_t * extract_subexpr_concatenate(expr_t * expr, size_t index, size_t* C, siz
 		res->sup_coeff = (double *)malloc(num_neurons_in_layer*sizeof(double));
 		res->size = num_neurons_in_layer;
 		for(i=0; i < hw; i++){
+			//printf("START HERE: %zu %zu\n", i*num_channels+offset, num_neurons_in_layer);
+			//fflush(stdout);
 			for(k=0; k < C[index]; k++){
 				res->inf_coeff[j] = expr->inf_coeff[i*num_channels + offset + k];
 				res->sup_coeff[j] = expr->sup_coeff[i*num_channels + offset + k];

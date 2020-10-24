@@ -703,12 +703,12 @@ void layer_free(layer_t * layer){
 		free(layer->c_t_sup);
 		layer->c_t_sup = NULL;
 	}
-
-        if (layer->C != NULL) {
-          free(layer->C);
-          layer->C = NULL;
-        }
-        free(layer);
+ 
+        //if(layer->C!=NULL){
+        //	free(layer->C);
+        //	layer->C = NULL;
+        //}
+	free(layer);
 	layer = NULL;
 }
 
