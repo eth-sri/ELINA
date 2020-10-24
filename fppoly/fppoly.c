@@ -463,6 +463,8 @@ void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element
     //fflush(stdout);
     fppoly_t *fp = fppoly_of_abstract0(element);
     size_t numlayers = fp->numlayers;
+    //printf("concat_layer: %zu, first inout: %zu, last input: %zu\n", numlayers, predecessors[0], predecessors[num_predecessors - 1]);
+    //fflush(stdout);
     size_t i, j, k, num_out_neurons = 0;
     for(i=0; i < num_predecessors; i++){
       size_t pred = predecessors[i];
@@ -479,11 +481,17 @@ void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element
 		double coeff = 1.0;
 		out_neurons[k]->lexpr = create_sparse_expr(&coeff, 0, &j, 1);
 		out_neurons[k]->uexpr = out_neurons[k]->lexpr;
+		out_neurons[k]->lb = fp->layers[pred-1]->neurons[j]->lb;
+		//if(k==1){
+		//	printf("TRUE BOUNDS: %zu %g\n",k,fp->layers[pred-1]->neurons[j]->lb);
+		//	fflush(stdout);
+		//	}
+		out_neurons[k]->ub = fp->layers[pred-1]->neurons[j]->ub;
 		k++;
        }
     }
     
-    update_state_using_previous_layers_parallel(man,fp,numlayers);
+    //update_state_using_previous_layers_parallel(man,fp,numlayers);
     
     //printf("return here2\n");
     //fppoly_fprint(stdout,man,fp,NULL);
