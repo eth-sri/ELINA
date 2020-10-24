@@ -220,6 +220,7 @@ void handle_residual_layer(elina_manager_t *man, elina_abstract0_t *element, siz
 
 void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element, size_t * predecessors, size_t num_predecessors, size_t *C);
 
+void handle_tiling_layer(elina_manager_t* man, elina_abstract0_t* element, size_t * predecessors, size_t num_predecessors, size_t repeat);
 //void handle_residual_affine_layer(elina_manager_t *man, elina_abstract0_t *element, size_t num_neurons, size_t *predecessors, bool use_area_heuristic);
 
 fppoly_t* fppoly_of_abstract0(elina_abstract0_t* a);

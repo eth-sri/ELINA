@@ -505,6 +505,36 @@ void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element
 }
 
 
+void handle_tiling_layer(elina_manager_t* man, elina_abstract0_t* element, size_t * predecessors, size_t num_predecessors, size_t repeat){
+    
+    assert(num_predecessors==1);
+    fppoly_t *fp = fppoly_of_abstract0(element);
+    size_t numlayers = fp->numlayers;
+    size_t pred = predecessors[0]-1;
+    size_t num_in_neurons = fp->layers[pred]->dims;
+    size_t num_out_neurons = repeat*num_in_neurons;
+    fppoly_add_new_layer(fp, num_out_neurons, predecessors, num_predecessors,
+                         true);
+
+    size_t i, j, k;
+    
+    neuron_t **out_neurons = fp->layers[numlayers]->neurons;
+    k = 0;
+    for(i=0; i < repeat; i++){   
+        for(j=0; j < num_in_neurons; j++){
+		double coeff = 1.0;
+		out_neurons[k]->lexpr = create_sparse_expr(&coeff, 0, &j, 1);
+		out_neurons[k]->uexpr = out_neurons[k]->lexpr;
+                out_neurons[k]->lb = fp->layers[pred - 1]->neurons[j]->lb;
+                out_neurons[k]->ub = fp->layers[pred - 1]->neurons[j]->ub;
+                k++;
+        }
+     }
+    
+    return;
+}
+
+
 bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y, elina_dim_t x){
 	fppoly_t *fp = fppoly_of_abstract0(element);
 	fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
