@@ -442,39 +442,36 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 		//	fflush(stdout);
 			//printf("k: %zu\n", k);
 			size_t i;
+			size_t *C = fp->layers[k]->C;
 			size_t *predecessors = fp->layers[k]->predecessors;
 			size_t num_predecessors = fp->layers[k]->num_predecessors;
 			int common_predecessor = INT_MAX;
 			expr_t ** sub_expr = (expr_t**)malloc(num_predecessors*sizeof(expr_t*));
-                        size_t index_start = 0;
-                        for(i=0; i < num_predecessors; i++){
+			//size_t index_start = 0;
+			for(i=0; i < num_predecessors; i++){
 				int pred = predecessors[i]-1;
-                                size_t num_neurons = fp->layers[pred]->dims;
-                                if(pred < common_predecessor){
+				//size_t num_neurons = fp->layers[pred]->dims;
+				if(pred < common_predecessor){
 					common_predecessor = pred;
 				}
-                                sub_expr[i] = extract_subexpr(
-                                    lexpr, index_start, num_neurons);
-                                printf("index start %zu %zu %zu\n", i,
-                                       index_start, num_neurons);
-                                fflush(stdout);
-                                index_start = index_start + num_neurons;
-                        }
-                        printf("common %zu %zu\n", sub_expr[0]->size,
-                               sub_expr[1]->size);
-                        expr_print(lexpr);
-                        expr_print(sub_expr[0]);
-                        expr_print(sub_expr[1]);
-                        fflush(stdout);
-                        for(i=0; i < num_predecessors; i++){
+				sub_expr[i] = extract_subexpr_concatenate(lexpr,i, C,fp->layers[k]->dims, fp->layers[k]->num_channels);
+			//printf("index start %zu %zu %zu\n", i,index_start,num_neurons);
+			//fflush(stdout);
+				//index_start = index_start + num_neurons;
+			}
+			//printf("common %zu %zu\n", sub_expr[0]->size, sub_expr[1]->size);
+			//expr_print(lexpr);
+			//expr_print(sub_expr[0]);
+			//expr_print(sub_expr[1]);
+			//fflush(stdout);
+			for(i=0; i < num_predecessors; i++){
 				int iter = predecessors[i]-1;
 				if(sub_expr[i]->size>0){
 					while(iter!=common_predecessor){
 						get_lb_using_predecessor_layer(pr,fp, &sub_expr[i],  iter);
-                                                printf("iter %zu %d\n",
-                                                       sub_expr[i]->size, iter);
-                                                fflush(stdout);
-                                                iter = fp->layers[iter]->predecessors[0]-1;
+						//printf("iter %zu %d\n",sub_expr[i]->size, iter);
+						//fflush(stdout);
+						iter = fp->layers[iter]->predecessors[0]-1;
 					}
 				}
 			}
@@ -491,12 +488,12 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 					}
 					else{
 		//				sort_sparse_expr(lexpr);
-                printf("ADDING %zu %zu\n", lexpr->size, sub_expr[i]->size);
-                fflush(stdout);
-                add_expr(pr, lexpr, sub_expr[i]);
-                printf("after adding: %zu\n", lexpr->size);
-                fflush(stdout);
-                //				if(lexpr->size!=sub_expr[i]->size)
+						//printf("ADDING %zu %zu\n", lexpr->size, sub_expr[i]->size);
+						//fflush(stdout);
+						add_expr(pr, lexpr, sub_expr[i]);
+						//printf("after adding: %zu\n",lexpr->size);
+						//fflush(stdout);
+		//				if(lexpr->size!=sub_expr[i]->size)
 					}				//printf("sizes: %zu %zu\n", lexpr->size,sub_expr[i]->size);
 					
 				}
@@ -568,11 +565,11 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	res = fmin(res,compute_lb_from_expr(pr,lexpr,fp,-1)); 
         free_expr(lexpr);
         //if(fp->layers[layerno]->is_concat == true){
-        printf("res: %g\n", res);
-        fflush(stdout);
-        // expr_print(expr);
-        fflush(stdout);
-        //}
+		//printf("res: %g\n",res);
+		//fflush(stdout);
+		//expr_print(expr);
+		//fflush(stdout);
+	//}
 	return res;
 	
 }
@@ -599,20 +596,20 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 		if(fp->layers[k]->is_concat==true){
                         //sort_expr(lexpr);
                         size_t i;
+                        size_t *C = fp->layers[k]->C;
                         size_t *predecessors = fp->layers[k]->predecessors;
                         size_t num_predecessors = fp->layers[k]->num_predecessors;
                         int common_predecessor = INT_MAX;
                         expr_t ** sub_expr = (expr_t**)malloc(num_predecessors*sizeof(expr_t*));
-                        size_t index_start = 0;
+                        //size_t index_start = 0;
                         for(i=0; i < num_predecessors; i++){
                                 int pred = predecessors[i]-1;
-                                size_t num_neurons = fp->layers[pred]->dims;
+                                //size_t num_neurons = fp->layers[pred]->dims;
                                 if(pred < common_predecessor){
                                         common_predecessor = pred;
                                 }
-                                sub_expr[i] = extract_subexpr(
-                                    uexpr, index_start, num_neurons);
-                                index_start = index_start + num_neurons;
+                                sub_expr[i] = extract_subexpr_concatenate(uexpr,i, C,fp->layers[k]->dims, fp->layers[k]->num_channels);
+                                //index_start = index_start + num_neurons;
                         }
                         for(i=0; i < num_predecessors; i++){
                                 int iter = predecessors[i]-1;
@@ -701,9 +698,9 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 			
 	}
 		
-	res = fmin(res,compute_ub_from_expr(pr,uexpr,fp,-1));
-        printf("UPPER BOUND: %g\n", res);
-        fflush(stdout);
+	res = fmin(res,compute_ub_from_expr(pr,uexpr,fp,-1)); 
+        //printf("UPPER BOUND: %g\n",res);
+        //fflush(stdout);
         free_expr(uexpr);
 	return res;
 	
