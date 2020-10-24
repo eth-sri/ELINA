@@ -524,8 +524,8 @@ void handle_tiling_layer(elina_manager_t* man, elina_abstract0_t* element, size_
 		double coeff = 1.0;
 		out_neurons[k]->lexpr = create_sparse_expr(&coeff, 0, &j, 1);
 		out_neurons[k]->uexpr = out_neurons[k]->lexpr;
-		out_neurons[k]->lb = fp->layers[pred-1]->neurons[j]->lb;
-		out_neurons[k]->ub = fp->layers[pred-1]->neurons[j]->ub;
+		out_neurons[k]->lb = fp->layers[pred]->neurons[j]->lb;
+		out_neurons[k]->ub = fp->layers[pred]->neurons[j]->ub;
 		k++;
         }
      }
