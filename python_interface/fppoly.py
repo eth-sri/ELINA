@@ -320,6 +320,39 @@ def handle_concatenation_layer(man, element, predecessors, num_predecessors, C):
 
     return
 
+def handle_tiling_layer(man, element, predecessors, num_predecessors, repeat):
+    """
+        handle the first FFN ReLU layer
+
+        Parameters
+        ----------
+        man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+        element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    predecessors: POINTER(c_size_t)
+        the layers before the current layer
+    num_predecessors: c_size_t
+        the number of predecessors of the current layer
+    repeat: c_size_t
+        the number of tiles
+    Returns
+    -------
+    res : None
+
+    """
+
+    try:
+        handle_tiling_layer_c = fppoly_api.handle_tiling_layer
+        handle_tiling_layer_c.restype = None
+        handle_tiling_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, POINTER(c_size_t), c_size_t, c_size_t]
+        handle_tiling_layer_c(man, element, predecessors, num_predecessors, repeat)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_tiling_layer" from "libfppoly.so"')
+        print(inst)
+
+    return
+
 
 def handle_sub_layer(man, element, cst, is_minuend, size, predecessors, num_predecessors):
     """
