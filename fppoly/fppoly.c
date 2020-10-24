@@ -112,6 +112,8 @@ layer_t * create_layer(size_t size, bool is_activation){
 	layer->c_t_inf = NULL;
 	layer->c_t_sup = NULL;
 	layer->is_concat = false;
+	layer->C = NULL;
+	layer->num_channels = 0;
 	return layer;
 }
 
@@ -458,7 +460,7 @@ double *get_upper_bound_for_linexpr0(elina_manager_t *man, elina_abstract0_t *el
 }
 
 
-void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element, size_t * predecessors, size_t num_predecessors){
+void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element, size_t * predecessors, size_t num_predecessors, size_t *C){
     //printf("FC start here %zu %zu %zu %zu\n",num_in_neurons,num_out_neurons,predecessors[0],num_predecessors);
     //fflush(stdout);
     fppoly_t *fp = fppoly_of_abstract0(element);
@@ -472,10 +474,13 @@ void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element
     }
     fppoly_add_new_layer(fp,num_out_neurons, predecessors, num_predecessors, false);
     fp->layers[numlayers]->is_concat = true;
+    fp->layers[numlayers]->C = C;
     neuron_t **out_neurons = fp->layers[numlayers]->neurons;
     k = 0;
+    size_t num_channels = 0;
     for(i=0; i < num_predecessors; i++){
 	size_t pred = predecessors[i];
+	num_channels = num_channels + C[i];
         size_t num_in_neurons = fp->layers[pred-1]->dims;
         for(j=0; j < num_in_neurons; j++){
 		double coeff = 1.0;
@@ -490,7 +495,7 @@ void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element
 		k++;
        }
     }
-    
+    fp->layers[numlayers]->num_channels = num_channels;
     //update_state_using_previous_layers_parallel(man,fp,numlayers);
     
     //printf("return here2\n");
@@ -698,7 +703,11 @@ void layer_free(layer_t * layer){
 		free(layer->c_t_sup);
 		layer->c_t_sup = NULL;
 	}
-
+ 
+        if(layer->C!=NULL){
+        	free(layer->C);
+        	layer->C = NULL;
+        }
 	free(layer);
 	layer = NULL;
 }
