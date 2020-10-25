@@ -104,6 +104,8 @@ typedef struct layer_t{
 	size_t num_predecessors;
 	bool is_activation;
 	bool is_concat;
+	size_t *C;
+	size_t num_channels;
 }layer_t;
 
 
@@ -216,10 +218,9 @@ double* get_upper_bound_for_linexpr(elina_manager_t *man, elina_abstract0_t *ele
 
 void handle_residual_layer(elina_manager_t *man, elina_abstract0_t *element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
-void handle_concatenation_layer(elina_manager_t *man,
-                                elina_abstract0_t *element,
-                                size_t *predecessors, size_t num_predecessors);
+void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element, size_t * predecessors, size_t num_predecessors, size_t *C);
 
+void handle_tiling_layer(elina_manager_t* man, elina_abstract0_t* element, size_t * predecessors, size_t num_predecessors, size_t repeat);
 //void handle_residual_affine_layer(elina_manager_t *man, elina_abstract0_t *element, size_t num_neurons, size_t *predecessors, bool use_area_heuristic);
 
 fppoly_t* fppoly_of_abstract0(elina_abstract0_t* a);

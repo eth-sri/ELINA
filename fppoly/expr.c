@@ -545,46 +545,78 @@ void add_expr(fppoly_internal_t *pr,expr_t * exprA, expr_t * exprB){
 	}
 }
 
-expr_t *extract_subexpr(expr_t *expr, size_t index_start, size_t num_neurons) {
-  size_t i, j = 0, k;
-  size_t index_end = index_start + num_neurons;
-  expr_t *res = alloc_expr();
-  size_t res_size = 0;
-  res->inf_cst = 0.0;
-  res->sup_cst = 0.0;
-  if (expr->type == DENSE) {
-    res->type = DENSE;
-    res->inf_coeff = (double *)malloc(num_neurons * sizeof(double));
-    res->sup_coeff = (double *)malloc(num_neurons * sizeof(double));
-    res->size = num_neurons;
-    for (i = index_start; i < index_end; i++) {
-      res->inf_coeff[j] = expr->inf_coeff[i];
-      res->sup_coeff[j] = expr->sup_coeff[i];
-      j++;
-    }
-  } else {
-    for (i = 0; i < expr->size; i++) {
-      k = expr->dim[i];
-      if (k >= index_start && k < index_end) {
-        res_size++;
-      }
-    }
-    res->inf_coeff = (double *)malloc(res_size * sizeof(double));
-    res->sup_coeff = (double *)malloc(res_size * sizeof(double));
-    res->dim = (size_t *)malloc(res_size * sizeof(size_t));
-    res->size = res_size;
-    res->type = SPARSE;
-    for (i = 0; i < expr->size; i++) {
-      k = expr->dim[i];
-      if (k >= index_start && k < index_end) {
-        res->inf_coeff[j] = expr->inf_coeff[i];
-        res->sup_coeff[j] = expr->sup_coeff[i];
-        res->dim[j] = k - index_start;
-        j++;
-      }
-    }
-  }
-  return res;
+expr_t * extract_subexpr_concatenate(expr_t * expr, size_t index, size_t* C, size_t num_neurons, size_t num_channels){
+	size_t i, j=0, k;
+	//size_t index_end = index_start+num_neurons;
+	expr_t * res = alloc_expr();
+	size_t res_size = 0;
+	res->inf_cst = 0.0;
+	res->sup_cst = 0.0;
+	
+	size_t hw = num_neurons/num_channels;
+	size_t offset = 0;
+	for(i=0; i < index; i++){
+		offset = offset + C[i];
+	}
+	
+	if(expr->type==DENSE){
+		res->type = DENSE;
+		size_t num_neurons_in_layer = C[index] * hw;
+		res->inf_coeff = (double *)malloc(num_neurons_in_layer*sizeof(double));
+		res->sup_coeff = (double *)malloc(num_neurons_in_layer*sizeof(double));
+		res->size = num_neurons_in_layer;
+		for(i=0; i < hw; i++){
+			//printf("START HERE: %zu %zu\n", i*num_channels+offset, num_neurons_in_layer);
+			//fflush(stdout);
+			for(k=0; k < C[index]; k++){
+				res->inf_coeff[j] = expr->inf_coeff[i*num_channels + offset + k];
+				res->sup_coeff[j] = expr->sup_coeff[i*num_channels + offset + k];
+				j++;
+			}
+		}
+	}
+	else{
+		size_t *start_indices = (size_t *)malloc(hw*sizeof(size_t));
+		size_t *end_indices = (size_t *)malloc(hw*sizeof(size_t));
+		for(i=0; i < hw; i++){
+			start_indices[i] = i*num_channels + offset;
+			end_indices[i] = i*num_channels + offset + C[index];
+		}
+		size_t res_size = 0;
+		for(i = 0; i < expr->size; i++){
+			k = expr->dim[i];
+			size_t l;
+			for(l=0; l < hw; l++){
+				if(k>=start_indices[l] && k < end_indices[l]){
+					res_size++;
+					break;
+				}
+			}
+			
+		}
+		res->inf_coeff = (double *)malloc(res_size*sizeof(double));
+		res->sup_coeff = (double *)malloc(res_size*sizeof(double));
+		res->dim = (size_t *)malloc(res_size*sizeof(size_t));
+		res->size = res_size;
+		res->type = SPARSE;
+		for(i=0; i < expr->size; i++){
+			k = expr->dim[i];
+			size_t l;
+			for(l=0; l < hw; l++){
+				if(k>=start_indices[l] && k < end_indices[l]){
+					res->inf_coeff[j] = expr->inf_coeff[i];
+					res->sup_coeff[j] = expr->sup_coeff[i];
+					res->dim[j] = l*C[index] + k-start_indices[l];
+					j++;
+					break;
+				}
+			}
+		}
+		free(start_indices);
+		free(end_indices);
+	}
+	return res;
+	
 }
 
 expr_t * expr_replace_bounds_affine(fppoly_internal_t *pr, expr_t * expr, neuron_t ** neurons, bool is_lower){
