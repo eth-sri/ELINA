@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "fp_mat.h"
 #include "S_curve.h"
+#include <cfenv>
 
 using namespace std;
 
@@ -81,8 +82,11 @@ void lift_to_tasi_y_branch(const int xi, PDD &pdd_dual, const double x_bound,
   for (size_t i = 0; i < V.size(); i++) {
     double *v_lb = fp_arr_resize(dim + 1, dim, V[i]);
     double x_cur = v_lb[xi + 1];
+    fesetround(FE_DOWNWARD);
     double lb = k_lb * x_cur + b_lb;
+    fesetround(FE_UPWARD);
     double ub = k_ub * x_cur + b_ub;
+    fesetround(FE_TONEAREST);
     ASRTF(lb <= ub, "Unsoundness detected.");
     v_lb[dim] = lb;
     map_lb[i] = V_new.size();
