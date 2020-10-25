@@ -421,6 +421,8 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	size_t i;
 	int k;
 	//size_t numlayers = fp->numlayers;
+	//printf("COMING HERE\n");
+	//fflush(stdout);
 	expr_t * lexpr = copy_expr(expr);
         fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	if(fp->numlayers==layerno){
@@ -436,42 +438,77 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	double res = INFINITY;
 	while(k >=0){
 	        if(fp->layers[k]->is_concat==true){
-			//sort_expr(lexpr);
+		//	expr_print(lexpr);
+		//	fflush(stdout);
+			//printf("k: %zu\n", k);
 			size_t i;
+			size_t *C = fp->layers[k]->C;
 			size_t *predecessors = fp->layers[k]->predecessors;
 			size_t num_predecessors = fp->layers[k]->num_predecessors;
-			size_t common_predecessor = UINT_MAX;
+			int common_predecessor = INT_MAX;
 			expr_t ** sub_expr = (expr_t**)malloc(num_predecessors*sizeof(expr_t*));
-			size_t index_start = 0;
+			//size_t index_start = 0;
 			for(i=0; i < num_predecessors; i++){
-				size_t pred = predecessors[i]-1;
-				size_t num_neurons = fp->layers[pred]->dims;
+				int pred = predecessors[i]-1;
+				//size_t num_neurons = fp->layers[pred]->dims;
 				if(pred < common_predecessor){
 					common_predecessor = pred;
 				}
-				sub_expr[i] = extract_subexpr(lexpr,index_start, num_neurons);
-				index_start = index_start + num_neurons;
+				sub_expr[i] = extract_subexpr_concatenate(lexpr,i, C,fp->layers[k]->dims, fp->layers[k]->num_channels);
+			//printf("index start %zu %zu %zu\n", i,index_start,num_neurons);
+			//fflush(stdout);
+				//index_start = index_start + num_neurons;
 			}
+			//printf("common %zu %zu\n", sub_expr[0]->size, sub_expr[1]->size);
+			//expr_print(lexpr);
+			//expr_print(sub_expr[0]);
+			//expr_print(sub_expr[1]);
+			//fflush(stdout);
 			for(i=0; i < num_predecessors; i++){
-				size_t iter = predecessors[i]-1;
-				while(iter!=common_predecessor){
-					get_lb_using_predecessor_layer(pr,fp, &sub_expr[i],  iter);
-					iter = fp->layers[iter]->predecessors[0]-1;
+				int iter = predecessors[i]-1;
+				if(sub_expr[i]->size>0){
+					while(iter!=common_predecessor){
+						get_lb_using_predecessor_layer(pr,fp, &sub_expr[i],  iter);
+						//printf("iter %zu %d\n",sub_expr[i]->size, iter);
+						//fflush(stdout);
+						iter = fp->layers[iter]->predecessors[0]-1;
+					}
 				}
 			}
 			double inf_cst = lexpr->inf_cst;
 			double sup_cst = lexpr->sup_cst;
 			free_expr(lexpr);
-			lexpr = copy_expr(sub_expr[0]);
-			for(i=1; i < num_predecessors; i++){
-				add_expr(pr, lexpr, sub_expr[i]);
+			bool flag = true;
+			//lexpr = copy_expr(sub_expr[0]);
+			for(i=0; i < num_predecessors; i++){
+				if(sub_expr[i]->size>0){
+					if(flag==true){
+						lexpr = copy_expr(sub_expr[i]);
+						flag = false;
+					}
+					else{
+		//				sort_sparse_expr(lexpr);
+						//printf("ADDING %zu %zu\n", lexpr->size, sub_expr[i]->size);
+						//fflush(stdout);
+						add_expr(pr, lexpr, sub_expr[i]);
+						//printf("after adding: %zu\n",lexpr->size);
+						//fflush(stdout);
+		//				if(lexpr->size!=sub_expr[i]->size)
+					}				//printf("sizes: %zu %zu\n", lexpr->size,sub_expr[i]->size);
+					
+				}
+		//		if(lexpr->size!=sub_expr[i]->size)
+		//			printf("sizes %zu %zu\n", lexpr->size, sub_expr[i]->size);
 				free_expr(sub_expr[i]);
 			}	
 			lexpr->inf_cst = lexpr->inf_cst + inf_cst;
 			lexpr->sup_cst = lexpr->sup_cst + sup_cst;
-			free_expr(sub_expr[0]);
+			//free_expr(sub_expr[0]);
 			free(sub_expr);
 			k = common_predecessor;
+			//printf("IS ACTIVATION: %d\n",fp->layers[k]->is_activation);
+			//expr_print(lexpr);
+			//fflush(stdout);
 		}
 		else if(fp->layers[k]->num_predecessors==2){
 				expr_t * lexpr_copy = copy_expr(lexpr);
@@ -513,8 +550,7 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 				free_expr(lexpr_copy);
 				
 				// Assume at least one non-residual layer between two residual layers
-				k = common_predecessor;
-				
+				k = common_predecessor;		
 				continue;
 			}
 			else {
@@ -528,6 +564,12 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 		
 	res = fmin(res,compute_lb_from_expr(pr,lexpr,fp,-1)); 
         free_expr(lexpr);
+        //if(fp->layers[layerno]->is_concat == true){
+		//printf("res: %g\n",res);
+		//fflush(stdout);
+		//expr_print(expr);
+		//fflush(stdout);
+	//}
 	return res;
 	
 }
@@ -554,36 +596,48 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 		if(fp->layers[k]->is_concat==true){
                         //sort_expr(lexpr);
                         size_t i;
+                        size_t *C = fp->layers[k]->C;
                         size_t *predecessors = fp->layers[k]->predecessors;
                         size_t num_predecessors = fp->layers[k]->num_predecessors;
-                        size_t common_predecessor = UINT_MAX;
+                        int common_predecessor = INT_MAX;
                         expr_t ** sub_expr = (expr_t**)malloc(num_predecessors*sizeof(expr_t*));
-                        size_t index_start = 0;
+                        //size_t index_start = 0;
                         for(i=0; i < num_predecessors; i++){
-                                size_t pred = predecessors[i]-1;
-                                size_t num_neurons = fp->layers[pred]->dims;
+                                int pred = predecessors[i]-1;
+                                //size_t num_neurons = fp->layers[pred]->dims;
                                 if(pred < common_predecessor){
                                         common_predecessor = pred;
                                 }
-                                sub_expr[i] = extract_subexpr(uexpr,index_start, num_neurons);
-                                index_start = index_start + num_neurons;
+                                sub_expr[i] = extract_subexpr_concatenate(uexpr,i, C,fp->layers[k]->dims, fp->layers[k]->num_channels);
+                                //index_start = index_start + num_neurons;
                         }
                         for(i=0; i < num_predecessors; i++){
-                                size_t iter = predecessors[i]-1;
-                                while(iter!=common_predecessor){
-                                        get_ub_using_predecessor_layer(pr,fp, &sub_expr[i],  iter);
-                                        iter = fp->layers[iter]->predecessors[0]-1;
-                                }
+                                int iter = predecessors[i]-1;
+				if(sub_expr[i]->size>0){
+                                	while(iter!=common_predecessor){
+                                        	get_ub_using_predecessor_layer(pr,fp, &sub_expr[i],  iter);
+                                        	iter = fp->layers[iter]->predecessors[0]-1;
+                                	}
+				}
                         }
 			double inf_cst = uexpr->inf_cst;
 			double sup_cst = uexpr->sup_cst;
                         free_expr(uexpr);
-                        uexpr = copy_expr(sub_expr[0]);
-                        for(i=1; i < num_predecessors; i++){
-                                add_expr(pr, uexpr, sub_expr[i]);
+			bool flag = true;
+                        for(i=0; i < num_predecessors; i++){
+				if(sub_expr[i]->size>0){
+					if(flag==true){
+						uexpr = copy_expr(sub_expr[i]);
+						flag = false;
+					}
+					else{
+		//				sort_sparse_expr(uexpr);
+                                		add_expr(pr, uexpr, sub_expr[i]);
+					}
+				}
                                 free_expr(sub_expr[i]);
                         }
-                        free_expr(sub_expr[0]);
+                        //free_expr(sub_expr[0]);
                         free(sub_expr);
 			uexpr->inf_cst = uexpr->inf_cst + inf_cst;
 			uexpr->sup_cst = uexpr->sup_cst + sup_cst;
@@ -645,6 +699,8 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	}
 		
 	res = fmin(res,compute_ub_from_expr(pr,uexpr,fp,-1)); 
+        //printf("UPPER BOUND: %g\n",res);
+        //fflush(stdout);
         free_expr(uexpr);
 	return res;
 	
