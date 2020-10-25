@@ -42,6 +42,14 @@ class MatInt_c(Structure):
     ]
 
 
+S_curve_chord_bound_c = fconv_api.S_curve_chord_bound
+S_curve_chord_bound_c.argtype = [POINTER(c_double), POINTER(c_double), c_double, c_double, c_bool]
+S_curve_chord_bound_c.restype = None
+
+S_curve_tang_bound_c = fconv_api.S_curve_tang_bound
+S_curve_tang_bound_c.argtype = [POINTER(c_double), POINTER(c_double), c_double, c_bool, c_bool]
+S_curve_tang_bound_c.restype = None
+
 new_MatDouble_c = fconv_api.new_MatDouble
 new_MatDouble_c.argtype = [c_int, c_int, POINTER(c_double)]
 new_MatDouble_c.restype = MatDouble_c
@@ -177,3 +185,26 @@ def generate_sparse_cover(n, k):
     free_MatInt_c(cover_c)
 
     return cover
+
+
+def S_curve_chord_bound(lb, ub, is_sigm):
+    k = c_int(0)
+    b = c_int(0)
+
+    S_curve_chord_bound_c(byref(k),
+                          byref(b),
+                          c_double(lb),
+                          c_double(ub),
+                          c_bool(is_sigm))
+    return k.value, b.value
+
+
+def S_curve_tang_bound(x, slope_sup, is_sigm):
+    k = c_int(0)
+    b = c_int(0)
+    S_curve_tang_bound_c(byref(k),
+                         byref(b),
+                         c_double(x),
+                         c_bool(slope_sup),
+                         c_bool(is_sigm))
+    return k.value, b.value

@@ -22,6 +22,6 @@
 from ctypes import *
 from enum import IntEnum
 
-fppoly_api = CDLL("/home/lorenzt/pointclouds/ERAN/ELINA/fppoly/libfppoly.so")
+fppoly_api = CDLL("libfppoly.so")
 
 
