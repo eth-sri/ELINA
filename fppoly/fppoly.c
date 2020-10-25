@@ -513,9 +513,8 @@ void handle_tiling_layer(elina_manager_t* man, elina_abstract0_t* element, size_
     size_t pred = predecessors[0]-1;
     size_t num_in_neurons = fp->layers[pred]->dims;
     size_t num_out_neurons = repeat*num_in_neurons;
-    fppoly_add_new_layer(fp, num_out_neurons, predecessors, num_predecessors,
-                         true);
-
+    fppoly_add_new_layer(fp,num_out_neurons, predecessors, num_predecessors, false);
+   
     size_t i, j, k;
     
     neuron_t **out_neurons = fp->layers[numlayers]->neurons;
