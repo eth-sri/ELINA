@@ -47,7 +47,7 @@ S_curve_chord_bound_c.argtype = [POINTER(c_double), POINTER(c_double), c_double,
 S_curve_chord_bound_c.restype = None
 
 S_curve_tang_bound_c = fconv_api.S_curve_tang_bound
-S_curve_tang_bound_c.argtype = [POINTER(c_double), POINTER(c_double), c_double, c_bool, c_bool]
+S_curve_tang_bound_c.argtype = [POINTER(c_double), POINTER(c_double), c_double, c_bool]
 S_curve_tang_bound_c.restype = None
 
 new_MatDouble_c = fconv_api.new_MatDouble
@@ -199,12 +199,11 @@ def S_curve_chord_bound(lb, ub, is_sigm):
     return k.value, b.value
 
 
-def S_curve_tang_bound(x, slope_sup, is_sigm):
+def S_curve_tang_bound(x, is_sigm):
     k = c_double(0)
     b = c_double(0)
     S_curve_tang_bound_c(byref(k),
                          byref(b),
                          c_double(x),
-                         c_bool(slope_sup),
                          c_bool(is_sigm))
     return k.value, b.value

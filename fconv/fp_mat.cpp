@@ -4,6 +4,8 @@
 #include <string>
 #include <iostream>
 #include <string.h>
+#include <limits>
+#include <iomanip>
 #include "fp_mat.h"
 #include "asrt.h"
 #include "setoper.h"
@@ -100,9 +102,10 @@ vector<double*> fp_mat_read(const int cols, const string& path) {
 }
 
 void fp_mat_print(const int cols, const vector<double*>& mat) {
+    int precision = numeric_limits<double>::digits10;
     for (size_t i = 0; i < mat.size(); i++) {
         for (int j = 0; j < cols; j++) {
-          cout << mat[i][j] << " ";
+            cout << setprecision(precision) << mat[i][j] << " ";
         }
         cout << endl;
     }
