@@ -1,11 +1,15 @@
 #include <algorithm>
 #include <cassert>
 #include <math.h>
+#include <limits>
+#include <iomanip>
 #include "quadrants.h"
 #include "octahedron.h"
 #include "fp_mat.h"
 #include "mpq.h"
 #include "S_curve.h"
+
+constexpr int DIGITS = numeric_limits<double>::digits10;
 
 using namespace std;
 
@@ -316,7 +320,8 @@ map<Quadrant, vector<mpq_t*>> get_tasi_quadrants_cdd_lift(
                 SegmentCons sc = segment_cons[xi][quadrant[xi]];
                 sc.lb(v_base[xi + 1], y_lb);
                 sc.ub(v_base[xi + 1], y_ub);
-
+//                cout << setprecision(DIGITS) << "y_lb " << mpq_get_d(y_lb) << " y_ub "
+//                << mpq_get_d(y_ub) << endl;
                 int cmp = mpq_cmp(y_lb, y_ub);
                 ASRTF(cmp <= 0, "Unsoundness detected.");
                 if (cmp == 0) {

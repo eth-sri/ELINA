@@ -17,7 +17,7 @@
 
 // Temporary disabled the last test for k=4 before I add proper support
 // for inputs that split zero.
-constexpr int K2NUM_TESTS[6] = {0, 3, 4, 5, 3, 4};
+constexpr int K2NUM_TESTS[6] = {0, 4, 4, 6, 3, 4};
 
 const string activation2str[4] = {"Relu", "Pool", "Tanh", "Sigm"};
 
