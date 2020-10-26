@@ -188,8 +188,8 @@ def generate_sparse_cover(n, k):
 
 
 def S_curve_chord_bound(lb, ub, is_sigm):
-    k = c_int(0)
-    b = c_int(0)
+    k = c_double(0)
+    b = c_double(0)
 
     S_curve_chord_bound_c(byref(k),
                           byref(b),
@@ -200,8 +200,8 @@ def S_curve_chord_bound(lb, ub, is_sigm):
 
 
 def S_curve_tang_bound(x, slope_sup, is_sigm):
-    k = c_int(0)
-    b = c_int(0)
+    k = c_double(0)
+    b = c_double(0)
     S_curve_tang_bound_c(byref(k),
                          byref(b),
                          c_double(x),

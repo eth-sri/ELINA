@@ -3,6 +3,7 @@
 #include <cfenv>
 #include <cassert>
 #include "fconv.h"
+#include <stdio.h>
 
 void check_round() {
     fesetround(FE_UPWARD);
@@ -58,7 +59,7 @@ void S_curve_tang_bound(double *k, double *b, double x, bool slope_sup,
     *k = tanh_tang_k(y, slope_sup);
   }
   round(!up);
-  double temp = *k * x;
+  double temp = (*k) * x;
   round(up);
   *b = y - temp;
   fesetround(FE_TONEAREST);
@@ -83,7 +84,7 @@ void S_curve_chord_bound(double* k, double* b, double x_lb, double x_ub, bool is
     *k = (y_ub - y_lb) / den;
 
     round(!up);
-    double temp = *k * x_lb;
+    double temp = (*k) * x_lb;
     round(up);
     *b = y_lb - temp;
     fesetround(FE_TONEAREST);
