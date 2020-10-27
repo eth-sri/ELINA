@@ -8,6 +8,7 @@
 #include "fp_mat.h"
 #include "mpq.h"
 #include "S_curve.h"
+#include "S_curve2.h"
 
 constexpr int DIGITS = numeric_limits<double>::digits10;
 
@@ -169,7 +170,11 @@ SegmentCons get_tasi_constraints(double x_bound, Activation activation) {
     ASRTF(x_bound != 0, "x_bound should be zero.");
 
     double k_lb, b_lb, k_ub, b_ub;
-    compute_curve_bounds(x_bound, activation == Sigm, k_lb, b_lb, k_ub, b_ub);
+    compute_S_curve_bounds(min(x_bound, 0.0),
+                           max(x_bound, 0.0),
+                           activation==Sigm,
+                           &k_lb, &b_lb, &k_ub, &b_ub);
+//    compute_curve_bounds(x_bound, activation==Sigm, k_lb, b_lb, k_ub, b_ub);
 
     SegmentCons sc;
     sc.init();
