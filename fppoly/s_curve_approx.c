@@ -123,14 +123,26 @@ expr_t * create_s_curve_expr(fppoly_internal_t *pr, neuron_t *out_neuron, neuron
 		            //}
                 }
                 else{
-                    //double slope_inf1, slope_sup1;
-                    //double slope_inf2, slope_sup2;
-                    if(lb<=ub){
-                         compute_derivative(&slope_inf, &slope_sup, e_sup_l, e_sup_u, den_sup_l, den_sup_u, is_sigmoid);
                     
+                    if(lb<=ub){
+                         //compute_derivative(&slope_inf, &slope_sup, e_sup_l, e_sup_u, den_sup_l, den_sup_u, is_sigmoid);
+                         double slope_inf1, slope_sup1;
+                         double slope_inf2, slope_sup2;
+                         compute_derivative(&slope_inf1, &slope_sup1, e_inf_l, e_inf_u, den_inf_l, den_inf_u, is_sigmoid);
+                         compute_chord_slope(&slope_inf2, &slope_sup2, f_sup_l, f_sup_u, f_inf_l, f_inf_u, lb, -lb, -ub, ub);
+                         if(slope_sup1<slope_sup2){
+                         	slope_inf = slope_inf1;
+                         	slope_sup = slope_sup1; 
+                         }
+                         else{
+                         	slope_inf = slope_inf2;
+                         	slope_sup = slope_sup2; 
+                         }
                     }
                     else{
+                    	  
                          compute_derivative(&slope_inf, &slope_sup, e_inf_l, e_inf_u, den_inf_l, den_inf_u, is_sigmoid);
+                         
                     }
                     
                     x_l = -lb;
@@ -193,7 +205,19 @@ expr_t * create_s_curve_expr(fppoly_internal_t *pr, neuron_t *out_neuron, neuron
                     	compute_derivative(&slope_inf, &slope_sup, e_sup_l, e_sup_u, den_sup_l, den_sup_u, is_sigmoid);
                     }
                     else{
-                        compute_derivative(&slope_inf, &slope_sup, e_inf_l, e_inf_u, den_inf_l, den_inf_u, is_sigmoid);
+                        //compute_derivative(&slope_inf, &slope_sup, e_inf_l, e_inf_u, den_inf_l, den_inf_u, is_sigmoid);
+                         double slope_inf1, slope_sup1;
+                         double slope_inf2, slope_sup2;
+                         compute_derivative(&slope_inf1, &slope_sup1, e_sup_l, e_sup_u, den_sup_l, den_sup_u, is_sigmoid);
+                         compute_chord_slope(&slope_inf2, &slope_sup2, f_sup_l, f_sup_u, f_inf_l, f_inf_u, lb, -lb, -ub, ub);
+                         if(slope_sup1<slope_sup2){
+                         	slope_inf = slope_inf1;
+                         	slope_sup = slope_sup1; 
+                         }
+                         else{
+                         	slope_inf = slope_inf2;
+                         	slope_sup = slope_sup2; 
+                         }
                     }
                    
                     

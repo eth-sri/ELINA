@@ -465,8 +465,10 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 			//expr_print(sub_expr[1]);
 			//fflush(stdout);
 			for(i=0; i < num_predecessors; i++){
+				
 				int iter = predecessors[i]-1;
 				if(sub_expr[i]->size>0){
+					
 					while(iter!=common_predecessor){
 						get_lb_using_predecessor_layer(pr,fp, &sub_expr[i],  iter);
 						//printf("iter %zu %d\n",sub_expr[i]->size, iter);
