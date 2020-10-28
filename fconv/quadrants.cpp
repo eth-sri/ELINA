@@ -68,6 +68,64 @@ map<Quadrant, VInc_mpq> get_quadrants_cdd(const int K, const vector<double*>& A)
     return quadrant2vinc;
 }
 
+map<Quadrant, VInc_mpq> get_quadrants_cdd_orthant(const int K,
+                                                  const vector<double*>& A,
+                                                  const vector<double>& orthants) {
+    ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
+    ASRTF((int) orthants.size() == K, "Should be K orthants.");
+
+    const vector<Quadrant>& quadrants = K2QUADRANTS[K];
+
+    const int NUM_H = (int) A.size();
+
+    dd_MatrixPtr cdd_A = dd_CreateMatrix(NUM_H + K, K + 1);
+    cdd_A->representation = dd_Inequality;
+
+    for (int i = 0; i < NUM_H; i++) {
+        mpq_arr_set_d(K + 1, cdd_A->matrix[i], A[i]);
+    }
+
+    map<Quadrant, VInc_mpq> quadrant2vinc;
+    for (const auto& quadrant : quadrants) {
+        for (int xi = 0; xi < K; xi++) {
+            mpq_t* row = cdd_A->matrix[NUM_H + xi];
+            mpq_arr_set_zero(K + 1, row);
+            mpq_set_d(row[0], orthants[xi]);
+            if (quadrant[xi] == MINUS) {
+                mpq_set_si(row[xi + 1], -1, 1);
+            } else {
+                mpq_set_si(row[xi + 1], 1, 1);
+            }
+        }
+        dd_PolyhedraPtr poly = cdd_Matrix_to_Poly(cdd_A);
+
+        dd_MatrixPtr cdd_V = dd_CopyGenerators(poly);
+        dd_SetFamilyPtr cdd_incidence = dd_CopyIncidence(poly);
+        const size_t num_v = cdd_V->rowsize;
+        ASRTF(
+                cdd_incidence->famsize == (int) num_v && \
+                cdd_incidence->setsize == NUM_H + K + 1,
+                "Sanity checking cdd_incidence size.");
+
+        vector<mpq_t*> V(num_v);
+        vector<set_t> incidence(num_v);
+
+        for (size_t v = 0; v < num_v; v++) {
+            ASRTF(!mpq_cmp_si(cdd_V->matrix[v][0], 1, 1), "Polytope is not bounded.");
+            V[v] = mpq_arr_copy(K + 1, cdd_V->matrix[v]);
+            incidence[v] = set_from_cdd(cdd_incidence->set[v]);
+        }
+        dd_FreePolyhedra(poly);
+        dd_FreeMatrix(cdd_V);
+        dd_FreeSetFamily(cdd_incidence);
+
+        quadrant2vinc[quadrant] = {K + 1, V, incidence};
+    }
+
+    dd_FreeMatrix(cdd_A);
+    return quadrant2vinc;
+}
+
 vector<DD_mpq> get_pool_quadrants_cdd(const int K, const vector<double*>& A) {
     ASRTF(1 <= K && K <= 5, "K should be within allowed range.");
 

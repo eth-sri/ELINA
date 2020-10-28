@@ -16,3 +16,7 @@ vector<double*> fkpool(int K, const vector<double*>& A);
 vector<double*> kpool_with_cdd(int K, const vector<double*>& A);
 
 vector<double*> ktasi_with_cdd(int K, const vector<double*>& A, Activation activation);
+
+vector<double*> relaxation_orthant(const int K,
+                                   const vector<double*>& A,
+                                   Activation activation);

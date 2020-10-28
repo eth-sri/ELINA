@@ -11,6 +11,7 @@
 #include "mpq.h"
 #include "utils.h"
 #include "fp_mat.h"
+#include "S_curve2.h"
 
 using namespace std;
 
@@ -211,7 +212,149 @@ vector<double*> fast_relaxation_through_decomposition(const int K,
         x_ub[xi] = A[UPPER_BOUND_INDEX[K][xi]][0];
     }
 
-    vector<double*> res = decomposition(K, quadrant2pdd, activation, x_lb, x_ub);
+    vector<double> orthants(K, 0);
+    vector<double*> res = decomposition(K, quadrant2pdd, activation, x_lb, x_ub, orthants);
+
+    return res;
+}
+
+double area_between_two_lines(double x_lb, double x_ub, double k_lb, double b_lb,
+                              double k_ub, double b_ub) {
+    ASRTF(x_ub - x_lb > 0, "check");
+    double l1 = k_lb * x_lb + b_lb;
+    double l2 = k_lb * x_ub + b_lb;
+    double u1 = k_ub * x_lb + b_ub;
+    double u2 = k_ub * x_ub + b_ub;
+
+    double delta = max(l1 - u1, l2 - u2);
+    if (delta > 0) {
+        cout << "delta " << delta << " x_lb " << x_lb << " x_ub " << x_ub << endl;
+    }
+//    cout << "x_lb max - min " << max(l1, l2) - min(u1, u2) << endl;
+//    ASRTF(max(l1, l2) <= min(u1, u2) + 0.000001, "checking soundness between lines.");
+
+    double area = max(u1, u2) - min(l1, l2);
+    area -= (max(u1, u2) - min(u1, u2)) / 2;
+    area -= (max(l1, l2) - min(l1, l2)) / 2;
+
+    return area * (x_ub - x_lb);
+}
+
+double relaxation_area(double x_lb, double x_ub, bool is_sigm) {
+    double k_lb, b_lb, k_ub, b_ub;
+    compute_S_curve_bounds(x_lb, x_ub, is_sigm, &k_lb, &b_lb, &k_ub, &b_ub);
+    return area_between_two_lines(x_lb, x_ub, k_lb, b_lb, k_ub, b_ub);
+}
+
+double best_orthant(double x_lb, double x_ub, bool is_sigm) {
+    const int N = 5;
+    double step = (x_ub - x_lb) / N;
+
+    double best_x = -1;
+    double min_area = -1;
+    double x = x_lb + step;
+    for (int i = 0; i < N - 1; i++) {
+        ASRTF(x_lb < x && x < x_ub, "x within range");
+
+        double area1 = relaxation_area(x_lb, x, is_sigm);
+        double area2 = relaxation_area(x, x_ub, is_sigm);
+
+        double area = area1 + area2;
+        if (i == 0 || area < min_area) {
+            min_area = area;
+            best_x = x;
+        }
+
+        x += step;
+    }
+    ASRTF(x_lb < best_x && best_x < x_ub, "best x should be between x_lb and x_ub");
+    return best_x;
+}
+
+vector<double*> relaxation_orthant(const int K,
+                                   const vector<double*>& A,
+                                   Activation activation) {
+    ASRTF(1 <= K && K <= 4, "K should be within allowed range.");
+    ASRTF(activation == Tanh || activation == Sigm,
+          "Activation should be Tanh or Sigm.");
+
+    // Lower and upper bounds are needed for decomposition of tanh and sigmoid functions.
+    vector<double> x_lb(K);
+    vector<double> x_ub(K);
+    vector<double> orthants(K);
+    for (int xi = 0; xi < K; xi++) {
+        double lb = -A[LOWER_BOUND_INDEX[K][xi]][0];
+        double ub = A[UPPER_BOUND_INDEX[K][xi]][0];
+        double orthant = best_orthant(lb, ub, activation == Sigm);
+//        cout << "lb " << lb << " orth " << orthant << " ub " << ub << endl;
+        ASRTF(lb < orthant && orthant < ub, "Orthant between lb and ub");
+        x_lb[xi] = lb;
+        x_ub[xi] = ub;
+        orthants[xi] = orthant;
+    }
+
+    map<Quadrant , VInc_mpq> quadrant2vinc = get_quadrants_cdd_orthant(K, A, orthants);
+
+    map<Quadrant, PDD> quadrant2pdd;
+    for (auto& entry : quadrant2vinc) {
+        const Quadrant& quadrant = entry.first;
+        vector<mpq_t*>& V_mpq = entry.second.V;
+
+        if (V_mpq.empty()) {
+            // Input in the quadrant is the empty set.
+            quadrant2pdd[quadrant] = {K + 1, {}, {}, {}};
+            continue;
+        }
+
+        vector<double*> V = mpq_mat_to_fp(K + 1, V_mpq);
+        mpq_mat_free(K + 1, V_mpq);
+
+        const vector<set_t>& incidence_V_to_H = entry.second.V_to_H_incidence;
+        assert(
+                incidence_V_to_H.size() == V.size() &&
+                "Incidence_V_to_H.size() should equal V.size()");
+        vector<set_t> incidence_H_to_V = set_arr_transpose(incidence_V_to_H);
+        set_arr_free(incidence_V_to_H);
+        assert(
+                incidence_H_to_V.size() == A.size() + K &&
+                "Incidence_H_to_V.size() should equal A.size() + K");
+        vector<int> irredund_idx = compute_maximal_indexes(incidence_H_to_V);
+        set_t is_irredund = set_create(incidence_H_to_V.size());
+        for (auto i : irredund_idx) {
+            set_enable_bit(is_irredund, i);
+        }
+
+        vector<double*> H_irredund = fp_mat_create(irredund_idx.size(), K + 1);
+        vector<set_t> incidence_irredund(irredund_idx.size());
+
+        size_t count = 0;
+        for (size_t i = 0; i < incidence_H_to_V.size(); i++) {
+            if (!set_test_bit(is_irredund, i)) {
+                set_free(incidence_H_to_V[i]);
+                continue;
+            }
+            double* h = H_irredund[count];
+            incidence_irredund[count] = incidence_H_to_V[i];
+            count++;
+            if (i < A.size()) {
+                fp_arr_set(K + 1, h, A[i]);
+            } else {
+                int xi = i - (int) A.size();
+                assert(0 <= xi && xi < K && "Sanity checking the range of xi.");
+                h[0] = orthants[xi];
+                if (quadrant[xi] == MINUS) {
+                    h[xi + 1] = -1;
+                }  else {
+                    h[xi + 1] = 1;
+                }
+            }
+        }
+        assert(count == irredund_idx.size() && "count should equal maximal_H.size()");
+        set_free(is_irredund);
+        quadrant2pdd[quadrant] = {K + 1, V, H_irredund, incidence_irredund};
+    }
+
+    vector<double*> res = decomposition(K, quadrant2pdd, activation, x_lb, x_ub, orthants);
 
     return res;
 }
