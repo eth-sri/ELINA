@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "fp_mat.h"
 #include "S_curve.h"
+#include "S_curve2.h"
 #include <cfenv>
 
 using namespace std;
@@ -72,7 +73,9 @@ void lift_to_tasi_y_branch(const int xi, PDD &pdd_dual, const double x_bound,
   vector<set_t> &incidence = pdd_dual.incidence;
 
   double k_lb, b_lb, k_ub, b_ub;
-  compute_curve_bounds(x_bound, activation == Sigm, k_lb, b_lb, k_ub, b_ub);
+  //    compute_curve_bounds(x_bound, activation==Sigm, k_lb, b_lb, k_ub, b_ub);
+  compute_S_curve_bounds(min(x_bound, 0.0), max(x_bound, 0.0),
+                         activation == Sigm, &k_lb, &b_lb, &k_ub, &b_ub);
 
   vector<double *> V_new;
   V_new.reserve(V.size() * 2);
