@@ -25,7 +25,8 @@ void free_MatInt(MatInt cmat) {
 
 enum Version {
     Fast,
-    CDD
+    CDD,
+    Orthant
 };
 
 MatDouble compute_relaxation(MatDouble input_hrep,
@@ -36,7 +37,9 @@ MatDouble compute_relaxation(MatDouble input_hrep,
     vector<double*> A = mat_external_to_internal_format(input_hrep);
 
     vector<double*> H;
-    if (activation == Relu && version == Fast) {
+    if (version == Orthant) {
+        H = relaxation_orthant(K, A, activation);
+    } else if (activation == Relu && version == Fast) {
         H = fast_relaxation_through_decomposition(K, A, Relu);
     } else if (activation == Relu && version == CDD) {
         H = krelu_with_cdd(K, A);
@@ -97,6 +100,14 @@ MatDouble fksigm(MatDouble input_hrep) {
 
 MatDouble ksigm_with_cdd(MatDouble input_hrep) {
     return compute_relaxation(input_hrep, Sigm, CDD);
+}
+
+MatDouble ftanh_orthant(MatDouble input_hrep) {
+    return compute_relaxation(input_hrep, Tanh, Orthant);
+}
+
+MatDouble fsigm_orthant(MatDouble input_hrep) {
+    return compute_relaxation(input_hrep, Sigm, Orthant);
 }
 
 MatInt generate_sparse_cover(const int N, const int K) {

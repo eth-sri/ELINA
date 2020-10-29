@@ -56,9 +56,10 @@ void lift_to_relu_y_branch(const int xi, PDD& pdd_dual, const Polarity polarity)
 
 void lift_to_tasi_y_branch(const int xi,
                               PDD& pdd_dual,
-                              const double x_bound,
+                              const double x_lb,
+                              const double x_ub,
                               Activation activation) {
-    ASRTF(x_bound != 0, "x_bound has to be either negative or positive.");
+    ASRTF(x_lb < x_ub, "x_lb should be less than x_ub");
     const int dim = pdd_dual.dim;
     pdd_dual.dim++;
 
@@ -76,7 +77,7 @@ void lift_to_tasi_y_branch(const int xi,
 
     double k_lb, b_lb, k_ub, b_ub;
     //    compute_curve_bounds(x_bound, activation==Sigm, k_lb, b_lb, k_ub, b_ub);
-    compute_S_curve_bounds(min(x_bound, 0.0), max(x_bound, 0.0),
+    compute_S_curve_bounds(x_lb, x_ub,
                            activation==Sigm, &k_lb, &b_lb, &k_ub, &b_ub);
 
     vector<double*> V_new;
@@ -161,7 +162,9 @@ void lift_to_tasi_y_branch(const int xi,
 
 PDD decomposition_recursive(Quadrant& quadrant, const map<Quadrant, PDD>& quadrant2pdd,
                             const int K, Activation activation,
-                            const vector<double>& x_lb, const vector<double>& x_ub) {
+                            const vector<double>& x_lb,
+                            const vector<double>& x_ub,
+                            const vector<double>& orthants) {
     const int xi = (int) quadrant.size();
     if (xi == K) {
         PDD pdd = quadrant2pdd.at(quadrant);
@@ -169,17 +172,19 @@ PDD decomposition_recursive(Quadrant& quadrant, const map<Quadrant, PDD>& quadra
         return pdd;
     } else {
         quadrant.push_back(MINUS);
-        PDD pdd_minus = decomposition_recursive(quadrant, quadrant2pdd, K, activation, x_lb, x_ub);
+        PDD pdd_minus = decomposition_recursive(quadrant, quadrant2pdd, K, activation,
+                                                x_lb, x_ub, orthants);
         quadrant.back() = PLUS;
-        PDD pdd_plus = decomposition_recursive(quadrant, quadrant2pdd, K, activation, x_lb, x_ub);
+        PDD pdd_plus = decomposition_recursive(quadrant, quadrant2pdd, K, activation,
+                                               x_lb, x_ub, orthants);
         quadrant.pop_back();
 
         if (activation == Relu) {
             lift_to_relu_y_branch(xi, pdd_minus, MINUS);
             lift_to_relu_y_branch(xi, pdd_plus, PLUS);
         } else {
-            lift_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], activation);
-            lift_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], activation);
+            lift_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], orthants[xi], activation);
+            lift_to_tasi_y_branch(xi, pdd_plus, orthants[xi], x_ub[xi], activation);
         }
 
         PDD_debug_consistency_check(pdd_minus);
@@ -194,13 +199,15 @@ PDD decomposition_recursive(Quadrant& quadrant, const map<Quadrant, PDD>& quadra
 // TODO[gleb] Add support for multiple passes.
 vector<double*> decomposition(const int K, const map<Quadrant, PDD>& quadrant2pdd,
                               Activation activation,
-                              const vector<double>& x_lb, const vector<double>& x_ub) {
-    ASRTF(2 <= K && K <= 5, "Only 2 <= K <= 5 are currently supported.");
+                              const vector<double>& x_lb, const vector<double>& x_ub,
+                              const vector<double>& orthants) {
+    ASRTF(1 <= K && K <= 5, "Only 2 <= K <= 5 are currently supported.");
     ASRTF((int) quadrant2pdd.size() == POW2[K], "Sanity check - the number of quadrants should be 2^K.");
+    ASRTF(orthants.size() == K, "orthant size should be K");
 
     Quadrant quadrant {};
     quadrant.reserve(K);
-    PDD res = decomposition_recursive(quadrant, quadrant2pdd, K, activation, x_lb, x_ub);
+    PDD res = decomposition_recursive(quadrant, quadrant2pdd, K, activation, x_lb, x_ub, orthants);
     vector<double*>& H = res.V;
     vector<double*>& V = res.H;
 
