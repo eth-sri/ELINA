@@ -396,5 +396,7 @@ void compute_S_curve_bounds(double x_lb, double x_ub, bool is_sigm,
     rel = max(rel, y_ub - ub2);
     if (rel > 0) {
         cout << "rel " << rel << " x_lb " << x_lb << " x_ub " << x_ub << endl;
+        *b_lb -= 2 * rel;
+        *b_ub += 2 * rel;
     }
 }
