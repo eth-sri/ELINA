@@ -390,6 +390,11 @@ void compute_S_curve_bounds(double x_lb, double x_ub, bool is_sigm,
     double lb2 = *k_lb * x_ub + *b_lb;
     double ub2 = *k_ub * x_ub + *b_ub;
 
-    ASRTF(lb1 < y_lb && y_lb < ub1, "sound 1");
-    ASRTF(lb2 < y_ub && y_ub < ub2, "sound 2");
+    double rel = lb1 - y_lb;
+    rel = max(rel, y_lb - ub1);
+    rel = max(rel, lb2 - y_ub);
+    rel = max(rel, y_ub - ub2);
+    if (rel > 0) {
+        cout << "rel " << rel << " x_lb " << x_lb << " x_ub " << x_ub << endl;
+    }
 }
