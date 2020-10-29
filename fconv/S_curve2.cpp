@@ -4,8 +4,12 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <iostream>
+#include "asrt.h"
 
 const double PRECISION = 1.0E-7;
+
+const double SMALL = 1.0E-4;
 
 // Numerically stable sigmoid.
 inline double sigm(double x) {
@@ -176,7 +180,7 @@ void get_optimal_curve_bound(double* k, double *b,
     if ((x_ub <= 0 && is_upper) || (0 <= x_lb && !is_upper)) {
         // In this case the bound is simply the chord.
         *k = (y_ub - y_lb) / (x_ub - x_lb);
-        *b = y_ub - *k * x_ub;
+        *b = y_lb - *k * x_lb;
         return;
     }
     if (x_ub <= 0 || 0 <= x_lb) {
@@ -219,9 +223,68 @@ void get_optimal_curve_bound(double* k, double *b,
     find_best_tangent_line(k, b, x_star, x_concave, x_lb, x_ub, is_upper, is_sigm);
 }
 
+
+// It x is greater - it should give upper bound. If x is smaller - lower bound.
+void new_S_curve_tang_bound(double& k, double& b, double x, bool is_sigm, bool upper) {
+//    check_round();
+    ASRTF(x != 0, "x should equal zero.");
+
+    double y = is_sigm ? sigm(x) : tanh(x);
+    if (upper) {
+        y += SMALL;
+    } else {
+        y -= SMALL;
+    }
+    k = is_sigm ? y * (1 - y) : (1 - y * y);
+    k = max(0.0, k - SMALL);
+    b = y - k * x;
+    if (upper) {
+        b += SMALL;
+    } else {
+        b -= SMALL;
+    }
+}
+
+
+void new_S_curve_chord_bound(double& k, double& b, double x_lb, double x_ub, bool is_sigm, bool upper) {
+    ASRTF(x_ub - x_lb >= 0.0001, "x_lb and x_ub are too close.");
+
+    double y_lb, y_ub;
+    if (is_sigm) {
+        y_lb = sigm(x_lb);
+        y_ub = sigm(x_ub);
+    } else {
+        y_lb = tanh(x_lb);
+        y_ub = tanh(x_ub);
+    }
+
+    if (upper) {
+        y_lb += SMALL;
+        y_ub += SMALL;
+    } else {
+        y_lb -= SMALL;
+        y_ub -= SMALL;
+    }
+
+    k = (y_ub - y_lb) / (x_ub - x_lb);
+    if (upper) {
+        k += SMALL;
+    } else {
+        k -= SMALL;
+    }
+
+    b = y_lb - k * x_lb;
+    if (upper) {
+        b += SMALL;
+    } else {
+        b -= SMALL;
+    }
+}
+
+
 // Values beyond which I just take a simple bound due to potential numerical stability issues.
-const double TANH_LIM = 5;
-const double SIGM_LIM = 10;
+const double TANH_LIM = 3;
+const double SIGM_LIM = 5;
 
 void compute_S_curve_bounds(double x_lb, double x_ub, bool is_sigm,
                             double* k_lb, double* b_lb,
@@ -231,32 +294,109 @@ void compute_S_curve_bounds(double x_lb, double x_ub, bool is_sigm,
         abort();
     }
 
-    if (x_ub - x_lb <= 1.0E-5) {
-      if (is_sigm) {
-        *b_lb = sigm(x_lb);
-        *b_ub = sigm(x_ub);
-      } else {
-        *b_lb = tanh(x_lb);
-        *b_ub = tanh(x_ub);
-      }
-      *k_lb = 0;
-      *k_ub = 0;
-    } else {
-      if ((is_sigm && x_lb <= -SIGM_LIM) || (!is_sigm && x_lb <= -TANH_LIM)) {
+    double limit = is_sigm ? SIGM_LIM : TANH_LIM;
+
+    if (x_ub - x_lb <= 1.0E-3 || x_lb >= limit || x_ub <= -limit || (x_lb <= -limit && limit <= x_ub)) {
+        if (is_sigm) {
+            *b_lb = sigm(x_lb);
+            *b_ub = sigm(x_ub);
+        } else {
+            *b_lb = tanh(x_lb);
+            *b_ub = tanh(x_ub);
+        }
         *k_lb = 0;
-        *b_lb = is_sigm ? sigm(x_lb) : tanh(x_lb);
-      } else {
-        get_optimal_curve_bound(k_lb, b_lb, x_lb, x_ub, false, is_sigm);
-      }
-      if ((is_sigm && x_ub >= SIGM_LIM) || (!is_sigm && x_ub >= TANH_LIM)) {
         *k_ub = 0;
-        *b_ub = is_sigm ? sigm(x_ub) : tanh(x_ub);
-      } else {
-        get_optimal_curve_bound(k_ub, b_ub, x_lb, x_ub, true, is_sigm);
-      }
+    }  else if (x_lb >= 0) {
+        new_S_curve_chord_bound(*k_lb, *b_lb, x_lb, x_ub, is_sigm, false);
+        new_S_curve_tang_bound(*k_ub, *b_ub, x_ub, is_sigm, true);
+    } else if (x_ub <= 0) {
+        new_S_curve_tang_bound(*k_lb, *b_lb, x_lb, is_sigm, false);
+        new_S_curve_chord_bound(*k_ub, *b_ub, x_lb, x_ub, is_sigm, true);
+    } else {
+        if (x_lb <= -limit) {
+            *k_lb = 0;
+            *b_lb = is_sigm ? sigm(x_lb) : tanh(x_lb);
+        } else if (abs(x_lb) >= abs(x_ub)) {
+            new_S_curve_tang_bound(*k_lb, *b_lb, x_lb, is_sigm, false);
+        } else {
+            double k1, b1;
+            double k2, b2;
+            new_S_curve_chord_bound(k1, b1, x_lb, x_ub, is_sigm, false);
+            new_S_curve_tang_bound(k2, b2, x_lb, is_sigm, false);
+
+            if (k1 <= k2) {
+                *k_lb = k1;
+                *b_lb = b1;
+            } else {
+                *k_lb = k2;
+                *b_lb = b2;
+            }
+        }
+
+        if (x_ub >= limit) {
+            *k_ub = 0;
+            *b_ub = is_sigm ? sigm(x_ub) : tanh(x_ub);
+        } else if (abs(x_ub) >= abs(x_lb)) {
+            new_S_curve_tang_bound(*k_ub, *b_ub, x_ub, is_sigm, true);
+        }
+        else {
+            double k1, b1;
+            double k2, b2;
+            new_S_curve_chord_bound(k1, b1, x_lb, x_ub, is_sigm, true);
+            new_S_curve_tang_bound(k2, b2, x_ub, is_sigm, true);
+
+            if (k1 <= k2) {
+                *k_ub = k1;
+                *b_ub = b1;
+            } else {
+                *k_ub = k2;
+                *b_ub = b2;
+            }
+        }
     }
 
+
+//    }
+//        {
+//        if (x_lb <= -limit) {
+//            *k_lb = 0;
+//            *b_lb = is_sigm ? sigm(x_lb) : tanh(x_lb);
+//        } else {
+//            get_optimal_curve_bound(k_lb, b_lb, x_lb, x_ub, false, is_sigm);
+//        }
+//        if (x_ub >= limit) {
+//            *k_ub = 0;
+//            *b_ub = is_sigm ? sigm(x_ub) : tanh(x_ub);
+//        } else {
+//            get_optimal_curve_bound(k_ub, b_ub, x_lb, x_ub, true, is_sigm);
+//        }
+//    }
+
     // Adjusting for numerical soundness (with big safe margin).
-    *b_lb -= 1.0E-5;
-    *b_ub += 1.0E-5;
+    *b_lb -= SMALL;
+    *b_ub += SMALL;
+
+    double y_lb, y_ub;
+    if (is_sigm) {
+        y_lb = sigm(x_lb);
+        y_ub = sigm(x_ub);
+    } else {
+        y_lb = tanh(x_lb);
+        y_ub = tanh(x_ub);
+    }
+
+    double lb1 = *k_lb * x_lb + *b_lb;
+    double ub1 = *k_ub * x_lb + *b_ub;
+    double lb2 = *k_lb * x_ub + *b_lb;
+    double ub2 = *k_ub * x_ub + *b_ub;
+
+    double rel = lb1 - y_lb;
+    rel = max(rel, y_lb - ub1);
+    rel = max(rel, lb2 - y_ub);
+    rel = max(rel, y_ub - ub2);
+    if (rel > 0) {
+        cout << "rel " << rel << " x_lb " << x_lb << " x_ub " << x_ub << endl;
+        *b_lb -= 2 * rel;
+        *b_ub += 2 * rel;
+    }
 }

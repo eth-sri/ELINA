@@ -23,7 +23,11 @@ void free_MatInt(MatInt cmat) {
     free((int *) cmat.data);
 }
 
-enum Version { Fast, CDD };
+enum Version {
+    Fast,
+    CDD,
+    Orthant
+};
 
 MatDouble compute_relaxation(MatDouble input_hrep,
                              Activation activation,
@@ -33,24 +37,27 @@ MatDouble compute_relaxation(MatDouble input_hrep,
     vector<double*> A = mat_external_to_internal_format(input_hrep);
 
     vector<double*> H;
-    if (activation == Relu && version == Fast) {
-      H = fast_relaxation_through_decomposition(K, A, Relu);
+    if (version == Orthant) {
+        H = relaxation_orthant(K, A, activation);
+    } else if (activation == Relu && version == Fast) {
+        H = fast_relaxation_through_decomposition(K, A, Relu);
     } else if (activation == Relu && version == CDD) {
-      H = krelu_with_cdd(K, A);
+        H = krelu_with_cdd(K, A);
     } else if (activation == Pool && version == Fast) {
-      H = fkpool(K, A);
+        H = fkpool(K, A);
     } else if (activation == Pool && version == CDD) {
-      H = kpool_with_cdd(K, A);
+        H = kpool_with_cdd(K, A);
     } else if (activation == Tanh && version == Fast) {
-      H = fast_relaxation_through_decomposition(K, A, activation);
+        H = fast_relaxation_through_decomposition(K, A, activation);
     } else if (activation == Tanh && version == CDD) {
-      H = ktasi_with_cdd(K, A, activation);
+        H = ktasi_with_cdd(K, A, activation);
     } else if (activation == Sigm && version == Fast) {
-      H = fast_relaxation_through_decomposition(K, A, activation);
+        H = fast_relaxation_through_decomposition(K, A, activation);
     } else if (activation == Sigm && version == CDD) {
-      H = ktasi_with_cdd(K, A, activation);
-    } else {
-      throw runtime_error("Unknown activation function and version.");
+        H = ktasi_with_cdd(K, A, activation);
+    }
+    else {
+        throw runtime_error("Unknown activation function and version.");
     }
 
     MatDouble out = (activation == Pool) ?
@@ -93,6 +100,14 @@ MatDouble fksigm(MatDouble input_hrep) {
 
 MatDouble ksigm_with_cdd(MatDouble input_hrep) {
     return compute_relaxation(input_hrep, Sigm, CDD);
+}
+
+MatDouble ftanh_orthant(MatDouble input_hrep) {
+    return compute_relaxation(input_hrep, Tanh, Orthant);
+}
+
+MatDouble fsigm_orthant(MatDouble input_hrep) {
+    return compute_relaxation(input_hrep, Sigm, Orthant);
 }
 
 MatInt generate_sparse_cover(const int N, const int K) {

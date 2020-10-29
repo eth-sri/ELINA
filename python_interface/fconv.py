@@ -71,10 +71,15 @@ ktanh_with_cdd_c = fconv_api.ktanh_with_cdd
 fksigm_c = fconv_api.fksigm
 ksigm_with_cdd_c = fconv_api.ksigm_with_cdd
 
+ftanh_orthant_c = fconv_api.ftanh_orthant
+fsigm_orthant_c = fconv_api.fsigm_orthant
+
+
 for relaxation_c in [fkrelu_c, krelu_with_cdd_c,
                      fkpool_c, kpool_with_cdd_c,
                      fktanh_c, ktanh_with_cdd_c,
-                     fksigm_c, ksigm_with_cdd_c]:
+                     fksigm_c, ksigm_with_cdd_c,
+                     ftanh_orthant_c, fsigm_orthant_c]:
     relaxation_c.argtype = [MatDouble_c]
     relaxation_c.restype = MatDouble_c
 
@@ -98,7 +103,7 @@ def _compute_relaxation(inp_hrep: np.ndarray, activation: str, version: str) -> 
         -x2 <= 0.75
     """
     assert activation in ["relu", "pool", "tanh", "sigm"]
-    assert version in ["fast", "cdd"]
+    assert version in ["fast", "cdd", "orthant"]
 
     rows, cols = inp_hrep.shape
     k = cols - 1
@@ -108,7 +113,11 @@ def _compute_relaxation(inp_hrep: np.ndarray, activation: str, version: str) -> 
 
     inp_hrep = new_MatDouble_c(rows, cols, data_c)
 
-    if activation == "relu" and version == "fast":
+    if activation == "tanh" and version == "orthant":
+        out_hrep = ftanh_orthant_c(inp_hrep)
+    elif activation == "sigm" and version == "orthant":
+        out_hrep = fsigm_orthant_c(inp_hrep)
+    elif activation == "relu" and version == "fast":
         out_hrep = fkrelu_c(inp_hrep)
     elif activation == "relu" and version == "cdd":
         out_hrep = krelu_with_cdd_c(inp_hrep)
@@ -137,6 +146,14 @@ def _compute_relaxation(inp_hrep: np.ndarray, activation: str, version: str) -> 
     free_MatDouble_c(out_hrep)
 
     return out
+
+
+def ftanh_orthant(inp_hrep: np.ndarray) -> np.ndarray:
+    return _compute_relaxation(inp_hrep, "tanh", "orthant")
+
+
+def fsigm_orthant(inp_hrep: np.ndarray) -> np.ndarray:
+    return _compute_relaxation(inp_hrep, "sigm", "orthant")
 
 
 def fkrelu(inp_hrep: np.ndarray) -> np.ndarray:
