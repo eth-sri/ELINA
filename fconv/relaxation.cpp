@@ -341,10 +341,11 @@ vector<double*> relaxation_orthant(const int K,
             } else {
                 int xi = i - (int) A.size();
                 assert(0 <= xi && xi < K && "Sanity checking the range of xi.");
-                h[0] = orthants[xi];
                 if (quadrant[xi] == MINUS) {
+                    h[0] = orthants[xi];
                     h[xi + 1] = -1;
                 }  else {
+                    h[0] = -orthants[xi];
                     h[xi + 1] = 1;
                 }
             }

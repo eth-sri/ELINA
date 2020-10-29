@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <iostream>
 #include "asrt.h"
 
 const double PRECISION = 1.0E-7;
@@ -295,7 +296,7 @@ void compute_S_curve_bounds(double x_lb, double x_ub, bool is_sigm,
 
     double limit = is_sigm ? SIGM_LIM : TANH_LIM;
 
-    if (x_ub - x_lb <= 1.0E-3 || x_lb >= limit || x_ub <= -limit || (x_lb <= -limit && limit >= x_ub)) {
+    if (x_ub - x_lb <= 1.0E-3 || x_lb >= limit || x_ub <= -limit || (x_lb <= -limit && limit <= x_ub)) {
         if (is_sigm) {
             *b_lb = sigm(x_lb);
             *b_ub = sigm(x_ub);
@@ -305,7 +306,13 @@ void compute_S_curve_bounds(double x_lb, double x_ub, bool is_sigm,
         }
         *k_lb = 0;
         *k_ub = 0;
-    }  else {
+    }  else if (x_lb >= 0) {
+        new_S_curve_chord_bound(*k_lb, *b_lb, x_lb, x_ub, is_sigm, false);
+        new_S_curve_tang_bound(*k_ub, *b_ub, x_ub, is_sigm, true);
+    } else if (x_ub <= 0) {
+        new_S_curve_tang_bound(*k_lb, *b_lb, x_lb, is_sigm, false);
+        new_S_curve_chord_bound(*k_ub, *b_ub, x_lb, x_ub, is_sigm, true);
+    } else {
         if (x_lb <= -limit) {
             *k_lb = 0;
             *b_lb = is_sigm ? sigm(x_lb) : tanh(x_lb);
@@ -331,7 +338,8 @@ void compute_S_curve_bounds(double x_lb, double x_ub, bool is_sigm,
             *b_ub = is_sigm ? sigm(x_ub) : tanh(x_ub);
         } else if (abs(x_ub) >= abs(x_lb)) {
             new_S_curve_tang_bound(*k_ub, *b_ub, x_ub, is_sigm, true);
-        } else {
+        }
+        else {
             double k1, b1;
             double k2, b2;
             new_S_curve_chord_bound(k1, b1, x_lb, x_ub, is_sigm, true);
@@ -367,4 +375,21 @@ void compute_S_curve_bounds(double x_lb, double x_ub, bool is_sigm,
     // Adjusting for numerical soundness (with big safe margin).
     *b_lb -= SMALL;
     *b_ub += SMALL;
+
+    double y_lb, y_ub;
+    if (is_sigm) {
+        y_lb = sigm(x_lb);
+        y_ub = sigm(x_ub);
+    } else {
+        y_lb = tanh(x_lb);
+        y_ub = tanh(x_ub);
+    }
+
+    double lb1 = *k_lb * x_lb + *b_lb;
+    double ub1 = *k_ub * x_lb + *b_ub;
+    double lb2 = *k_lb * x_ub + *b_lb;
+    double ub2 = *k_ub * x_ub + *b_ub;
+
+    ASRTF(lb1 < y_lb && y_lb < ub1, "sound 1");
+    ASRTF(lb2 < y_ub && y_ub < ub2, "sound 2");
 }

@@ -90,10 +90,11 @@ map<Quadrant, VInc_mpq> get_quadrants_cdd_orthant(const int K,
         for (int xi = 0; xi < K; xi++) {
             mpq_t* row = cdd_A->matrix[NUM_H + xi];
             mpq_arr_set_zero(K + 1, row);
-            mpq_set_d(row[0], orthants[xi]);
             if (quadrant[xi] == MINUS) {
+                mpq_set_d(row[0], orthants[xi]);
                 mpq_set_si(row[xi + 1], -1, 1);
             } else {
+                mpq_set_d(row[0], -orthants[xi]);
                 mpq_set_si(row[xi + 1], 1, 1);
             }
         }
