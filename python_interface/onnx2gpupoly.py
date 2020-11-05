@@ -36,14 +36,14 @@ def onnx2gpupoly(graph):
     # dictionary that will containing the layer outputs/values that have already been processed.
     # Each value is a tuple containing an integer as a first element.
     # If the integer is -1, the value is a constant, and this constant is given as a numpy ndarray as a second element.
-    # otherwise, the first value is the index of the corresponding layer in Salsa, and the second element is a list containing its shape.
+    # otherwise, the first value is the index of the corresponding layer in GPUPoly, and the second element is a list containing its shape.
     implemented = {}
 
     # Process the initializers of the graph
     for constant in graph.initializer:
         implemented[constant.name] = [-1, onnx.numpy_helper.to_array(constant)]
 
-    # Process the input of the graph, and creates a new Salsa network with the corresponding size
+    # Process the input of the graph, and creates a new GPUPoly network with the corresponding size
     inputName = None
     for i in graph.input:
         if not i.name in implemented:
@@ -53,7 +53,7 @@ def onnx2gpupoly(graph):
             inputType = i.type.tensor_type.elem_type
             for j in i.type.tensor_type.shape.dim:
                 inputShape.append(j.dim_value)
-            implemented[inputName] = [0, inputShape] # Input layer has the index 0 in Salsa.
+            implemented[inputName] = [0, inputShape] # Input layer has the index 0 in GPUPoly.
 
     def product(list):
         res=1
@@ -135,16 +135,18 @@ def onnx2gpupoly(graph):
             outputShape.append(data.shape[0])
             outputShape.append((inputShape[-2] + 2 * padding_rows - data.shape[-2] + stride_rows) // stride_rows)
             outputShape.append((inputShape[-1] + 2 * padding_cols - data.shape[-1] + stride_cols) // stride_cols)
-
+            #print("Filter Matrix",np.transpose(data,[2,3,1,0]))
             outputIndex = nn.add_conv_2d(inputShape[-2],inputShape[-1],np.transpose(data,[2,3,1,0]),True,product(inputShape[:-3]),[stride_rows,stride_cols],[padding_rows,padding_cols],inputIndex)
             if len(layer.input)==3:
                 dataIndex, data = getLayer(layer.input[2])
                 assert dataIndex==-1
                 assert data.shape==(outputShape[-3],)
                 data=data.repeat(outputShape[-2]*outputShape[-1])
+                #print("Filter Bias ", data,len(data))
                 outputIndex=nn.add_bias(data,outputIndex)
             return outputIndex, outputShape
         if (layer.op_type == "Gather"):
+            
             lhsIndex, lhs = getLayer(layer.input[0])
             rhsIndex, rhs = getLayer(layer.input[1])
             assert lhsIndex == -1 and rhsIndex == -1
@@ -160,10 +162,12 @@ def onnx2gpupoly(graph):
             outputShape = inputShape[:-1]
             outputShape.append(data.shape[0])
             outputIndex = nn.add_linear(data,inputIndex)
+            #print("Gemm Matrix", data)
             if len(layer.input)==3:
                 dataIndex, data = getLayer(layer.input[2])
                 assert dataIndex==-1
                 assert data.shape==(outputShape[-1],)
+                #print("Gemm bias ", data)
                 outputIndex=nn.add_bias(data,outputIndex)
             return outputIndex, outputShape
         if (layer.op_type=="Identity"):
