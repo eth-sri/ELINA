@@ -35,7 +35,7 @@ class Network:
         _lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('gpupoly'))
     else:
         # _lib=ctypes.cdll.LoadLibrary('${GPUPoly_BINARY_DIR}/dpGPUlib.so.0.10')
-        _lib = ctypes.cdll.LoadLibrary('libgpupoly.so.0.10')
+        _lib = ctypes.cdll.LoadLibrary('libgpupoly.so')
 
     def _nullable_ndptr(*args, **kwargs):
         base = np.ctypeslib.ndpointer(*args, **kwargs)
@@ -236,18 +236,19 @@ class Network:
 
         # relax all layers, using simple interval analysis first.
         for i in range(self._last_layer_id):
-            self.relax(i + 1, sound=soundness, refineActivationsInput=False)
+            self.relax(i + 1, soundness=soundness, refineActivationsInput=False)
 
         # Evaluates an expression that computes the difference between expected label and each element of the output layer
         res = self.evalAffineExpr(diffMatrix, back_substitute=self.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO, sound=soundness)
-
+        #print("res1 ", res)
         if (res > 0).all(): # Expected layer is higher than all others
             return True
 
         # We failed to verify, so we redo the analysis with backsubstitution before activation layer.
         for i in range(self._last_layer_id):
-            self.relax(i + 1, sound=soundness)
+            self.relax(i + 1, soundness=soundness)
         res = self.evalAffineExpr(diffMatrix, back_substitute=self.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO, sound=soundness)
+        #print("res2 ", res)
         return (res > 0).all()
 
 
