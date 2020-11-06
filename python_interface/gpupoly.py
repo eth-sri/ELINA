@@ -249,7 +249,7 @@ class Network:
             self.relax(i + 1, soundness=soundness)
         res = self.evalAffineExpr(diffMatrix, back_substitute=self.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO, sound=soundness)
         #print("res2 ", res)
-        return (res > 0).all()
+        return (res > 0).all(), res
 
 
     def test_old(self, down, up, label, soundness=True):
