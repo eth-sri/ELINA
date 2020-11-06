@@ -242,7 +242,7 @@ class Network:
         res = self.evalAffineExpr(diffMatrix, back_substitute=self.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO, sound=soundness)
         #print("res1 ", res)
         if (res > 0).all(): # Expected layer is higher than all others
-            return True
+            return res
 
         # We failed to verify, so we redo the analysis with backsubstitution before activation layer.
         for i in range(self._last_layer_id):
