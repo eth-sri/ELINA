@@ -55,7 +55,7 @@ class Network:
         ctypes.c_int,
         ctypes.c_bool
     ]
-    _lib.test_d.restype = ctypes.c_int
+    _lib.test_d.restype = ctypes.c_double
     _lib.test_s.argtypes = [
         ctypes.c_void_p,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1),
@@ -63,7 +63,7 @@ class Network:
         ctypes.c_int,
         ctypes.c_bool
     ]
-    _lib.test_s.restype = ctypes.c_int
+    _lib.test_s.restype = ctypes.c_float
 
     _lib.setLayerBox_d.argtypes = [
         ctypes.c_void_p,
@@ -249,7 +249,7 @@ class Network:
             self.relax(i + 1, soundness=soundness)
         res = self.evalAffineExpr(diffMatrix, back_substitute=self.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO, sound=soundness)
         #print("res2 ", res)
-        return (res > 0).all(), res
+        return res
 
 
     def test_old(self, down, up, label, soundness=True):
