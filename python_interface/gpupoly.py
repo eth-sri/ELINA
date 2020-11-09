@@ -55,7 +55,7 @@ class Network:
         ctypes.c_int,
         ctypes.c_bool
     ]
-    _lib.test_d.restype = ctypes.c_double
+    _lib.test_d.restype = ctypes.c_bool
     _lib.test_s.argtypes = [
         ctypes.c_void_p,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1),
@@ -63,7 +63,7 @@ class Network:
         ctypes.c_int,
         ctypes.c_bool
     ]
-    _lib.test_s.restype = ctypes.c_float
+    _lib.test_s.restype = ctypes.c_bool
 
     _lib.setLayerBox_d.argtypes = [
         ctypes.c_void_p,
@@ -225,7 +225,7 @@ class Network:
     #  \param up A numpy array of inputSize doubles that represent the upper bound of the box
     #  \param label Label in which the image is supposed to classify
     #  \param soundness Whether to use sound arithmetic.
-    #  \returns whether the image could be certified.
+    #  \returns whether the difference between the output logits wrt L_oo ball.
     def test(self, down, up, label, soundness=True):
         self.setLayerBox(down, up)  # Set input layer concrete bounds
 
