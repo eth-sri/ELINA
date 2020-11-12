@@ -377,6 +377,7 @@ bool floyd_warshall_dense(opt_oct_mat_t *oo, double *temp1, double *temp2, int d
 	}
 	
     }
+		return true;
 }
 
 bool strong_closure_dense(opt_oct_mat_t *oo, double *temp1, double *temp2, int dim, bool is_int){

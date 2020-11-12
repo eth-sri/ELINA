@@ -280,7 +280,9 @@ opt_pk_array_t* opt_pk_remove_dimensions(elina_manager_t* man,
 		opt_pk_array_t * op = destructive ? oa : opt_pk_array_alloc(NULL,NULL,oa->maxcols);
 		op->maxcols -= dimsup;
 		opt_poly_set_top(opk,op);
+		#if defined (TIMING)
 		record_timing(remove_dimension_time);
+		#endif
 		return op;
 	   }
 	}

@@ -445,6 +445,7 @@ opt_pk_array_t* opt_pk_meet_lincons_array_cons(elina_manager_t* man, bool destru
   if(is_bottom){
 	man->result.flag_best = man->result.flag_exact = true;
     	opt_poly_set_bottom(opk,op);
+			free(is_trivial);
     	return op;
   }
 
@@ -883,7 +884,9 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
 	//print_array_comp_list(oa->acl,oa->maxcols);
 	//print_array_comp_list(ob->acl,ob->maxcols);
 	//fflush(stdout);
+	#if defined (TIMING)
 	join_count++;
+	#endif
 	opt_pk_internal_t *opk = opt_pk_init_from_manager(man, ELINA_FUNID_JOIN);
 	size_t i;
 	unsigned short int j,k;
@@ -1735,6 +1738,7 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
 	if(size_b){
 		opt_pk_free(man,tmp_b);
 	}
+	free_comp_list(clp);
 	return op;
 }
 

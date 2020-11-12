@@ -251,6 +251,9 @@ array_comp_list_t * union_array_comp_list(array_comp_list_t *acl1, array_comp_li
 			cl2 = cl2->next;
 		}
 		if(is_singleton2){
+			free(dis_map1);
+			free(dis_map2);
+			free(overlap_map);
 			return singleton_union_array_comp_list(acl1,acl2,n);
 		}
 	}

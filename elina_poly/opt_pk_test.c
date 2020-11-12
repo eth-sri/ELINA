@@ -36,7 +36,9 @@
 
 bool opt_pk_is_bottom(elina_manager_t* man, opt_pk_array_t* op)
 {
+	#if defined (TIMING)
   start_timing();
+	#endif
   opt_pk_internal_t* opk = opt_pk_init_from_manager(man,ELINA_FUNID_IS_BOTTOM);
   array_comp_list_t * acl = op->acl;
   if(op->is_bottom || !acl){
@@ -45,7 +47,9 @@ bool opt_pk_is_bottom(elina_manager_t* man, opt_pk_array_t* op)
 	op->is_bottom = true;
 	//printf("is bottom end true 1\n");
   	//fflush(stdout);
+	#if defined (TIMING)
 	record_timing(is_bottom_time);
+	#endif
 	return true;
   }
  
@@ -55,7 +59,9 @@ bool opt_pk_is_bottom(elina_manager_t* man, opt_pk_array_t* op)
   for(k=0; k < num_comp; k++){
 	opt_pk_t * op_k = poly[k];
 	if(!op_k->C && !op_k->F){
+		#if defined (TIMING)
 		record_timing(is_bottom_time);
+		#endif
 		op->is_bottom = true;
 		return true;
 	}
@@ -68,12 +74,16 @@ bool opt_pk_is_bottom(elina_manager_t* man, opt_pk_array_t* op)
 			if (opk->exn){
 				man->result.flag_exact = man->result.flag_best = false;
 				opk->exn = ELINA_EXC_NONE;
+				#if defined (TIMING)
 	 			record_timing(is_bottom_time);
+				#endif
 				return false;
       			}
 			man->result.flag_exact = man->result.flag_best = op_k->intdim>0 && op_k->F ? false : true;
 			if(!op_k->F){
+				 #if defined (TIMING)
 	 			 record_timing(is_bottom_time);
+				 #endif
 				 op->is_bottom = true;
 				 return true;
 			}
@@ -81,14 +91,18 @@ bool opt_pk_is_bottom(elina_manager_t* man, opt_pk_array_t* op)
 	     else {
 		if(!op_k->C){
 			man->result.flag_exact = man->result.flag_best = false;
+			#if defined (TIMING)
 	       		record_timing(is_bottom_time);
+			#endif
 			op->is_bottom = true;
 	      		return true;
 		}
 	    }
        }
   }
+	#if defined (TIMING)
   record_timing(is_bottom_time);
+	#endif
   return false;
 }
 
@@ -528,9 +542,9 @@ bool opt_pk_is_leq_gen(elina_manager_t * man, opt_pk_array_t *oa, opt_pk_array_t
 					  tmp[indb]->F, cpi,
 					  opk->strict &&
 					  opt_numint_sgn(obk->C->p[i][opt_polka_eps])<0);
-
-                                // free(cpi);
-                                if(!sat){ 
+				
+      				free(cpi);
+      				if(!sat){ 
 	 				goto opt_pk_is_leq_gen_exit;
       				}
 			}
@@ -550,8 +564,8 @@ bool opt_pk_is_leq_gen(elina_manager_t * man, opt_pk_array_t *oa, opt_pk_array_t
 	free(num_vertex1);
 	for(k=0; k < num_comp; k++){
 		free(ca_arr[k]);
-                free(tmp[k]->F);
-                free(tmp[k]);
+		opt_matrix_free(tmp[k]->F);
+		free(tmp[k]);
 		free(var_map[k]);
 	}
 	free(tmp);
@@ -567,8 +581,8 @@ bool opt_pk_is_leq_gen(elina_manager_t * man, opt_pk_array_t *oa, opt_pk_array_t
 		free(ind_melina_b[k]);
 	}
 	free(ind_melina_b);
-
-        return sat;
+  free_comp_list(acl);
+	return sat;
 }
 
 

@@ -1259,8 +1259,8 @@ void opt_pk_array_fprint(FILE* stream, elina_manager_t * man, opt_pk_array_t * o
 	array_comp_list_t * acl = oa->acl;
 	unsigned short int maxcols = oa->maxcols;
 	if(oa->is_bottom || !acl){
-          fprintf(stream, "empty polyhedron of dim (%lu)\n", maxcols);
-          return;
+		fprintf(stream,"empty polyhedron of dim (%u)\n",maxcols);
+		return ;
 	}
 	unsigned short int num_comp = acl->size;
 	
