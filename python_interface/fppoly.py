@@ -287,7 +287,7 @@ def handle_fully_connected_layer_no_alloc(man, element,weights, bias,  size, num
 
     return
 
-def handle_concatenation_layer(man, element, predecessors, num_predecessors):
+def handle_concatenation_layer(man, element, predecessors, num_predecessors, C):
     """
         handle the first FFN ReLU layer
 
@@ -301,6 +301,8 @@ def handle_concatenation_layer(man, element, predecessors, num_predecessors):
         the layers before the current layer
     num_predecessors: c_size_t
         the number of predecessors of the current layer
+    C: POINTER(c_size_t)
+        the number of channels in each predecessor
     Returns
     -------
     res : None
@@ -310,10 +312,43 @@ def handle_concatenation_layer(man, element, predecessors, num_predecessors):
     try:
         handle_concatenation_layer_c = fppoly_api.handle_concatenation_layer
         handle_concatenation_layer_c.restype = None
-        handle_concatenation_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, POINTER(c_size_t), c_size_t]
-        handle_concatenation_layer_c(man, element, predecessors, num_predecessors)
+        handle_concatenation_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, POINTER(c_size_t), c_size_t, POINTER(c_size_t)]
+        handle_concatenation_layer_c(man, element, predecessors, num_predecessors, C)
     except Exception as inst:
         print('Problem with loading/calling "handle_concatenation_layer" from "libfppoly.so"')
+        print(inst)
+
+    return
+
+def handle_tiling_layer(man, element, predecessors, num_predecessors, repeat):
+    """
+        handle the first FFN ReLU layer
+
+        Parameters
+        ----------
+        man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+        element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    predecessors: POINTER(c_size_t)
+        the layers before the current layer
+    num_predecessors: c_size_t
+        the number of predecessors of the current layer
+    repeat: c_size_t
+        the number of tiles
+    Returns
+    -------
+    res : None
+
+    """
+
+    try:
+        handle_tiling_layer_c = fppoly_api.handle_tiling_layer
+        handle_tiling_layer_c.restype = None
+        handle_tiling_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, POINTER(c_size_t), c_size_t, c_size_t]
+        handle_tiling_layer_c(man, element, predecessors, num_predecessors, repeat)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_tiling_layer" from "libfppoly.so"')
         print(inst)
 
     return

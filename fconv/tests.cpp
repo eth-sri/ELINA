@@ -4,6 +4,7 @@
 #include <set>
 #include <map>
 #include <unistd.h>
+#include <random>
 #include "fconv.h"
 #include "octahedron.h"
 #include "quadrants.h"
@@ -16,7 +17,7 @@
 
 // Temporary disabled the last test for k=4 before I add proper support
 // for inputs that split zero.
-constexpr int K2NUM_TESTS[6] = {0, 3, 4, 5, 3, 4};
+constexpr int K2NUM_TESTS[6] = {0, 4, 4, 6, 3, 4};
 
 const string activation2str[4] = {"Relu", "Pool", "Tanh", "Sigm"};
 
@@ -210,7 +211,7 @@ void run_pool_quadrants_test(const int K, const string& path) {
     cout << "\tpassed" << endl;
 }
 
-void run_tasi_quadrants_cdd_dim_test(const int K, const string& path, Activation activation) {
+void run_tasi_quadrants_cdd_lift_test(const int K, const string& path, Activation activation) {
     cout << "running " << activation2str[activation] << \
         " quadrants with cdd dim test: " << path << endl;
 
@@ -219,7 +220,7 @@ void run_tasi_quadrants_cdd_dim_test(const int K, const string& path, Activation
     vector<double*> A = fp_mat_read(K + 1, path);
 
     Timer t_fast;
-    map<Quadrant, vector<mpq_t*>> quadrant2V_fast = get_tasi_quadrants_cdd_dim(K, A, activation);
+    map<Quadrant, vector<mpq_t*>> quadrant2V_fast = get_tasi_quadrants_cdd_lift(K, A, activation);
     int micros_fast = t_fast.micros();
 
     Timer t_slow;
@@ -371,7 +372,7 @@ void run_fktasi_test(const int K, const string& path, Activation activation) {
     vector<mpq_t*> H_mpq = mpq_mat_from_MatDouble(H_ext);
 
     dd_set_global_constants();
-    map<Quadrant, vector<mpq_t*>> quadrant2V = get_tasi_quadrants_cdd_dim(K, A_int, activation);
+    map<Quadrant, vector<mpq_t*>> quadrant2V = get_tasi_quadrants_cdd_lift(K, A_int, activation);
     dd_free_global_constants();
 
     vector<mpq_t*> V_mpq;
@@ -541,12 +542,12 @@ void run_all_pool_quadrants_tests() {
     }
 }
 
-void run_all_tasi_quadrants_cdd_dim_tests(Activation activation) {
+void run_all_tasi_quadrants_cdd_lift_tests(Activation activation) {
     cout << "Running all " << activation2str[activation] << " quadrant with cdd dim tests" << endl;
     // k = 4 is somewhat slow (several seconds), so doing tests until k = 3.
     for (int k = 1; k <= 3; k++) {
         for (int i = 1; i <= K2NUM_TESTS[k]; i++) {
-            run_tasi_quadrants_cdd_dim_test(
+            run_tasi_quadrants_cdd_lift_test(
                     k,
                     "octahedron_hrep/k" + to_string(k) + "/" + to_string(i) + ".txt",
                     activation);
@@ -632,8 +633,8 @@ int main() {
     run_all_octahedron_tests();
     run_all_split_in_quadrants_tests();
     run_all_pool_quadrants_tests();
-    run_all_tasi_quadrants_cdd_dim_tests(Tanh);
-    run_all_tasi_quadrants_cdd_dim_tests(Sigm);
+    run_all_tasi_quadrants_cdd_lift_tests(Tanh);
+    run_all_tasi_quadrants_cdd_lift_tests(Sigm);
     run_all_fkrelu_tests();
     run_all_fkpool_tests();
     run_all_fktasi_tests(Tanh);

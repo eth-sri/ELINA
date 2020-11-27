@@ -35,7 +35,7 @@ class Network:
         _lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('gpupoly'))
     else:
         # _lib=ctypes.cdll.LoadLibrary('${GPUPoly_BINARY_DIR}/dpGPUlib.so.0.10')
-        _lib = ctypes.cdll.LoadLibrary('libgpupoly.so.0.10')
+        _lib = ctypes.cdll.LoadLibrary('libgpupoly.so')
 
     def _nullable_ndptr(*args, **kwargs):
         base = np.ctypeslib.ndpointer(*args, **kwargs)
@@ -55,7 +55,7 @@ class Network:
         ctypes.c_int,
         ctypes.c_bool
     ]
-    _lib.test_d.restype = ctypes.c_int
+    _lib.test_d.restype = ctypes.c_bool
     _lib.test_s.argtypes = [
         ctypes.c_void_p,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1),
@@ -63,7 +63,7 @@ class Network:
         ctypes.c_int,
         ctypes.c_bool
     ]
-    _lib.test_s.restype = ctypes.c_int
+    _lib.test_s.restype = ctypes.c_bool
 
     _lib.setLayerBox_d.argtypes = [
         ctypes.c_void_p,
@@ -225,7 +225,7 @@ class Network:
     #  \param up A numpy array of inputSize doubles that represent the upper bound of the box
     #  \param label Label in which the image is supposed to classify
     #  \param soundness Whether to use sound arithmetic.
-    #  \returns whether the image could be certified.
+    #  \returns whether the difference between the output logits wrt L_oo ball.
     def test(self, down, up, label, soundness=True):
         self.setLayerBox(down, up)  # Set input layer concrete bounds
 
@@ -236,19 +236,20 @@ class Network:
 
         # relax all layers, using simple interval analysis first.
         for i in range(self._last_layer_id):
-            self.relax(i + 1, sound=soundness, refineActivationsInput=False)
+            self.relax(i + 1, soundness=soundness, refineActivationsInput=False)
 
         # Evaluates an expression that computes the difference between expected label and each element of the output layer
         res = self.evalAffineExpr(diffMatrix, back_substitute=self.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO, sound=soundness)
-
+        #print("res1 ", res)
         if (res > 0).all(): # Expected layer is higher than all others
-            return True
+            return res
 
         # We failed to verify, so we redo the analysis with backsubstitution before activation layer.
         for i in range(self._last_layer_id):
-            self.relax(i + 1, sound=soundness)
+            self.relax(i + 1, soundness=soundness)
         res = self.evalAffineExpr(diffMatrix, back_substitute=self.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO, sound=soundness)
-        return (res > 0).all()
+        #print("res2 ", res)
+        return res
 
 
     def test_old(self, down, up, label, soundness=True):

@@ -4,10 +4,13 @@
 #include "pdd.h"
 #include "utils.h"
 #include "fp_mat.h"
+#include "S_curve.h"
+#include "S_curve2.h"
+#include <cfenv>
 
 using namespace std;
 
-void project_to_relu_y_branch(const int xi, PDD& pdd_dual, const Polarity polarity) {
+void lift_to_relu_y_branch(const int xi, PDD& pdd_dual, const Polarity polarity) {
     const int dim = pdd_dual.dim;
     pdd_dual.dim++;
 
@@ -51,11 +54,12 @@ void project_to_relu_y_branch(const int xi, PDD& pdd_dual, const Polarity polari
     set_enable_all(incidence[incidence.size() - 1]);
 }
 
-void project_to_tasi_y_branch(const int xi,
+void lift_to_tasi_y_branch(const int xi,
                               PDD& pdd_dual,
-                              const double x_bound,
+                              const double x_lb,
+                              const double x_ub,
                               Activation activation) {
-    ASRTF(x_bound != 0, "x_bound has to be either negative or positive.");
+    ASRTF(x_lb < x_ub, "x_lb should be less than x_ub");
     const int dim = pdd_dual.dim;
     pdd_dual.dim++;
 
@@ -71,38 +75,10 @@ void project_to_tasi_y_branch(const int xi,
     }
     vector<set_t>& incidence = pdd_dual.incidence;
 
-    double y_bound, k_lb, b_lb, k_ub, b_ub;
-    if (activation == Tanh) {
-        y_bound = tanh(x_bound);
-        if (x_bound < 0) {
-            k_lb = 1 - y_bound * y_bound;
-            b_lb = y_bound - x_bound * k_lb;
-            k_ub = y_bound / x_bound;
-            b_ub = 0;
-        } else {
-            k_lb = y_bound / x_bound;
-            b_lb = 0;
-            k_ub = 1 - y_bound * y_bound;
-            b_ub = y_bound - x_bound * k_ub;
-        }
-    } else {
-        // Numerically stable sigmoid
-        // http://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/
-        if (x_bound < 0) {
-            y_bound = exp(x_bound);
-            y_bound = y_bound / (1 + y_bound);
-            k_lb = y_bound * (1 - y_bound);
-            b_lb = y_bound - x_bound * k_lb;
-            k_ub = (y_bound - 0.5) / x_bound;
-            b_ub = 0.5;
-        } else {
-            y_bound = 1 / (1 + exp(-x_bound));
-            k_lb = (y_bound - 0.5) / x_bound;
-            b_lb = 0.5;
-            k_ub = y_bound * (1 - y_bound);
-            b_ub = y_bound - x_bound * k_ub;
-        }
-    }
+    double k_lb, b_lb, k_ub, b_ub;
+    //    compute_curve_bounds(x_bound, activation==Sigm, k_lb, b_lb, k_ub, b_ub);
+    compute_S_curve_bounds(x_lb, x_ub,
+                           activation==Sigm, &k_lb, &b_lb, &k_ub, &b_ub);
 
     vector<double*> V_new;
     V_new.reserve(V.size() * 2);
@@ -112,22 +88,23 @@ void project_to_tasi_y_branch(const int xi,
     for (size_t i = 0; i < V.size(); i++) {
         double* v_lb = fp_arr_resize(dim + 1, dim, V[i]);
         double x_cur = v_lb[xi + 1];
-        if (x_cur == x_bound) {
-            // Both lower and upper bound would map to the same y.
-            v_lb[dim] = y_bound;
-            map_lb[i] = V_new.size();
-            map_ub[i] = V_new.size();
-            V_new.push_back(v_lb);
-            continue;
-        }
-        double* v_ub = fp_arr_copy(dim + 1, v_lb);
-        v_lb[dim] = k_lb * x_cur + b_lb;
-        v_ub[dim] = k_ub * x_cur + b_ub;
-
+        fesetround(FE_DOWNWARD);
+        double lb = k_lb * x_cur + b_lb;
+        fesetround(FE_UPWARD);
+        double ub = k_ub * x_cur + b_ub;
+        fesetround(FE_TONEAREST);
+        ASRTF(lb <= ub, "Unsoundness detected.");
+        v_lb[dim] = lb;
         map_lb[i] = V_new.size();
         V_new.push_back(v_lb);
-        map_ub[i] = V_new.size();
-        V_new.push_back(v_ub);
+        if (lb == ub) {
+            map_ub[i] = map_lb[i];
+        } else {
+            double* v_ub = fp_arr_copy(dim + 1, v_lb);
+            v_ub[dim] = ub;
+            map_ub[i] = V_new.size();
+            V_new.push_back(v_ub);
+        }
     }
 
     for (size_t i = 0; i < H.size(); i++) {
@@ -185,7 +162,9 @@ void project_to_tasi_y_branch(const int xi,
 
 PDD decomposition_recursive(Quadrant& quadrant, const map<Quadrant, PDD>& quadrant2pdd,
                             const int K, Activation activation,
-                            const vector<double>& x_lb, const vector<double>& x_ub) {
+                            const vector<double>& x_lb,
+                            const vector<double>& x_ub,
+                            const vector<double>& orthants) {
     const int xi = (int) quadrant.size();
     if (xi == K) {
         PDD pdd = quadrant2pdd.at(quadrant);
@@ -193,20 +172,19 @@ PDD decomposition_recursive(Quadrant& quadrant, const map<Quadrant, PDD>& quadra
         return pdd;
     } else {
         quadrant.push_back(MINUS);
-        PDD pdd_minus = decomposition_recursive(quadrant, quadrant2pdd, K, activation, x_lb, x_ub);
+        PDD pdd_minus = decomposition_recursive(quadrant, quadrant2pdd, K, activation,
+                                                x_lb, x_ub, orthants);
         quadrant.back() = PLUS;
-        PDD pdd_plus = decomposition_recursive(quadrant, quadrant2pdd, K, activation, x_lb, x_ub);
+        PDD pdd_plus = decomposition_recursive(quadrant, quadrant2pdd, K, activation,
+                                               x_lb, x_ub, orthants);
         quadrant.pop_back();
 
         if (activation == Relu) {
-            project_to_relu_y_branch(xi, pdd_minus, MINUS);
-            project_to_relu_y_branch(xi, pdd_plus, PLUS);
-        } else if (activation == Tanh) {
-            project_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], Tanh);
-            project_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], Tanh);
+            lift_to_relu_y_branch(xi, pdd_minus, MINUS);
+            lift_to_relu_y_branch(xi, pdd_plus, PLUS);
         } else {
-            project_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], Sigm);
-            project_to_tasi_y_branch(xi, pdd_plus, x_ub[xi], Sigm);
+            lift_to_tasi_y_branch(xi, pdd_minus, x_lb[xi], orthants[xi], activation);
+            lift_to_tasi_y_branch(xi, pdd_plus, orthants[xi], x_ub[xi], activation);
         }
 
         PDD_debug_consistency_check(pdd_minus);
@@ -221,13 +199,15 @@ PDD decomposition_recursive(Quadrant& quadrant, const map<Quadrant, PDD>& quadra
 // TODO[gleb] Add support for multiple passes.
 vector<double*> decomposition(const int K, const map<Quadrant, PDD>& quadrant2pdd,
                               Activation activation,
-                              const vector<double>& x_lb, const vector<double>& x_ub) {
-    ASRTF(2 <= K && K <= 5, "Only 2 <= K <= 5 are currently supported.");
+                              const vector<double>& x_lb, const vector<double>& x_ub,
+                              const vector<double>& orthants) {
+    ASRTF(1 <= K && K <= 5, "Only 2 <= K <= 5 are currently supported.");
     ASRTF((int) quadrant2pdd.size() == POW2[K], "Sanity check - the number of quadrants should be 2^K.");
+    ASRTF(orthants.size() == K, "orthant size should be K");
 
     Quadrant quadrant {};
     quadrant.reserve(K);
-    PDD res = decomposition_recursive(quadrant, quadrant2pdd, K, activation, x_lb, x_ub);
+    PDD res = decomposition_recursive(quadrant, quadrant2pdd, K, activation, x_lb, x_ub, orthants);
     vector<double*>& H = res.V;
     vector<double*>& V = res.H;
 

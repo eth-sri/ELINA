@@ -47,6 +47,7 @@ if(nn.input_size==784):
     print("Using MNIST dataset.")
     _, (x_test, y_test) = tf.keras.datasets.mnist.load_data()  # download dataset
     x_test=x_test/255.0
+    
     std=1
     mean=0
 elif (nn.input_size==3072):
@@ -84,7 +85,10 @@ x_up = ((np.clip(x_test + epsilon, 0, 1)-mean)/std).astype("float32")
 success4 = success3 = success2 = success1 = 0
 start_time = time.perf_counter()
 for i in candidates:
+#for i in range(1):
+    
     res = nn.test(x_down[i], x_up[i], y_test[i], True)
+    #print("specLB ", x_down[i])
     if res >= 1:
         success1 += 1
     if res >= 2:

@@ -56,7 +56,6 @@ all : libfppoly.so
 libfppoly.so : $(OBJS) $(FPPOLYH)
 	$(CC) -shared $(CC_ELINA_DYLIB) $(CFLAGS) $(DFLAGS) $(INCLUDES) -o $(SOINST) $(OBJS) $(LIBS)
 
-
 fppoly.o : fppoly.h fppoly.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o fppoly.o fppoly.c $(LIBS)
 
