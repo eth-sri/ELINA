@@ -286,7 +286,7 @@ extern "C" {
 	  \param parent index of the parent layer (or 0 for the input layer).
 	  \param filters number of filters.
 	  \param kernel_shape dimentions of the kernel (expects an array of 2 ints, respectively the number of rows and columns.
-	  \param input_shape dimentions of the input (expects an array of 4 ints, respectively the number of batches, rows, columns and channels).
+	  \param input_shape dimentions of the input (expects an array of 3 ints, respectively the number of rows, columns and channels).
 	  \param stride_shape stride shape (expects an array of 2 ints, respectively the number of rows and columns.
 	  \param padding padding (expects an array of 2 ints, respectively the number of pixels to add at the top and bottom, and the number of pixels to add on the left and right).
 	  \param data convolution coefficients (given in row major, then column, then channel and filter minor order). Contains filters*kernel_size_rows*kernel_size_cols*input_shape_channels elements.

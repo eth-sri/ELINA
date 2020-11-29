@@ -209,21 +209,19 @@ int addConv2D_d(
 	int parent,
 	int filters, // number of filters
 	int* kernel_shape, // dimentions of the kernel (expects an array of 2 ints, respectively the number of rows and columns
-	int* input_shape, // dimentions of the input (expects an array of 4 ints, respectively the number of batches, rows, columns and channels).
+	int* input_shape, // dimentions of the input (expects an array of 3 ints, respectively the number of rows, columns and channels).
 	int* stride_shape, // stride shape (expects an array of 2 ints, respectively the number of rows and columns
 	int* padding, // padding (expects an array of 2 ints, respectively the number of pixels to add at the top and bottom, and the number of pixels to add on the left and right)
 	const double* data // convolution coefficients (given in row major, then column, then channel and filter minor order). Contains filters*kernel_size_rows*kernel_size_cols*input_shape_channels elements.
 )
 {
-	if (input_shape[0] != 1)
-		throw (-1); // for now, batch is not supported.
 	NeuralNetwork::Layer* conv = new Conv2D<double>(*nn,
 		filters,
 		kernel_shape[0], kernel_shape[1],
-		input_shape[1], input_shape[2], input_shape[3],
+		input_shape[0], input_shape[1], input_shape[2],
 		stride_shape[0], stride_shape[1],
 		padding[0], padding[1],
-		Matrix<double>(kernel_shape[0] * kernel_shape[1], input_shape[3] * filters, data),
+		Matrix<double>(kernel_shape[0] * kernel_shape[1], input_shape[2] * filters, data),
 		parent);
 	return nn->addLayer(conv);
 	/*size_t m = binding[prev].outputSize;
@@ -245,21 +243,19 @@ int addConv2D_s(
 	int parent,
 	int filters, // number of filters
 	int* kernel_shape, // dimentions of the kernel (expects an array of 2 ints, respectively the number of rows and columns
-	int* input_shape, // dimentions of the input (expects an array of 4 ints, respectively the number of batches, rows, columns and channels).
+	int* input_shape, // dimentions of the input (expects an array of 3 ints, respectively the number of rows, columns and channels).
 	int* stride_shape, // stride shape (expects an array of 2 ints, respectively the number of rows and columns
 	int* padding, // padding (expects an array of 2 ints, respectively the number of pixels to add at the top and bottom, and the number of pixels to add on the left and right)
 	const float* data // convolution coefficients (given in row major, then column, then channel and filter minor order). Contains filters*kernel_size_rows*kernel_size_cols*input_shape_channels elements.
 )
 {
-	if (input_shape[0] != 1)
-		throw (-1); // for now, batch is not supported.
 	NeuralNetwork::Layer* conv = new Conv2D<float>(*nn,
 		filters,
 		kernel_shape[0], kernel_shape[1],
-		input_shape[1], input_shape[2], input_shape[3],
+		input_shape[0], input_shape[1], input_shape[2],
 		stride_shape[0], stride_shape[1],
 		padding[0], padding[1],
-		Matrix<float>(kernel_shape[0] * kernel_shape[1], input_shape[3] * filters, data),
+		Matrix<float>(kernel_shape[0] * kernel_shape[1], input_shape[2] * filters, data),
 		parent);
 	return nn->addLayer(conv);
 	/*size_t m = binding[prev].outputSize;
@@ -280,17 +276,15 @@ int addMaxPool2D(
 	NeuralNetwork* nn,
 	int parent,
 	int* pool_shape, // pool shape (expects an array of 2 ints, respectively the number of rows and columns
-	int* input_shape, // dimentions of the input(expects an array of 4 ints, respectively the number of batches, rows, columnsand channels).
+	int* input_shape, // dimentions of the input(expects an array of 3 ints, respectively the number of rows, columns and channels).
 	int* stride_shape, // stride shape (expects an array of 2 ints, respectively the number of rows and columns
 	int* padding // padding (expects an array of 2 ints, respectively the number of pixels to add at the top and bottom, and the number of pixels to add on the left and right)
 )
 {
-	if (input_shape[0] != 1)
-		throw (-1); // for now, batch is not supported.
 	NeuralNetwork::Layer* conv = new MaxPool2D(
 		*nn,
 		pool_shape[0], pool_shape[1],
-		input_shape[1], input_shape[2], input_shape[3],
+		input_shape[0], input_shape[1], input_shape[2],
 		stride_shape[0], stride_shape[1],
 		padding[0], padding[1],
 		parent);
