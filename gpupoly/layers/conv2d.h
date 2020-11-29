@@ -56,11 +56,9 @@ public:
 /*!
   Creates a new convolution layer, without activation nor bias.
 
-  \param channels_first if true, the layer expects input where the channel dimention comes first, and outputs the result with the filter channel first. If false, channels and filters come last.
   \param filters number of filters
   \param kernel_size_rows dimention of the kernel (rows)
   \param kernel_size_cols dimention of the kernel (cols)
-  
   \param input_rows dimention of the input (number of rows)
   \param input_cols dimention of the input (number of cols)
   \param input_channels dimention of the input (number of channels)
@@ -73,7 +71,6 @@ public:
  */
 	Conv2D(
 		NeuralNetwork& nn,
-		const bool channels_first,
 		const int filters,
 		const int kernel_size_rows, const int kernel_size_cols,
 		const int input_rows, const int input_cols, const int input_channels,

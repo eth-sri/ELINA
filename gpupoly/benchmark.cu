@@ -247,7 +247,7 @@ NeuralNetwork* readNetwork(const string filename, const size_t inputSize, const 
 			prev = layers.addLayer(conv);*/
 			int pad[2] = { padding,padding };
 			input_shape.insert(input_shape.begin(), 1);
-			prev = addConv2D_d(nn, prev, channels_first, filters, kernel_size.data(), input_shape.data(), stride.data(), pad, A.data());
+			prev = addConv2D_d(nn, prev, filters, kernel_size.data(), input_shape.data(), stride.data(), pad, A.data());
 
 			size_t m = ((input_shape[1] + 2 * pad[0] - kernel_size[0] + stride[0]) / stride[0]) * ((input_shape[2] + 2 * pad[1] - kernel_size[1] + stride[1]) / stride[1]) * filters;
 			std::vector<double> bias(m);
@@ -323,7 +323,7 @@ NeuralNetwork* readNetwork(const string filename, const size_t inputSize, const 
 			auto input_shape = readVector<int>(f);
 			int padding[2] = { 0,0 };
 			input_shape.insert(input_shape.begin(), 1);
-			prev = addMaxPool2D(nn, prev, channels_first,pool_size.data(),input_shape.data(),pool_size.data(),padding);
+			prev = addMaxPool2D(nn, prev,pool_size.data(),input_shape.data(),pool_size.data(),padding);
 		}
 		else if (tmp == "SkipNet1")
 		{

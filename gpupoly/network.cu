@@ -133,7 +133,6 @@ void NeuralNetwork::evaluateAffine(Vector<T>& dest, const NeuronFilter<T>& al, i
 					if (tmp.cs && tmp2.cs)
 					{
 						if (
-							tmp.cs.channels_first == tmp2.cs.channels_first &&
 							tmp.cs.filters == tmp2.cs.filters &&
 							tmp.cs.output_rows == tmp2.cs.output_rows &&
 							tmp.cs.output_cols == tmp2.cs.output_cols &&

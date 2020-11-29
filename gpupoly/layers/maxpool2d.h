@@ -43,8 +43,6 @@ public:
 	//! Constructor
 /*!
   Creates a new maxpool layer.
-
-  \param channels_first if true, the layer expects input where the channel dimention comes first, and outputs the result with the filter channel first. If false, channels and filters come last.
   \param pool_rows dimention of the kernel (rows)
   \param pool_cols dimention of the kernel (cols)
   \param input_rows dimention of the input (number of rows)
@@ -58,7 +56,6 @@ public:
  */
 	MaxPool2D(
 		NeuralNetwork& nn,
-		bool channels_first,
 		int pool_rows, int pool_cols,
 		int input_rows, int input_cols, int input_channels,
 		int stride_rows, int stride_cols,

@@ -207,7 +207,6 @@ int addLinear_s(
 int addConv2D_d(
 	NeuralNetwork* nn,
 	int parent,
-	bool channels_first, // if true, the layer expects input where the channel dimention comes first, and outputs the result with the filter channel first. If false, channels and filters come last.
 	int filters, // number of filters
 	int* kernel_shape, // dimentions of the kernel (expects an array of 2 ints, respectively the number of rows and columns
 	int* input_shape, // dimentions of the input (expects an array of 4 ints, respectively the number of batches, rows, columns and channels).
@@ -219,7 +218,6 @@ int addConv2D_d(
 	if (input_shape[0] != 1)
 		throw (-1); // for now, batch is not supported.
 	NeuralNetwork::Layer* conv = new Conv2D<double>(*nn,
-		channels_first,
 		filters,
 		kernel_shape[0], kernel_shape[1],
 		input_shape[1], input_shape[2], input_shape[3],
@@ -245,7 +243,6 @@ int addConv2D_d(
 int addConv2D_s(
 	NeuralNetwork* nn,
 	int parent,
-	bool channels_first, // if true, the layer expects input where the channel dimention comes first, and outputs the result with the filter channel first. If false, channels and filters come last.
 	int filters, // number of filters
 	int* kernel_shape, // dimentions of the kernel (expects an array of 2 ints, respectively the number of rows and columns
 	int* input_shape, // dimentions of the input (expects an array of 4 ints, respectively the number of batches, rows, columns and channels).
@@ -257,7 +254,6 @@ int addConv2D_s(
 	if (input_shape[0] != 1)
 		throw (-1); // for now, batch is not supported.
 	NeuralNetwork::Layer* conv = new Conv2D<float>(*nn,
-		channels_first,
 		filters,
 		kernel_shape[0], kernel_shape[1],
 		input_shape[1], input_shape[2], input_shape[3],
@@ -283,7 +279,6 @@ int addConv2D_s(
 int addMaxPool2D(
 	NeuralNetwork* nn,
 	int parent,
-	bool channels_first, // if true, the layer expects input where the channel dimention comes first, and outputs the result with the filter channel first. If false, channels and filters come last.
 	int* pool_shape, // pool shape (expects an array of 2 ints, respectively the number of rows and columns
 	int* input_shape, // dimentions of the input(expects an array of 4 ints, respectively the number of batches, rows, columnsand channels).
 	int* stride_shape, // stride shape (expects an array of 2 ints, respectively the number of rows and columns
@@ -294,7 +289,6 @@ int addMaxPool2D(
 		throw (-1); // for now, batch is not supported.
 	NeuralNetwork::Layer* conv = new MaxPool2D(
 		*nn,
-		channels_first,
 		pool_shape[0], pool_shape[1],
 		input_shape[1], input_shape[2], input_shape[3],
 		stride_shape[0], stride_shape[1],
