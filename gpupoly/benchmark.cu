@@ -144,7 +144,7 @@ vector<tuple<vector<double>, vector<double>, int>> readCifar10(const double epsi
 
 vector<tuple<vector<double>, vector<double>, int>> readMNIST(const double epsilon, const vector<double>& mean, const vector<double>& std) {
 #ifdef _MSC_VER
-	ifstream f("C:\\Users\\Bastos\\source\\repos\\deeppolygpu\\mnist_test.csv");
+	ifstream f("C:\\Users\\Francois\\source\\mnist_test_full.csv");
 #else
 	ifstream f("/local/home/gagandeep/eran/data/mnist_test_full.csv");
 #endif
@@ -246,10 +246,9 @@ NeuralNetwork* readNetwork(const string filename, const size_t inputSize, const 
 			/*Layer* conv = new Conv2D<true>(filters, kernel_size[0], kernel_size[1], input_shape[0], input_shape[1], input_shape[2], stride[0], stride[1], padding, padding, Vector(A), prev);
 			prev = layers.addLayer(conv);*/
 			int pad[2] = { padding,padding };
-			input_shape.insert(input_shape.begin(), 1);
 			prev = addConv2D_d(nn, prev, filters, kernel_size.data(), input_shape.data(), stride.data(), pad, A.data());
 
-			size_t m = ((input_shape[1] + 2 * pad[0] - kernel_size[0] + stride[0]) / stride[0]) * ((input_shape[2] + 2 * pad[1] - kernel_size[1] + stride[1]) / stride[1]) * filters;
+			size_t m = ((input_shape[0] + 2 * pad[0] - kernel_size[0] + stride[0]) / stride[0]) * ((input_shape[1] + 2 * pad[1] - kernel_size[1] + stride[1]) / stride[1]) * filters;
 			std::vector<double> bias(m);
 			size_t k = 0;
 			if (channels_first)
@@ -433,8 +432,10 @@ void testNetwork(const string& network, const size_t inputSize, const bool chann
 
 int main()
 {
-	cudaSetDevice(1);
-	
+	//cudaSetDevice(1);
+#ifdef _MSC_VER
+	testNetwork("C:\\Users\\Francois\\source\\FFNN_mnist_new.pyt", 784, true, 8.0 / 255, 500, false);
+#else
 		testNetwork("/local/home/christoph/ERAN/nets/mnist/FFNN_mnist_new.pyt", 784, true,8.0 /255,10000, false);
 		testNetwork("/local/home/christoph/ERAN/nets/mnist/ConvBig_mnist_new.pyt", 784, true,3.0/10,  10000, false);
 		testNetwork("/local/home/christoph/ERAN/nets/mnist/convSuper_mnist_new.pyt", 784, true, 8.0/255,  10000, false);
@@ -452,5 +453,6 @@ int main()
 		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet34_DiffAI.pyt", 3072, true, 8.0 / 255, 500, false);
 
 		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet18_PGD.pyt", 3072, true, 1.0 / 500, 500, false);
+#endif
 		return 0;
 }
