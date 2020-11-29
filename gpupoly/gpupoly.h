@@ -73,9 +73,9 @@ extern "C" {
 	  \param dataUp An array of inputSize floats that represent the upper bound of the box
 	  \param expectedLabel Label in which the image is supposed to classify
 	  \param soundness Whether to use sound arithmetic.
-	  \returns An integer indicating the certification level.
+	  \returns if certified.
 	 */
-	GPUPOLY_DEPRECATED_EXPORT int test_s(
+	GPUPOLY_EXPORT bool test_s(
 		NeuralNetwork* nn,
 		const float* dataDown,
 		const float* dataUp,
@@ -89,9 +89,9 @@ extern "C" {
 	  \param dataUp An array of inputSize doubles that represent the upper bound of the box
 	  \param expectedLabel Label in which the image is supposed to classify
 	  \param soundness Whether to use sound arithmetic.
-	  \returns An integer indicating the certification level.
+	  \returns if certified.
 	 */
-	GPUPOLY_DEPRECATED_EXPORT int test_d(
+	GPUPOLY_EXPORT bool test_d(
 		NeuralNetwork* nn,
 		const double* dataDown,
 		const double* dataUp,

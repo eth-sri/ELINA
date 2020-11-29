@@ -54,22 +54,22 @@ NeuralNetwork* create(int inputSize)
 }
 
 
-int test_d(NeuralNetwork* nn, const double* dataDown, const double* dataUp, int expectedLabel, bool soundness)
+bool test_d(NeuralNetwork* nn, const double* dataDown, const double* dataUp, int expectedLabel, bool soundness)
 {
 	size_t size = (*nn)[0]->outputSize;
 	std::vector<Intv<double>> candidate(size);
 	for (size_t i = 0; i < size; i++)
 		candidate[i] = Intv<double>(dataDown[i], dataUp[i]);
-	return nn->operator()(candidate, expectedLabel, soundness);
+	return nn->run(Vector<double>(candidate), expectedLabel, soundness);
 }
 
-int test_s(NeuralNetwork* nn, const float* dataDown, const float* dataUp, int expectedLabel, bool soundness)
+bool test_s(NeuralNetwork* nn, const float* dataDown, const float* dataUp, int expectedLabel, bool soundness)
 {
 	size_t size = (*nn)[0]->outputSize;
 	std::vector<Intv<float>> candidate(size);
 	for (size_t i = 0; i < size; i++)
 		candidate[i] = Intv<float>(dataDown[i], dataUp[i]);
-	return nn->operator()(candidate, expectedLabel, soundness);
+	return nn->run(Vector<float>(candidate), expectedLabel, soundness);
 }
 
 
