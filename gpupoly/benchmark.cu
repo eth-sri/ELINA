@@ -104,7 +104,7 @@ static vector<vector<double>> readMatrix(istream& is)
 vector<tuple<vector<double>, vector<double>, int>> readCifar10(const double epsilon, const vector<double>& mean, const vector<double>& std, const bool shuffle) {
 
 #ifdef _MSC_VER
-	ifstream f("C:\\Users\\Bastos\\source\\repos\\deeppolygpu\\cifar10_test.csv");
+	ifstream f("C:\\Users\\Francois\\source\\cifar10_test.csv");
 #else
 	ifstream f("/local/home/gagandeep/eran/data/cifar10_test_full.csv");
 #endif
@@ -183,7 +183,7 @@ vector<tuple<vector<double>, vector<double>, int>> readMNIST(const double epsilo
 
 
 
-NeuralNetwork* readNetwork(const string filename, const size_t inputSize, const bool channels_first, std::vector<double>& mean, std::vector<double>& std, bool& shuffle)
+NeuralNetwork* readNetwork(const string filename, const size_t inputSize, const bool channels_first, std::vector<double>& mean, std::vector<double>& std)
 {
 	ifstream f(filename);
 	char c;
@@ -196,7 +196,6 @@ NeuralNetwork* readNetwork(const string filename, const size_t inputSize, const 
 	//layers.emplace_back(new Input(inputSize));
 	int prev = 0;
 	bool meanSet = false;
-	shuffle = false;
 	while ((c = f.peek()) != EOF)
 	{
 		if (c == ' ' || c == '\n' || c == '\r')
@@ -218,7 +217,6 @@ NeuralNetwork* readNetwork(const string filename, const size_t inputSize, const 
 		}
 		else if (tmp == "Conv2D")
 		{
-			shuffle = true;
 			f >> tmp;
 
 			f.ignore(9); // " filters="
@@ -386,27 +384,35 @@ NeuralNetwork* readNetwork(const string filename, const size_t inputSize, const 
 	return nn;
 }
 
-void testNetwork(const string& network, const size_t inputSize, const bool channels_first, const double epsilon, const int nbTests=250,bool verbose=false)
+void testNetwork(const string& network, const size_t inputSize, const bool channels_first, const double epsilon, const int nbTests=250,bool verbose=false,string log="")
 {
 	std::vector<double> mean;
 	std::vector<double> std;
-	bool shuffle;
+
 	cout << network << " e=" << epsilon << endl;
-	auto nn=readNetwork(network, inputSize,channels_first, mean, std, shuffle);
+	auto nn=readNetwork(network, inputSize,channels_first, mean, std);
 	//NeuralNetwork test(nn);
-	auto inputs = inputSize == 784 ? readMNIST(0, mean, std) : readCifar10(0, mean, std, shuffle); // loads the inputs
+	auto inputs = inputSize == 784 ? readMNIST(0, mean, std) : readCifar10(0, mean, std, true); // loads the inputs
 
 
 	vector<int> candidates;
 	for (int i = 0; i < inputs.size() && i < nbTests; i++) // ... we count the number of inputs for which the network passes the certification
-		if (test_d(nn, get<0>(inputs[i]).data(), get<1>(inputs[i]).data(), get<2>(inputs[i]),false))
+		if (test_d(nn, get<0>(inputs[i]).data(), get<1>(inputs[i]).data(), get<2>(inputs[i]),true))
 			candidates.push_back(i);
 	cout << "Candidates:" << candidates.size() << endl;
 
+	vector<int> results(candidates.size());
+	vector<double> times(candidates.size());
 
-	inputs = inputSize == 784 ? readMNIST(epsilon, mean, std) : readCifar10(epsilon, mean, std, shuffle); // loads the inputs
 
+	inputs = inputSize == 784 ? readMNIST(epsilon, mean, std) : readCifar10(epsilon, mean, std, true); // loads the inputs
+	
+	
+	//warm up
+	test_d(nn, get<0>(inputs[0]).data(), get<1>(inputs[0]).data(), get<2>(inputs[0]), true);
+	
 	auto startTimer = std::chrono::high_resolution_clock::now();
+	auto prev = startTimer;
 	int good = 0;
 	int total = 0;
 	for (int j = 0; j < candidates.size() && j < nbTests; j++) // ... we count the number of inputs for which the network passes the certification
@@ -416,9 +422,15 @@ void testNetwork(const string& network, const size_t inputSize, const bool chann
 		//res = test(get<0>(inputs[i]).data(), get<1>(inputs[i]).data(), get<2>(inputs[i]),true);
 		good += res;
 		total++;
+		auto stopTimer = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> diff = stopTimer - prev;
+		times[j] = diff.count();
+		results[j] = res;
+		prev = stopTimer;
+
 		if (verbose)
 		{
-			auto stopTimer = std::chrono::high_resolution_clock::now();
+
 			std::chrono::duration<double> diff = stopTimer - startTimer;
 			cout << i << ":	" << res << "	so far " << good * 100.f / (total) << "% in "<<(diff.count()/total) <<"s per image. \r" << endl << flush;
 		}
@@ -428,31 +440,40 @@ void testNetwork(const string& network, const size_t inputSize, const bool chann
 	cout << "Verified:" << good << endl;
 	cout << (diff.count()*1000 / total) << "ms per image" << endl << endl;
 	clean(nn);
+
+	if (log.length())
+	{
+		ofstream f(log);
+		for (int j = 0; j < candidates.size() && j < nbTests; j++)
+			f << candidates[j] << "," << results[j] << "," << (int)(times[j] * 1000000) << endl;
+	}
 }
 
 int main()
 {
-	//cudaSetDevice(1);
+	cudaSetDevice(1);
 #ifdef _MSC_VER
-	testNetwork("C:\\Users\\Francois\\source\\FFNN_mnist_new.pyt", 784, true, 8.0 / 255, 500, false);
+	testNetwork("C:\\Users\\Francois\\source\\FFNN_cifar10_new.pyt", 3072, true, 1.0 / 500, 500, false,"testtime.txt");
+	//testNetwork("C:\\Users\\Francois\\source\\ffnnRELU__Point_6_500.pyt", 3072, true, 1.0 / 500, 500, false);
+	
 #else
-		testNetwork("/local/home/christoph/ERAN/nets/mnist/FFNN_mnist_new.pyt", 784, true,8.0 /255,10000, false);
-		testNetwork("/local/home/christoph/ERAN/nets/mnist/ConvBig_mnist_new.pyt", 784, true,3.0/10,  10000, false);
-		testNetwork("/local/home/christoph/ERAN/nets/mnist/convSuper_mnist_new.pyt", 784, true, 8.0/255,  10000, false);
+		testNetwork("/local/home/christoph/ERAN/nets/mnist/FFNN_mnist_new.pyt", 784, true,8.0 /255,10000, false, "FFNN_mnist_new.txt");
+		testNetwork("/local/home/christoph/ERAN/nets/mnist/ConvBig_mnist_new.pyt", 784, true,3.0/10,  10000, false,"ConvBig_mnist_new.txt");
+		testNetwork("/local/home/christoph/ERAN/nets/mnist/convSuper_mnist_new.pyt", 784, true, 8.0/255,  10000, false,"convSuper_mnist_new.txt");
 
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/FFNN_cifar10_new.pyt", 3072, true, 1.0 / 500, 10000, false);
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ConvBig_cifar10_new.pyt", 3072, true, 8.0 / 255, 10000, false);
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ConvLargeIBP.pyt", 3072, true, 8.0 / 255, 10000, false);
+		testNetwork("/local/home/christoph/ERAN/nets/cifar10/FFNN_cifar10_new.pyt", 3072, true, 1.0 / 500, 10000, false, "FFNN_cifar10_new.txt");
+		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ConvBig_cifar10_new.pyt", 3072, true, 8.0 / 255, 10000, false, "ConvBig_cifar10_new.txt");
+		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ConvLargeIBP.pyt", 3072, true, 8.0 / 255, 10000, false, "ConvLargeIBP.txt");
 		
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNetTiny_PGD.pyt", 3072, true, 1.0 / 500, 500, false);
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet18_PGD_new.pyt", 3072, true, 1.0 / 500, 500, false);
+		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNetTiny_PGD.pyt", 3072, true, 1.0 / 500, 500, false, "ResNetTiny_PGD.txt");
+		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet18_PGD_new.pyt", 3072, true, 1.0 / 500, 500, false, "ResNet18_PGD_new.txt");
 				
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNetTiny_DiffAI.pyt.pyt", 3072, true, 8.0 / 255, 500, false);
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/SkipNet18_DiffAI.pyt", 3072, true, 8.0 / 255, 500, false);
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet18_DiffAI.pyt", 3072, true, 8.0 / 255, 500, false);
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet34_DiffAI.pyt", 3072, true, 8.0 / 255, 500, false);
+		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNetTiny_DiffAI.pyt", 3072, true, 8.0 / 255, 500, false, "ResNetTiny_DiffAI.txt");
+		testNetwork("/local/home/christoph/ERAN/nets/cifar10/SkipNet18_DiffAI.pyt", 3072, true, 8.0 / 255, 500, false, "SkipNet18_DiffAI.txt");
+		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet18_DiffAI.pyt", 3072, true, 8.0 / 255, 500, false, "ResNet18_DiffAI.txt");
+		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet34_DiffAI.pyt", 3072, true, 8.0 / 255, 500, false, "ResNet34_DiffAI.txt");
 
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet18_PGD.pyt", 3072, true, 1.0 / 500, 500, false);
+		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet18_PGD.pyt", 3072, true, 1.0 / 500, 500, false, "ResNet18_PGD.txt");
 #endif
 		return 0;
 }

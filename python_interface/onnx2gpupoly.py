@@ -119,6 +119,7 @@ def onnx2gpupoly(graph):
             padding_cols = 0
             stride_rows = 1
             stride_cols = 1
+            group=1
             for attribute in layer.attribute:
                 if attribute.name == "pads":
                     padding_rows = attribute.ints[0]
@@ -128,21 +129,24 @@ def onnx2gpupoly(graph):
                 if attribute.name == "strides":
                     stride_rows = attribute.ints[0]
                     stride_cols = attribute.ints[1]
+                if attribute.name == "group":
+                    group = attribute.i
             assert dataIndex == -1
             assert data.ndim == 4
-            #assert data.shape[1] == inputShape[-3]
+            print(inputShape)
+            print(data.shape)
+            assert inputShape[0] == 1
+            assert data.shape[1]*group == inputShape[-3]
             outputShape = inputShape[:-3]
             outputShape.append(data.shape[0])
             outputShape.append((inputShape[-2] + 2 * padding_rows - data.shape[-2] + stride_rows) // stride_rows)
             outputShape.append((inputShape[-1] + 2 * padding_cols - data.shape[-1] + stride_cols) // stride_cols)
-            #print("Filter Matrix",np.transpose(data,[2,3,1,0]))
-            outputIndex = nn.add_conv_2d(inputShape[-2],inputShape[-1],np.transpose(data,[2,3,1,0]),True,product(inputShape[:-3]),[stride_rows,stride_cols],[padding_rows,padding_cols],inputIndex)
+            outputIndex = nn.add_conv_2d(inputShape[-2],inputShape[-1],np.transpose(data,[2,3,1,0]),[stride_rows,stride_cols],[padding_rows,padding_cols],group,inputIndex)
             if len(layer.input)==3:
                 dataIndex, data = getLayer(layer.input[2])
                 assert dataIndex==-1
                 assert data.shape==(outputShape[-3],)
                 data=data.repeat(outputShape[-2]*outputShape[-1])
-                #print("Filter Bias ", data,len(data))
                 outputIndex=nn.add_bias(data,outputIndex)
             return outputIndex, outputShape
         if (layer.op_type == "Gather"):
