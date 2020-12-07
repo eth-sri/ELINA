@@ -424,14 +424,17 @@ bool opt_zones_is_dimension_unconstrained(elina_manager_t* man, opt_zones_t* o,
 		unsigned short int j1 = ca[j];
 		if(j1==dim){
 			if(m[j1+1]!=INFINITY || m[n*(j1+1)]!=INFINITY){
+			        free(ca);
 				return false;
 			}
 		}
 		else{
 			if(m[n*(j1+1) + dim+1]!=INFINITY){
+			        free(ca);
 				return false;
 			}
 			if(m[n*(dim+1) + j1+1]!=INFINITY){
+			        free(ca);
 				return false;
 			}
 		}

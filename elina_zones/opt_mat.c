@@ -601,12 +601,14 @@ bool is_lequal_zones_mat(opt_zones_mat_t *oz1, opt_zones_mat_t *oz2, unsigned sh
 				int ind = n*i1;
 				if(!ci){
 					if((m2[i1]!=INFINITY) || (m2[ind]!=INFINITY) ){
+					        free(ca);
 						free(arr_map1);
 						return false;
 					}
 				}
 				else{
 					if((m1[i1] > m2[i1]) || (m1[ind] > m2[ind]) ){
+					        free(ca);
 						free(arr_map1);
 						return false;
 					}
@@ -2310,7 +2312,7 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 		insert_comp_list_with_union(oz->acl,clb,dim);
 		
 	}
-    }
+     }
 	
     z = zone_expr_of_linexpr(pr,pr->tmp,array->p[i].linexpr0,intdim,dim);
      	
