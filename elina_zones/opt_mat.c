@@ -1212,7 +1212,7 @@ void sparse_join_zones_mat(opt_zones_mat_t *oz, opt_zones_mat_t *oz1, opt_zones_
 	
 	array_comp_list_t *acl1 = oz1->acl;
 	array_comp_list_t *acl2 = oz2->acl;
-	//if(!destructive)
+	if(!destructive)
 	free_array_comp_list(oz->acl);
 	array_comp_list_t * acl = union_array_comp_list(acl1,acl2,dim);
 	
@@ -1344,10 +1344,10 @@ void sparse_join_zones_mat(opt_zones_mat_t *oz, opt_zones_mat_t *oz1, opt_zones_
 	free(map);
 	
 	
-	//if(destructive){
-	//	array_comp_list_t *tacl = oz->acl;
-	//	free_array_comp_list(tacl);	
-	//}
+	if(destructive){
+		array_comp_list_t *tacl = oz->acl;
+		free_array_comp_list(tacl);	
+	}
 	oz->acl = acl;
 	free(arr_map1);
 	free(arr_map2);
