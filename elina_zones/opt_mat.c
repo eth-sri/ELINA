@@ -1212,7 +1212,8 @@ void sparse_join_zones_mat(opt_zones_mat_t *oz, opt_zones_mat_t *oz1, opt_zones_
 	
 	array_comp_list_t *acl1 = oz1->acl;
 	array_comp_list_t *acl2 = oz2->acl;
-	
+	if(!destructive)
+		free_array_comp_list(oz->acl);
 	array_comp_list_t * acl = union_array_comp_list(acl1,acl2,dim);
 	
         comp_list_t * cl = acl->head;
@@ -1530,7 +1531,7 @@ void sparse_widening_zones_mat(opt_zones_mat_t *oz, opt_zones_mat_t *oz1, opt_zo
 	******/
 	oz->is_dense = false;
 	oz->ti = false;
-	
+	free_array_comp_list(oz->acl);
 	oz->acl = copy_array_comp_list(oz1->acl);
 			
 	/*******
