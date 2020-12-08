@@ -2312,6 +2312,9 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 		insert_comp_list_with_union(oz->acl,clb,dim);
 		
 	}
+	else{
+		free_comp_list(clb);
+	}
      }
 	
     z = zone_expr_of_linexpr(pr,pr->tmp,array->p[i].linexpr0,intdim,dim);
