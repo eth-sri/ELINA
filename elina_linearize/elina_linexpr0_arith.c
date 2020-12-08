@@ -189,7 +189,7 @@ void elina_linexpr0_add(elina_linexpr0_t **linres, elina_linexpr0_t** linexprA, 
   elina_linexpr0_reinit(expr,k);
    if (res==exprA || res==exprB){
     elina_linexpr0_clear(res);
-    free(res);
+    //free(res);
   }
   //res = elina_linexpr0_copy(&expr);
   **linres = *expr;
