@@ -1342,9 +1342,10 @@ void sparse_join_zones_mat(opt_zones_mat_t *oz, opt_zones_mat_t *oz1, opt_zones_
 	oz->ti = false;
 	oz->nni = min(oz1->nni,oz2->nni);
 	free(map);
-	array_comp_list_t *tacl = oz->acl;
+	
 	
 	if(destructive){
+		array_comp_list_t *tacl = oz->acl;
 		free_array_comp_list(tacl);	
 	}
 	oz->acl = acl;
