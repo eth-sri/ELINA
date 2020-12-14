@@ -1,6 +1,6 @@
 #  GPUPoly library
 #  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
-#  ELINA is Copyright © 2020 Department of Computer Science, ETH Zurich
+#  ELINA is Copyright ï¿½ 2020 Department of Computer Science, ETH Zurich
 #  This software is distributed under GNU Lesser General Public License Version 3.0.
 #  For more information, see the ELINA project website at:
 #  http://elina.ethz.ch
@@ -35,7 +35,7 @@ class Network:
         _lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('gpupoly'))
     else:
         # _lib=ctypes.cdll.LoadLibrary('${GPUPoly_BINARY_DIR}/dpGPUlib.so.0.10')
-        _lib = ctypes.cdll.LoadLibrary('libgpupoly.so')
+        _lib = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../gpupoly/libgpupoly.so"))
 
     def _nullable_ndptr(*args, **kwargs):
         base = np.ctypeslib.ndpointer(*args, **kwargs)
