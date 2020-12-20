@@ -1007,6 +1007,74 @@ def get_uexpr_for_output_neuron(man,element,i):
     return linexpr0
 
 
+def get_output_lexpr_defined_over_previous_layers(man,element, i, prev):
+    """
+    returns lower polyhedra constraint for the i-th output neuron in terms of the neurons in layer prev
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    i: c_size_t
+        output neuron number
+    prev: c_int
+        previous layer no
+    Returns
+    -------
+    expr :     ElinaLinexpr0Ptr
+        The lower polyhedra expression for the output neuron in terms of neurons in layer prev
+
+    """
+
+    linexpr0 = None
+    try:
+        get_output_lexpr_defined_over_previous_layers_c = fppoly_api.get_output_lexpr_defined_over_previous_layers
+        get_output_lexpr_defined_over_previous_layers_c.restype = ElinaLinexpr0Ptr
+        get_output_lexpr_defined_over_previous_layers_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_int]
+        linexpr0 = get_output_lexpr_defined_over_previous_layers_c(man,element,i, prev)
+    except:
+        print('Problem with loading/calling "get_output_lexpr_defined_over_previous_layers" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_int to the function')
+
+    return linexpr0
+
+def get_output_uexpr_defined_over_previous_layers(man,element, i, prev):
+    """
+    returns upper polyhedra constraint for the i-th output neuron in terms of the neurons in layer prev
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    i: c_size_t
+        output neuron number
+    prev: c_int
+        previous layer no
+    Returns
+    -------
+    expr :     ElinaLinexpr0Ptr
+        The upper polyhedra expression for the output neuron in terms of neurons in layer prev
+
+    """
+
+    linexpr0 = None
+    try:
+        get_output_uexpr_defined_over_previous_layers_c = fppoly_api.get_output_uexpr_defined_over_previous_layers
+        get_output_uexpr_defined_over_previous_layers_c.restype = ElinaLinexpr0Ptr
+        get_output_uexpr_defined_over_previous_layers_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_int]
+        linexpr0 = get_output_uexpr_defined_over_previous_layers_c(man,element,i, prev)
+    except:
+        print('Problem with loading/calling "get_output_uexpr_defined_over_previous_layers" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_int to the function')
+
+    return linexpr0
+
+
+
 def create_lstm_layer(man, element,h, predecessors, num_predecessors):
     """
     creates an lstm layer for the neural network, this should be called only once per each lstm layer
