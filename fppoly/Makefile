@@ -29,7 +29,7 @@ INCLDIR = $(ELINA_PREFIX)/include
 INSTALL = install
 INSTALLd = install -d
 
-OBJS = fppoly.o backsubstitute.o compute_bounds.o expr.o relu_approx.o s_curve_approx.o parabola_approx.o log_approx.o pool_approx.o lstm_approx.o maxpool_convex_hull.o
+OBJS = fppoly.o backsubstitute.o compute_bounds.o expr.o relu_approx.o sign_approx.o s_curve_approx.o parabola_approx.o log_approx.o pool_approx.o lstm_approx.o maxpool_convex_hull.o
 
 ifeq ($(IS_APRON),)
 LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize  -L../elina_zonotope -lzonotope $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -lpthread -lcdd
@@ -70,6 +70,9 @@ expr.o : expr.h expr.c
 
 relu_approx.o : relu_approx.h relu_approx.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o relu_approx.o relu_approx.c $(LIBS)
+
+sign_approx.o : sign_approx.h sign_approx.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o sign_approx.o sign_approx.c $(LIBS)
 
 s_curve_approx.o : s_curve_approx.h s_curve_approx.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o s_curve_approx.o s_curve_approx.c $(LIBS)

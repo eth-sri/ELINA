@@ -455,6 +455,38 @@ def handle_relu_layer(man, element, num_neurons, predecessors, num_predecessors,
     except Exception as inst:
         print('Problem with loading/calling "handle_relu_layer" from "libfppoly.so"')
         print(inst)
+        
+
+def handle_sign_layer(man, element, num_neurons, predecessors, num_predecessors):
+    """
+    handle Sign layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the abstract element
+    num_neurons: c_size_t
+        number of neurons
+    predecessors: POINTER(c_size_t)
+        the layers before the current layer
+    num_predecessors: c_size_t
+        the number of predecessors of the current layer
+    Returns
+    -------
+    None
+
+    """
+
+    try:
+        handle_sign_layer_c = fppoly_api.handle_sign_layer
+        handle_sign_layer_c.restype = None
+        handle_sign_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t]
+        handle_sign_layer_c(man, element, num_neurons, predecessors, num_predecessors)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_sign_layer" from "libfppoly.so"')
+        print(inst)
 
 
 def handle_sigmoid_layer(man, element, num_neurons, predecessors, num_predecessors):
