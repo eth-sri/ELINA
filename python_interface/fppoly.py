@@ -1017,7 +1017,7 @@ def get_output_lexpr_defined_over_previous_layers(man,element, i, prev):
         Pointer to the ElinaManager.
     element : ElinaAbstract0Ptr
         Pointer to the ElinaAbstract0.
-    i: c_size_t
+    i: c_int
         output neuron number
     prev: c_int
         previous layer no
@@ -1032,11 +1032,11 @@ def get_output_lexpr_defined_over_previous_layers(man,element, i, prev):
     try:
         get_output_lexpr_defined_over_previous_layers_c = fppoly_api.get_output_lexpr_defined_over_previous_layers
         get_output_lexpr_defined_over_previous_layers_c.restype = ElinaLinexpr0Ptr
-        get_output_lexpr_defined_over_previous_layers_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_int]
+        get_output_lexpr_defined_over_previous_layers_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_int, c_int]
         linexpr0 = get_output_lexpr_defined_over_previous_layers_c(man,element,i, prev)
     except:
         print('Problem with loading/calling "get_output_lexpr_defined_over_previous_layers" from "fppoly.so"')
-        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_int to the function')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_int, c_int to the function')
 
     return linexpr0
 
@@ -1050,7 +1050,7 @@ def get_output_uexpr_defined_over_previous_layers(man,element, i, prev):
         Pointer to the ElinaManager.
     element : ElinaAbstract0Ptr
         Pointer to the ElinaAbstract0.
-    i: c_size_t
+    i: c_int
         output neuron number
     prev: c_int
         previous layer no
@@ -1065,11 +1065,11 @@ def get_output_uexpr_defined_over_previous_layers(man,element, i, prev):
     try:
         get_output_uexpr_defined_over_previous_layers_c = fppoly_api.get_output_uexpr_defined_over_previous_layers
         get_output_uexpr_defined_over_previous_layers_c.restype = ElinaLinexpr0Ptr
-        get_output_uexpr_defined_over_previous_layers_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_int]
+        get_output_uexpr_defined_over_previous_layers_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_int, c_int]
         linexpr0 = get_output_uexpr_defined_over_previous_layers_c(man,element,i, prev)
     except:
         print('Problem with loading/calling "get_output_uexpr_defined_over_previous_layers" from "fppoly.so"')
-        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_int to the function')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_int, c_int to the function')
 
     return linexpr0
 

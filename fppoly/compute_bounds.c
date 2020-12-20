@@ -577,13 +577,15 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 }
 
 
-elina_linexpr0_t *get_output_uexpr_defined_over_previous_layers(elina_manager_t *man, elina_abstract0_t *element, size_t neuron_no, int prev_layer){
+elina_linexpr0_t *get_output_uexpr_defined_over_previous_layers(elina_manager_t *man, elina_abstract0_t *element, int neuron_no, int prev_layer){
 	fppoly_t * fp = fppoly_of_abstract0(element);
 	if(prev_layer<0 || prev_layer> (int)(fp->numlayers-1)){
 		return NULL;
 	}
 	
-	
+	if(neuron_no< 0 || neuron_no>= (int)fp->layers[fp->numlayers-1]->dims){
+		return NULL;
+	}
 	size_t i;
 	int k;
         fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
@@ -703,12 +705,14 @@ elina_linexpr0_t *get_output_uexpr_defined_over_previous_layers(elina_manager_t 
 }
 
 
-elina_linexpr0_t * get_output_lexpr_defined_over_previous_layers(elina_manager_t *man, elina_abstract0_t *element, size_t neuron_no, int prev_layer){
+elina_linexpr0_t * get_output_lexpr_defined_over_previous_layers(elina_manager_t *man, elina_abstract0_t *element, int neuron_no, int prev_layer){
 	fppoly_t * fp = fppoly_of_abstract0(element);
 	if(prev_layer<0 || prev_layer> (int)(fp->numlayers-1)){
 		return NULL;
 	}
-	
+	if(neuron_no< 0 || neuron_no>= (int)fp->layers[fp->numlayers-1]->dims){
+		return NULL;
+	}
 	size_t i;
 	int k;
         fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
