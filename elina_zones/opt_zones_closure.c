@@ -267,6 +267,7 @@ bool strengthening_single_comp_zones(opt_zones_mat_t * oz, comp_list_t * cl, uns
 		int i1 = ca[i]+1;
 		int ind = i1*n + i1;
 		if(m[ind] < 0){
+		        free(ca);
 			return true;
 		}
 		else{

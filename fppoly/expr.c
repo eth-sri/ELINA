@@ -864,3 +864,20 @@ expr_t * uexpr_replace_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t **
 	}
 }
 
+elina_linexpr0_t *elina_linexpr0_from_expr(expr_t *expr){
+	//assert(expr->type==DENSE);
+	size_t size = expr->size;
+	size_t i, k;
+	elina_linexpr0_t * linexpr0 = elina_linexpr0_alloc(ELINA_LINEXPR_DENSE,size);
+	for(i=0; i< size; i++){
+		if(expr->type==SPARSE){
+			k = expr->dim[i];
+		}
+		else{
+			k = i;
+		}
+		elina_linexpr0_set_coeff_scalar_double(linexpr0, k, expr->sup_coeff[i]);
+	}
+	elina_linexpr0_set_cst_scalar_double(linexpr0, expr->sup_cst);
+	return linexpr0;
+}

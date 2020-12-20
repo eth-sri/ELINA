@@ -163,6 +163,8 @@ void handle_mul_layer(elina_manager_t* man, elina_abstract0_t* element,  double 
 
 void handle_relu_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristics);
 
+void handle_sign_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
+
 void handle_sigmoid_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
 void handle_tanh_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
@@ -230,6 +232,10 @@ void fppoly_add_new_layer(fppoly_t *fp, size_t size, size_t *predecessors, size_
 void update_activation_upper_bound_for_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno, size_t neuron_no, double* coeff, size_t *dim, size_t size);
 
 void update_activation_lower_bound_for_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno, size_t neuron_no, double* coeff, size_t *dim, size_t size);
+
+elina_linexpr0_t *get_output_lexpr_defined_over_previous_layers(elina_manager_t *man, elina_abstract0_t *element, int neuron_no, int prev_layer);
+
+elina_linexpr0_t *get_output_uexpr_defined_over_previous_layers(elina_manager_t *man, elina_abstract0_t *element, int neuron_no, int prev_layer);
 
 #ifdef __cplusplus
  }

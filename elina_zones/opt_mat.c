@@ -601,12 +601,14 @@ bool is_lequal_zones_mat(opt_zones_mat_t *oz1, opt_zones_mat_t *oz2, unsigned sh
 				int ind = n*i1;
 				if(!ci){
 					if((m2[i1]!=INFINITY) || (m2[ind]!=INFINITY) ){
+					        free(ca);
 						free(arr_map1);
 						return false;
 					}
 				}
 				else{
 					if((m1[i1] > m2[i1]) || (m1[ind] > m2[ind]) ){
+					        free(ca);
 						free(arr_map1);
 						return false;
 					}
@@ -1210,7 +1212,8 @@ void sparse_join_zones_mat(opt_zones_mat_t *oz, opt_zones_mat_t *oz1, opt_zones_
 	
 	array_comp_list_t *acl1 = oz1->acl;
 	array_comp_list_t *acl2 = oz2->acl;
-	
+	if(!destructive)
+	free_array_comp_list(oz->acl);
 	array_comp_list_t * acl = union_array_comp_list(acl1,acl2,dim);
 	
         comp_list_t * cl = acl->head;
@@ -1339,9 +1342,10 @@ void sparse_join_zones_mat(opt_zones_mat_t *oz, opt_zones_mat_t *oz1, opt_zones_
 	oz->ti = false;
 	oz->nni = min(oz1->nni,oz2->nni);
 	free(map);
-	array_comp_list_t *tacl = oz->acl;
+	
 	
 	if(destructive){
+		array_comp_list_t *tacl = oz->acl;
 		free_array_comp_list(tacl);	
 	}
 	oz->acl = acl;
@@ -1528,7 +1532,7 @@ void sparse_widening_zones_mat(opt_zones_mat_t *oz, opt_zones_mat_t *oz1, opt_zo
 	******/
 	oz->is_dense = false;
 	oz->ti = false;
-	
+	free_array_comp_list(oz->acl);
 	oz->acl = copy_array_comp_list(oz1->acl);
 			
 	/*******
@@ -2310,7 +2314,10 @@ bool opt_zones_mat_add_lincons(opt_zones_internal_t * pr,opt_zones_mat_t *oz, un
 		insert_comp_list_with_union(oz->acl,clb,dim);
 		
 	}
-    }
+	else{
+		free_comp_list(clb);
+	}
+     }
 	
     z = zone_expr_of_linexpr(pr,pr->tmp,array->p[i].linexpr0,intdim,dim);
      	
