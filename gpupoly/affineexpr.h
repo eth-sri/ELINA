@@ -35,8 +35,6 @@
 
   //! Structure containing the parameters of a convolution.
 struct ConvShape {
-	bool channels_first; //!< whether channel dimention comes first or last.
-
 	int filters; //!< number of filters
 
 	int kernel_size_rows; //!< kernel 
@@ -58,7 +56,6 @@ struct ConvShape {
 /*!
   Creates a new convolution parameter structure.
 
-  \param channels_first if true, the layer expects input where the channel dimention comes first, and outputs the result with the filter channel first. If false, channels and filters come last.
   \param filters number of filters
   \param kernel_size_rows dimention of the kernel (rows)
   \param kernel_size_cols dimention of the kernel (cols)
@@ -71,13 +68,11 @@ struct ConvShape {
   \param padding_cols padding (number of pixels to add on the left and right)
  */
 	ConvShape(
-		const bool channels_first,
 		const int filters,
 		const int kernel_size_rows, const int kernel_size_cols,
 		const int input_rows, const int input_cols, const int input_channels,
 		const int stride_rows, const int stride_cols,
 		const int padding_rows, const int padding_cols) :
-		channels_first(channels_first),
 		filters(filters),
 		kernel_size_rows(kernel_size_rows), kernel_size_cols(kernel_size_cols),
 		input_rows(input_rows), input_cols(input_cols), input_channels(input_channels),
@@ -116,7 +111,7 @@ struct ConvShape {
 	//! \param size Size of the diagonal matrix
 	static ConvShape diagonal(int size)
 	{
-		return ConvShape(true,
+		return ConvShape(
 			size,
 			1, 1,
 			1, 1, size,
@@ -137,7 +132,6 @@ struct ConvShape {
 		if (isDiagonal())
 			return rhs;
 		if (kernel_size_rows > 0 &&
-			channels_first == rhs.channels_first &&
 			input_channels == rhs.filters &&
 			input_cols == rhs.output_cols &&
 			input_rows == rhs.output_rows)
@@ -147,7 +141,6 @@ struct ConvShape {
 			if (nsr >= rhs.input_rows || nsc >= rhs.input_cols)
 				return ConvShape();
 			return ConvShape(
-				channels_first,
 				filters,
 				nsr,
 				nsc,

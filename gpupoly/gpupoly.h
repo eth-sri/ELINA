@@ -73,9 +73,9 @@ extern "C" {
 	  \param dataUp An array of inputSize floats that represent the upper bound of the box
 	  \param expectedLabel Label in which the image is supposed to classify
 	  \param soundness Whether to use sound arithmetic.
-	  \returns An integer indicating the certification level.
+	  \returns if certified.
 	 */
-	GPUPOLY_DEPRECATED_EXPORT int test_s(
+	GPUPOLY_EXPORT bool test_s(
 		NeuralNetwork* nn,
 		const float* dataDown,
 		const float* dataUp,
@@ -89,9 +89,9 @@ extern "C" {
 	  \param dataUp An array of inputSize doubles that represent the upper bound of the box
 	  \param expectedLabel Label in which the image is supposed to classify
 	  \param soundness Whether to use sound arithmetic.
-	  \returns An integer indicating the certification level.
+	  \returns if certified.
 	 */
-	GPUPOLY_DEPRECATED_EXPORT int test_d(
+	GPUPOLY_EXPORT bool test_d(
 		NeuralNetwork* nn,
 		const double* dataDown,
 		const double* dataUp,
@@ -281,13 +281,12 @@ extern "C" {
 
 	//! Convolution layer
 	/*!
-	  Adds a convolution layer, without activation.
+	  Adds a convolution layer, without activation. This layer is channel first, meaning that it expects input with the shape [batch, channel, row, col], and its output has the shape [batch, filter, row, col].
 
 	  \param parent index of the parent layer (or 0 for the input layer).
-	  \param channels_first if true, the layer expects input with the shape [batch, channel, row, col], and its output has the shape [batch, filter, row, col]. If false, the layer expects input with the shape [batch, row, col, channel], and its output has the shape [batch, row, col, filter].
 	  \param filters number of filters.
 	  \param kernel_shape dimentions of the kernel (expects an array of 2 ints, respectively the number of rows and columns.
-	  \param input_shape dimentions of the input (expects an array of 4 ints, respectively the number of batches, rows, columns and channels).
+	  \param input_shape dimentions of the input (expects an array of 3 ints, respectively the number of rows, columns and channels).
 	  \param stride_shape stride shape (expects an array of 2 ints, respectively the number of rows and columns.
 	  \param padding padding (expects an array of 2 ints, respectively the number of pixels to add at the top and bottom, and the number of pixels to add on the left and right).
 	  \param data convolution coefficients (given in row major, then column, then channel and filter minor order). Contains filters*kernel_size_rows*kernel_size_cols*input_shape_channels elements.
@@ -296,7 +295,6 @@ extern "C" {
 	GPUPOLY_EXPORT int addConv2D_d(
 		NeuralNetwork* nn,
 		int parent,
-		bool channels_first,
 		int filters,
 		int* kernel_shape,
 		int* input_shape,
@@ -308,7 +306,6 @@ extern "C" {
 	GPUPOLY_EXPORT int addConv2D_s(
 		NeuralNetwork* nn,
 		int parent,
-		bool channels_first,
 		int filters,
 		int* kernel_shape,
 		int* input_shape,
@@ -333,10 +330,9 @@ extern "C" {
 
 	//! MaxPool2D layer.
 	/*!
-	  Adds a max pooling layer.
+	  Adds a max pooling layer. This layer is channel first, meaning that it expects input with the shape [batch, channel, row, col], and its output has the shape [batch, channel, row, col].
 
 	 \param parent index of the parent layer (or 0 for the input layer)
-	 \param channels_first if true, the layer expects input with the shape [batch, channel, row, col], and its output has the shape [batch, channel, row, col]. If false, the layer expects input with the shape [batch, row, col, channel], and its output has the shape [batch, row, col, channel].
 	 \param pool_shape pool shape (expects an array of 2 ints, respectively the number of rows and columns
 	 \param input_shape dimentions of the input (expects an array of 4 ints, respectively the number of batches, rows, columns and channels).
 	 \param stride_shape stride shape (expects an array of 2 ints, respectively the number of rows and columns
@@ -346,7 +342,6 @@ extern "C" {
 	GPUPOLY_EXPORT int addMaxPool2D(
 		NeuralNetwork* nn,
 		int parent,
-		bool channels_first,
 		int* pool_shape,
 		int* input_shape,
 		int* stride_shape,

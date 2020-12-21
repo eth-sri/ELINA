@@ -44,7 +44,7 @@ void MaxPool2D::backSubstitute(typename AffineExpr<double>::Queue& queue, const 
 void MaxPool2D::backSubstitute(typename AffineExpr<float>::Queue& queue, const AffineExpr<float>& expr) const { backSubstitute<float>(queue, expr); }
 
 
-template <int lgBlockSize, bool channel_first, typename T>
+template <int lgBlockSize, typename T>
 __global__ void evalMaxPool2D(
 	Intv<T>* dest,
 	Intv<T>* modelCst,
@@ -76,9 +76,7 @@ __global__ void evalMaxPool2D(
 				if (input_col >= 0 && input_col < cs.input_cols)
 				{
 					int curId = input_row * cs.input_cols + input_col;
-					const Intv<T> inp = input[channel_first ?
-						blockIdx.z * cs.input_rows * cs.input_cols + curId :
-						curId * cs.input_channels + blockIdx.z];
+					const Intv<T> inp = input[blockIdx.z * cs.input_rows * cs.input_cols + curId];
 					highestDown = Intv<T>::max(highestDown, inp.low);
 					if (highestUp < inp.high)
 					{
@@ -147,9 +145,7 @@ __global__ void evalMaxPool2D(
 				if (input_col >= 0 && input_col < cs.input_cols)
 				{
 					int curId = input_row * cs.input_cols + input_col;
-					const Intv<T> inp = input[channel_first ?
-						blockIdx.z * cs.input_rows * cs.input_cols + curId :
-						curId * cs.input_channels + blockIdx.z];
+					const Intv<T> inp = input[blockIdx.z * cs.input_rows * cs.input_cols + curId];
 					if (curId != highestUpId && bestContestant < inp.high)
 					{
 						uncontested = false;
@@ -167,9 +163,7 @@ __global__ void evalMaxPool2D(
 		// write the result
 		if (tid == 0)
 		{
-			const auto destAdr = channel_first ?
-				(blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x :
-				(blockIdx.y * gridDim.x + blockIdx.x) * gridDim.z + blockIdx.z;
+			const auto destAdr = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
 			dest[destAdr] = Intv<T>(highestDown, highestUp);
 			modelCst[destAdr] = T(0);
 			modelFac[destAdr] = T(1);
@@ -195,9 +189,7 @@ __global__ void evalMaxPool2D(
 		// write the result
 		if (tid == 0)
 		{
-			const auto destAdr = channel_first ?
-				(blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x :
-				(blockIdx.y * gridDim.x + blockIdx.x) * gridDim.z + blockIdx.z;
+			const auto destAdr = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
 			dest[destAdr] = Intv<T>(highestDown, highestUp);
 			T facUp = (highestUp - bestContestant) / (highestUp - highestUpDown);
 			T cstUp = Intv<T>::template fma_dr<true>(facUp,-highestUpDown,bestContestant);
@@ -228,16 +220,7 @@ void MaxPool2D::eval(Vector<T>& dest, bool sound, bool precise)
 	dim3 grid(cs.output_cols, cs.output_rows, cs.filters);
 	const int sharedSize = block.x * block.y * block.z * sizeof(Intv<T>);
 	gpuChkKer();
-	if (cs.channels_first)
-		evalMaxPool2D<8, true,T> << <grid, block, sharedSize >> > (
-			dest,
-			modelCst<T>(),
-			modelFac<T>(),
-			modelNeuron,
-			input,
-			cs);
-	else
-		evalMaxPool2D<8, false,T> << <grid, block, sharedSize >> > (
+		evalMaxPool2D<8, T> << <grid, block, sharedSize >> > (
 			dest,
 			modelCst<T>(),
 			modelFac<T>(),
@@ -249,7 +232,7 @@ void MaxPool2D::eval(Vector<T>& dest, bool sound, bool precise)
 
 
 
-template <typename Texpr, typename Tdest, bool channels_first, typename T>
+template <typename Texpr, typename Tdest, typename T>
 __global__ void MaxPoolBackPropagate(
 	const Texpr* expr, size_t expr_N,
 	const Intv<T>* modelCst,
@@ -282,8 +265,8 @@ __global__ void MaxPoolBackPropagate(
 		if (prevShape.isDiagonal())
 		{
 			const int realRow = rows[row];
-			const int realOutputCol = channels_first ? realRow % cs.output_cols : (realRow / cs.filters) % cs.output_cols;
-			const int realOutputRow = channels_first ? (realRow / cs.output_cols) % cs.output_rows : realRow / (cs.output_cols * cs.filters);
+			const int realOutputCol = realRow % cs.output_cols;
+			const int realOutputRow =  (realRow / cs.output_cols) % cs.output_rows;
 			out_row_min = max(out_row_min, realOutputRow);
 			out_row_max = min(out_row_max, realOutputRow + 1);
 			out_col_min = max(out_col_min, realOutputCol );
@@ -292,8 +275,8 @@ __global__ void MaxPoolBackPropagate(
 		else
 		{
 			const int realRow = rows[row];
-			const int realOutputCol = prevShape.channels_first ? realRow % prevShape.output_cols : (realRow / prevShape.filters) % prevShape.output_cols;
-			const int realOutputRow = prevShape.channels_first ? (realRow / prevShape.output_cols) % prevShape.output_rows : realRow / (prevShape.output_cols * prevShape.filters);
+			const int realOutputCol =  realRow % prevShape.output_cols ;
+			const int realOutputRow = (realRow / prevShape.output_cols) % prevShape.output_rows;
 			out_row_min = max(out_row_min, realOutputRow * prevShape.stride_rows - prevShape.padding_rows);
 			out_row_max = min(out_row_max, realOutputRow * prevShape.stride_rows - prevShape.padding_rows + prevShape.kernel_size_rows);
 			out_col_min = max(out_col_min, realOutputCol * prevShape.stride_cols - prevShape.padding_cols);
@@ -314,9 +297,7 @@ __global__ void MaxPoolBackPropagate(
 			//const int delta_col = in_col + cs.padding_cols - cs.stride_cols * out_col;
 			//if (out_col >= 0 && out_col < cs.output_cols && out_row >= 0 && out_row < cs.output_rows)
 			{
-				size_t curId = channels_first ?
-					(in_ch * cs.output_rows + out_row) * cs.output_cols + out_col :
-					(out_row * cs.output_cols + out_col) * cs.input_channels + in_ch;
+				size_t curId = (in_ch * cs.output_rows + out_row) * cs.output_cols + out_col;
 				if (modelNeuron[curId] == col)
 				{
 					const Texpr in = expr[row * expr_N + curId];
@@ -341,10 +322,7 @@ __global__ void MaxPoolBackPropagate(
 	}
 
 
-	dest[channels_first ?
-		row * dest_N + in_ch * cs.input_rows * cs.input_cols + col :
-		row * dest_N + col * cs.input_channels + in_ch
-	] = res;
+	dest[row * dest_N + in_ch * cs.input_rows * cs.input_cols + col] = res;
 }
 template <int lgBlockSize, typename TA, bool upper, typename T>
 static __global__ void MaxPoolBackSubstituteCst(T* destb, const TA* exprA, const T* exprb, const Intv<T>* modelCst, const size_t expr_N, const size_t n)
@@ -396,20 +374,7 @@ void MaxPool2D::backSubstitute(typename AffineExpr<T>::Queue& queue, const Affin
 		A = std::make_shared<Matrix<T>>(expr.m, cs.inputSize(), true);
 		if (expr.A->interval())
 		{
-			if (cs.channels_first)
-				MaxPoolBackPropagate<Intv<T>,Intv<T>, true,T> << <grid, block >> > (
-					*expr.A, expr.A->pitch(),
-					modelCst<T>(),
-					modelFac<T>(),
-					modelNeuron,
-					*A, A->pitch(), A->m(), A->n(),
-					cs,
-					expr.cs,
-					expr.rows,
-					expr.up
-					);
-			else
-				MaxPoolBackPropagate<Intv<T>, Intv<T>, false,T> << <grid, block >> > (
+				MaxPoolBackPropagate<Intv<T>,Intv<T>, T> << <grid, block >> > (
 					*expr.A, expr.A->pitch(),
 					modelCst<T>(),
 					modelFac<T>(),
@@ -423,20 +388,7 @@ void MaxPool2D::backSubstitute(typename AffineExpr<T>::Queue& queue, const Affin
 		}
 		else
 		{
-			if (cs.channels_first)
-				MaxPoolBackPropagate<T, Intv<T>, true,T> << <grid, block >> > (
-					*expr.A, expr.A->pitch(),
-					modelCst<T>(),
-					modelFac<T>(),
-					modelNeuron,
-					*A, A->pitch(), A->m(), A->n(),
-					cs,
-					expr.cs,
-					expr.rows,
-					expr.up
-					);
-			else
-				MaxPoolBackPropagate<T,Intv<T>, false,T> << <grid, block >> > (
+				MaxPoolBackPropagate<T, Intv<T>,T> << <grid, block >> > (
 					*expr.A, expr.A->pitch(),
 					modelCst<T>(),
 					modelFac<T>(),
@@ -453,20 +405,7 @@ void MaxPool2D::backSubstitute(typename AffineExpr<T>::Queue& queue, const Affin
 	{
 		assert(!expr.A->interval());
 		A = std::make_shared<Matrix<T>>(expr.m, cs.inputSize(), false);
-		if (cs.channels_first)
-			MaxPoolBackPropagate<T,T, true,T> << <grid, block >> > (
-				*expr.A, expr.A->pitch(),
-				modelCst<T>(),
-				modelFac<T>(),
-				modelNeuron,
-				*A, A->pitch(), A->m(), A->n(),
-				cs,
-				expr.cs,
-				expr.rows,
-				expr.up
-				);
-		else
-			MaxPoolBackPropagate<T,T, false,T> << <grid, block >> > (
+			MaxPoolBackPropagate<T,T, T> << <grid, block >> > (
 				*expr.A, expr.A->pitch(),
 				modelCst<T>(),
 				modelFac<T>(),
@@ -499,11 +438,11 @@ void MaxPool2D::backSubstitute(typename AffineExpr<T>::Queue& queue, const Affin
 	queue.emplace(expr.m, cs.inputSize(), parent, expr.up, expr.rows, A, b, ncs,expr.sound);
 }
 
-MaxPool2D::MaxPool2D(NeuralNetwork& nn, bool channels_first, int pool_rows, int pool_cols, int input_rows, int input_cols, int input_channels, int stride_rows, int stride_cols, int padding_rows, int padding_cols, int parent) :
+MaxPool2D::MaxPool2D(NeuralNetwork& nn, int pool_rows, int pool_cols, int input_rows, int input_cols, int input_channels, int stride_rows, int stride_cols, int padding_rows, int padding_cols, int parent) :
 	//Layer(input_rows / pool_rows * input_cols / pool_cols * input_channels),
 	NeuralNetwork::Layer(nn,((input_rows + 2 * padding_rows - pool_rows + stride_rows) / stride_rows)* ((input_cols + 2 * padding_cols - pool_cols + stride_cols) / stride_cols)* input_channels),
 	parent(parent),
-	cs(channels_first, input_channels, pool_rows, pool_cols, input_rows, input_cols, input_channels, stride_rows, stride_cols, padding_rows, padding_cols),
+	cs(input_channels, pool_rows, pool_cols, input_rows, input_cols, input_channels, stride_rows, stride_cols, padding_rows, padding_cols),
 	modelCstS(outputSize, true), modelCstD(outputSize, true),
 	modelFacS(outputSize, true), modelFacD(outputSize, true)
 {

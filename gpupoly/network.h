@@ -118,7 +118,8 @@ Interface for the layers of a neural network
 	  \returns An integer indicating the certification level (see gpupoly.h for details).
 	 */
 	template <typename T>
-	int operator()(const std::vector<Intv<T>>& input, const int label, bool sound);
+	bool run(const Vector<T>& input, const int label, bool sound);
+
 
 	//! Get a reference to the current concrete bounds of a layer
 	template <typename T>
@@ -176,7 +177,6 @@ private:
 
 
 
-	template <typename T>
-	bool run(const Vector<T>& input, const int label, bool skipNonModels, bool sound, bool precise);
+	
 };
 

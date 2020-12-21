@@ -133,7 +133,6 @@ void NeuralNetwork::evaluateAffine(Vector<T>& dest, const NeuronFilter<T>& al, i
 					if (tmp.cs && tmp2.cs)
 					{
 						if (
-							tmp.cs.channels_first == tmp2.cs.channels_first &&
 							tmp.cs.filters == tmp2.cs.filters &&
 							tmp.cs.output_rows == tmp2.cs.output_rows &&
 							tmp.cs.output_cols == tmp2.cs.output_cols &&
@@ -201,107 +200,42 @@ int NeuralNetwork::addLayer(Layer* layer)
 }
 
 template <typename T>
-bool NeuralNetwork::run(const Vector<T>& input, const int label,bool skipNonModels, bool sound, bool precise)
+bool NeuralNetwork::run(const Vector<T>& input, const int label, bool sound)
 {
-	size_t outputSize = layers.back()->outputSize; // size of the output of the neural network
-	getConcreteBounds<T>(0) = input;
-
 	if (!annoyingNeuronList)
 		gpuErrchk(cudaMalloc((void**)&annoyingNeuronList, maxLayerSize * sizeof(int)));
 	if (!annoyingNeuronList2)
 		gpuErrchk(cudaMalloc((void**)&annoyingNeuronList2, maxLayerSize * sizeof(int)));
 
+	size_t outputSize = layers.back()->outputSize; // size of the output of the neural network
+	getConcreteBounds<T>(0) = input;
+
+
+	// creates an additional "layer" to check if the neuron "label" is the bigger one
+	auto finalA = std::make_shared<Matrix<T>>(outputSize - 1, outputSize, false);
+	setFinal<T> << <1, outputSize - 1 >> > (*finalA, annoyingNeuronList, label, outputSize, finalA->pitch());
+
+	Vector<T> res;
+
 	// computes the coefficients for each layer
 	for (int p = 1; p < layers.size(); p++)
-		if(!skipNonModels || layers[p]->hasInternalModel())
-			layers[p]->eval(getConcreteBounds<T>(p),sound,precise);
-	
-	// creates an additional "layer" to check if the neuron "label" is the bigger one
-
-	auto finalA=std::make_shared<Matrix<T>>(outputSize - 1, outputSize, false);
-	setFinal<T> << <1, outputSize - 1 >> > (*finalA, annoyingNeuronList, label, outputSize, finalA->pitch());
-	Vector<T> res;
+		layers[p]->eval(getConcreteBounds<T>(p), sound, false);
 	finalA->mvm(res, getConcreteBounds<T>(layers.size() - 1));
-	if(precise)
-		evaluateAffine<T>(res, ContainsZero<T>(), layers.size() - 1, false,sound, finalA);
+	evaluateAffine<T>(res, ContainsZero<T>(), layers.size() - 1, false, sound, finalA);
+	if (res.isPositive())
+		return true;
+
+
+	// computes the coefficients for each layer
+	for (int p = 1; p < layers.size(); p++)
+		layers[p]->eval(getConcreteBounds<T>(p), sound, true);
+	
+	finalA->mvm(res, getConcreteBounds<T>(layers.size() - 1));
+	evaluateAffine<T>(res, ContainsZero<T>(), layers.size() - 1, false,sound, finalA);
 	return res.isPositive();
 }
 
 
 
-template <>
-int NeuralNetwork::operator()(const std::vector<Intv<double>>& input, const int label, bool sound)
-{
-	Vector<double> inputD(input);
-	//return run(inputD, label, false, sound);
-	Vector<float> inputF(inputD);
-	if (run(inputF, label, false, sound,false)|| run(inputF, label, false, sound, true))
-	{
-		if (sound)
-#ifdef STRONG_FP_SOUNDNESS
-			return 4;
-#else
-			return 2;
-#endif
-
-		else
-			return 1;
-	}
-	for (int p = 1; p < layers.size(); p++)
-		*concreteBoundsD[p]= *concreteBoundsS[p];
-	if (!run(inputD, label,true, false,true))
-		return 0;
-	if (!sound)
-		return 1;
-	for (int p = 1; p < layers.size(); p++)
-		*concreteBoundsD[p] = *concreteBoundsS[p];
-	if (run(inputD, label, true, sound,true))
-		if (sound)
-#ifdef STRONG_FP_SOUNDNESS
-			return 3;
-#else
-			return 2;
-#endif
-		else
-			return 1;
-	return 0;
-}
-
-template <>
-int NeuralNetwork::operator()(const std::vector<Intv<float>>& input, const int label, bool sound)
-{
-	Vector<float> inputF(input);
-	if (run(inputF, label, false, sound,false)|| run(inputF, label, false, sound, true))
-		if (sound)
-#ifdef STRONG_FP_SOUNDNESS
-			return 4;
-#else
-			return 2;
-#endif
-		else
-			return 1;
-#ifndef STRONG_FP_SOUNDNESS // if one want strong guarantees and uses single precision data; it's likely that he doesn't care if the network would validate with double arithmetic.
-	Vector<double> inputD(inputF);
-	for (int p = 1; p < layers.size(); p++)
-		*concreteBoundsD[p] = *concreteBoundsS[p];
-	if (!run(inputD, label, true, false,true))
-		return 0;
-	if (!sound)
-		return 1;
-	for (int p = 1; p < layers.size(); p++)
-		*concreteBoundsD[p] = *concreteBoundsS[p];
-	if (run(inputD, label, true, sound,true))
-		if (sound)
-#ifdef STRONG_FP_SOUNDNESS
-			return 3;
-#else
-			return 2;
-#endif
-		else
-			return 1;
-#endif
-	return 0;
-}
-
-//template int NeuralNetwork::operator()(const std::vector<Intv<float>>& input, const int label, bool sound);
-//template int NeuralNetwork::operator()(const std::vector<Intv<double>>& input, const int label, bool sound);
+template bool NeuralNetwork::run(const Vector<float>& input, const int label, bool sound);
+template bool NeuralNetwork::run(const Vector<double>& input, const int label, bool sound);

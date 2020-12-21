@@ -1,6 +1,6 @@
 #  GPUPoly library
 #  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
-#  ELINA is Copyright © 2020 Department of Computer Science, ETH Zurich
+#  ELINA is Copyright Â© 2020 Department of Computer Science, ETH Zurich
 #  This software is distributed under GNU Lesser General Public License Version 3.0.
 #  For more information, see the ELINA project website at:
 #  http://elina.ethz.ch
@@ -30,6 +30,8 @@ import numpy as np
 ## Python friendly interface to the GPUPoly library.
 class Network:
     if os.name == 'nt':
+        #os.add_dll_directory("${CUDAToolkit_BIN_DIR}")
+        #os.add_dll_directory("${GPUPoly_BINARY_DIR}")
         os.add_dll_directory("${CUDAToolkit_BIN_DIR}")
         os.add_dll_directory("${GPUPoly_BINARY_DIR}")
         _lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('gpupoly'))
@@ -139,10 +141,9 @@ class Network:
     _lib.addConv2D_d.argtypes = [
         ctypes.c_void_p,
         ctypes.c_int,
-        ctypes.c_bool,
         ctypes.c_int,
         ctypes.c_int * 2,
-        ctypes.c_int * 4,
+        ctypes.c_int * 3,
         ctypes.c_int * 2,
         ctypes.c_int * 2,
         np.ctypeslib.ndpointer(dtype=np.float64, ndim=4, flags='C_CONTIGUOUS')
@@ -150,10 +151,9 @@ class Network:
     _lib.addConv2D_s.argtypes = [
         ctypes.c_void_p,
         ctypes.c_int,
-        ctypes.c_bool,
         ctypes.c_int,
         ctypes.c_int * 2,
-        ctypes.c_int * 4,
+        ctypes.c_int * 3,
         ctypes.c_int * 2,
         ctypes.c_int * 2,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=4, flags='C_CONTIGUOUS')
@@ -175,9 +175,8 @@ class Network:
     _lib.addMaxPool2D.argtypes = [
         ctypes.c_void_p,
         ctypes.c_int,
-        ctypes.c_bool,
         ctypes.c_int * 2,
-        ctypes.c_int * 4,
+        ctypes.c_int * 3,
         ctypes.c_int * 2,
         ctypes.c_int * 2
     ]
@@ -227,6 +226,17 @@ class Network:
     #  \param soundness Whether to use sound arithmetic.
     #  \returns whether the difference between the output logits wrt L_oo ball.
     def test(self, down, up, label, soundness=True):
+        down = down.flatten()
+        up = up.flatten()
+        assert down.shape == (self.input_size,)
+        assert up.shape == (self.input_size,)
+        assert up.dtype == down.dtype
+        if up.dtype == np.float64:
+            return self._lib.test_d(self._nn, down, up, label, soundness)
+        return self._lib.test_s(self._nn, down, up, label, soundness)
+
+
+    def test_old(self, down, up, label, soundness=True):
         self.setLayerBox(down, up)  # Set input layer concrete bounds
 
         # creates a matrix that computes the difference with the expected layer.
@@ -242,25 +252,22 @@ class Network:
         res = self.evalAffineExpr(diffMatrix, back_substitute=self.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO, sound=soundness)
         #print("res1 ", res)
         if (res > 0).all(): # Expected layer is higher than all others
-            return res
+            return True
 
         # We failed to verify, so we redo the analysis with backsubstitution before activation layer.
         for i in range(self._last_layer_id):
             self.relax(i + 1, soundness=soundness)
         res = self.evalAffineExpr(diffMatrix, back_substitute=self.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO, sound=soundness)
         #print("res2 ", res)
-        return res
+        return (res>0).all()
 
 
-    def test_old(self, down, up, label, soundness=True):
-        down = down.flatten()
-        up = up.flatten()
-        assert down.shape == (self.input_size,)
-        assert up.shape == (self.input_size,)
-        assert up.dtype == down.dtype
-        if up.dtype == np.float64:
-            return self._lib.test_d(self._nn, down, up, label, soundness)
-        return self._lib.test_s(self._nn, down, up, label, soundness)
+    def eval(self, x):
+        self.setLayerBox(x, x)  # Set input layer concrete bounds
+        # relax all layers, using simple interval analysis first.
+        for i in range(self._last_layer_id):
+            self.relax(i + 1, soundness=False, refineActivationsInput=False)
+        return self.evalAffineExpr()
 
 
     ## Sets the concrete bounds of a layer.
@@ -386,13 +393,12 @@ class Network:
     #  \param padding An integer or a list of two integers, indicating the padding (respectively the number of pixels to add at the top and bottom, and the number of pixels to add on the left and right).
     #  \param parent Index of the parent layer (or 0 for the input layer). It can be None, in which case the parent is the last added layer.
     #  \returns the index of the newly created layer.
-    def add_conv_2d(self, input_rows, input_cols, conv, channel_first=True, batches=1, strides=1, padding=0,
-                    parent=None):
+    def add_conv_2d(self, input_rows, input_cols, conv, strides=1, padding=0,parent=None):
         if parent is None:
             parent = self._last_layer_id
         assert conv.ndim == 4
         kernel = conv.shape[0:2]
-        input_shape = [batches, input_rows, input_cols, conv.shape[2]]
+        input_shape = [input_rows, input_cols, conv.shape[2]]
         filters = conv.shape[3]
         if not isinstance(strides, list):
             strides = [strides, strides]
@@ -402,10 +408,9 @@ class Network:
             self._last_layer_id = self._lib.addConv2D_d(
                 self._nn,
                 parent,
-                channel_first,
                 filters,
                 (ctypes.c_int * 2)(*kernel),
-                (ctypes.c_int * 4)(*input_shape),
+                (ctypes.c_int * 3)(*input_shape),
                 (ctypes.c_int * 2)(*strides),
                 (ctypes.c_int * 2)(*padding),
                 np.ascontiguousarray(conv))
@@ -413,10 +418,9 @@ class Network:
             self._last_layer_id = self._lib.addConv2D_s(
                 self._nn,
                 parent,
-                channel_first,
                 filters,
                 (ctypes.c_int * 2)(*kernel),
-                (ctypes.c_int * 4)(*input_shape),
+                (ctypes.c_int * 3)(*input_shape),
                 (ctypes.c_int * 2)(*strides),
                 (ctypes.c_int * 2)(*padding),
                 np.ascontiguousarray(conv))
@@ -436,7 +440,7 @@ class Network:
     #  \param padding An integer or a list of two integers, indicating the padding (respectively the number of pixels to add at the top and bottom, and the number of pixels to add on the left and right).
     #  \param parent Index of the parent layer (or 0 for the input layer). It can be None, in which case the parent is the last added layer.
     #  \returns the index of the newly created layer.
-    def add_maxpool_2d(self, pool, input_rows, input_cols, channels, channel_first=True, batches=1, strides=None,
+    def add_maxpool_2d(self, pool, input_rows, input_cols, channels, strides=None,
                        padding=0,
                        parent=None):
         if parent is None:
@@ -449,13 +453,12 @@ class Network:
             strides = [strides, strides]
         if not isinstance(padding, list):
             padding = [padding, padding]
-        input_shape = [batches, input_rows, input_cols, channels]
+        input_shape = [input_rows, input_cols, channels]
         self._last_layer_id = self._lib.addMaxPool2D(
             self._nn,
             parent,
-            channel_first,
             (ctypes.c_int * 2)(*pool),
-            (ctypes.c_int * 4)(*input_shape),
+            (ctypes.c_int * 3)(*input_shape),
             (ctypes.c_int * 2)(*strides),
             (ctypes.c_int * 2)(*padding))
         return self._last_layer_id

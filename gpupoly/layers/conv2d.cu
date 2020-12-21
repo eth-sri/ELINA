@@ -38,7 +38,6 @@ template<typename T> void Conv2D<T>::eval(Vector<float>& dest, bool sound, bool 
 template<typename T>
 Conv2D<T>::Conv2D(
 	NeuralNetwork& nn,
-	const bool channels_first,
 	const int filters,
 	const int kernel_size_rows, const int kernel_size_cols,
 	const int input_rows, const int input_cols, const int input_channels,
@@ -47,7 +46,7 @@ Conv2D<T>::Conv2D(
 	const Matrix<T>& A,
 	int parent) :
 	NeuralNetwork::Layer(nn, ((input_rows + 2 * padding_rows - kernel_size_rows + stride_rows) / stride_rows)* ((input_cols + 2 * padding_cols - kernel_size_cols + stride_cols) / stride_cols)* filters),
-	cs(channels_first, filters, kernel_size_rows, kernel_size_cols, input_rows, input_cols, input_channels, stride_rows, stride_cols, padding_rows, padding_cols),
+	cs(filters, kernel_size_rows, kernel_size_cols, input_rows, input_cols, input_channels, stride_rows, stride_cols, padding_rows, padding_cols),
 	inputSize(input_rows* input_cols* input_channels),
 	parent(parent),
 	conv(A), convt(A.transpose())
@@ -151,7 +150,7 @@ __global__ void backSubstituteReLU(
 		}
 }
 
-template <bool channels_first, typename T, typename Td>
+template <typename T, typename Td>
 __global__ void backSubstituteReLUInit(
 	const T* conv, size_t convN,
 	Td* dest, size_t dest_N, 
@@ -161,9 +160,9 @@ __global__ void backSubstituteReLUInit(
 {
 	const unsigned int row = blockIdx.x;
 	const unsigned int realRow = rows[row];
-	const int realOutputFilter = channels_first ? realRow /( cs.output_cols *cs.output_rows): realRow % cs.filters;
-	const int realOutputCol = channels_first ? realRow % cs.output_cols : (realRow / cs.filters) % cs.output_cols;
-	const int realOutputRow = channels_first ? (realRow / cs.output_cols) % cs.output_rows : realRow / (cs.output_cols * cs.filters);
+	const int realOutputFilter = realRow /( cs.output_cols *cs.output_rows);
+	const int realOutputCol = realRow % cs.output_cols;
+	const int realOutputRow = (realRow / cs.output_cols) % cs.output_rows;
 
 	for (int delta_row = threadIdx.z; delta_row < cs.kernel_size_rows; delta_row += blockDim.z)
 	{
@@ -176,10 +175,7 @@ __global__ void backSubstituteReLUInit(
 					for (int in_ch = threadIdx.x; in_ch < cs.input_channels; in_ch += blockDim.x)
 					{
 						const T a = conv[(delta_row * cs.kernel_size_cols + delta_col) * convN + in_ch * cs.filters + realOutputFilter];
-						dest[channels_first ?
-							row * dest_N + (in_ch * cs.input_rows + input_row)*cs.input_cols+input_col :
-							row * dest_N + (input_row*cs.input_cols+input_col) * cs.input_channels + in_ch
-						] = a;
+						dest[row * dest_N + (in_ch * cs.input_rows + input_row)*cs.input_cols+input_col] = a;
 					}
 			}
 	}
@@ -196,30 +192,14 @@ void convBackSubstitute(typename AffineExpr<Te>::Queue& queue, const AffineExpr<
 		dim3 block(std::min(16, cs.input_channels), std::min(4, cs.kernel_size_cols), std::min(4, cs.kernel_size_rows));
 		dim3 grid(expr.m);
 		if(intervalOut)
-			if (cs.channels_first)
-				backSubstituteReLUInit<true, T, Intv<Te>> << <grid, block >> > (
-					conv, conv.pitch(),
-					*A, A->pitch(),
-					cs,
-					expr.rows
-					);
-			else
-				backSubstituteReLUInit<false, T, Intv<Te>> << <grid, block >> > (
+				backSubstituteReLUInit<T, Intv<Te>> << <grid, block >> > (
 					conv, conv.pitch(),
 					*A, A->pitch(),
 					cs,
 					expr.rows
 					);
 		else
-		if (cs.channels_first)
-			backSubstituteReLUInit<true,T,Te> << <grid, block >> > (
-				conv, conv.pitch(),
-				*A, A->pitch(),
-				cs,
-				expr.rows
-				);
-		else
-			backSubstituteReLUInit<false,T,Te> << <grid, block >> > (
+			backSubstituteReLUInit<T,Te> << <grid, block >> > (
 				conv, conv.pitch(),
 				*A, A->pitch(),
 				cs,
@@ -246,7 +226,6 @@ void convBackSubstitute(typename AffineExpr<Te>::Queue& queue, const AffineExpr<
 	{
 		if (expr.A->interval())
 		{
-			if (cs.channels_first)
 				backSubstituteReLU<true,Intv<Te>, Intv<Te>,T,Te> << <grid, block, sm >> > (
 					*expr.A, expr.A->pitch(),
 					convt, convt.pitch(),
@@ -256,33 +235,13 @@ void convBackSubstitute(typename AffineExpr<Te>::Queue& queue, const AffineExpr<
 					ncs,
 					expr.rows
 					);
-			else
-				backSubstituteReLU<false, Intv<Te>, Intv<Te>, T, Te> << <grid, block, sm >> > (
-					*expr.A, expr.A->pitch(),
-					conv, conv.pitch(),
-					*A, A->pitch(), A->m(), A->n(),
-					cs,
-					expr.cs,
-					ncs,
-					expr.rows
-					);
+			
 		}
 		else
 		{
-			if (cs.channels_first)
 				backSubstituteReLU<true, Te, Intv<Te>, T, Te> << <grid, block, sm >> > (
 					*expr.A, expr.A->pitch(),
 					convt, convt.pitch(),
-					*A, A->pitch(), A->m(), A->n(),
-					cs,
-					expr.cs,
-					ncs,
-					expr.rows
-					);
-			else
-				backSubstituteReLU<false, Te, Intv<Te>, T, Te> << <grid, block, sm >> > (
-					*expr.A, expr.A->pitch(),
-					conv, conv.pitch(),
 					*A, A->pitch(), A->m(), A->n(),
 					cs,
 					expr.cs,
@@ -294,20 +253,9 @@ void convBackSubstitute(typename AffineExpr<Te>::Queue& queue, const AffineExpr<
 	else
 	{
 		assert(!expr.A->interval());
-		if (cs.channels_first)
 			backSubstituteReLU<true, Te, Te, T, Te> << <grid, block, sm >> > (
 				*expr.A, expr.A->pitch(),
 				convt, convt.pitch(),
-				*A, A->pitch(), A->m(), A->n(),
-				cs,
-				expr.cs,
-				ncs,
-				expr.rows
-				);
-		else
-			backSubstituteReLU<false, Te, Te, T, Te> << <grid, block, sm >> > (
-				*expr.A, expr.A->pitch(),
-				conv, conv.pitch(),
 				*A, A->pitch(), A->m(), A->n(),
 				cs,
 				expr.cs,
@@ -326,7 +274,7 @@ template<typename T> void Conv2D<T>::backSubstitute(typename AffineExpr<float>::
 template<> void Conv2D<double>::backSubstitute(typename AffineExpr<float>::Queue& queue, const AffineExpr<float>& expr) const { convBackSubstitute(queue, expr, *convf, *convtf, cs, parent); }
 #endif
 
-template <int lgBlockSize, bool channel_first, typename Tc, typename Td>
+template <int lgBlockSize, typename Tc, typename Td>
 __global__ void convRun(
 	Intv<Td>* dest,
 	const Intv<Td>* input,
@@ -352,7 +300,7 @@ __global__ void convRun(
 				if (input_col >= 0 && input_col < cs.input_cols)
 					for (int ch = threadIdx.x; ch < cs.input_channels; ch += blockDim.x)
 					{
-						const Intv<Td> inp = input[channel_first ? ch * cs.input_rows * cs.input_cols + input_row * cs.input_cols + input_col : (input_row * cs.input_cols + input_col) * cs.input_channels + ch];
+						const Intv<Td> inp = input[ch * cs.input_rows * cs.input_cols + input_row * cs.input_cols + input_col];
 						const Tc a = conv[(delta_row * cs.kernel_size_cols + delta_col) * convN + ch * gridDim.z + blockIdx.z];
 						Intv<Td>::fma(res, inp, a, res);
 					}
@@ -370,7 +318,7 @@ __global__ void convRun(
 		__syncthreads();
 	}
 	if (tid == 0)
-		dest[channel_first ? (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x : (blockIdx.y * gridDim.x + blockIdx.x) * gridDim.z + blockIdx.z] = res;
+		dest[(blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x] = res;
 }
 
 template <typename T>
@@ -385,18 +333,13 @@ void Conv2D<T>::eval(Vector<Te>& dest, bool sound)
 	dim3 grid(cs.output_cols, cs.output_rows, cs.filters);
 	const int sharedSize = block.x * block.y * block.z * sizeof(Intv<T>);
 	gpuChkKer();
-	if (cs.channels_first)
-		convRun<8, true,T,Te> << <grid, block, sharedSize >> > (
+	
+		convRun<8, T,Te> << <grid, block, sharedSize >> > (
 			dest,
 			input,
 			conv, conv.pitch(),
 			cs);
-	else
-		convRun<8, false,T,Te> << <grid, block, sharedSize >> > (
-			dest,
-			input,
-			conv, conv.pitch(),
-			cs);
+	
 	gpuChkKer();
 }
 
@@ -406,7 +349,6 @@ void Conv2D<T>::eval(Vector<Te>& dest, bool sound)
 
 template<> Conv2D<double>::Conv2D(
 	NeuralNetwork& nn,
-	const bool channels_first,
 	const int filters,
 	const int kernel_size_rows, const int kernel_size_cols,
 	const int input_rows, const int input_cols, const int input_channels,
@@ -415,7 +357,7 @@ template<> Conv2D<double>::Conv2D(
 	const Matrix<double>& A,
 	int parent) :
 	NeuralNetwork::Layer(nn, ((input_rows + 2 * padding_rows - kernel_size_rows + stride_rows) / stride_rows)* ((input_cols + 2 * padding_cols - kernel_size_cols + stride_cols) / stride_cols)* filters),
-	cs(channels_first, filters, kernel_size_rows, kernel_size_cols, input_rows, input_cols, input_channels, stride_rows, stride_cols, padding_rows, padding_cols),
+	cs( filters, kernel_size_rows, kernel_size_cols, input_rows, input_cols, input_channels, stride_rows, stride_cols, padding_rows, padding_cols),
 	inputSize(input_rows* input_cols* input_channels),
 	parent(parent),
 
