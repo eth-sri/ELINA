@@ -1,6 +1,6 @@
 #  GPUPoly library
 #  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
-#  ELINA is Copyright © 2020 Department of Computer Science, ETH Zurich
+#  ELINA is Copyright Â© 2020 Department of Computer Science, ETH Zurich
 #  This software is distributed under GNU Lesser General Public License Version 3.0.
 #  For more information, see the ELINA project website at:
 #  http://elina.ethz.ch
@@ -32,9 +32,9 @@ class Network:
     if os.name == 'nt':
         #os.add_dll_directory("${CUDAToolkit_BIN_DIR}")
         #os.add_dll_directory("${GPUPoly_BINARY_DIR}")
-        os.add_dll_directory("C:/Users/Francois/source/repos/fserre/ELINA/gpupoly/out/build/x64-Debug")
-        os.add_dll_directory("C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.1\\bin\\")
-        _lib = ctypes.cdll.LoadLibrary('gpupoly.dll')
+        os.add_dll_directory("${CUDAToolkit_BIN_DIR}")
+        os.add_dll_directory("${GPUPoly_BINARY_DIR}")
+        _lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('gpupoly'))
     else:
         # _lib=ctypes.cdll.LoadLibrary('${GPUPoly_BINARY_DIR}/dpGPUlib.so.0.10')
         _lib = ctypes.cdll.LoadLibrary('libgpupoly.so')
