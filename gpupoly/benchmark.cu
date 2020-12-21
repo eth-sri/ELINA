@@ -451,29 +451,29 @@ void testNetwork(const string& network, const size_t inputSize, const bool chann
 
 int main()
 {
-	cudaSetDevice(1);
+	//cudaSetDevice(1);
 #ifdef _MSC_VER
 	testNetwork("C:\\Users\\Francois\\source\\FFNN_cifar10_new.pyt", 3072, true, 1.0 / 500, 500, false,"testtime.txt");
 	//testNetwork("C:\\Users\\Francois\\source\\ffnnRELU__Point_6_500.pyt", 3072, true, 1.0 / 500, 500, false);
 	
 #else
-		testNetwork("/local/home/christoph/ERAN/nets/mnist/FFNN_mnist_new.pyt", 784, true,8.0 /255,10000, false, "FFNN_mnist_new.txt");
+		/*testNetwork("/local/home/christoph/ERAN/nets/mnist/FFNN_mnist_new.pyt", 784, true,8.0 /255,10000, false, "FFNN_mnist_new.txt");
 		testNetwork("/local/home/christoph/ERAN/nets/mnist/ConvBig_mnist_new.pyt", 784, true,3.0/10,  10000, false,"ConvBig_mnist_new.txt");
 		testNetwork("/local/home/christoph/ERAN/nets/mnist/convSuper_mnist_new.pyt", 784, true, 8.0/255,  10000, false,"convSuper_mnist_new.txt");
 
 		testNetwork("/local/home/christoph/ERAN/nets/cifar10/FFNN_cifar10_new.pyt", 3072, true, 1.0 / 500, 10000, false, "FFNN_cifar10_new.txt");
 		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ConvBig_cifar10_new.pyt", 3072, true, 8.0 / 255, 10000, false, "ConvBig_cifar10_new.txt");
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ConvLargeIBP.pyt", 3072, true, 8.0 / 255, 10000, false, "ConvLargeIBP.txt");
+		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ConvLargeIBP.pyt", 3072, true, 8.0 / 255, 10000, false, "ConvLargeIBP.txt");*/
 		
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNetTiny_PGD.pyt", 3072, true, 1.0 / 500, 500, false, "ResNetTiny_PGD.txt");
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet18_PGD_new.pyt", 3072, true, 1.0 / 500, 500, false, "ResNet18_PGD_new.txt");
+		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNetTiny_PGD.pyt", 3072, true, 1.0 / 500, 5000, false, "ResNetTiny_PGD.txt");
+		//testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet18_PGD_new.pyt", 3072, true, 1.0 / 500, 500, false, "ResNet18_PGD_new.txt");
 				
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNetTiny_DiffAI.pyt", 3072, true, 8.0 / 255, 500, false, "ResNetTiny_DiffAI.txt");
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/SkipNet18_DiffAI.pyt", 3072, true, 8.0 / 255, 500, false, "SkipNet18_DiffAI.txt");
+		//testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNetTiny_DiffAI.pyt", 3072, true, 8.0 / 255, 10000, false, "ResNetTiny_DiffAI.txt");
+		/*testNetwork("/local/home/christoph/ERAN/nets/cifar10/SkipNet18_DiffAI.pyt", 3072, true, 8.0 / 255, 500, false, "SkipNet18_DiffAI.txt");
 		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet18_DiffAI.pyt", 3072, true, 8.0 / 255, 500, false, "ResNet18_DiffAI.txt");
 		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet34_DiffAI.pyt", 3072, true, 8.0 / 255, 500, false, "ResNet34_DiffAI.txt");
 
-		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet18_PGD.pyt", 3072, true, 1.0 / 500, 500, false, "ResNet18_PGD.txt");
+		testNetwork("/local/home/christoph/ERAN/nets/cifar10/ResNet18_PGD.pyt", 3072, true, 1.0 / 500, 500, false, "ResNet18_PGD.txt");*/
 #endif
 		return 0;
 }

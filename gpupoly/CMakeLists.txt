@@ -51,6 +51,12 @@ configure_file("../python_interface/gpupoly.py" "gpupoly.py")
 configure_file("../python_interface/onnx2gpupoly.py" "onnx2gpupoly.py" COPYONLY)
 configure_file("../python_interface/gpupoly_test.py" "gpupoly_test.py" COPYONLY)
 
+
+add_executable (testGPUPoly "test.cpp")
+target_include_directories (testGPUPoly PRIVATE ${PROJECT_BINARY_DIR})
+target_include_directories(testGPUPoly PRIVATE .)
+target_link_libraries(testGPUPoly gpupoly)
+
 add_executable (benchmark "benchmark.cu")
 set_target_properties(benchmark PROPERTIES CUDA_ARCHITECTURES 61)
 target_include_directories (benchmark PRIVATE ${PROJECT_BINARY_DIR})

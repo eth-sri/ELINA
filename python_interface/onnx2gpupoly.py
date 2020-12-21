@@ -135,20 +135,33 @@ def onnx2gpupoly(graph):
             assert data.ndim == 4
             print(inputShape)
             print(data.shape)
+            if group==2:
+                ndata=np.zeros((data.shape[0],2*data.shape[1],data.shape[2],data.shape[3]),data.dtype)
+                ndata[:(data.shape[0]//2), :data.shape[1], :, :] = data[:(data.shape[0]//2), :, :, :]
+                ndata[(data.shape[0] // 2):, data.shape[1]:, :, :] = data[(data.shape[0] // 2):, :, :, :]
+                data=ndata
             assert inputShape[0] == 1
-            assert data.shape[1]*group == inputShape[-3]
+            assert data.shape[1] == inputShape[-3]
             outputShape = inputShape[:-3]
             outputShape.append(data.shape[0])
             outputShape.append((inputShape[-2] + 2 * padding_rows - data.shape[-2] + stride_rows) // stride_rows)
             outputShape.append((inputShape[-1] + 2 * padding_cols - data.shape[-1] + stride_cols) // stride_cols)
-            outputIndex = nn.add_conv_2d(inputShape[-2],inputShape[-1],np.transpose(data,[2,3,1,0]),[stride_rows,stride_cols],[padding_rows,padding_cols],group,inputIndex)
+            outputIndex = nn.add_conv_2d(inputShape[-2],inputShape[-1],np.transpose(data,[2,3,1,0]),[stride_rows,stride_cols],[padding_rows,padding_cols],inputIndex)
             if len(layer.input)==3:
                 dataIndex, data = getLayer(layer.input[2])
                 assert dataIndex==-1
                 assert data.shape==(outputShape[-3],)
                 data=data.repeat(outputShape[-2]*outputShape[-1])
+                assert(data.size==product(outputShape))
                 outputIndex=nn.add_bias(data,outputIndex)
             return outputIndex, outputShape
+        if (layer.op_type=="Dropout"):
+            return getLayer(layer.input[0])
+        if (layer.op_type=="Flatten"):
+            inputIndex, inputShape = getLayer(layer.input[0])
+            assert inputIndex>=0
+            outputShape=[inputShape[0],product(inputShape[1:])]
+            return inputIndex,outputShape
         if (layer.op_type == "Gather"):
             
             lhsIndex, lhs = getLayer(layer.input[0])
@@ -189,13 +202,32 @@ def onnx2gpupoly(graph):
             return outputIndex, outputShape
         if (layer.op_type == "MaxPool"):
             inputIndex, inputShape = getLayer(layer.input[0])
-            dataIndex, data = getLayer(layer.input[1])
-            assert dataIndex == -1
-            outputShape = inputShape
-            outputIndex = len(implemented)
-            print(f"({outputIndex}) <- MaxPool({inputIndex}, data {data.shape}) : {inputShape} -> {outputShape}")
-            return outputIndex, outputShape
+            padding_rows = 0
+            padding_cols = 0
+            stride_rows = 1
+            stride_cols = 1
+            kernel_rows = 1
+            kernel_cols = 1
 
+            for attribute in layer.attribute:
+                if attribute.name == "pads":
+                    padding_rows = attribute.ints[0]
+                    assert padding_rows == attribute.ints[1]
+                    padding_cols = attribute.ints[2]
+                    assert padding_cols == attribute.ints[3]
+                if attribute.name == "strides":
+                    stride_rows = attribute.ints[0]
+                    stride_cols = attribute.ints[1]
+                if attribute.name == "kernel_shape":
+                    kernel_rows = attribute.ints[0]
+                    kernel_cols = attribute.ints[1]
+            print(inputShape)
+            assert inputShape[0] == 1
+            outputShape = inputShape[:-2]
+            outputShape.append((inputShape[-2] + 2 * padding_rows - kernel_rows + stride_rows) // stride_rows)
+            outputShape.append((inputShape[-1] + 2 * padding_cols - kernel_cols + stride_cols) // stride_cols)
+            outputIndex = nn.add_maxpool_2d([kernel_rows,kernel_cols],inputShape[-2],inputShape[-1],inputShape[-3],[stride_rows,stride_cols],[padding_rows,padding_cols],inputIndex)
+            return outputIndex, outputShape
         if (layer.op_type == "Relu"):
             inputIndex, inputShape = getLayer(layer.input[0])
             return nn.add_relu(inputIndex),inputShape
@@ -243,7 +275,7 @@ def onnx2gpupoly(graph):
         # raise
 
 
-    assert (len(graph.output) == 1)
+    #assert (len(graph.output) == 1)
 
     getLayer(graph.output[0].name)
     return nn

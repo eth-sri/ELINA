@@ -262,7 +262,12 @@ class Network:
         return (res>0).all()
 
 
-
+    def eval(self, x):
+        self.setLayerBox(x, x)  # Set input layer concrete bounds
+        # relax all layers, using simple interval analysis first.
+        for i in range(self._last_layer_id):
+            self.relax(i + 1, soundness=False, refineActivationsInput=False)
+        return self.evalAffineExpr()
 
 
     ## Sets the concrete bounds of a layer.
