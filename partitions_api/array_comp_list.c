@@ -36,11 +36,7 @@ void print_array_comp_list(array_comp_list_t *acl, unsigned short int n){
 	fflush(stdout);
 }
 
-void free_array_comp_list(array_comp_list_t * acl){
-	if(acl==NULL){
-		return;
-	}
-	
+void clear_array_comp_list(array_comp_list_t *acl){
 	comp_list_t *cl = acl->head;
 	
 	while(cl!=NULL){
@@ -49,6 +45,13 @@ void free_array_comp_list(array_comp_list_t * acl){
 		free_comp_list(temp);
 		temp = NULL;
 	}
+}
+
+void free_array_comp_list(array_comp_list_t * acl){
+	if(acl==NULL){
+		return;
+	}
+	clear_array_comp_list(acl);
 	free(acl);
 	acl = NULL;
 }
@@ -272,13 +275,6 @@ int is_lequal_array_comp_list(array_comp_list_t * acl1, array_comp_list_t * acl2
 	return 1;
 }
 
-void clear_array_comp_list(array_comp_list_t *acl){
-	comp_list_t * cl = acl->head;
-	while(cl!=NULL){
-		remove_comp_list(acl,cl);
-		cl = cl->next;
-	}
-}
 
 int is_connected(array_comp_list_t *acl, unsigned short int i, unsigned short int j){
 	comp_list_t * li = find(acl,i);

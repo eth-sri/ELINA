@@ -20,8 +20,8 @@
 
 
 
-#ifndef __COMPUTE_BOUNDS_H_INCLUDED__
-#define __COMPUTE_BOUNDS_H_INCLUDED__
+#ifndef __SIGN_APPROX_H_INCLUDED__
+#define __SIGN_APPROX_H_INCLUDED__
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,21 +29,7 @@ extern "C" {
 
 #include "backsubstitute.h"
 
-expr_t * replace_input_poly_cons_in_lexpr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp);
-
-expr_t * replace_input_poly_cons_in_uexpr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp);
-
-double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno);
-
-double compute_ub_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno);
-
-double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *expr, size_t layerno);
-
-double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *expr, size_t layerno);
-
-elina_linexpr0_t *get_output_lexpr_defined_over_previous_layers(elina_manager_t *man, elina_abstract0_t *element, int neuron_no, int prev_layer);
-
-elina_linexpr0_t *get_output_uexpr_defined_over_previous_layers(elina_manager_t *man, elina_abstract0_t *element, int neuron_no, int prev_layer);
+void handle_sign_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
 #ifdef __cplusplus
  }

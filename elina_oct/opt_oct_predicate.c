@@ -419,7 +419,8 @@ bool opt_oct_is_dimension_unconstrained(elina_manager_t* man, opt_oct_t* o,
 			if(m[opt_matpos2(d2,d2+1)]!=INFINITY || m[opt_matpos2(d2+1,d2)]!=INFINITY){
 				#if defined(TIMING)
 					record_timing(oct_is_unconstrained_time);
-   				 #endif
+   				#endif
+				free(ca);
 				return false;
 			}
 		}
@@ -427,25 +428,29 @@ bool opt_oct_is_dimension_unconstrained(elina_manager_t* man, opt_oct_t* o,
 			if(m[opt_matpos2(2*j1,d2)]!=INFINITY){
 				#if defined(TIMING)
 					record_timing(oct_is_unconstrained_time);
-   				 #endif
+   				#endif
+				free(ca);	
 				return false;
 			}
 			if(m[opt_matpos2(2*j1+1,d2)]!=INFINITY){
 				#if defined(TIMING)
 					record_timing(oct_is_unconstrained_time);
-   				 #endif
+   				#endif
+				free(ca);
 				return false;
 			}
 			if(m[opt_matpos2(2*j1,d2+1)]!=INFINITY){
 				#if defined(TIMING)
 					record_timing(oct_is_unconstrained_time);
-   				 #endif
+   				#endif
+				free(ca);
 				return false;
 			}
 			if(m[opt_matpos2(2*j1+1,d2+1)]!=INFINITY){
 				#if defined(TIMING)
 					record_timing(oct_is_unconstrained_time);
-   				 #endif
+   				#endif
+				free(ca);
 				return false;
 			}
 		}
