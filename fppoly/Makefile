@@ -36,7 +36,7 @@ LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elin
 INCLUDES = -I../elina_auxiliary -I../elina_linearize -I../elina_zonotope -I../partitions_api  -I/usr/local/include/cddlib $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
 else
 LIBS = -L../partitions_api -lpartitions -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize  -L../elina_zonotope -lzonotope $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -lpthread -lcdd
-INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize -I../elina_zonotope -I../partitions_api  -I/usr/local/include/cddlib $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
+INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize -I../elina_zonotope -I../partitions_api  -I$(CDD_PREFIX) $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
 endif
 
 ifneq ($(USE_GUROBI),)
