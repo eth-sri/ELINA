@@ -43,13 +43,45 @@
 #include "gpupoly.h"
 #include "config.h"
 
+
+//! Static structure that contains the neural network that the API functions manipulate.
+struct SplashScreen
+{
+	bool networkLoaded;
+	SplashScreen():networkLoaded(false)
+	{
+		std::cout << "GPUPoly " << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_PATCH;
+#ifdef STRONG_FP_SOUNDNESS
+		std::cout << "S";
+#else
+		std::cout << "W";
+#endif
+#ifndef NDEBUG
+		std::cout << " Debug";
+#endif
+		std::cout << " (built " << __DATE__ << " " << __TIME__ << ") - Copyright (C) 2020 Department of Computer Science, ETH Zurich." << std::endl;
+		std::cout << "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it and to modify it under the terms of the GNU LGPLv3." << std::endl << std::endl;
+	}
+} ss;
+
 void clean(NeuralNetwork* nn)
 {
+	ss.networkLoaded=false;
 	delete nn;
 }
 
 NeuralNetwork* create(int inputSize)
 {
+	#ifndef MULTIPLE_NETWORKS
+	if (ss.networkLoaded)
+	{
+		std::cerr << "Error: A network is already loaded in GPU memory. Please clean the previous network before creating a new one." << std::endl;
+		std::cerr << "Note:  If you actually intend to have several networks on the GPU at once, please compile GPUPoly with the cmake flag MULTIPLE_NETWORKS." << std::endl;
+		std::cerr << "       Otherwise, it probably means that you have forgotten a call to clean." << std::endl;
+		return nullptr;
+	}
+	ss.networkLoaded=true;
+	#endif
 	return new NeuralNetwork(inputSize);
 }
 
@@ -308,24 +340,4 @@ int addConcat(
 {
 	return nn->addLayer(new Concat(*nn, (*nn)[parent1]->outputSize, parent1, (*nn)[parent2]->outputSize, parent2));
 }
-
-//! Static structure that contains the neural network that the API functions manipulate.
-struct SplashScreen
-{
-	SplashScreen()
-	{
-		std::cout << "GPUPoly " << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_PATCH;
-#ifdef STRONG_FP_SOUNDNESS
-		std::cout << "S";
-#else
-		std::cout << "W";
-#endif
-#ifndef NDEBUG
-		std::cout << " Debug";
-#endif
-		std::cout << " (built " << __DATE__ << " " << __TIME__ << ") - Copyright (C) 2020 Department of Computer Science, ETH Zurich." << std::endl;
-		std::cout << "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it and to modify it under the terms of the GNU LGPLv3." << std::endl << std::endl;
-	}
-} ss;
-
 

@@ -210,7 +210,7 @@ class Network:
             self._lib.clean(self._nn)
             self._nn = None
 
-    ## Destructor
+    ## Destructor. Note that python may delay the call to this method, a manual call to "clean" is therefore required in case another network would need to be loaded.
     def __del__(self):
         self.clean()
 
