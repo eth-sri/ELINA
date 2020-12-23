@@ -35,6 +35,7 @@ include(GenerateExportHeader)
 set(GPUPOLYCore "layers/maxpool2d.cu" "affineexpr.cu" "layers/conv2d.cu" "layers/dense.cu" "mmm.cu" "mvm.cu" "network.cu" "layers/relu.cu" "matrix.cu" "vector.cu" "filters.cu")
 
 option(STRONG_FP_SOUNDNESS "If off, an element in a certified box is guaranteed to classify correctly if infinite precision arithmetic is used during the evaluation (weak certification). If on, an input in a certified box is guaranteed to classify correctly as long as IEEE754 arithmetic is used for evaluation, irrespective of the ordering of sums (strong certification)." ON)
+option(MULTIPLE_NETWORKS "Allows to load several networks at once in the GPU." OFF)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN yes)
 configure_file("config.h.in" "config.h")
