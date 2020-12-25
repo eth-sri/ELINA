@@ -485,11 +485,11 @@ void run_1relu_test() {
     cout << "\tpassed" << endl;
 }
 
-void run_sparse_cover_test(const int N, const int K) {
+void run_sparse_cover_test(const int N, const int K, const int s) {
     cout << "running sparse cover test: N " << N << " K " << K << endl;
 
     Timer t;
-    MatInt cover = generate_sparse_cover(N, K);
+    MatInt cover = generate_sparse_cover(N, K, s);
     int micros = t.micros();
 
     cout << "\ttook " << micros / 1000 \
@@ -604,14 +604,14 @@ void run_all_relaxation_cdd_tests(Activation activation, int max_k) {
 
 void run_all_sparse_cover_tests() {
     cout << "Running all sparse cover tests" << endl;
-    run_sparse_cover_test(50, 3);
-    run_sparse_cover_test(100, 3);
-    run_sparse_cover_test(25, 4);
-    run_sparse_cover_test(20, 5);
-    run_sparse_cover_test(4, 3);
-    run_sparse_cover_test(3, 3);
-    run_sparse_cover_test(1, 3);
-    run_sparse_cover_test(0, 3);
+    run_sparse_cover_test(50, 3, 2);
+    run_sparse_cover_test(100, 3, 1);
+    run_sparse_cover_test(25, 4, 3);
+    run_sparse_cover_test(20, 5, 3);
+    run_sparse_cover_test(4, 3, 1);
+    run_sparse_cover_test(3, 3, 1);
+    run_sparse_cover_test(1, 3, 1);
+    run_sparse_cover_test(0, 3, 2);
 }
 
 void handler(int sig) {
