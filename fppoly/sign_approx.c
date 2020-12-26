@@ -10,8 +10,8 @@ expr_t * create_sign_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t i, b
 	res->size = 1;  
 	res->dim = (size_t*)malloc(sizeof(size_t));
 	res->dim[0] = i;
-	double lb = round(in_neuron->lb);
-	double ub = round(in_neuron->ub);
+	double lb = in_neuron->lb;
+	double ub = in_neuron->ub;
 	
 	if(ub<0 || lb <= 0){
 		res->inf_coeff[0] = 0.0;
@@ -23,18 +23,18 @@ expr_t * create_sign_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t i, b
 	}
 		
 	else if(is_lower){
-		res->inf_coeff[0] = -1/ub;
-		res->sup_coeff[0] = 1/ub;
-		//res->inf_coeff[0] = 0.0;
-		//res->sup_coeff[0] = 0.0;
+		//res->inf_coeff[0] = -1/ub;
+		//res->sup_coeff[0] = 1/ub;
+		res->inf_coeff[0] = 0.0;
+		res->sup_coeff[0] = 0.0;
 	}
 	else{
-		res->inf_coeff[0] = 1/lb;
-		res->sup_coeff[0] = -1/lb;
-		//res->inf_coeff[0] = 0.0;
-		//res->sup_coeff[0] = 0.0;
-		//res->inf_cst = -1.0;
-		//res->sup_cst = 1.0;
+		//res->inf_coeff[0] = 1/lb;
+		//res->sup_coeff[0] = -1/lb;
+		res->inf_coeff[0] = 0.0;
+		res->sup_coeff[0] = 0.0;
+		res->inf_cst = -1.0;
+		res->sup_cst = 1.0;
 	}
 	return res;
 }
@@ -50,15 +50,16 @@ void handle_sign_layer(elina_manager_t *man, elina_abstract0_t* element, size_t 
 	int k = predecessors[0]-1;
 	neuron_t **in_neurons = fp->layers[k]->neurons;
 	size_t i;
-	
 	for(i=0; i < num_neurons; i++){
-		double lb = round(in_neurons[i]->lb);
-		double ub = round(in_neurons[i]->ub);
+		double lb = in_neurons[i]->lb;
+		double ub = in_neurons[i]->ub;
 		if(lb <= 0){
+			
 			out_neurons[i]->lb = -1.0;
 			out_neurons[i]->ub = 1.0;
 		}
 		else if (ub<0){
+			
 			out_neurons[i]->lb = 0.0;
 			out_neurons[i]->ub = 0.0;
 		}
