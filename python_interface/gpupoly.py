@@ -37,7 +37,8 @@ class Network:
         _lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('gpupoly'))
     else:
         # _lib=ctypes.cdll.LoadLibrary('${GPUPoly_BINARY_DIR}/dpGPUlib.so.0.10')
-        _lib = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../gpupoly/libgpupoly.so"))
+        #_lib = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../gpupoly/libgpupoly.so"))
+        _lib = ctypes.cdll.LoadLibrary('libgpupoly.so')
 
     def _nullable_ndptr(*args, **kwargs):
         base = np.ctypeslib.ndpointer(*args, **kwargs)
@@ -228,7 +229,7 @@ class Network:
     def test(self, down, up, label, soundness=True):
         down = down.flatten()
         up = up.flatten()
-        self._last_dtype=up.dtype
+        self._last_dtype = up.dtype
         assert down.shape == (self.input_size,)
         assert up.shape == (self.input_size,)
         assert up.dtype == down.dtype

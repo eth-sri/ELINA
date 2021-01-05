@@ -22,4 +22,5 @@
 import ctypes
 import os
 
-fconv_api = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../fconv/libfconv.so"))
+#fconv_api = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../fconv/libfconv.so"))
+fconv_api = ctypes.CDLL("libfconv.so")
