@@ -210,7 +210,7 @@ class Network:
             self._lib.clean(self._nn)
             self._nn = None
 
-    ## Destructor
+    ## Destructor. Note that python may delay the call to this method, a manual call to "clean" is therefore required in case another network would need to be loaded.
     def __del__(self):
         self.clean()
 
@@ -228,6 +228,7 @@ class Network:
     def test(self, down, up, label, soundness=True):
         down = down.flatten()
         up = up.flatten()
+        self._last_dtype=up.dtype
         assert down.shape == (self.input_size,)
         assert up.shape == (self.input_size,)
         assert up.dtype == down.dtype
