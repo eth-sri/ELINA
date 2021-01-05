@@ -489,7 +489,7 @@ def handle_sign_layer(man, element, num_neurons, predecessors, num_predecessors)
         print(inst)
 
 
-def handle_sigmoid_layer(man, element, num_neurons, predecessors, num_predecessors):
+def handle_sigmoid_layer(man, element, num_neurons, predecessors, num_predecessors, use_default_heuristic):
     """
     handle Sigmoid layer
     
@@ -505,6 +505,8 @@ def handle_sigmoid_layer(man, element, num_neurons, predecessors, num_predecesso
         the layers before the current layer
     num_predecessors: c_size_t
         the number of predecessors of the current layer
+    use_default_heuristic: c_bool
+        whether to use the default Sigmoid approximation from POPL'19
     Returns
     -------
     None
@@ -514,13 +516,13 @@ def handle_sigmoid_layer(man, element, num_neurons, predecessors, num_predecesso
     try:
         handle_sigmoid_layer_c = fppoly_api.handle_sigmoid_layer
         handle_sigmoid_layer_c.restype = None
-        handle_sigmoid_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t]
-        handle_sigmoid_layer_c(man, element, num_neurons, predecessors, num_predecessors)
+        handle_sigmoid_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t, c_bool]
+        handle_sigmoid_layer_c(man, element, num_neurons, predecessors, num_predecessors, use_default_heuristic)
     except Exception as inst:
         print('Problem with loading/calling "handle_sigmoid_layer" from "libfppoly.so"')
         print(inst)
         
-def handle_tanh_layer(man, element, num_neurons, predecessors, num_predecessors):
+def handle_tanh_layer(man, element, num_neurons, predecessors, num_predecessors, use_default_heuristic):
     """
     handle Tanh layer
     
@@ -536,6 +538,8 @@ def handle_tanh_layer(man, element, num_neurons, predecessors, num_predecessors)
         the layers before the current layer
     num_predecessors: c_size_t
         the number of predecessors of the current layer
+    use_default_heuristic: c_bool
+        whether to use the default Tanh approximation from POPL'19
     Returns
     -------
     None
@@ -545,8 +549,8 @@ def handle_tanh_layer(man, element, num_neurons, predecessors, num_predecessors)
     try:
         handle_tanh_layer_c = fppoly_api.handle_tanh_layer
         handle_tanh_layer_c.restype = None
-        handle_tanh_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t]
-        handle_tanh_layer_c(man, element, num_neurons, predecessors, num_predecessors)
+        handle_tanh_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t, c_bool]
+        handle_tanh_layer_c(man, element, num_neurons, predecessors, num_predecessors, use_default_heuristic)
     except Exception as inst:
         print('Problem with loading/calling "handle_tanh_layer" from "libfppoly.so"')
         print(inst)
