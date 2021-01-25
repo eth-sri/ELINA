@@ -10,8 +10,8 @@ expr_t * create_batch_normalization_expr(double weight, double bias, size_t i){
 	res->dim[0] = i;
 	res->inf_coeff[0] = -weight;
 	res->sup_coeff[0] = weight;
-	res->sup_cst = -bias;
-	res->inf_cst = bias;
+	res->sup_cst = bias;
+	res->inf_cst = -bias;
 	
 	return res;
 }
