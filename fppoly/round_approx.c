@@ -14,8 +14,8 @@ expr_t * create_round_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t i, 
 	//res->sup_coeff[0] = 1.0;
 	res->inf_coeff[0] = 0.0;
 	res->sup_coeff[0] = 0.0;
-	res->inf_cst = 0.0;
-	res->sup_cst = 0.0;
+	//res->inf_cst = 0.0;
+	//res->sup_cst = 0.0;
 	if(is_lower){
 		res->inf_cst = -round(-lb);
 		res->sup_cst = -res->inf_cst;
