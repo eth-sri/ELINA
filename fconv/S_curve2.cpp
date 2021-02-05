@@ -1,7 +1,7 @@
 #include "S_curve2.h"
 
 #include <assert.h>
-#include <math.h>
+#include <cmath>
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>

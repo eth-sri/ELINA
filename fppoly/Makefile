@@ -29,14 +29,14 @@ INCLDIR = $(ELINA_PREFIX)/include
 INSTALL = install
 INSTALLd = install -d
 
-OBJS = fppoly.o backsubstitute.o compute_bounds.o expr.o relu_approx.o s_curve_approx.o parabola_approx.o log_approx.o pool_approx.o lstm_approx.o maxpool_convex_hull.o
+OBJS = fppoly.o backsubstitute.o compute_bounds.o expr.o relu_approx.o round_approx.o clip_approx.o batch_normalization.o sign_approx.o s_curve_approx.o parabola_approx.o log_approx.o pool_approx.o lstm_approx.o maxpool_convex_hull.o
 
 ifeq ($(IS_APRON),)
 LIBS = -L../partitions_api -lpartitions -L../elina_auxiliary -lelinaux -L../elina_linearize -lelinalinearize  -L../elina_zonotope -lzonotope $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -lpthread -lcdd
-INCLUDES = -I../elina_auxiliary -I../elina_linearize -I../elina_zonotope -I../partitions_api  -I/usr/local/include/cddlib $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
+INCLUDES = -I../elina_auxiliary -I../elina_linearize -I../elina_zonotope -I../partitions_api  -I$(CDD_PREFIX) $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
 else
 LIBS = -L../partitions_api -lpartitions -L$(APRON_PREFIX)/lib -lapron  -L../elina_linearize -lelinalinearize  -L../elina_zonotope -lzonotope $(MPFR_LIB_FLAG) -lmpfr $(GMP_LIB_FLAG) -lgmp -lm -lpthread -lcdd
-INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize -I../elina_zonotope -I../partitions_api  -I/usr/local/include/cddlib $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
+INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize -I../elina_zonotope -I../partitions_api  -I$(CDD_PREFIX) $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
 endif
 
 ifneq ($(USE_GUROBI),)
@@ -70,6 +70,18 @@ expr.o : expr.h expr.c
 
 relu_approx.o : relu_approx.h relu_approx.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o relu_approx.o relu_approx.c $(LIBS)
+
+round_approx.o : round_approx.h round_approx.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o round_approx.o round_approx.c $(LIBS)
+		
+clip_approx.o : clip_approx.h clip_approx.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o clip_approx.o clip_approx.c $(LIBS)
+
+batch_normalization.o : batch_normalization.h batch_normalization.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o batch_normalization.o batch_normalization.c $(LIBS)
+
+sign_approx.o : sign_approx.h sign_approx.c
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o sign_approx.o sign_approx.c $(LIBS)
 
 s_curve_approx.o : s_curve_approx.h s_curve_approx.c
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) -o s_curve_approx.o s_curve_approx.c $(LIBS)

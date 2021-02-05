@@ -77,6 +77,8 @@ expr_t * lexpr_replace_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t **
 
 expr_t * uexpr_replace_bounds(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons, bool is_activation);
 
+elina_linexpr0_t *elina_linexpr0_from_expr(expr_t *expr);
+
 #ifdef __cplusplus
  }
 #endif

@@ -24,7 +24,7 @@ void compute_derivative(double *slope_inf, double *slope_sup, double s_curve_l, 
 }
 
 
-expr_t * create_s_curve_expr(fppoly_internal_t *pr, neuron_t *out_neuron, neuron_t *in_neuron, size_t i, bool is_lower, bool is_sigmoid){
+expr_t * create_s_curve_expr(fppoly_internal_t *pr, neuron_t *out_neuron, neuron_t *in_neuron, size_t i, bool is_lower, bool is_sigmoid, bool use_default_heuristic){
 	expr_t * res = alloc_expr();  
 	res->inf_coeff = (double *)malloc(sizeof(double));
 	res->sup_coeff = (double *)malloc(sizeof(double));
@@ -125,18 +125,22 @@ expr_t * create_s_curve_expr(fppoly_internal_t *pr, neuron_t *out_neuron, neuron
                 else{
                     
                     if(lb<=ub){
-                         //compute_derivative(&slope_inf, &slope_sup, e_sup_l, e_sup_u, den_sup_l, den_sup_u, is_sigmoid);
-                         double slope_inf1, slope_sup1;
-                         double slope_inf2, slope_sup2;
-                         compute_derivative(&slope_inf1, &slope_sup1, e_inf_l, e_inf_u, den_inf_l, den_inf_u, is_sigmoid);
-                         compute_chord_slope(&slope_inf2, &slope_sup2, f_sup_l, f_sup_u, f_inf_l, f_inf_u, lb, -lb, -ub, ub);
-                         if(slope_sup1<slope_sup2){
-                         	slope_inf = slope_inf1;
-                         	slope_sup = slope_sup1; 
+                    	  if(use_default_heuristic){
+                         	compute_derivative(&slope_inf, &slope_sup, e_sup_l, e_sup_u, den_sup_l, den_sup_u, is_sigmoid);
                          }
                          else{
-                         	slope_inf = slope_inf2;
-                         	slope_sup = slope_sup2; 
+                         	double slope_inf1, slope_sup1;
+                         	double slope_inf2, slope_sup2;
+                         	compute_derivative(&slope_inf1, &slope_sup1, e_inf_l, e_inf_u, den_inf_l, den_inf_u, is_sigmoid);
+                         	compute_chord_slope(&slope_inf2, &slope_sup2, f_sup_l, f_sup_u, f_inf_l, f_inf_u, lb, -lb, -ub, ub);
+                         	if(slope_sup1<slope_sup2){
+                         		slope_inf = slope_inf1;
+                         		slope_sup = slope_sup1; 
+                         	}
+                         	else{
+                         		slope_inf = slope_inf2;
+                         		slope_sup = slope_sup2; 
+                         	}
                          }
                     }
                     else{
@@ -205,7 +209,10 @@ expr_t * create_s_curve_expr(fppoly_internal_t *pr, neuron_t *out_neuron, neuron
                     	compute_derivative(&slope_inf, &slope_sup, e_sup_l, e_sup_u, den_sup_l, den_sup_u, is_sigmoid);
                     }
                     else{
-                        //compute_derivative(&slope_inf, &slope_sup, e_inf_l, e_inf_u, den_inf_l, den_inf_u, is_sigmoid);
+                    	if(use_default_heuristic){
+                        	compute_derivative(&slope_inf, &slope_sup, e_inf_l, e_inf_u, den_inf_l, den_inf_u, is_sigmoid);
+                       }
+                       else{
                          double slope_inf1, slope_sup1;
                          double slope_inf2, slope_sup2;
                          compute_derivative(&slope_inf1, &slope_sup1, e_sup_l, e_sup_u, den_sup_l, den_sup_u, is_sigmoid);
@@ -218,6 +225,7 @@ expr_t * create_s_curve_expr(fppoly_internal_t *pr, neuron_t *out_neuron, neuron
                          	slope_inf = slope_inf2;
                          	slope_sup = slope_sup2; 
                          }
+                      }
                     }
                    
                     
@@ -260,7 +268,7 @@ expr_t * create_s_curve_expr(fppoly_internal_t *pr, neuron_t *out_neuron, neuron
 
 
 
-void handle_s_curve_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool is_sigmoid){
+void handle_s_curve_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool is_sigmoid, bool use_default_heuristic){
 	assert(num_predecessors==1);
 	fppoly_t *fp = fppoly_of_abstract0(element);
 	fppoly_internal_t *pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
@@ -271,17 +279,17 @@ void handle_s_curve_layer(elina_manager_t *man, elina_abstract0_t* element, size
 	neuron_t **in_neurons = fp->layers[k]->neurons;
 	size_t i;
 	for(i=0; i < num_neurons; i++) {
-        out_neurons[i]->lexpr = create_s_curve_expr(pr, out_neurons[i], in_neurons[i], i, true, is_sigmoid);
-        out_neurons[i]->uexpr = create_s_curve_expr(pr, out_neurons[i], in_neurons[i], i, false, is_sigmoid);
+        out_neurons[i]->lexpr = create_s_curve_expr(pr, out_neurons[i], in_neurons[i], i, true, is_sigmoid, use_default_heuristic);
+        out_neurons[i]->uexpr = create_s_curve_expr(pr, out_neurons[i], in_neurons[i], i, false, is_sigmoid, use_default_heuristic);
 	}
 }
 
-void handle_sigmoid_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors){
-	handle_s_curve_layer(man, element, num_neurons, predecessors, num_predecessors, true);
+void handle_sigmoid_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristic){
+	handle_s_curve_layer(man, element, num_neurons, predecessors, num_predecessors, true, use_default_heuristic);
 }
 
-void handle_tanh_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors){
-	handle_s_curve_layer(man, element, num_neurons, predecessors, num_predecessors, false);
+void handle_tanh_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristic){
+	handle_s_curve_layer(man, element, num_neurons, predecessors, num_predecessors, false, use_default_heuristic);
 }
 
 
@@ -293,7 +301,7 @@ double apply_s_curve_expr(fppoly_internal_t *pr, expr_t **uexpr_p, neuron_t * ne
 	double ub = neuron->ub;
 	
 	neuron_t *tmp_neuron = neuron_alloc();
-	expr_t * res = create_s_curve_expr(pr,tmp_neuron, neuron, 0, is_lower, is_sigmoid);
+	expr_t * res = create_s_curve_expr(pr,tmp_neuron, neuron, 0, is_lower, is_sigmoid, true);
 	bool boxify = false;
 	double slope_inf, slope_sup;
 	double intercept_inf, intercept_sup;

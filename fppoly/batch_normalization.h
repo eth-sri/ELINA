@@ -20,8 +20,8 @@
 
 
 
-#ifndef __S_CURVE_APPROX_H_INCLUDED__
-#define __S_CURVE_APPROX_H_INCLUDED__
+#ifndef __BATCH_NORMALIZATION_H_INCLUDED__
+#define __BATCH_NORMALIZATION_H_INCLUDED__
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,17 +29,7 @@ extern "C" {
 
 #include "backsubstitute.h"
 
-void handle_sigmoid_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristic);
-
-void handle_tanh_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristic);
-
-double apply_sigmoid_lexpr(fppoly_internal_t *pr, expr_t **lexpr_p, neuron_t * neuron);
-
-double apply_tanh_lexpr(fppoly_internal_t *pr, expr_t **lexpr_p, neuron_t * neuron);
-
-double apply_sigmoid_uexpr(fppoly_internal_t *pr, expr_t **uexpr_p, neuron_t * neuron);
-
-double apply_tanh_uexpr(fppoly_internal_t *pr, expr_t **uexpr_p, neuron_t * neuron);
+void handle_batch_normalization_layer(elina_manager_t *man, elina_abstract0_t* element, double *weights, double *bias, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
 #ifdef __cplusplus
  }

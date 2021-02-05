@@ -25,7 +25,6 @@
 
 
 import tensorflow as tf
-import onnxruntime as rt
 import numpy as np
 import onnx
 import time
@@ -41,7 +40,9 @@ args=parser.parse_args()
 
 
 print("Reading "+args.network+"...")
-nn=onnx2gpupoly(onnx.load(args.network).graph)
+onnxgraph=onnx.load(args.network).graph
+print(format(onnx.helper.printable_graph(onnxgraph)))
+nn=onnx2gpupoly(onnxgraph)
 
 if(nn.input_size==784):
     print("Using MNIST dataset.")

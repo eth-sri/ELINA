@@ -22,8 +22,8 @@
 #  CMake project to be used to compile GPUPoly on platforms not handled by ELINA.
 #
 
-cmake_minimum_required (VERSION 3.8)
-project ("GPUPoly" VERSION 0.10.0 LANGUAGES CXX CUDA)
+cmake_minimum_required (VERSION 3.17.1)
+project ("GPUPoly" VERSION 0.11.0 LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CUDA_STANDARD 14)
@@ -32,12 +32,15 @@ set(CMAKE_CUDA_STANDARD_REQUIRED True)
 find_package(CUDAToolkit)
 include(GenerateExportHeader)
 
+set(GPUPOLYCore "layers/maxpool2d.cu" "affineexpr.cu" "layers/conv2d.cu" "layers/dense.cu" "mmm.cu" "mvm.cu" "network.cu" "layers/relu.cu" "matrix.cu" "vector.cu" "filters.cu")
+
 option(STRONG_FP_SOUNDNESS "If off, an element in a certified box is guaranteed to classify correctly if infinite precision arithmetic is used during the evaluation (weak certification). If on, an input in a certified box is guaranteed to classify correctly as long as IEEE754 arithmetic is used for evaluation, irrespective of the ordering of sums (strong certification)." ON)
+option(MULTIPLE_NETWORKS "Allows to load several networks at once in the GPU." OFF)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN yes)
 configure_file("config.h.in" "config.h")
-add_library (gpupoly SHARED "bindings.cu" "layers/maxpool2d.cu" "affineexpr.cu" "layers/conv2d.cu" "layers/dense.cu" "mmm.cu" "mvm.cu" "network.cu" "layers/relu.cu" "matrix.cu" "vector.cu" "filters.cu")
-set_target_properties(gpupoly PROPERTIES VERSION 0.10.0 SOVERSION 0.10)
+add_library (gpupoly SHARED ${GPUPOLYCore} "bindings.cu")
+set_target_properties(gpupoly PROPERTIES VERSION 0.11.0 SOVERSION 0.11 CUDA_ARCHITECTURES 61)
 generate_export_header(gpupoly)
 target_include_directories (gpupoly PRIVATE .)
 target_include_directories (gpupoly PRIVATE ${PROJECT_BINARY_DIR})
@@ -48,3 +51,15 @@ install(TARGETS gpupoly)
 configure_file("../python_interface/gpupoly.py" "gpupoly.py")
 configure_file("../python_interface/onnx2gpupoly.py" "onnx2gpupoly.py" COPYONLY)
 configure_file("../python_interface/gpupoly_test.py" "gpupoly_test.py" COPYONLY)
+
+
+add_executable (testGPUPoly "test.cpp")
+target_include_directories (testGPUPoly PRIVATE ${PROJECT_BINARY_DIR})
+target_include_directories(testGPUPoly PRIVATE .)
+target_link_libraries(testGPUPoly gpupoly)
+
+#add_executable (benchmark "benchmark.cu")
+#set_target_properties(benchmark PROPERTIES CUDA_ARCHITECTURES 61)
+#target_include_directories (benchmark PRIVATE ${PROJECT_BINARY_DIR})
+#target_include_directories(benchmark PRIVATE .)
+#target_link_libraries(benchmark gpupoly)

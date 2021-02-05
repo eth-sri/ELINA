@@ -226,7 +226,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 			if(!nbvertex){
 	 			nbvertex = num_vertex_a[k];
       			}
-      			else{
+      			else if(num_vertex_a[k]>0){
 	 			nbvertex = nbvertex*num_vertex_a[k];
       			}
       			nbline += oak->F->nbrows - num_vertex_a[k];
@@ -238,7 +238,7 @@ opt_pk_array_t* opt_poly_asssub_linexpr_det(bool assign, elina_manager_t* man,
 			if(!nbvertex){
 	 			nbvertex = num_vertex_a[k];
       			}
-      			else{
+      			else if(num_vertex_a[k]>0){
 	 			nbvertex = nbvertex*num_vertex_a[k];
       			}
       			nbline += oak->F->nbrows - num_vertex_a[k];

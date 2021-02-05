@@ -43,33 +43,65 @@
 #include "gpupoly.h"
 #include "config.h"
 
+
+//! Static structure that contains the neural network that the API functions manipulate.
+struct SplashScreen
+{
+	bool networkLoaded;
+	SplashScreen():networkLoaded(false)
+	{
+		std::cout << "GPUPoly " << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_PATCH;
+#ifdef STRONG_FP_SOUNDNESS
+		std::cout << "S";
+#else
+		std::cout << "W";
+#endif
+#ifndef NDEBUG
+		std::cout << " Debug";
+#endif
+		std::cout << " (built " << __DATE__ << " " << __TIME__ << ") - Copyright (C) 2020 Department of Computer Science, ETH Zurich." << std::endl;
+		std::cout << "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it and to modify it under the terms of the GNU LGPLv3." << std::endl << std::endl;
+	}
+} ss;
+
 void clean(NeuralNetwork* nn)
 {
+	ss.networkLoaded=false;
 	delete nn;
 }
 
 NeuralNetwork* create(int inputSize)
 {
+	#ifndef MULTIPLE_NETWORKS
+	if (ss.networkLoaded)
+	{
+		std::cerr << "Error: A network is already loaded in GPU memory. Please clean the previous network before creating a new one." << std::endl;
+		std::cerr << "Note:  If you actually intend to have several networks on the GPU at once, please compile GPUPoly with the cmake flag MULTIPLE_NETWORKS." << std::endl;
+		std::cerr << "       Otherwise, it probably means that you have forgotten a call to clean." << std::endl;
+		return nullptr;
+	}
+	ss.networkLoaded=true;
+	#endif
 	return new NeuralNetwork(inputSize);
 }
 
 
-int test_d(NeuralNetwork* nn, const double* dataDown, const double* dataUp, int expectedLabel, bool soundness)
+bool test_d(NeuralNetwork* nn, const double* dataDown, const double* dataUp, int expectedLabel, bool soundness)
 {
 	size_t size = (*nn)[0]->outputSize;
 	std::vector<Intv<double>> candidate(size);
 	for (size_t i = 0; i < size; i++)
 		candidate[i] = Intv<double>(dataDown[i], dataUp[i]);
-	return nn->operator()(candidate, expectedLabel, soundness);
+	return nn->run(Vector<double>(candidate), expectedLabel, soundness);
 }
 
-int test_s(NeuralNetwork* nn, const float* dataDown, const float* dataUp, int expectedLabel, bool soundness)
+bool test_s(NeuralNetwork* nn, const float* dataDown, const float* dataUp, int expectedLabel, bool soundness)
 {
 	size_t size = (*nn)[0]->outputSize;
 	std::vector<Intv<float>> candidate(size);
 	for (size_t i = 0; i < size; i++)
 		candidate[i] = Intv<float>(dataDown[i], dataUp[i]);
-	return nn->operator()(candidate, expectedLabel, soundness);
+	return nn->run(Vector<float>(candidate), expectedLabel, soundness);
 }
 
 
@@ -207,25 +239,21 @@ int addLinear_s(
 int addConv2D_d(
 	NeuralNetwork* nn,
 	int parent,
-	bool channels_first, // if true, the layer expects input where the channel dimention comes first, and outputs the result with the filter channel first. If false, channels and filters come last.
 	int filters, // number of filters
 	int* kernel_shape, // dimentions of the kernel (expects an array of 2 ints, respectively the number of rows and columns
-	int* input_shape, // dimentions of the input (expects an array of 4 ints, respectively the number of batches, rows, columns and channels).
+	int* input_shape, // dimentions of the input (expects an array of 3 ints, respectively the number of rows, columns and channels).
 	int* stride_shape, // stride shape (expects an array of 2 ints, respectively the number of rows and columns
 	int* padding, // padding (expects an array of 2 ints, respectively the number of pixels to add at the top and bottom, and the number of pixels to add on the left and right)
 	const double* data // convolution coefficients (given in row major, then column, then channel and filter minor order). Contains filters*kernel_size_rows*kernel_size_cols*input_shape_channels elements.
 )
 {
-	if (input_shape[0] != 1)
-		throw (-1); // for now, batch is not supported.
 	NeuralNetwork::Layer* conv = new Conv2D<double>(*nn,
-		channels_first,
 		filters,
 		kernel_shape[0], kernel_shape[1],
-		input_shape[1], input_shape[2], input_shape[3],
+		input_shape[0], input_shape[1], input_shape[2],
 		stride_shape[0], stride_shape[1],
 		padding[0], padding[1],
-		Matrix<double>(kernel_shape[0] * kernel_shape[1], input_shape[3] * filters, data),
+		Matrix<double>(kernel_shape[0] * kernel_shape[1], input_shape[2] * filters, data),
 		parent);
 	return nn->addLayer(conv);
 	/*size_t m = binding[prev].outputSize;
@@ -245,25 +273,21 @@ int addConv2D_d(
 int addConv2D_s(
 	NeuralNetwork* nn,
 	int parent,
-	bool channels_first, // if true, the layer expects input where the channel dimention comes first, and outputs the result with the filter channel first. If false, channels and filters come last.
 	int filters, // number of filters
 	int* kernel_shape, // dimentions of the kernel (expects an array of 2 ints, respectively the number of rows and columns
-	int* input_shape, // dimentions of the input (expects an array of 4 ints, respectively the number of batches, rows, columns and channels).
+	int* input_shape, // dimentions of the input (expects an array of 3 ints, respectively the number of rows, columns and channels).
 	int* stride_shape, // stride shape (expects an array of 2 ints, respectively the number of rows and columns
 	int* padding, // padding (expects an array of 2 ints, respectively the number of pixels to add at the top and bottom, and the number of pixels to add on the left and right)
 	const float* data // convolution coefficients (given in row major, then column, then channel and filter minor order). Contains filters*kernel_size_rows*kernel_size_cols*input_shape_channels elements.
 )
 {
-	if (input_shape[0] != 1)
-		throw (-1); // for now, batch is not supported.
 	NeuralNetwork::Layer* conv = new Conv2D<float>(*nn,
-		channels_first,
 		filters,
 		kernel_shape[0], kernel_shape[1],
-		input_shape[1], input_shape[2], input_shape[3],
+		input_shape[0], input_shape[1], input_shape[2],
 		stride_shape[0], stride_shape[1],
 		padding[0], padding[1],
-		Matrix<float>(kernel_shape[0] * kernel_shape[1], input_shape[3] * filters, data),
+		Matrix<float>(kernel_shape[0] * kernel_shape[1], input_shape[2] * filters, data),
 		parent);
 	return nn->addLayer(conv);
 	/*size_t m = binding[prev].outputSize;
@@ -283,20 +307,16 @@ int addConv2D_s(
 int addMaxPool2D(
 	NeuralNetwork* nn,
 	int parent,
-	bool channels_first, // if true, the layer expects input where the channel dimention comes first, and outputs the result with the filter channel first. If false, channels and filters come last.
 	int* pool_shape, // pool shape (expects an array of 2 ints, respectively the number of rows and columns
-	int* input_shape, // dimentions of the input(expects an array of 4 ints, respectively the number of batches, rows, columnsand channels).
+	int* input_shape, // dimentions of the input(expects an array of 3 ints, respectively the number of rows, columns and channels).
 	int* stride_shape, // stride shape (expects an array of 2 ints, respectively the number of rows and columns
 	int* padding // padding (expects an array of 2 ints, respectively the number of pixels to add at the top and bottom, and the number of pixels to add on the left and right)
 )
 {
-	if (input_shape[0] != 1)
-		throw (-1); // for now, batch is not supported.
 	NeuralNetwork::Layer* conv = new MaxPool2D(
 		*nn,
-		channels_first,
 		pool_shape[0], pool_shape[1],
-		input_shape[1], input_shape[2], input_shape[3],
+		input_shape[0], input_shape[1], input_shape[2],
 		stride_shape[0], stride_shape[1],
 		padding[0], padding[1],
 		parent);
@@ -320,24 +340,4 @@ int addConcat(
 {
 	return nn->addLayer(new Concat(*nn, (*nn)[parent1]->outputSize, parent1, (*nn)[parent2]->outputSize, parent2));
 }
-
-//! Static structure that contains the neural network that the API functions manipulate.
-struct SplashScreen
-{
-	SplashScreen()
-	{
-		std::cout << "GPUPoly " << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_PATCH;
-#ifdef STRONG_FP_SOUNDNESS
-		std::cout << "S";
-#else
-		std::cout << "W";
-#endif
-#ifndef NDEBUG
-		std::cout << " Debug";
-#endif
-		std::cout << " (built " << __DATE__ << " " << __TIME__ << ") - Copyright (C) 2020 Department of Computer Science, ETH Zurich." << std::endl;
-		std::cout << "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it and to modify it under the terms of the GNU LGPLv3." << std::endl << std::endl;
-	}
-} ss;
-
 
