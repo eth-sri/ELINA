@@ -48,14 +48,20 @@ endif
 	(cd elina_oct; make all)
 	(cd elina_poly; make all)
 	(cd elina_zones; make all)
+
+ifeq ($(IS_APRON),)
 	(cd elina_zonotope; make all) 
 	(cd zonoml; make all)
+endif
+
 ifneq ($(USE_DEEPPOLY),)
 	(cd fppoly; make all)
 endif
+
 ifneq ($(IS_CUDA),)
 	(cd gpupoly; make all)
 endif
+
 ifneq ($(USE_FCONV),)
 	(cd fconv; make all)
 endif
@@ -69,8 +75,10 @@ endif
 	(cd elina_oct; make install)
 	(cd elina_poly; make install)
 	(cd elina_zones; make install)
+ifeq ($(IS_APRON),)
 	(cd elina_zonotope; make install)
 	(cd zonoml; make install)
+endif
 ifneq ($(USE_DEEPPOLY),)
 	(cd fppoly; make install)
 endif
