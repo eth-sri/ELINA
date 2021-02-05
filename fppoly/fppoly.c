@@ -220,6 +220,21 @@ void fppoly_add_new_layer(fppoly_t *fp, size_t size, size_t *predecessors, size_
 	return;
 }
 
+void neuron_fprint(FILE * stream, neuron_t *neuron, char ** name_of_dim){
+	//expr_fprint(stream,neuron->expr);
+	fprintf(stream,"[%g, %g]\n",-neuron->lb,neuron->ub);
+}
+
+void layer_fprint(FILE * stream, layer_t * layer, char** name_of_dim){
+	size_t dims = layer->dims;
+	size_t i;
+	for(i = 0; i < dims; i++){
+		fprintf(stream,"neuron: %zu ", i);
+		neuron_fprint(stream, layer->neurons[i], name_of_dim);
+	}
+}
+
+
 
 void handle_fully_connected_layer_with_backsubstitute(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * cst, size_t num_out_neurons, size_t num_in_neurons, size_t * predecessors, size_t num_predecessors, bool alloc, fnn_op OP){
     //printf("FC start here %zu %zu %zu %zu\n",num_in_neurons,num_out_neurons,predecessors[0],num_predecessors);
@@ -256,7 +271,9 @@ void handle_fully_connected_layer_with_backsubstitute(elina_manager_t* man, elin
     update_state_using_previous_layers_parallel(man,fp,numlayers);
     
     //printf("return here2\n");
-    //fppoly_fprint(stdout,man,fp,NULL);
+    //if(numlayers==18)
+    //layer_fprint(stdout,fp->layers[numlayers],NULL);
+    //expr_print(out_neurons[0]->lexpr);
     //fflush(stdout);
     return;
 }
@@ -286,19 +303,8 @@ void handle_fully_connected_layer(elina_manager_t* man, elina_abstract0_t * abs,
 
 
 
-void neuron_fprint(FILE * stream, neuron_t *neuron, char ** name_of_dim){
-	//expr_fprint(stream,neuron->expr);
-	fprintf(stream,"[%g, %g]\n",-neuron->lb,neuron->ub);
-}
 
-void layer_fprint(FILE * stream, layer_t * layer, char** name_of_dim){
-	size_t dims = layer->dims;
-	size_t i;
-	for(i = 0; i < dims; i++){
-		fprintf(stream,"neuron: %zu ", i);
-		neuron_fprint(stream, layer->neurons[i], name_of_dim);
-	}
-}
+
 
 
 void coeff_to_interval(elina_coeff_t *coeff, double *inf, double *sup){

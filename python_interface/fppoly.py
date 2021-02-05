@@ -208,7 +208,7 @@ def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array,
 
 def handle_fully_connected_layer(man, element,weights, bias,  size, num_pixels, predecessors, num_predecessors):
     """
-    handle the first FFN ReLU layer
+    handle the FFN layer
     
     Parameters
     ----------
@@ -245,11 +245,49 @@ def handle_fully_connected_layer(man, element,weights, bias,  size, num_pixels, 
         print(inst)	
 
     return
+    
+def handle_batch_normalization_layer(man, element,weights, bias,  size, predecessors, num_predecessors):
+    """
+    handle the batch normalization layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    weights : POINTER(POINTER(c_double))
+        The weight matrix.
+    bias : POINTER(c_double)
+        The bias vector
+    size: c_size_t
+	Number of neurons in the layer
+    predecessors: POINTER(c_size_t)
+        the layers before the current layer
+    num_predecessors: c_size_t
+        the number of predecessors of the current layer
+    Returns
+    -------
+    res : ElinaAbstract0Ptr
+        Pointer to the new abstract object.
+
+    """
+
+    try:
+        handle_batch_normalization_layer_c = fppoly_api.handle_batch_normalization_layer
+        handle_batch_normalization_layer_c.restype = None
+        handle_batch_normalization_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double),  c_size_t, POINTER(c_size_t), c_size_t]
+        handle_batch_normalization_layer_c(man,element,weights, bias,  size, predecessors, num_predecessors)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_batch_normalization_layer" from "libfppoly.so"')
+        print(inst)	
+
+    return
 
 
 def handle_fully_connected_layer_no_alloc(man, element,weights, bias,  size, num_pixels, predecessors, num_predecessors):
     """
-        handle the first FFN ReLU layer
+        handle the FFN layer
         
         Parameters
         ----------
@@ -289,7 +327,7 @@ def handle_fully_connected_layer_no_alloc(man, element,weights, bias,  size, num
 
 def handle_concatenation_layer(man, element, predecessors, num_predecessors, C):
     """
-        handle the first FFN ReLU layer
+        handle the concatenation layer
 
         Parameters
         ----------
@@ -322,7 +360,7 @@ def handle_concatenation_layer(man, element, predecessors, num_predecessors, C):
 
 def handle_tiling_layer(man, element, predecessors, num_predecessors, repeat):
     """
-        handle the first FFN ReLU layer
+        handle the tiling layer
 
         Parameters
         ----------
@@ -455,7 +493,79 @@ def handle_relu_layer(man, element, num_neurons, predecessors, num_predecessors,
     except Exception as inst:
         print('Problem with loading/calling "handle_relu_layer" from "libfppoly.so"')
         print(inst)
-        
+
+
+def handle_round_layer(man, element, num_neurons, predecessors, num_predecessors, use_default_heuristics):
+    """
+    handle round layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the abstract element
+    num_neurons: c_size_t
+        number of neurons
+    predecessors: POINTER(c_size_t)
+        the layers before the current layer
+    num_predecessors: c_size_t
+        the number of predecessors of the current layer
+    use_default_heuristics: c_bool
+        whether to use area heuristic
+    Returns
+    -------
+    None
+
+    """
+
+    try:
+        handle_round_layer_c = fppoly_api.handle_round_layer
+        handle_round_layer_c.restype = None
+        handle_round_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t, c_bool]
+        handle_round_layer_c(man, element, num_neurons, predecessors, num_predecessors, use_default_heuristics)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_round_layer" from "libfppoly.so"')
+        print(inst)
+
+
+
+def handle_clip_layer(man, element, min_input, max_input, num_neurons, predecessors, num_predecessors, use_default_heuristics):
+    """
+    handle Clip layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the abstract element
+    min_input = c_double
+       the minimum value allowed
+    max_input = c_double
+       the maximum value allowed
+    num_neurons: c_size_t
+        number of neurons
+    predecessors: POINTER(c_size_t)
+        the layers before the current layer
+    num_predecessors: c_size_t
+        the number of predecessors of the current layer
+    use_default_heuristics: c_bool
+        whether to use area heuristic
+    Returns
+    -------
+    None
+
+    """
+
+    try:
+        handle_clip_layer_c = fppoly_api.handle_clip_layer
+        handle_clip_layer_c.restype = None
+        handle_clip_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_double, c_double, c_size_t, POINTER(c_size_t), c_size_t, c_bool]
+        handle_clip_layer_c(man, element, min_input, max_input, num_neurons, predecessors, num_predecessors, use_default_heuristics)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_clip_layer" from "libfppoly.so"')
+        print(inst)
 
 def handle_sign_layer(man, element, num_neurons, predecessors, num_predecessors):
     """

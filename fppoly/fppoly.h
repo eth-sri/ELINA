@@ -155,6 +155,8 @@ fppoly_internal_t* fppoly_init_from_manager(elina_manager_t* man, elina_funid_t 
 
 void handle_fully_connected_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons, size_t *predecessors, size_t num_predecessors);
 
+void handle_batch_normalization_layer(elina_manager_t* man, elina_abstract0_t* element, double *weights, double * bias, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
+
 void handle_fully_connected_layer_no_alloc(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons, size_t *predecessors, size_t num_predecessors);
 
 void handle_sub_layer(elina_manager_t* man, elina_abstract0_t* element,  double * cst, bool is_minuend, size_t num_in_neurons, size_t *predecessors, size_t num_predecessors);
@@ -162,6 +164,10 @@ void handle_sub_layer(elina_manager_t* man, elina_abstract0_t* element,  double 
 void handle_mul_layer(elina_manager_t* man, elina_abstract0_t* element,  double * bias,  size_t num_in_neurons, size_t *predecessors, size_t num_predecessors);
 
 void handle_relu_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristic);
+
+void handle_round_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristic);
+
+void handle_clip_layer(elina_manager_t *man, elina_abstract0_t* element, double min_input, double max_input, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristic);
 
 void handle_sign_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
