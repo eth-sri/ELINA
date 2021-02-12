@@ -221,7 +221,8 @@ void fppoly_add_new_layer(fppoly_t *fp, size_t size, size_t *predecessors, size_
 }
 
 void neuron_fprint(FILE * stream, neuron_t *neuron, char ** name_of_dim){
-	//expr_fprint(stream,neuron->expr);
+	expr_fprint(stream,neuron->lexpr);
+	expr_fprint(stream, neuron->uexpr);
 	fprintf(stream,"[%g, %g]\n",-neuron->lb,neuron->ub);
 }
 
