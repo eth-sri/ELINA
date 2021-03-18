@@ -21,7 +21,11 @@
 
 from ctypes import *
 from enum import IntEnum
+import ctypes
+import os
 
-fppoly_api = CDLL("libfppoly.so")
+fppoly_api = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../fppoly/libfppoly.so"))
+
+# fppoly_api = CDLL("libfppoly.so")
 
 
