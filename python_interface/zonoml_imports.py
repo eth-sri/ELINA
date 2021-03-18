@@ -19,9 +19,12 @@
 #
 
 
-from ctypes import *
+#from ctypes import *
 from enum import IntEnum
+import ctypes
+import os
 
-zonoml_api = CDLL("libzonoml.so")
+# zonoml_api = CDLL("libzonoml.so")
 
 
+zonoml_api = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../zonoml/libzonoml.so"))

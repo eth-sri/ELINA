@@ -19,9 +19,11 @@
 #
 
 
-from ctypes import *
+import ctypes
+import os
 from enum import IntEnum
 
-opt_oct_api = CDLL("liboptoct.so")
+# opt_oct_api = ctypes.CDLL("liboptoct.so")
+opt_oct_api = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../elina_oct/liboptoct.so"))
 
 
