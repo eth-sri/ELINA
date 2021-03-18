@@ -32,6 +32,7 @@ enum Version {
 MatDouble compute_relaxation(MatDouble input_hrep,
                              Activation activation,
                              Version version) {
+    // Activation and Version are enum
     dd_set_global_constants();
     const int K = input_hrep.cols - 1;
     vector<double*> A = mat_external_to_internal_format(input_hrep);
