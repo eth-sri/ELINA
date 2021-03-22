@@ -328,18 +328,18 @@ elina_lincons0_array_t opt_pk_to_lincons_array(elina_manager_t* man,
   opt_pk_t ** poly_a = oa->poly;
   size_t nbcons = 0;
   for(k=0; k < num_compa; k++){
-	opt_pk_t * oak = poly_a[k];
-	opt_poly_chernikova(man,oak,"to lincons array");
-	if(opk->exn){
-		opk->exn = ELINA_EXC_NONE;
-    		man->result.flag_exact = man->result.flag_best = false;
-    		array = elina_lincons0_array_make(0);
-    		return array;
-  	}
-  	if (!oak->C){ /* po is empty */
-	    array = elina_lincons0_array_make(1);
-	    array.p[0] = elina_lincons0_make_unsat();
-	    return array;
+    opt_pk_t * oak = poly_a[k];
+    opt_poly_chernikova(man,oak,"to lincons array");
+    if(opk->exn){
+      opk->exn = ELINA_EXC_NONE;
+          man->result.flag_exact = man->result.flag_best = false;
+          array = elina_lincons0_array_make(0);
+          return array;
+      }
+      if (!oak->C){ /* po is empty */
+        array = elina_lincons0_array_make(1);
+        array.p[0] = elina_lincons0_make_unsat();
+        return array;
  	}
 	opt_matrix_t* oc = oak->C;
 	nbcons = nbcons + oc->nbrows;

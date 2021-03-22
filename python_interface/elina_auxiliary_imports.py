@@ -21,8 +21,11 @@
 
 from ctypes import *
 from enum import IntEnum
+import os
+import ctypes
 
-elina_auxiliary_api = CDLL("libelinaux.so")
+# elina_auxiliary_api = CDLL("libelinaux.so")
+elina_auxiliary_api = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../elina_auxiliary/libelinaux.so"))
 
 
 class CtypesEnum(IntEnum):

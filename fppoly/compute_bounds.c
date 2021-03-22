@@ -11,6 +11,7 @@
 expr_t * replace_input_poly_cons_in_lexpr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp){
 	size_t dims = expr->size;
 	size_t i,k;
+
 	double tmp1, tmp2;
 	expr_t * res;
 	if(expr->type==DENSE){

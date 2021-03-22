@@ -188,8 +188,10 @@ def ksigm_with_cdd(inp_hrep: np.ndarray) -> np.ndarray:
     return _compute_relaxation(inp_hrep, "sigm", "cdd")
 
 
-def generate_sparse_cover(n, k):
-    cover_c = generate_sparse_cover_c(n, k)
+def generate_sparse_cover(n, k, s=-2):
+    if s < 0:
+        s = k+s
+    cover_c = generate_sparse_cover_c(n, k, s)
     rows = cover_c.rows
 
     cover = []

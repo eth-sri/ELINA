@@ -19,9 +19,11 @@
 #
 
 
-from ctypes import *
+import ctypes
+import os
 from enum import IntEnum
 
-fppoly_gpu_api = CDLL("libfppoly_gpu.so")
+# fppoly_gpu_api = ctypes.CDLL("libfppoly_gpu.so")
+fppoly_gpu_api = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../gpupoly/libfppoly_gpu.so"))
 
 
