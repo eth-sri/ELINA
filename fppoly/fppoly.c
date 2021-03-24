@@ -584,7 +584,8 @@ long int max(long int a, long int b){
 }
 
 void handle_convolutional_layer(elina_manager_t* man, elina_abstract0_t* element, double *filter_weights, double * filter_bias,  
-				         size_t * input_size, size_t *filter_size, size_t num_filters, size_t *strides, size_t *output_size, size_t pad_top, size_t pad_left, bool has_bias, size_t *predecessors, size_t num_predecessors){
+				         size_t * input_size, size_t *filter_size, size_t num_filters, size_t *strides, size_t *output_size,
+				         size_t pad_top, size_t pad_left, size_t pad_bottom, size_t pad_right, bool has_bias, size_t *predecessors, size_t num_predecessors){
 	//printf("conv intermediate starts here\n");
 	//fflush(stdout);
 	assert(num_predecessors==1);
