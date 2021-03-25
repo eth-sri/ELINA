@@ -915,6 +915,7 @@ opt_pk_array_t * opt_poly_join_gen(elina_manager_t *man, opt_pk_array_t *oa, opt
 		
 		return op;
 	}
+	
 	unsigned short int * map_a = create_array_map(acla,maxcols);
         unsigned short int * map_b = create_array_map(aclb,maxcols);
 	elina_dim_t * tdim_a = (elina_dim_t *)calloc(maxcols,sizeof(elina_dim_t));

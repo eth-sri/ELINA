@@ -6,7 +6,7 @@
 
 using namespace std;
 
-bool intersects_too_much(const int K, const vector<int>& first, const vector<int>& second) {
+bool intersects_too_much(const int K, const int s, const vector<int>& first, const vector<int>& second) {
     int intersection_size = 0;
 
     int i = 0;
@@ -24,11 +24,13 @@ bool intersects_too_much(const int K, const vector<int>& first, const vector<int
         }
     }
 
-    return intersection_size >= K - 1;
+    return intersection_size > s;
 }
 
-vector<vector<int>> sparse_cover(const int N, const int K) {
+vector<vector<int>> sparse_cover(const int N, const int K, const int s) {
     ASRTF(3 <= K && K <= 5, "K is not within allowed range.");
+    ASRTF(1 <= s && s < K, "Maximum overlap s has to be between 1 and K-1");
+
     if (N < K) {
         return {};
     }
@@ -72,7 +74,7 @@ vector<vector<int>> sparse_cover(const int N, const int K) {
                     break;
                 }
 
-                if (intersects_too_much(K, new_comb, selected_comb)) {
+                if (intersects_too_much(K, s, new_comb, selected_comb)) {
                     to_add = false;
                     break;
                 }
@@ -101,7 +103,7 @@ vector<vector<int>> sparse_cover(const int N, const int K) {
                     break;
                 }
 
-                if (intersects_too_much(K, new_comb, selected_comb)) {
+                if (intersects_too_much(K, s, new_comb, selected_comb)) {
                     to_add = false;
                     break;
                 }
@@ -119,7 +121,7 @@ vector<vector<int>> sparse_cover(const int N, const int K) {
         for (const auto &selected_comb : all_selected_combs) {
             // Both new_comb and selected_comb are sorted.
             // Now I compute their intersection size.
-            if (intersects_too_much(K, new_comb, selected_comb)) {
+            if (intersects_too_much(K, s, new_comb, selected_comb)) {
                 to_add = false;
                 break;
             }

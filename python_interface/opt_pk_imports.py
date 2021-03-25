@@ -19,9 +19,10 @@
 #
 
 
-from ctypes import *
+import ctypes
+import os
 from enum import IntEnum
 
-opt_pk_api = CDLL("liboptpoly.so")
+# opt_pk_api = ctypes.CDLL("liboptpoly.so")
 
-
+opt_pk_api = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../elina_poly/liboptpoly.so"))

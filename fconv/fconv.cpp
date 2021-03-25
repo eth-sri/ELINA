@@ -32,6 +32,7 @@ enum Version {
 MatDouble compute_relaxation(MatDouble input_hrep,
                              Activation activation,
                              Version version) {
+    // Activation and Version are enum
     dd_set_global_constants();
     const int K = input_hrep.cols - 1;
     vector<double*> A = mat_external_to_internal_format(input_hrep);
@@ -110,8 +111,8 @@ MatDouble fsigm_orthant(MatDouble input_hrep) {
     return compute_relaxation(input_hrep, Sigm, Orthant);
 }
 
-MatInt generate_sparse_cover(const int N, const int K) {
-    vector<vector<int>> cover = sparse_cover(N, K);
+MatInt generate_sparse_cover(const int N, const int K, const int s) {
+    vector<vector<int>> cover = sparse_cover(N, K, s);
     // I'm not sure how to combine std::vector and ctypes thus converting to plain array format.
     auto mat = (int *) calloc(cover.size() * K, sizeof(int));
 

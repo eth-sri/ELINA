@@ -46,7 +46,7 @@ MatDouble ftanh_orthant(MatDouble input_hrep);
 
 MatDouble fsigm_orthant(MatDouble input_hrep);
 
-MatInt generate_sparse_cover(int N, int K);
+MatInt generate_sparse_cover(const int N, const int K, const int s);
 
 void S_curve_chord_bound(double* k, double* b, double x_lb, double x_ub, bool is_sigm);
 
