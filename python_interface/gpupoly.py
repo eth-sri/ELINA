@@ -396,7 +396,7 @@ class Network:
     #  \param padding An integer or a list of two integers, indicating the padding (respectively the number of pixels to add at the top and bottom, and the number of pixels to add on the left and right).
     #  \param parent Index of the parent layer (or 0 for the input layer). It can be None, in which case the parent is the last added layer.
     #  \returns the index of the newly created layer.
-    def add_conv_2d(self, input_rows, input_cols, conv, strides=1, padding=0,parent=None):
+    def add_conv_2d(self, input_rows, input_cols, conv, strides=1, padding=0, parent=None):
         if parent is None:
             parent = self._last_layer_id
         assert conv.ndim == 4

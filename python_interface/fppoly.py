@@ -809,6 +809,41 @@ def handle_convolutional_layer(man, element, filter_weights, filter_bias,  input
     return
 
 
+def handle_padding_layer(man, element, input_size, output_size, pad_top, pad_left, pad_bottom, pad_right, predecessors, num_predecessors):
+    """
+    Padding layer
+
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0 abstract element.
+    input_size: POINTER(c_size_t)
+        size of the input
+    predecessors: POINTER(c_size_t)
+        the layers before the current layer
+    num_predecessors: c_size_t
+        the number of predecessors of the current layer
+    Returns
+    -------
+    None
+
+    """
+    try:
+        handle_padding_layer_c = fppoly_api.handle_padding_layer
+        handle_padding_layer_c.restype = None
+        handle_padding_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_size_t),
+                                           POINTER(c_size_t), c_size_t, c_size_t, c_size_t, c_size_t,
+                                           POINTER(c_size_t), c_size_t]
+        handle_padding_layer_c(man, element, input_size, output_size, pad_top, pad_left, pad_bottom, pad_right,
+                                     predecessors, num_predecessors)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_padding_layer" from "libfppoly.so"')
+        print(inst)
+    return
+
+
 def handle_pool_layer(man, element, pool_size, input_size, strides, pad_top, pad_left, output_size, predecessors, num_predecessors, is_maxpool):
     """
     handle the pooling layer
