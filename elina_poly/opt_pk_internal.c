@@ -190,6 +190,10 @@ void opt_pk_set_approximate_max_coeff_size(opt_pk_internal_t* opk, size_t size){
 
 elina_manager_t* opt_pk_manager_alloc(bool strict)
 {
+  if(strict==true){
+        fprintf(stdout,"ELINA Polyhedra does not work with strict mode yet!");
+  	 exit(1);
+  }
   size_t i;
   opt_pk_internal_t* opk;
   elina_manager_t* man;
