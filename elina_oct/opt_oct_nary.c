@@ -180,7 +180,7 @@ opt_oct_t* opt_oct_meet_array(elina_manager_t* man, opt_oct_t** tab, size_t size
   for (k=0;k<size;k++)
     if (!tab[k]->m && !tab[k]->closed) return r;
     /* all elements are non-empty */
-    r->m = opt_hmat_copy(tab[0]->closed ? tab[0]->closed : tab[0]->m,r->dim);
+  r->m = opt_hmat_copy(tab[0]->closed ? tab[0]->closed : tab[0]->m,r->dim);
   for (k=1;k<size;k++) {
     if((tab[k]->dim != r->dim) || (tab[k]->intdim != r->intdim)){
 	       opt_oct_free_internal(pr,r);

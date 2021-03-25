@@ -447,6 +447,7 @@ bool opt_oct_is_eq(elina_manager_t* man, opt_oct_t* o1, opt_oct_t* o2);
 elina_tcons0_array_t opt_oct_to_tcons_array(elina_manager_t* man, opt_oct_t* o);
 elina_interval_t** opt_oct_to_box(elina_manager_t* man, opt_oct_t* o);
 elina_interval_t* opt_oct_bound_texpr(elina_manager_t* man,opt_oct_t* o, elina_texpr0_t* expr);
+elina_interval_t* opt_oct_bound_linexpr(elina_manager_t* man,opt_oct_t* o, elina_linexpr0_t* expr);
 elina_interval_t* opt_oct_bound_dimension(elina_manager_t* man,opt_oct_t* o, elina_dim_t dim);
 elina_lincons0_array_t opt_oct_to_lincons_array(elina_manager_t* man, opt_oct_t* o);
 bool opt_oct_sat_interval(elina_manager_t* man, opt_oct_t* o, elina_dim_t dim, elina_interval_t* i);

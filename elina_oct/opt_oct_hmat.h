@@ -110,6 +110,7 @@ opt_uexpr opt_oct_uexpr_of_linexpr(opt_oct_internal_t* pr, double* dst, elina_li
 bool opt_hmat_add_lincons(opt_oct_internal_t* pr, opt_oct_mat_t* oo, int intdim, int dim, elina_lincons0_array_t* ar, bool* exact, bool* respect_closure);
 void opt_oct_fprint(FILE* stream, elina_manager_t* man, opt_oct_t * a,char** name_of_dim);
 opt_oct_mat_t* opt_hmat_alloc(int size);
+void opt_bounds_mul(double a_inf, double a_sup, double b_inf, double b_sup,double *tmpa, double *tmpb);
 void opt_hmat_assign(opt_oct_internal_t* pr, opt_uexpr u, opt_oct_mat_t* oo, size_t dim, size_t d, bool* respect_closure);
 
 void convert_to_dense_mat(opt_oct_mat_t * oo, int dim,bool flag);

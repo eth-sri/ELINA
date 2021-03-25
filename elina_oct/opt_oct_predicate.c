@@ -265,6 +265,98 @@ elina_interval_t* opt_oct_bound_dimension(elina_manager_t* man,
   return r;
 }
 
+elina_interval_t* opt_oct_bound_linexpr(elina_manager_t* man,opt_oct_t* o, elina_linexpr0_t* expr){
+	opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_BOUND_DIMENSION,2*(o->dim+5));
+  	elina_interval_t* r = elina_interval_alloc();
+  	if (pr->funopt->algorithm>=0) opt_oct_cache_closure(pr,o);
+  	if (!o->closed && !o->m) {
+    		/* empty octagon*/
+    		elina_interval_set_bottom(r);
+  	}
+  	else {
+    		opt_oct_mat_t* oo = o->closed ? o->closed : o->m;
+    		double * m = oo->mat;
+    		size_t ui, uj;
+    		int i;
+    		opt_uexpr u = opt_oct_uexpr_of_linexpr(pr,pr->tmp,expr,o->intdim,o->dim);
+    		switch (u.type) {
+
+    			case OPT_EMPTY:
+      				elina_interval_set_bottom(r);
+      				break;
+
+    			case OPT_ZERO:
+      				opt_interval_of_bounds(pr,r,pr->tmp[0],pr->tmp[1],false);
+      				
+      				if (num_incomplete || o->intdim) flag_incomplete;
+      				else if (!o->closed) flag_algo;
+      				else if (pr->conv) flag_conv;
+      				break;
+
+    			case OPT_UNARY:
+      				if(!oo->is_dense && find(oo->acl,u.i)==NULL){
+      					elina_interval_set_top(r);
+      				}
+      				else{
+	      				if (u.coef_i==1) ui = 2*u.i; else ui = 2*u.i+1;
+	      				opt_bounds_of_coeff(pr,&pr->tmp[0],&pr->tmp[1],expr->cst,true);
+	      				pr->tmp[0] = pr->tmp[0] + m[opt_matpos(ui,ui^1)];
+	      				pr->tmp[1] = pr->tmp[1] + m[opt_matpos(ui^1,ui)];
+	      				
+	      				opt_interval_of_bounds(pr,r,pr->tmp[0],pr->tmp[1],true);
+	      				/* exact on Q if closed and no conversion error */
+	      				if (num_incomplete || o->intdim) flag_incomplete;
+	      				else if (!o->closed) flag_algo;
+	      				else if (pr->conv) flag_conv;
+      				}
+      				break;
+
+    			case OPT_BINARY:
+    				if(!oo->is_dense && ((find(oo->acl,u.i)==NULL) || (find(oo->acl,u.j)==NULL))){
+    					elina_interval_set_top(r);
+    				}
+    				else{
+      					if (u.coef_i==1) ui = 2*u.i; else ui = 2*u.i+1;
+      					if (u.coef_j==1) uj = 2*u.j; else uj = 2*u.j+1;
+      					pr->tmp[0] = pr->tmp[0] + m[opt_matpos2(uj,ui^1)];
+      					pr->tmp[1] = pr->tmp[1] + m[opt_matpos2(uj^1,ui)];
+      					opt_interval_of_bounds(pr,r,pr->tmp[0],pr->tmp[1],false);
+      					if (num_incomplete || o->intdim) flag_incomplete;
+      					else if (!o->closed) flag_algo;
+      					else if (pr->conv) flag_conv;
+      				}
+      				break;
+
+    			case OPT_OTHER:
+     				if(!oo->is_dense){
+     					for(i=0; i < o->dim; i++){
+     						if(find(oo->acl,i)==NULL && (pr->tmp[2*i+2]!=0 || pr->tmp[2*i+3]!=0)){
+     							elina_interval_set_top(r);
+     						}
+     					}
+     				}
+     				else{
+	      				for (i=0;i<o->dim;i++) {
+	      				
+	      					pr->tmp[2*i+2] = pr->tmp[2*i+2]/2;
+	      					pr->tmp[2*i+3] = pr->tmp[2*i+3]/2;
+						opt_bounds_mul(pr->tmp[2*i+2],pr->tmp[2*i+3], m[opt_matpos(2*i,2*i+1)],m[opt_matpos(2*i+1,2*i)], &pr->tmp[2*i+2], &pr->tmp[2*i+3]);
+						pr->tmp[0] = pr->tmp[0] + pr->tmp[2*i+2];
+						pr->tmp[1] = pr->tmp[1] + pr->tmp[2*i+3];
+	      				}
+	      				opt_interval_of_bounds(pr,r,pr->tmp[0],pr->tmp[1],false);
+	      				flag_incomplete;
+      				}
+      				
+      				
+      				break;
+
+    			default: assert(0);
+    		}
+  	}
+  return r;
+}
+
 elina_lincons0_array_t opt_oct_to_lincons_array(elina_manager_t* man, opt_oct_t* o)
 {
   elina_lincons0_array_t ar;
