@@ -1,7 +1,7 @@
 /*
  *  GPUPoly library
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2020 Department of Computer Science, ETH Zurich
+ *  ELINA is Copyright ï¿½ 2020 Department of Computer Science, ETH Zurich
  *  This software is distributed under GNU Lesser General Public License Version 3.0.
  *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
@@ -42,11 +42,12 @@ Conv2D<T>::Conv2D(
 	const int kernel_size_rows, const int kernel_size_cols,
 	const int input_rows, const int input_cols, const int input_channels,
 	const int stride_rows, const int stride_cols,
-	const int padding_rows, const int padding_cols,
-	const Matrix<T>& A,
+    const int padding_top, const int padding_left,
+    const int padding_bottom, const int padding_right,
+    const Matrix<T>& A,
 	int parent) :
-	NeuralNetwork::Layer(nn, ((input_rows + 2 * padding_rows - kernel_size_rows + stride_rows) / stride_rows)* ((input_cols + 2 * padding_cols - kernel_size_cols + stride_cols) / stride_cols)* filters),
-	cs(filters, kernel_size_rows, kernel_size_cols, input_rows, input_cols, input_channels, stride_rows, stride_cols, padding_rows, padding_cols),
+	NeuralNetwork::Layer(nn, ((input_rows + padding_top + padding_bottom - kernel_size_rows + stride_rows) / stride_rows)* ((input_cols + padding_left + padding_right - kernel_size_cols + stride_cols) / stride_cols)* filters),
+	cs(filters, kernel_size_rows, kernel_size_cols, input_rows, input_cols, input_channels, stride_rows, stride_cols, padding_top, padding_left, padding_bottom, padding_right),
 	inputSize(input_rows* input_cols* input_channels),
 	parent(parent),
 	conv(A), convt(A.transpose())
@@ -82,20 +83,20 @@ __global__ void backSubstituteReLU(
 	{
 		const int realOutputCol = channels_first ? realRow % newShape.output_cols : (realRow / newShape.filters) % newShape.output_cols;
 		const int realOutputRow = channels_first ? (realRow / newShape.output_cols) % newShape.output_rows : realRow / (newShape.output_cols * newShape.filters);
-		in_row_min = max(0, realOutputRow * newShape.stride_rows - newShape.padding_rows);
-		in_row_max = min(cs.input_rows, realOutputRow * newShape.stride_rows - newShape.padding_rows + newShape.kernel_size_rows);
-		in_col_min = max(0, realOutputCol * newShape.stride_cols - newShape.padding_cols);
-		in_col_max = min(cs.input_cols, realOutputCol * newShape.stride_cols - newShape.padding_cols + newShape.kernel_size_cols);
+		in_row_min = max(0, realOutputRow * newShape.stride_rows - newShape.padding_top);
+		in_row_max = min(cs.input_rows, realOutputRow * newShape.stride_rows - newShape.padding_top + newShape.kernel_size_rows);//TODO not sure if padd_left or padding_right
+		in_col_min = max(0, realOutputCol * newShape.stride_cols - newShape.padding_left);
+		in_col_max = min(cs.input_cols, realOutputCol * newShape.stride_cols - newShape.padding_left + newShape.kernel_size_cols); //TODO not sure if padd_left or padding_right
 	}
 	for (int in_row = threadIdx.y + in_row_min; in_row < in_row_max; in_row += blockDim.y)
 		for (int in_col = threadIdx.x + in_col_min; in_col < in_col_max; in_col += blockDim.x)
 		{
 			int col = in_row * cs.input_cols + in_col;
 
-			int out_row_min = max(0, (in_row + cs.padding_rows - cs.kernel_size_rows + cs.stride_rows) / cs.stride_rows);
-			int out_row_max = min(cs.output_rows, (in_row + cs.padding_rows) / cs.stride_rows + 1);
-			int out_col_min = max(0, (in_col + cs.padding_cols - cs.kernel_size_cols + cs.stride_cols) / cs.stride_cols);
-			int out_col_max = min(cs.output_cols, (in_col + cs.padding_cols) / cs.stride_cols + 1);
+			int out_row_min = max(0, (in_row + cs.padding_top - cs.kernel_size_rows + cs.stride_rows) / cs.stride_rows);
+			int out_row_max = min(cs.output_rows, (in_row + cs.padding_top) / cs.stride_rows + 1);//TODO not sure if padd_left or padding_right
+			int out_col_min = max(0, (in_col + cs.padding_left - cs.kernel_size_cols + cs.stride_cols) / cs.stride_cols);
+			int out_col_max = min(cs.output_cols, (in_col + cs.padding_left) / cs.stride_cols + 1);//TODO not sure if padd_left or padding_right
 
 			if (prevShape) {
 				if (prevShape.isDiagonal())
@@ -111,23 +112,23 @@ __global__ void backSubstituteReLU(
 				{
 					const int realOutputCol = channels_first ? realRow % prevShape.output_cols : (realRow / prevShape.filters) % prevShape.output_cols;
 					const int realOutputRow = channels_first ? (realRow / prevShape.output_cols) % prevShape.output_rows : realRow / (prevShape.output_cols * prevShape.filters);
-					out_row_min = max(out_row_min, realOutputRow * prevShape.stride_rows - prevShape.padding_rows);
-					out_row_max = min(out_row_max, realOutputRow * prevShape.stride_rows - prevShape.padding_rows + prevShape.kernel_size_rows);
-					out_col_min = max(out_col_min, realOutputCol * prevShape.stride_cols - prevShape.padding_cols);
-					out_col_max = min(out_col_max, realOutputCol * prevShape.stride_cols - prevShape.padding_cols + prevShape.kernel_size_cols);
+					out_row_min = max(out_row_min, realOutputRow * prevShape.stride_rows - prevShape.padding_top);
+					out_row_max = min(out_row_max, realOutputRow * prevShape.stride_rows - prevShape.padding_top + prevShape.kernel_size_rows);//TODO not sure if padd_left or padding_right
+					out_col_min = max(out_col_min, realOutputCol * prevShape.stride_cols - prevShape.padding_left);
+					out_col_max = min(out_col_max, realOutputCol * prevShape.stride_cols - prevShape.padding_left + prevShape.kernel_size_cols);//TODO not sure if padd_left or padding_right
 				}
 			}
 
 			Tout res(0);
 				for (int out_row = out_row_min; out_row < out_row_max; out_row++)
 				{
-					const int delta_row = in_row + cs.padding_rows - cs.stride_rows * out_row;
+					const int delta_row = in_row + cs.padding_top - cs.stride_rows * out_row;
 					for (int out_col = out_col_min; out_col < out_col_max; out_col++)
 					{
 						for (int out_f = 0; out_f < cs.filters; out_f++)
 						{
 
-						const int delta_col = in_col + cs.padding_cols - cs.stride_cols * out_col;
+						const int delta_col = in_col + cs.padding_left - cs.stride_cols * out_col;
 
 						const Tin a = expr[channels_first ?
 							row * expr_N + (out_f * cs.output_rows + out_row) * cs.output_cols + out_col :
@@ -166,11 +167,11 @@ __global__ void backSubstituteReLUInit(
 
 	for (int delta_row = threadIdx.z; delta_row < cs.kernel_size_rows; delta_row += blockDim.z)
 	{
-		int input_row = realOutputRow * cs.stride_rows + delta_row - cs.padding_rows;
+		int input_row = realOutputRow * cs.stride_rows + delta_row - cs.padding_top;
 		if (input_row >= 0 && input_row < cs.input_rows)
 			for (int delta_col = threadIdx.y; delta_col < cs.kernel_size_cols; delta_col += blockDim.y)
 			{
-				int input_col = realOutputCol * cs.stride_cols + delta_col - cs.padding_cols;
+				int input_col = realOutputCol * cs.stride_cols + delta_col - cs.padding_left;
 				if (input_col >= 0 && input_col < cs.input_cols)
 					for (int in_ch = threadIdx.x; in_ch < cs.input_channels; in_ch += blockDim.x)
 					{
@@ -292,11 +293,11 @@ __global__ void convRun(
 	Intv<Td> res = 0;
 	for (int delta_row = threadIdx.z; delta_row < cs.kernel_size_rows; delta_row += blockDim.z)
 	{
-		int input_row = blockIdx.y * cs.stride_rows + delta_row - cs.padding_rows;
+		int input_row = blockIdx.y * cs.stride_rows + delta_row - cs.padding_top;
 		if (input_row >= 0 && input_row < cs.input_rows)
 			for (int delta_col = threadIdx.y; delta_col < cs.kernel_size_cols; delta_col += blockDim.y)
 			{
-				int input_col = blockIdx.x * cs.stride_cols + delta_col - cs.padding_cols;
+				int input_col = blockIdx.x * cs.stride_cols + delta_col - cs.padding_left;
 				if (input_col >= 0 && input_col < cs.input_cols)
 					for (int ch = threadIdx.x; ch < cs.input_channels; ch += blockDim.x)
 					{
@@ -353,11 +354,12 @@ template<> Conv2D<double>::Conv2D(
 	const int kernel_size_rows, const int kernel_size_cols,
 	const int input_rows, const int input_cols, const int input_channels,
 	const int stride_rows, const int stride_cols,
-	const int padding_rows, const int padding_cols,
+	const int padding_top, const int padding_left,
+    const int padding_bottom, const int padding_right,
 	const Matrix<double>& A,
 	int parent) :
-	NeuralNetwork::Layer(nn, ((input_rows + 2 * padding_rows - kernel_size_rows + stride_rows) / stride_rows)* ((input_cols + 2 * padding_cols - kernel_size_cols + stride_cols) / stride_cols)* filters),
-	cs( filters, kernel_size_rows, kernel_size_cols, input_rows, input_cols, input_channels, stride_rows, stride_cols, padding_rows, padding_cols),
+	NeuralNetwork::Layer(nn, ((input_rows + padding_top + padding_bottom - kernel_size_rows + stride_rows) / stride_rows)* ((input_cols + padding_left + padding_right - kernel_size_cols + stride_cols) / stride_cols)* filters),
+	cs( filters, kernel_size_rows, kernel_size_cols, input_rows, input_cols, input_channels, stride_rows, stride_cols, padding_top, padding_left, padding_bottom, padding_right),
 	inputSize(input_rows* input_cols* input_channels),
 	parent(parent),
 

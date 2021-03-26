@@ -147,7 +147,7 @@ class Network:
         ctypes.c_int * 2,
         ctypes.c_int * 3,
         ctypes.c_int * 2,
-        ctypes.c_int * 2,
+        ctypes.c_int * 4,
         np.ctypeslib.ndpointer(dtype=np.float64, ndim=4, flags='C_CONTIGUOUS')
     ]
     _lib.addConv2D_s.argtypes = [
@@ -157,7 +157,7 @@ class Network:
         ctypes.c_int * 2,
         ctypes.c_int * 3,
         ctypes.c_int * 2,
-        ctypes.c_int * 2,
+        ctypes.c_int * 4,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=4, flags='C_CONTIGUOUS')
     ]
     _lib.addBias_d.argtypes = [
@@ -180,7 +180,7 @@ class Network:
         ctypes.c_int * 2,
         ctypes.c_int * 3,
         ctypes.c_int * 2,
-        ctypes.c_int * 2
+        ctypes.c_int * 4
     ]
     _lib.addParSum.argtypes = [
         ctypes.c_void_p,
@@ -406,7 +406,7 @@ class Network:
         if not isinstance(strides, list):
             strides = [strides, strides]
         if not isinstance(padding, list):
-            padding = [padding, padding]
+            padding = [padding, padding, padding, padding]
         if conv.dtype == np.float64:
             self._last_layer_id = self._lib.addConv2D_d(
                 self._nn,
@@ -415,7 +415,7 @@ class Network:
                 (ctypes.c_int * 2)(*kernel),
                 (ctypes.c_int * 3)(*input_shape),
                 (ctypes.c_int * 2)(*strides),
-                (ctypes.c_int * 2)(*padding),
+                (ctypes.c_int * 4)(*padding),
                 np.ascontiguousarray(conv))
         else:
             self._last_layer_id = self._lib.addConv2D_s(
@@ -425,7 +425,7 @@ class Network:
                 (ctypes.c_int * 2)(*kernel),
                 (ctypes.c_int * 3)(*input_shape),
                 (ctypes.c_int * 2)(*strides),
-                (ctypes.c_int * 2)(*padding),
+                (ctypes.c_int * 4)(*padding),
                 np.ascontiguousarray(conv))
         return self._last_layer_id
 

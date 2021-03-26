@@ -1,7 +1,7 @@
 /*
  *  GPUPoly library
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2020 Department of Computer Science, ETH Zurich
+ *  ELINA is Copyright ï¿½ 2020 Department of Computer Science, ETH Zurich
  *  This software is distributed under GNU Lesser General Public License Version 3.0.
  *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
@@ -68,11 +68,11 @@ __global__ void evalMaxPool2D(
 	T highestDown = -HUGE_VAL; // value of the highest lower bound in the pool
 	for (int delta_row = threadIdx.y; delta_row < cs.kernel_size_rows; delta_row += blockDim.y)
 	{
-		int input_row = blockIdx.y * cs.stride_rows + delta_row - cs.padding_rows;
+		int input_row = blockIdx.y * cs.stride_rows + delta_row - cs.padding_top;
 		if (input_row >= 0 && input_row < cs.input_rows)
 			for (int delta_col = threadIdx.x; delta_col < cs.kernel_size_cols; delta_col += blockDim.x)
 			{
-				int input_col = blockIdx.x * cs.stride_cols + delta_col - cs.padding_cols;
+				int input_col = blockIdx.x * cs.stride_cols + delta_col - cs.padding_left;
 				if (input_col >= 0 && input_col < cs.input_cols)
 				{
 					int curId = input_row * cs.input_cols + input_col;
@@ -137,11 +137,11 @@ __global__ void evalMaxPool2D(
 	T bestContestant = highestUpDown;
 	for (int delta_row = threadIdx.y; delta_row < cs.kernel_size_rows; delta_row += blockDim.y)
 	{
-		int input_row = blockIdx.y * cs.stride_rows + delta_row - cs.padding_rows;
+		int input_row = blockIdx.y * cs.stride_rows + delta_row - cs.padding_top;
 		if (input_row >= 0 && input_row < cs.input_rows)
 			for (int delta_col = threadIdx.x; delta_col < cs.kernel_size_cols; delta_col += blockDim.x)
 			{
-				int input_col = blockIdx.x * cs.stride_cols + delta_col - cs.padding_cols;
+				int input_col = blockIdx.x * cs.stride_cols + delta_col - cs.padding_left;
 				if (input_col >= 0 && input_col < cs.input_cols)
 				{
 					int curId = input_row * cs.input_cols + input_col;
@@ -255,10 +255,10 @@ __global__ void MaxPoolBackPropagate(
 	const int in_row = col / cs.input_cols;
 	const int in_col = col % cs.input_cols;
 
-	int out_row_min = max(0, (in_row + cs.padding_rows - cs.kernel_size_rows + cs.stride_rows) / cs.stride_rows);
-	int out_row_max = min(cs.output_rows, (in_row + cs.padding_rows) / cs.stride_rows + 1);
-	int out_col_min = max(0, (in_col + cs.padding_cols - cs.kernel_size_cols + cs.stride_cols) / cs.stride_cols);
-	int out_col_max = min(cs.output_cols, (in_col + cs.padding_cols) / cs.stride_cols + 1);
+	int out_row_min = max(0, (in_row + cs.padding_top - cs.kernel_size_rows + cs.stride_rows) / cs.stride_rows);
+	int out_row_max = min(cs.output_rows, (in_row + cs.padding_top) / cs.stride_rows + 1);//TODO not sure if padd_top or padding_bottom
+	int out_col_min = max(0, (in_col + cs.padding_left - cs.kernel_size_cols + cs.stride_cols) / cs.stride_cols);
+	int out_col_max = min(cs.output_cols, (in_col + cs.padding_left) / cs.stride_cols + 1);//TODO not sure if padd_top or padding_bottom
 
 
 	if (prevShape) {
@@ -277,10 +277,10 @@ __global__ void MaxPoolBackPropagate(
 			const int realRow = rows[row];
 			const int realOutputCol =  realRow % prevShape.output_cols ;
 			const int realOutputRow = (realRow / prevShape.output_cols) % prevShape.output_rows;
-			out_row_min = max(out_row_min, realOutputRow * prevShape.stride_rows - prevShape.padding_rows);
-			out_row_max = min(out_row_max, realOutputRow * prevShape.stride_rows - prevShape.padding_rows + prevShape.kernel_size_rows);
-			out_col_min = max(out_col_min, realOutputCol * prevShape.stride_cols - prevShape.padding_cols);
-			out_col_max = min(out_col_max, realOutputCol * prevShape.stride_cols - prevShape.padding_cols + prevShape.kernel_size_cols);
+			out_row_min = max(out_row_min, realOutputRow * prevShape.stride_rows - prevShape.padding_top);
+			out_row_max = min(out_row_max, realOutputRow * prevShape.stride_rows - prevShape.padding_top + prevShape.kernel_size_rows);//TODO not sure if padd_top or padding_bottom
+			out_col_min = max(out_col_min, realOutputCol * prevShape.stride_cols - prevShape.padding_left);
+			out_col_max = min(out_col_max, realOutputCol * prevShape.stride_cols - prevShape.padding_left + prevShape.kernel_size_cols);//TODO not sure if padd_top or padding_bottom
 		}
 	}
 
@@ -438,11 +438,11 @@ void MaxPool2D::backSubstitute(typename AffineExpr<T>::Queue& queue, const Affin
 	queue.emplace(expr.m, cs.inputSize(), parent, expr.up, expr.rows, A, b, ncs,expr.sound);
 }
 
-MaxPool2D::MaxPool2D(NeuralNetwork& nn, int pool_rows, int pool_cols, int input_rows, int input_cols, int input_channels, int stride_rows, int stride_cols, int padding_rows, int padding_cols, int parent) :
+MaxPool2D::MaxPool2D(NeuralNetwork& nn, int pool_rows, int pool_cols, int input_rows, int input_cols, int input_channels, int stride_rows, int stride_cols, int padding_top, int padding_left, int padding_bottom, int padding_right, int parent) :
 	//Layer(input_rows / pool_rows * input_cols / pool_cols * input_channels),
-	NeuralNetwork::Layer(nn,((input_rows + 2 * padding_rows - pool_rows + stride_rows) / stride_rows)* ((input_cols + 2 * padding_cols - pool_cols + stride_cols) / stride_cols)* input_channels),
+	NeuralNetwork::Layer(nn,((input_rows + padding_left + padding_bottom - pool_rows + stride_rows) / stride_rows)* ((input_cols + padding_left + padding_right - pool_cols + stride_cols) / stride_cols)* input_channels),
 	parent(parent),
-	cs(input_channels, pool_rows, pool_cols, input_rows, input_cols, input_channels, stride_rows, stride_cols, padding_rows, padding_cols),
+	cs(input_channels, pool_rows, pool_cols, input_rows, input_cols, input_channels, stride_rows, stride_cols, padding_top, padding_left, padding_bottom, padding_right),
 	modelCstS(outputSize, true), modelCstD(outputSize, true),
 	modelFacS(outputSize, true), modelFacD(outputSize, true)
 {

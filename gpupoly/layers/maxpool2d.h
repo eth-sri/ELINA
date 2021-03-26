@@ -1,7 +1,7 @@
 /*
  *  GPUPoly library
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2020 Department of Computer Science, ETH Zurich
+ *  ELINA is Copyright ï¿½ 2020 Department of Computer Science, ETH Zurich
  *  This software is distributed under GNU Lesser General Public License Version 3.0.
  *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
@@ -59,8 +59,9 @@ public:
 		int pool_rows, int pool_cols,
 		int input_rows, int input_cols, int input_channels,
 		int stride_rows, int stride_cols,
-		int padding_rows, int padding_cols,
-		int parent);
+		int padding_top, int padding_left,
+        int padding_bottom, int padding_right,
+        int parent);
 	virtual ~MaxPool2D();
 	template <typename T>
 	void eval(Vector<T>& dest, bool sound, bool precise);

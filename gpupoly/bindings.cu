@@ -1,7 +1,7 @@
 /*
  *  GPUPoly library
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2020 Department of Computer Science, ETH Zurich
+ *  ELINA is Copyright ï¿½ 2020 Department of Computer Science, ETH Zurich
  *  This software is distributed under GNU Lesser General Public License Version 3.0.
  *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
@@ -252,7 +252,7 @@ int addConv2D_d(
 		kernel_shape[0], kernel_shape[1],
 		input_shape[0], input_shape[1], input_shape[2],
 		stride_shape[0], stride_shape[1],
-		padding[0], padding[1],
+		padding[0], padding[1], padding[2], padding[3],
 		Matrix<double>(kernel_shape[0] * kernel_shape[1], input_shape[2] * filters, data),
 		parent);
 	return nn->addLayer(conv);
@@ -286,7 +286,7 @@ int addConv2D_s(
 		kernel_shape[0], kernel_shape[1],
 		input_shape[0], input_shape[1], input_shape[2],
 		stride_shape[0], stride_shape[1],
-		padding[0], padding[1],
+		padding[0], padding[1], padding[2], padding[3],
 		Matrix<float>(kernel_shape[0] * kernel_shape[1], input_shape[2] * filters, data),
 		parent);
 	return nn->addLayer(conv);
@@ -318,7 +318,7 @@ int addMaxPool2D(
 		pool_shape[0], pool_shape[1],
 		input_shape[0], input_shape[1], input_shape[2],
 		stride_shape[0], stride_shape[1],
-		padding[0], padding[1],
+		padding[0], padding[1], padding[2], padding[3],
 		parent);
 	return nn->addLayer(conv);
 }
