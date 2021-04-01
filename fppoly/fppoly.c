@@ -937,8 +937,8 @@ void set_neuron_to_zero(elina_manager_t *man, elina_abstract0_t *abs, size_t lay
 	neuron->ub = 0;
 	free_expr(neuron->lexpr);
 	free_expr(neuron->uexpr);
-	neuron->lexpr = 0;
-	neuron->uexpr = 0;
+	neuron->lexpr = create_cst_expr(0, 0);
+	neuron->uexpr = create_cst_expr(0, 0);
 }
 
 
