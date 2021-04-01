@@ -925,6 +925,23 @@ void update_bounds_for_neuron(elina_manager_t *man, elina_abstract0_t *abs, size
 }
 
 
+void set_neuron_to_zero(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno, size_t neuron_no){
+	fppoly_t *fp = fppoly_of_abstract0(abs);
+	if(layerno >= fp->numlayers){
+		fprintf(stdout,"the layer does not exist\n");
+		return;
+	}
+	layer_t * layer = fp->layers[layerno];
+	neuron_t * neuron = layer->neurons[neuron_no];
+	neuron->lb = 0;
+	neuron->ub = 0;
+	free_expr(neuron->lexpr);
+	free_expr(neuron->uexpr);
+	neuron->lexpr = 0;
+	neuron->uexpr = 0;
+}
+
+
 void update_activation_upper_bound_for_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno, size_t neuron_no, double* coeff, size_t *dim, size_t size){
 	fppoly_t *fp = fppoly_of_abstract0(abs);
 	if(layerno >= fp->numlayers){

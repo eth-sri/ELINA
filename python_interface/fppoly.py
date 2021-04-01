@@ -1054,6 +1054,39 @@ def update_bounds_for_neuron(man, element,layerno, neuron_no, lb, ub):
 
 
 
+def set_neuron_to_zero(man, element,layerno, neuron_no):
+    """
+    returns bounds for a neuron in a layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    layerno: c_size_t
+        the layer number
+    neuron_no: c_size_t
+        the neuron number in the layer
+    Returns
+    -------
+    None
+
+    """
+
+    
+    try:
+        set_neuron_to_zero_c = fppoly_api.set_neuron_to_zero
+        set_neuron_to_zero_c.restype = None
+        set_neuron_to_zero_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t]
+        set_neuron_to_zero_c(man, element,layerno, neuron_no, lb, ub)
+    except:
+        print('Problem with loading/calling "set_neuron_to_zero" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t to the function')
+
+
+
+
 def get_upper_bound_for_linexpr0(man,element,linexpr0, size, layerno):
     """
     returns bounds for a linexpr0 over neurons in "layerno"
