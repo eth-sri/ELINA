@@ -224,7 +224,7 @@ void free_non_lstm_layer_expr(elina_manager_t *man, elina_abstract0_t *abs, size
     
 void update_bounds_for_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno, size_t neuron_no, double lb, double ub);
 
-void set_neuron_to_zero(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno, size_t neuron_no);
+void set_activation_neuron_to_zero(elina_manager_t *man, elina_abstract0_t *abs, size_t layerno, size_t neuron_no);
 
 double* get_upper_bound_for_linexpr(elina_manager_t *man, elina_abstract0_t *element, elina_linexpr0_t **linexpr0, size_t size, size_t layerno);
 

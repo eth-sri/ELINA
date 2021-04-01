@@ -1054,7 +1054,7 @@ def update_bounds_for_neuron(man, element,layerno, neuron_no, lb, ub):
 
 
 
-def set_neuron_to_zero(man, element,layerno, neuron_no):
+def set_activation_neuron_to_zero(man, element,layerno, neuron_no):
     """
     returns bounds for a neuron in a layer
     
@@ -1076,12 +1076,12 @@ def set_neuron_to_zero(man, element,layerno, neuron_no):
 
     
     try:
-        set_neuron_to_zero_c = fppoly_api.set_neuron_to_zero
-        set_neuron_to_zero_c.restype = None
-        set_neuron_to_zero_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t]
-        set_neuron_to_zero_c(man, element,layerno, neuron_no)
+        set_activation_neuron_to_zero_c = fppoly_api.set_activation_neuron_to_zero
+        set_activation_neuron_to_zero_c.restype = None
+        set_activation_neuron_to_zero_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t]
+        set_activation_neuron_to_zero_c(man, element,layerno, neuron_no)
     except:
-        print('Problem with loading/calling "set_neuron_to_zero" from "fppoly.so"')
+        print('Problem with loading/calling "set_activation_neuron_to_zero" from "fppoly.so"')
         print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t to the function')
 
 
