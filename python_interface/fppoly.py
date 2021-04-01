@@ -1079,7 +1079,7 @@ def set_neuron_to_zero(man, element,layerno, neuron_no):
         set_neuron_to_zero_c = fppoly_api.set_neuron_to_zero
         set_neuron_to_zero_c.restype = None
         set_neuron_to_zero_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t]
-        set_neuron_to_zero_c(man, element,layerno, neuron_no, lb, ub)
+        set_neuron_to_zero_c(man, element,layerno, neuron_no)
     except:
         print('Problem with loading/calling "set_neuron_to_zero" from "fppoly.so"')
         print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_size_t to the function')
