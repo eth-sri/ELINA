@@ -262,7 +262,7 @@ void handle_fully_connected_layer_with_backsubstitute(elina_manager_t* man, elin
 		double coeff = 1;
 		out_neurons[i]->lexpr = create_sparse_expr(&coeff, -cst_i, &i, 1);
 	}
-        else{
+    else{
 		double * weight_i = weights[i];
         	out_neurons[i]->lexpr = create_dense_expr(weight_i,cst_i,num_in_neurons);
 	}
@@ -584,7 +584,8 @@ long int max(long int a, long int b){
 }
 
 void handle_convolutional_layer(elina_manager_t* man, elina_abstract0_t* element, double *filter_weights, double * filter_bias,  
-				         size_t * input_size, size_t *filter_size, size_t num_filters, size_t *strides, size_t *output_size, size_t pad_top, size_t pad_left, bool has_bias, size_t *predecessors, size_t num_predecessors){
+				         size_t * input_size, size_t *filter_size, size_t num_filters, size_t *strides, size_t *output_size,
+				         size_t pad_top, size_t pad_left, size_t pad_bottom, size_t pad_right, bool has_bias, size_t *predecessors, size_t num_predecessors){
 	//printf("conv intermediate starts here\n");
 	//fflush(stdout);
 	assert(num_predecessors==1);
@@ -622,6 +623,7 @@ void handle_convolutional_layer(elina_manager_t* man, elina_abstract0_t* element
 			  	     if(y_val<0 || y_val >= (long int)input_size[1]){
 			     			continue;
 			  	     }
+
 				     
 			  	     if(x_val<0 || x_val >= (long int)input_size[0]){
 			     			continue;
@@ -629,6 +631,7 @@ void handle_convolutional_layer(elina_manager_t* man, elina_abstract0_t* element
 				     size_t mat_y = x_val*input_size[1]*input_size[2] + y_val*input_size[2] + inp_z;
 				     if(mat_y>=num_pixels){		 
 			     			continue;
+
 		          	     }
 				     size_t filter_index = x_shift*filter_size[1]*input_size[2]*output_size[2] + y_shift*input_size[2]*output_size[2] + inp_z*output_size[2] + out_z;
 				     coeff[i] = filter_weights[filter_index];
@@ -655,6 +658,70 @@ void handle_convolutional_layer(elina_manager_t* man, elina_abstract0_t* element
 	return;
 }
 
+
+void handle_padding_layer(elina_manager_t* man, elina_abstract0_t* element, size_t * input_size, size_t *output_size,
+				         size_t pad_top, size_t pad_left, size_t pad_bottom, size_t pad_right, size_t *predecessors, size_t num_predecessors){
+	//fflush(stdout);
+	assert(num_predecessors==1);
+	fppoly_t *fp = fppoly_of_abstract0(element);
+	size_t numlayers = fp->numlayers;
+	size_t i, j;
+	size_t num_pixels = input_size[0]*input_size[1]*input_size[2];
+
+	int input_dim = sizeof output_size / sizeof output_size[0];
+
+	size_t num_out_neurons = output_size[0]*output_size[1]*output_size[2];
+
+//	printf("num_out_neurons: %zu %zu\n", num_out_neurons, num_pixels);
+//	fflush(stdout);
+
+	fppoly_add_new_layer(fp, num_out_neurons, predecessors, num_predecessors, false);
+	neuron_t ** out_neurons = fp->layers[numlayers]->neurons;
+	size_t out_x, out_y, out_z;
+        size_t inp_x, inp_y, inp_z;
+	size_t x_shift, y_shift;
+
+	for(out_x=0; out_x < output_size[0]; out_x++) {
+	    for(out_y = 0; out_y < output_size[1]; out_y++) {
+		    for(out_z=0; out_z < output_size[2]; out_z++) {
+
+                size_t mat_x = out_x*output_size[1]*output_size[2] + out_y*output_size[2] + out_z;
+
+                size_t coeff_num = 1;
+		        double *coeff = (double *)malloc(1*sizeof(double));
+                double cst = 0;
+                coeff[0] = 1;
+                size_t *dim = (size_t *)malloc(1*sizeof(double));
+                long int x_val = out_x - pad_top;
+                long int y_val = out_y - pad_left;
+                if(y_val<0 || y_val >= (long int)input_size[1]){
+                    coeff[0] = (double)0.;
+                    coeff_num = 0;
+                    dim[0]=0;
+                }else if(x_val<0 || x_val >= (long int)input_size[0]){
+                    coeff[0] = (double)0.;
+                    coeff_num = 0;
+                    dim[0]=0;
+                }else{
+                    dim[0] = x_val*input_size[1]*input_size[2] + y_val*input_size[2] + out_z;
+                }
+
+                if(mat_x>=num_out_neurons){
+                    continue;
+                 }
+                out_neurons[mat_x]->lexpr = create_sparse_expr(coeff, cst, dim, coeff_num);
+                out_neurons[mat_x]->uexpr = out_neurons[mat_x]->lexpr;
+                free(coeff);
+                free(dim);
+	        }
+	     }
+	}
+	update_state_using_previous_layers_parallel(man,fp,numlayers);
+	//printf("PAD ends\n");
+	//fppoly_fprint(stdout,man,fp,NULL);
+	//fflush(stdout);
+	return;
+}
 
 
 void handle_residual_layer(elina_manager_t *man, elina_abstract0_t *element, size_t num_neurons, size_t *predecessors, size_t num_predecessors){

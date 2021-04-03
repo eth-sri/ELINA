@@ -152,6 +152,7 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man,
 
 fppoly_internal_t* fppoly_init_from_manager(elina_manager_t* man, elina_funid_t funid);
 
+void handle_padding_layer(elina_manager_t* man, elina_abstract0_t* element, size_t * input_size, size_t *output_size, size_t pad_top, size_t pad_left, size_t pad_bottom, size_t pad_right, size_t *predecessors, size_t num_predecessors);
 
 void handle_fully_connected_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons, size_t *predecessors, size_t num_predecessors);
 
@@ -193,7 +194,7 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y,
 
 
 void handle_convolutional_layer(elina_manager_t* man, elina_abstract0_t* element, double *filter_weights, double * filter_bias,  
-				         size_t * input_size, size_t *filter_size, size_t num_filters, size_t *strides, size_t *output_size, size_t pad_top, size_t pad_left, bool has_bias, size_t *predecessors, size_t num_predecessors);
+				         size_t * input_size, size_t *filter_size, size_t num_filters, size_t *strides, size_t *output_size, size_t pad_top, size_t pad_left, size_t pad_bottom, size_t pad_right, bool has_bias, size_t *predecessors, size_t num_predecessors);
 
 /*void conv_handle_intermediate_affine_layer(elina_manager_t* man, elina_abstract0_t* element, double *filter_weights, double * filter_bias,  
 				         size_t * input_size, size_t *filter_size, size_t num_filters, size_t *strides, size_t *output_size, size_t pad_top, size_t pad_left, bool has_bias, size_t *predecessors, bool use_area_heuristic);*/

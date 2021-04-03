@@ -1,7 +1,7 @@
 /*
  *  GPUPoly library
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2020 Department of Computer Science, ETH Zurich
+ *  ELINA is Copyright ï¿½ 2020 Department of Computer Science, ETH Zurich
  *  This software is distributed under GNU Lesser General Public License Version 3.0.
  *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
@@ -75,8 +75,9 @@ public:
 		const int kernel_size_rows, const int kernel_size_cols,
 		const int input_rows, const int input_cols, const int input_channels,
 		const int stride_rows, const int stride_cols,
-		const int padding_rows, const int padding_cols,
-		const Matrix<T>& A,
+        const int padding_top, const int padding_left,
+        const int padding_bottom, const int padding_right,
+        const Matrix<T>& A,
 		int parent);
 	template <typename Te> void eval(Vector<Te>& dest, bool sound);
 	//template <typename Te> void backSubstitute(typename AffineExpr<Te>::Queue& queue, const AffineExpr<Te>& expr) const;

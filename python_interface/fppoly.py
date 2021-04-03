@@ -798,7 +798,7 @@ def is_greater(man, element, y, x, use_area_heuristic):
         print(inst)
     return res
 
-def handle_convolutional_layer(man, element, filter_weights, filter_bias,  input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, num_predecessors):
+def handle_convolutional_layer(man, element, filter_weights, filter_bias,  input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, pad_bottom, pad_right, has_bias, predecessors, num_predecessors):
     """
     Convolutional Matrix multiplication in the first layer
     
@@ -836,10 +836,45 @@ def handle_convolutional_layer(man, element, filter_weights, filter_bias,  input
     try:
         handle_convolutional_layer_c = fppoly_api.handle_convolutional_layer
         handle_convolutional_layer_c.restype = None
-        handle_convolutional_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t),c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_size_t]
-        handle_convolutional_layer_c(man,element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, num_predecessors)
+        handle_convolutional_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t),c_size_t, c_size_t, c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_size_t]
+        handle_convolutional_layer_c(man,element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, pad_bottom, pad_right, has_bias, predecessors, num_predecessors)
     except Exception as inst:
         print('Problem with loading/calling "handle_convolutional_layer" from "libfppoly.so"')
+        print(inst)
+    return
+
+
+def handle_padding_layer(man, element, input_size, output_size, pad_top, pad_left, pad_bottom, pad_right, predecessors, num_predecessors):
+    """
+    Padding layer
+
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0 abstract element.
+    input_size: POINTER(c_size_t)
+        size of the input
+    predecessors: POINTER(c_size_t)
+        the layers before the current layer
+    num_predecessors: c_size_t
+        the number of predecessors of the current layer
+    Returns
+    -------
+    None
+
+    """
+    try:
+        handle_padding_layer_c = fppoly_api.handle_padding_layer
+        handle_padding_layer_c.restype = None
+        handle_padding_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_size_t),
+                                           POINTER(c_size_t), c_size_t, c_size_t, c_size_t, c_size_t,
+                                           POINTER(c_size_t), c_size_t]
+        handle_padding_layer_c(man, element, input_size, output_size, pad_top, pad_left, pad_bottom, pad_right,
+                                     predecessors, num_predecessors)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_padding_layer" from "libfppoly.so"')
         print(inst)
     return
 

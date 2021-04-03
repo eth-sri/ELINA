@@ -1,7 +1,7 @@
 /*
  *  GPUPoly library
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2020 Department of Computer Science, ETH Zurich
+ *  ELINA is Copyright ï¿½ 2020 Department of Computer Science, ETH Zurich
  *  This software is distributed under GNU Lesser General Public License Version 3.0.
  *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
@@ -46,8 +46,10 @@ struct ConvShape {
 
 	int stride_rows; //!< stride in rows
 	int stride_cols; //!< stride in columns
-	int padding_rows; //!< padding added on top and bottom (number of pixels)
-	int padding_cols; //!< padding added on the left and right (number of pixels)
+	int padding_top; //!< padding added on top and bottom (number of pixels)
+    int padding_bottom;
+	int padding_left; //!< padding added on the left and right (number of pixels)
+    int padding_right;
 
 	int output_rows; //!< output dimention (number of rows)
 	int output_cols; //!< output dimention (number of cols)
@@ -72,13 +74,15 @@ struct ConvShape {
 		const int kernel_size_rows, const int kernel_size_cols,
 		const int input_rows, const int input_cols, const int input_channels,
 		const int stride_rows, const int stride_cols,
-		const int padding_rows, const int padding_cols) :
+		const int padding_top, const int padding_left,
+        const int padding_bottom, const int padding_right) :
 		filters(filters),
 		kernel_size_rows(kernel_size_rows), kernel_size_cols(kernel_size_cols),
 		input_rows(input_rows), input_cols(input_cols), input_channels(input_channels),
 		stride_rows(stride_rows), stride_cols(stride_cols),
-		padding_rows(padding_rows), padding_cols(padding_cols),
-		output_rows((input_rows + 2 * padding_rows - kernel_size_rows + stride_rows) / stride_rows), output_cols((input_cols + 2 * padding_cols - kernel_size_cols + stride_cols) / stride_cols) {}
+        padding_top(padding_top), padding_left(padding_left),
+        padding_bottom(padding_bottom), padding_right(padding_right),
+        output_rows((input_rows + padding_top + padding_bottom - kernel_size_rows + stride_rows) / stride_rows), output_cols((input_cols + padding_left + padding_right - kernel_size_cols + stride_cols) / stride_cols) {}
 	ConvShape() : kernel_size_rows(0) {}
 
 	//! Indicates whether this is a valid convolution shape.
@@ -104,8 +108,10 @@ struct ConvShape {
 			kernel_size_rows == 1 &&
 			stride_cols == 1 &&
 			stride_rows == 1 &&
-			padding_rows == 0 &&
-			padding_cols == 0;
+			padding_top == 0 &&
+            padding_left == 0 &&
+            padding_bottom == 0 &&
+			padding_right == 0;
 	}
 	//! Creates the parameters of a diagonal matrix
 	//! \param size Size of the diagonal matrix
@@ -115,7 +121,7 @@ struct ConvShape {
 			size,
 			1, 1,
 			1, 1, size,
-			1, 1, 0, 0);
+			1, 1, 0, 0, 0, 0);
 	}
 	//! Computes the parameters of a product of convolution
 	/*!
@@ -149,15 +155,17 @@ struct ConvShape {
 				rhs.input_channels,
 				stride_rows * rhs.stride_rows,
 				stride_cols * rhs.stride_cols,
-				padding_rows * rhs.stride_rows + rhs.padding_rows,
-				padding_cols * rhs.stride_cols + rhs.padding_cols
+				padding_top * rhs.stride_rows + rhs.padding_top,
+				padding_left * rhs.stride_cols + rhs.padding_left,
+                padding_bottom * rhs.stride_rows + rhs.padding_bottom,
+                padding_right * rhs.stride_cols + rhs.padding_right
 			);
 		}
 		return ConvShape();
 	}
 	//! Print the current parameters.
 	void print() const {
-		std::cout << "Inputs: [" << input_rows << "," << input_cols << "," << input_channels << "] kernel: [" << kernel_size_rows << "," << kernel_size_cols << "] stride: [" << stride_rows << "," << stride_cols << "] filters: " << filters << " padding: [" << padding_rows << "," << padding_cols << "] Outputs: [" << output_rows << "," << output_cols << "," << filters << "]" << std::endl;
+		std::cout << "Inputs: [" << input_rows << "," << input_cols << "," << input_channels << "] kernel: [" << kernel_size_rows << "," << kernel_size_cols << "] stride: [" << stride_rows << "," << stride_cols << "] filters: " << filters << " padding: [" << padding_top << "," << padding_left << ","<< padding_bottom << "," << padding_right <<"] Outputs: [" << output_rows << "," << output_cols << "," << filters << "]" << std::endl;
 	}
 };
 //! Structure representing a set of affine expressions.
