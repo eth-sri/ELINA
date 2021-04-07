@@ -336,6 +336,17 @@ class Network:
         return np.reshape(res, (m, 2))
 
 
+    def evalAffineExpr_withProp(self, down, up, a=None, b=None, layer=None, back_substitute=NO_BACKSUBSTITUTION, sound=True, dtype=None):
+        self.setLayerBox(down, up)  # Set input layer concrete bounds
+
+        # relax all layers, using simple interval analysis first.
+        for i in range(self._last_layer_id):
+            self.relax(i + 1, soundness=sound)
+
+        # Evaluates an expression that computes the difference between expected label and each element of the output layer
+        res = self.evalAffineExpr(a, b, layer, back_substitute, sound, dtype)
+        return res
+
     ## Fully connected linear layer
     #
     #  Adds a dense linear layer (without activation nor bias). If x is a column vector representing the input of the layer, the output is A*x.
