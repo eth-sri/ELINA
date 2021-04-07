@@ -1022,7 +1022,7 @@ def box_for_layer(man, element,layerno):
     return interval_array
     
 
-def backsubstituted_expr_for_layer(man, element,layerno, is_lower):
+def backsubstituted_expr_for_layer(man, element, layerno, is_lower):
     """
     returns backsubstituted expressions for all neurons in a layer
     
@@ -1048,7 +1048,7 @@ def backsubstituted_expr_for_layer(man, element,layerno, is_lower):
         backsubstituted_expr_for_layer_c = fppoly_api.backsubstituted_expr_for_layer
         backsubstituted_expr_for_layer_c.restype = ElinaLinexpr0Array
         backsubstituted_expr_for_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_bool]
-        linexpr_array = backsubstituted_expr_for_layer_c(man, element,layerno, is_lower)
+        linexpr_array = backsubstituted_expr_for_layer_c(man, element, layerno, is_lower)
     except:
         print('Problem with loading/calling "backsubstituted_expr_for_layer" from "fppoly.so"')
         print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_bool to the function')

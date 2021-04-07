@@ -43,7 +43,7 @@ vector<vector<int>> sparse_cover(const int N, const int K, const int s) {
     // the array of combinations to see if there is already a combination that has big
     // intersection with combination that we are trying to add.
     // The combinations are added in the alphabetical order, thus we can use indexing
-    // to first traverse the part of the array where we already no that first elements match -
+    // to first traverse the part of the array where we already know that first elements match -
     // that area has a higher probability of rejecting new combination.
     vector<int> indexing_on_first(N, -1);
 
@@ -133,6 +133,7 @@ vector<vector<int>> sparse_cover(const int N, const int K, const int s) {
             }
             // Update indexing on second element.
             // Note that having first_elem in the indexing is not a mistake.
+            // Only updating the second_elemth entry of indexing_on_second_all
             if (indexing_on_second[first_elem] == -1) {
                 indexing_on_second[first_elem] = (int) all_selected_combs.size();
             }

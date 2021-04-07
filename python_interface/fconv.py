@@ -189,6 +189,29 @@ def ksigm_with_cdd(inp_hrep: np.ndarray) -> np.ndarray:
 
 
 def generate_sparse_cover(n, k, s=-2):
+    if not hasattr(generate_sparse_cover, "cache"):
+        generate_sparse_cover.cache = {}
+
+    if s < 0:
+        s = k + s
+
+    if (k, s) not in generate_sparse_cover.cache or len(generate_sparse_cover.cache[(k,s)]) < n:
+        cover_c = generate_sparse_cover_c(n, k, s)
+        rows = cover_c.rows
+
+        cover = [[] for i in range(n)]
+        for i in range(rows):
+            comb = [None] * k
+            for j in range(k):
+                comb[j] = cover_c.data[i * k + j]
+            cover[max(comb)].append(comb)
+
+        generate_sparse_cover.cache[(k,s)] = cover
+
+        free_MatInt_c(cover_c)
+    return [x for y in generate_sparse_cover.cache[(k,s)][:n] for x in y]
+
+def generate_sparse_cover_old(n, k, s=-2):
     if s < 0:
         s = k+s
     cover_c = generate_sparse_cover_c(n, k, s)
