@@ -912,6 +912,7 @@ elina_interval_t ** box_for_layer(elina_manager_t* man, elina_abstract0_t * abs,
 
 elina_linexpr0_t ** backsubstituted_expr_for_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno, bool is_lower){
 	fppoly_t *fp = fppoly_of_abstract0(abs);
+	fppoly_internal_t *pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	if(layerno >= fp->numlayers){
 		fprintf(stdout,"the layer does not exist\n");
 		return NULL;
@@ -920,16 +921,42 @@ elina_linexpr0_t ** backsubstituted_expr_for_layer(elina_manager_t* man, elina_a
 	size_t dims = layer->dims;
 	elina_linexpr0_t ** lin_arr = (elina_linexpr0_t **)malloc(dims*sizeof(elina_linexpr0_t *));
 	size_t i;
-	for(i=0; i< dims; i++){
-		expr_t *expr = NULL;
-		if(is_lower){
-			expr = layer->neurons[i]->backsubstituted_lexpr;
+	if (layer->is_activation){
+	        assert(layer->num_predecessors==1);
+		int predecessor = layer->predecessors[0]-1;
+		layer_t *predecessor_layer = fp->layers[predecessor];
+		for(i=0; i< dims; i++){
+			expr_t *expr = NULL;
+			expr_t * predecessor_expr = NULL;
+			neuron_t *predecessor_neuron = predecessor_layer->neurons[i];
+			if(is_lower){
+				expr = layer->neurons[i]->lexpr;
+				predecessor_expr = predecessor_neuron->backsubstituted_lexpr;
+			}
+			else{
+				expr = layer->neurons[i]->uexpr;
+				predecessor_expr = predecessor_neuron->backsubstituted_uexpr;
+			}
+			expr_t *tmp = multiply_expr(pr, predecessor_expr, expr->inf_coeff[0], expr->sup_coeff[0]);
+			tmp->inf_cst = tmp->inf_cst + expr->inf_cst;
+			tmp->sup_cst = tmp->sup_cst + expr->sup_cst; 
+			lin_arr[i] = elina_linexpr0_from_expr(tmp);
+			free_expr(tmp);
+			
 		}
-		else{
-			expr = layer->neurons[i]->backsubstituted_uexpr;
+	}
+	else{
+		for(i=0; i< dims; i++){
+			expr_t *expr = NULL;
+			if(is_lower){
+				expr = layer->neurons[i]->backsubstituted_lexpr;
+			}
+			else{
+				expr = layer->neurons[i]->backsubstituted_uexpr;
+			}
+			lin_arr[i] = elina_linexpr0_from_expr(expr);
+			
 		}
-		lin_arr[i] = elina_linexpr0_from_expr(expr);
-		
 	}
 	return lin_arr;
 }
