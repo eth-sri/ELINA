@@ -91,6 +91,8 @@ typedef struct neuron_t{
 	double ub;
 	expr_t * lexpr;
 	expr_t * uexpr;
+	expr_t * backsubstituted_lexpr;
+	expr_t * backsubstituted_uexpr;
 }neuron_t;
 
 typedef struct layer_t{
@@ -216,6 +218,8 @@ elina_linexpr0_t * get_uexpr_for_output_neuron(elina_manager_t *man, elina_abstr
 elina_interval_t * box_for_neuron(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno, size_t neuron_no);
 
 elina_interval_t ** box_for_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno);
+
+elina_linexpr0_t ** backsubstituted_expr_for_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno, bool is_lower);
 
 size_t get_num_neurons_in_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno);
 

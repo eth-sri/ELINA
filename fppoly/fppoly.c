@@ -95,6 +95,8 @@ neuron_t *neuron_alloc(void){
 	res->ub = INFINITY;
 	res->lexpr = NULL;
 	res->uexpr = NULL;
+	res->backsubstituted_lexpr = NULL;
+	res->backsubstituted_uexpr = NULL;
 	return res;
 }
 
@@ -391,7 +393,7 @@ void *get_upper_bound_for_linexpr0_parallel(void *args){
 			uexpr = uexpr_replace_bounds(pr, tmp,fp->layers[layerno]->neurons, false);
 		}
 	
-		ub = fmin(ub,get_ub_using_previous_layers(man,fp,uexpr,layerno));
+		ub = fmin(ub,get_ub_using_previous_layers(man,fp,&uexpr,layerno));
 	
 		free_expr(uexpr);
     		free_expr(tmp);
@@ -563,7 +565,7 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y,
 		sub->dim[1] = x;
 		
 		//layer_fprint(stdout,fp->layers[3],NULL);
-		double lb = get_lb_using_previous_layers(man, fp, sub, fp->numlayers);
+		double lb = get_lb_using_previous_layers(man, fp, &sub, fp->numlayers);
 		
 		//free_expr(sub);
 		
@@ -668,7 +670,7 @@ void handle_padding_layer(elina_manager_t* man, elina_abstract0_t* element, size
 	size_t i, j;
 	size_t num_pixels = input_size[0]*input_size[1]*input_size[2];
 
-	int input_dim = sizeof output_size / sizeof output_size[0];
+	//int input_dim = sizeof output_size / sizeof output_size[0];
 
 	size_t num_out_neurons = output_size[0]*output_size[1]*output_size[2];
 
@@ -906,6 +908,32 @@ elina_interval_t ** box_for_layer(elina_manager_t* man, elina_abstract0_t * abs,
 	}
 	return itv_arr;
 }
+
+
+elina_linexpr0_t ** backsubstituted_expr_for_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno, bool is_lower){
+	fppoly_t *fp = fppoly_of_abstract0(abs);
+	if(layerno >= fp->numlayers){
+		fprintf(stdout,"the layer does not exist\n");
+		return NULL;
+	}
+	layer_t * layer = fp->layers[layerno];
+	size_t dims = layer->dims;
+	elina_linexpr0_t ** lin_arr = (elina_linexpr0_t **)malloc(dims*sizeof(elina_linexpr0_t *));
+	size_t i;
+	for(i=0; i< dims; i++){
+		expr_t *expr = NULL;
+		if(is_lower){
+			expr = layer->neurons[i]->backsubstituted_lexpr;
+		}
+		else{
+			expr = layer->neurons[i]->backsubstituted_uexpr;
+		}
+		lin_arr[i] = elina_linexpr0_from_expr(expr);
+		
+	}
+	return lin_arr;
+}
+
 
 
 size_t get_num_neurons_in_layer(elina_manager_t* man, elina_abstract0_t * abs, size_t layerno){

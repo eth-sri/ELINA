@@ -418,13 +418,13 @@ double get_ub_using_predecessor_layer(fppoly_internal_t * pr,fppoly_t *fp, expr_
 	return res;
 }
 
-double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *expr, size_t layerno){
+double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t **expr, size_t layerno){
 	size_t i;
 	int k;
 	//size_t numlayers = fp->numlayers;
 	//printf("COMING HERE\n");
 	//fflush(stdout);
-	expr_t * lexpr = copy_expr(expr);
+	expr_t * lexpr = copy_expr(*expr);
         fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	if(fp->numlayers==layerno){
 		
@@ -566,13 +566,15 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	}
 		
 	res = fmin(res,compute_lb_from_expr(pr,lexpr,fp,-1)); 
-        free_expr(lexpr);
+        //free_expr(lexpr);
         //if(fp->layers[layerno]->is_concat == true){
 		//printf("res: %g\n",res);
 		//fflush(stdout);
 		//expr_print(expr);
 		//fflush(stdout);
 	//}
+	free_expr(*expr);
+	*expr = lexpr;
 	return res;
 	
 }
@@ -836,11 +838,11 @@ elina_linexpr0_t * get_output_lexpr_defined_over_previous_layers(elina_manager_t
 }
 
 
-double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *expr, size_t layerno){
+double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t **expr, size_t layerno){
 	size_t i;
 	int k;
 	//size_t numlayers = fp->numlayers;
-	expr_t * uexpr = copy_expr(expr);
+	expr_t * uexpr = copy_expr(*expr);
         fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
         
 	if(fp->numlayers==layerno){
@@ -962,7 +964,8 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	res = fmin(res,compute_ub_from_expr(pr,uexpr,fp,-1)); 
         //printf("UPPER BOUND: %g\n",res);
         //fflush(stdout);
-        free_expr(uexpr);
+        free_expr(*expr);
+        *expr = uexpr;
 	return res;
 	
 }

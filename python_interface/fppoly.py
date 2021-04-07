@@ -1020,6 +1020,41 @@ def box_for_layer(man, element,layerno):
         print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t to the function')
 
     return interval_array
+    
+
+def backsubstituted_expr_for_layer(man, element,layerno, is_lower):
+    """
+    returns backsubstituted expressions for all neurons in a layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    layerno: c_size_t
+        the layer number
+    is_lower: c_bool
+        whether lower or upper bound
+    Returns
+    -------
+    linexpr_array : ElinaLinexpr0Array
+        ElinaLinexpr0Array containing the expressions for all neurons.
+
+    """
+
+    interval_array = None
+    try:
+        backsubstituted_expr_for_layer_c = fppoly_api.backsubstituted_expr_for_layer
+        backsubstituted_expr_for_layer_c.restype = ElinaLinexpr0Array
+        backsubstituted_expr_for_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_bool]
+        linexpr_array = backsubstituted_expr_for_layer_c(man, element,layerno, is_lower)
+    except:
+        print('Problem with loading/calling "backsubstituted_expr_for_layer" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, c_bool to the function')
+
+    return linexpr_array
+
 
 def get_num_neurons_in_layer(man, element,layerno):
     """

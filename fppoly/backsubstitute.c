@@ -18,10 +18,12 @@ void * update_state_using_previous_layers(void *args){
 		bool already_computed= false;
 		expr_t *lexpr = copy_expr(out_neurons[i]->lexpr);
 		expr_t *uexpr = copy_expr(out_neurons[i]->uexpr);
-		out_neurons[i]->lb = get_lb_using_previous_layers(man, fp, lexpr, layerno);
-		out_neurons[i]->ub = get_ub_using_previous_layers(man, fp, uexpr, layerno);
-		free_expr(lexpr);
-		free_expr(uexpr);
+		out_neurons[i]->lb = get_lb_using_previous_layers(man, fp, &lexpr, layerno);
+		out_neurons[i]->ub = get_ub_using_previous_layers(man, fp, &uexpr, layerno);
+		out_neurons[i]->backsubstituted_lexpr = lexpr;
+		out_neurons[i]->backsubstituted_uexpr = uexpr;
+		//free_expr(lexpr);
+		//free_expr(uexpr);
 		
 	}
 	return NULL;

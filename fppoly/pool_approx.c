@@ -107,7 +107,7 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 						sub->inf_coeff[1] = 1;
 						sub->sup_coeff[1] = -1;
 						sub->dim[1] = pool_map[k];
-                                	        double lb = get_lb_using_previous_layers(man, fp, sub, numlayers);
+                                	        double lb = get_lb_using_previous_layers(man, fp, &sub, numlayers);
                                 	        free_expr(sub);
                                 	        if(lb>=0){
                                         		is_greater = false;
