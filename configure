@@ -21,6 +21,7 @@ where options include:
   -apron-srcroot dir   where to find the APRON source directory
   -gmp-prefix dir      where to find the GMP library
   -mpfr-prefix dir     where to find the MPFR library
+  -cdd-prefix dir      where to find the CDD library
   -java-prefix dir     where to find Java
   -use-vector          use vector instructions for the Octagon library
   -use-ocaml           enable OCaml support (only available with APRON)
