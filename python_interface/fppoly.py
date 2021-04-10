@@ -879,7 +879,7 @@ def handle_padding_layer(man, element, input_size, output_size, pad_top, pad_lef
     return
 
 
-def handle_pool_layer(man, element, pool_size, input_size, strides, pad_top, pad_left, output_size, predecessors, num_predecessors, is_maxpool):
+def handle_pool_layer(man, element, pool_size, input_size, strides, pad_top, pad_left, pad_bottom, pad_right, output_size, predecessors, num_predecessors, is_maxpool):
     """
     handle the pooling layer
     
@@ -917,8 +917,8 @@ def handle_pool_layer(man, element, pool_size, input_size, strides, pad_top, pad
     try:
         handle_pool_layer_c = fppoly_api.handle_pool_layer
         handle_pool_layer_c.restype = c_size_t
-        handle_pool_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, POINTER(c_size_t), POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t , c_bool]
-        res = handle_pool_layer_c(man, element, pool_size, input_size, strides, pad_left, pad_top, output_size, predecessors, num_predecessors, is_maxpool)
+        handle_pool_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, POINTER(c_size_t), POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_size_t, c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_size_t , c_bool]
+        res = handle_pool_layer_c(man, element, pool_size, input_size, strides, pad_left, pad_top, pad_bottom, pad_right, output_size, predecessors, num_predecessors, is_maxpool)
     except Exception as inst:
         print('Problem with loading/calling "handle_pool_layer" from "libfppoly.so"')
         print(inst)

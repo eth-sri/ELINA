@@ -1642,7 +1642,7 @@ def conv_handle_intermediate_affine_layer(man, element, filter_weights, filter_b
     return
 
 
-def handle_pool_layer(man, element, pool_size, input_size, strides, dimensionality, pad_top, pad_left, output_size, predecessors, is_maxpool):
+def handle_pool_layer(man, element, pool_size, input_size, strides, dimensionality, pad_top, pad_left, pad_bottom, pad_right, output_size, predecessors, is_maxpool):
 
     """
     Handle the pooling layer.
@@ -1685,7 +1685,7 @@ def handle_pool_layer(man, element, pool_size, input_size, strides, dimensionali
         handle_pool_layer_c = fppoly_gpu_api.handle_pool_layer
         handle_pool_layer_c.restype = c_size_t
         handle_pool_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, POINTER(c_size_t), POINTER(c_size_t), POINTER(c_size_t), c_size_t, c_size_t, c_size_t, POINTER(c_size_t), POINTER(c_size_t), c_bool]
-        res = handle_pool_layer_c(man, element, pool_size, input_size, strides, dimensionality, pad_left, pad_top, output_size, predecessors, is_maxpool)
+        res = handle_pool_layer_c(man, element, pool_size, input_size, strides, dimensionality, pad_left, pad_top, pad_bottom, pad_right, output_size, predecessors, is_maxpool)
     except Exception as inst:
         print('Problem with loading/calling "handle_pool_layer" from "libfppoly_gpu.so"')
         print(inst)

@@ -202,7 +202,7 @@ void handle_convolutional_layer(elina_manager_t* man, elina_abstract0_t* element
 				         size_t * input_size, size_t *filter_size, size_t num_filters, size_t *strides, size_t *output_size, size_t pad_top, size_t pad_left, bool has_bias, size_t *predecessors, bool use_area_heuristic);*/
 
 size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
-                           size_t *pool_size, size_t *input_size, size_t *strides, size_t pad_top, size_t pad_left, size_t * output_size, size_t *predecessors, size_t num_predecessors, bool is_maxpool);
+                           size_t *pool_size, size_t *input_size, size_t *strides, size_t pad_top, size_t pad_left, size_t pad_bottom, size_t pad_right, size_t * output_size, size_t *predecessors, size_t num_predecessors, bool is_maxpool);
 
 void create_lstm_layer(elina_manager_t *man, elina_abstract0_t *abs, size_t h, size_t *predecessors, size_t num_predecessors);
 

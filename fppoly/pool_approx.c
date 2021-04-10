@@ -2,7 +2,7 @@
 #include "maxpool_convex_hull.h"
 
 size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element, 
-			   size_t *pool_size, size_t *input_size, size_t *strides, size_t pad_top, size_t pad_left, size_t * output_size,size_t *predecessors, size_t num_predecessors, bool is_maxpool){
+			   size_t *pool_size, size_t *input_size, size_t *strides, size_t pad_top, size_t pad_left, size_t pad_bottom, size_t pad_right, size_t * output_size,size_t *predecessors, size_t num_predecessors, bool is_maxpool){
 	assert(num_predecessors==1);
 	assert(pool_size[2]==1);
 	//assert(stride[0]==2 && stride[1]==2 && stride[2]==1);
@@ -13,9 +13,9 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 	size_t num_input_neurons = input_size[0]*input_size[1]*input_size[2];
 	size_t num_out_neurons = output_size[0]*output_size[1]*output_size[2];
 
-    	size_t o12 = output_size[1]*output_size[2];
+    size_t o12 = output_size[1]*output_size[2];
    	size_t i12 = input_size[1]*input_size[2];
-    	size_t p01 = pool_size[0]*pool_size[1];
+    size_t p01 = pool_size[0]*pool_size[1];
 	
 	fppoly_t * fp = fppoly_of_abstract0(element);
 	size_t numlayers = fp->numlayers;
@@ -143,8 +143,8 @@ size_t handle_pool_layer(elina_manager_t *man, elina_abstract0_t *element,
 				//printf("end\n");
 				//fflush(stdout);
 				//dd_WriteMatrix(stdout,M);
-	//			double_matrix_print(mat);
-	//			fflush(stdout);
+	            //double_matrix_print(mat);
+	            //fflush(stdout);
 				//max_l	<= x_new <= max_u
 				double lcoeff[1];
 				size_t ldim[1];
