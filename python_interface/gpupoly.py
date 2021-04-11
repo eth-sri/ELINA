@@ -466,7 +466,7 @@ class Network:
         elif not isinstance(strides, list):
             strides = [strides, strides]
         if not isinstance(padding, list):
-            padding = [padding, padding]
+            padding = [padding, padding, padding, padding]
         input_shape = [input_rows, input_cols, channels]
         self._last_layer_id = self._lib.addMaxPool2D(
             self._nn,
@@ -474,7 +474,7 @@ class Network:
             (ctypes.c_int * 2)(*pool),
             (ctypes.c_int * 3)(*input_shape),
             (ctypes.c_int * 2)(*strides),
-            (ctypes.c_int * 2)(*padding))
+            (ctypes.c_int * 4)(*padding))
         return self._last_layer_id
 
     ## ParSum layer.
