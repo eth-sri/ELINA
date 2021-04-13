@@ -321,11 +321,13 @@ extern "C" {
 	  Adds a ReLU layer to the network.
 
 	  \param parent index of the parent layer (or 0 for the input layer)
+	  \param useAreaHeuristic If false, always use a flat approximation for the lower bound (slope = 0).
 	  \returns the index of the newly created layer.
 	 */
 	GPUPOLY_EXPORT int addReLU(
 		NeuralNetwork* nn,
-		int parent
+		int parent,
+		bool useAreaHeuristic
 	);
 
 	//! MaxPool2D layer.

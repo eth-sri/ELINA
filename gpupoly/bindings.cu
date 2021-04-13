@@ -185,10 +185,10 @@ int getOutputSize(NeuralNetwork* nn, int layer)
 {
 	return (*nn)[layer]->outputSize;
 }
-int addReLU(NeuralNetwork* nn, int parent)
+int addReLU(NeuralNetwork* nn, int parent, bool useAreaHeuristic)
 {
 	size_t inputSize = (*nn)[parent]->outputSize;
-	return nn->addLayer(new ReLU(*nn, inputSize, parent));
+	return nn->addLayer(new ReLU(*nn, inputSize, useAreaHeuristic, parent));
 }
 
 int addBias_d(

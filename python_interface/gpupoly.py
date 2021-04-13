@@ -172,7 +172,8 @@ class Network:
     ]
     _lib.addReLU.argtypes = [
         ctypes.c_void_p,
-        ctypes.c_int
+        ctypes.c_int,
+        ctypes.c_bool
     ]
     _lib.addMaxPool2D.argtypes = [
         ctypes.c_void_p,
@@ -370,11 +371,12 @@ class Network:
     #  Adds a ReLU layer to the network.
     #
     #  \param parent Index of the parent layer (or 0 for the input layer). It can be None, in which case the parent is the last added layer.
+    #  \param useAreaHeuristic If false, always use a flat approximation for the lower bound (slope = 0).
     #  \returns the index of the newly created layer.
-    def add_relu(self, parent=None):
+    def add_relu(self, parent=None, useAreaHeuristic=True):
         if parent is None:
             parent = self._last_layer_id
-        self._last_layer_id = self._lib.addReLU(self._nn, parent)
+        self._last_layer_id = self._lib.addReLU(self._nn, parent, useAreaHeuristic)
         return self._last_layer_id
 
     ## Bias layer
