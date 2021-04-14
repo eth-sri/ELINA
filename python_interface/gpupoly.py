@@ -29,14 +29,11 @@ import numpy as np
 
 ## Python friendly interface to the GPUPoly library.
 class Network:
-    if os.name == 'nt':
-        #os.add_dll_directory("${CUDAToolkit_BIN_DIR}")
-        #os.add_dll_directory("${GPUPoly_BINARY_DIR}")
-        # os.add_dll_directory("${CUDAToolkit_BIN_DIR}")
-        # os.add_dll_directory("${GPUPoly_BINARY_DIR}")
-        # _lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('gpupoly'))
-        _lib = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../gpupoly/libgpupoly.so"))
-    else:
+    if os.name == 'nt': # Running in Windows
+        os.add_dll_directory("${CUDAToolkit_BIN_DIR}")
+        os.add_dll_directory("${GPUPoly_BINARY_DIR}")
+        _lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('gpupoly'))
+    else: # Not running in Windows
         # _lib=ctypes.cdll.LoadLibrary('${GPUPoly_BINARY_DIR}/dpGPUlib.so.0.10')
         _lib = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../gpupoly/libgpupoly.so"))
         #_lib = ctypes.cdll.LoadLibrary('libgpupoly.so')
