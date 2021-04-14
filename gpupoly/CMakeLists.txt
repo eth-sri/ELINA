@@ -23,7 +23,7 @@
 #
 
 cmake_minimum_required (VERSION 3.17.1)
-project ("GPUPoly" VERSION 0.11.0 LANGUAGES CXX CUDA)
+project ("GPUPoly" VERSION 0.12.0 LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CUDA_STANDARD 14)
@@ -40,7 +40,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN yes)
 configure_file("config.h.in" "config.h")
 add_library (gpupoly SHARED ${GPUPOLYCore} "bindings.cu")
-set_target_properties(gpupoly PROPERTIES VERSION 0.11.0 SOVERSION 0.11 CUDA_ARCHITECTURES 61)
+set_target_properties(gpupoly PROPERTIES VERSION 0.12.0 SOVERSION 0.12 CUDA_ARCHITECTURES 61)
 generate_export_header(gpupoly)
 target_include_directories (gpupoly PRIVATE .)
 target_include_directories (gpupoly PRIVATE ${PROJECT_BINARY_DIR})
