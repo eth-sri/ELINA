@@ -1,7 +1,8 @@
 # GPUPoly
 GPUPoly is a deep neural network verifier library running on GPU. Given the structure and the weigths of a trained neural network, it checks whether an input box (given as a set of intervals) is guaranteed to fully classify as a given label.
 
-A short introduction to GPUPoly can be seen in the following [video](https://www.youtube.com/watch?v=rM95uwgFFVw).
+A short introduction to GPUPoly can be seen in the following video:
+[![Introduction video](https://img.youtube.com/vi/rM95uwgFFVw/hqdefault.jpg)](https://www.youtube.com/watch?v=rM95uwgFFVw)
 
 ## Strength of certification and floating-point soundness
 Depending on its configuration, given a network and an input, GPUPoly can deliver different certification levels, listed here in increasing strength order:
@@ -50,7 +51,7 @@ The (python) script onnx2gpupoly.py allows to load an onnx network for use withi
 # Citing GPUPoly
 You can cite GPUPoly using the following bibtex:
 ```
-@InProceedings{Serre2021scaling,
+@InProceedings{gpupoly,
   author    = {Fran{\c c}ois Serre and Christoph M{\"u}ller and Gagandeep Singh and Markus P{\"u}schel and Martin Vechev},
   title     = {Scaling Polyhedral Neural Network Verification on {GPU}s},
   booktitle = {Proc. Machine Learning and Systems (MLSys'21)},
