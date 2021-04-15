@@ -60,7 +60,7 @@ Conv2D<T>::Conv2D(
 
 
 template <bool channels_first, typename Tin, typename Tout, typename Tconv, typename Tarith>
-__global__ void backSubstituteReLU(
+__global__ void convBackSubstitute(
 	const Tin* expr, size_t expr_N,
 	const Tconv* conv, size_t convN,
 	Tout* dest, size_t dest_N, int dest_m, int dest_n,
@@ -152,7 +152,7 @@ __global__ void backSubstituteReLU(
 }
 
 template <typename T, typename Td>
-__global__ void backSubstituteReLUInit(
+__global__ void convBackSubstituteInit(
 	const T* conv, size_t convN,
 	Td* dest, size_t dest_N, 
 	ConvShape cs,
@@ -193,14 +193,14 @@ void convBackSubstitute(typename AffineExpr<Te>::Queue& queue, const AffineExpr<
 		dim3 block(std::min(16, cs.input_channels), std::min(4, cs.kernel_size_cols), std::min(4, cs.kernel_size_rows));
 		dim3 grid(expr.m);
 		if(intervalOut)
-				backSubstituteReLUInit<T, Intv<Te>> << <grid, block >> > (
+				convBackSubstituteInit<T, Intv<Te>> << <grid, block >> > (
 					conv, conv.pitch(),
 					*A, A->pitch(),
 					cs,
 					expr.rows
 					);
 		else
-			backSubstituteReLUInit<T,Te> << <grid, block >> > (
+			convBackSubstituteInit<T,Te> << <grid, block >> > (
 				conv, conv.pitch(),
 				*A, A->pitch(),
 				cs,
@@ -227,7 +227,7 @@ void convBackSubstitute(typename AffineExpr<Te>::Queue& queue, const AffineExpr<
 	{
 		if (expr.A->interval())
 		{
-				backSubstituteReLU<true,Intv<Te>, Intv<Te>,T,Te> << <grid, block, sm >> > (
+				convBackSubstitute<true,Intv<Te>, Intv<Te>,T,Te> << <grid, block, sm >> > (
 					*expr.A, expr.A->pitch(),
 					convt, convt.pitch(),
 					*A, A->pitch(), A->m(), A->n(),
@@ -240,7 +240,7 @@ void convBackSubstitute(typename AffineExpr<Te>::Queue& queue, const AffineExpr<
 		}
 		else
 		{
-				backSubstituteReLU<true, Te, Intv<Te>, T, Te> << <grid, block, sm >> > (
+				convBackSubstitute<true, Te, Intv<Te>, T, Te> << <grid, block, sm >> > (
 					*expr.A, expr.A->pitch(),
 					convt, convt.pitch(),
 					*A, A->pitch(), A->m(), A->n(),
@@ -254,7 +254,7 @@ void convBackSubstitute(typename AffineExpr<Te>::Queue& queue, const AffineExpr<
 	else
 	{
 		assert(!expr.A->interval());
-			backSubstituteReLU<true, Te, Te, T, Te> << <grid, block, sm >> > (
+			convBackSubstitute<true, Te, Te, T, Te> << <grid, block, sm >> > (
 				*expr.A, expr.A->pitch(),
 				convt, convt.pitch(),
 				*A, A->pitch(), A->m(), A->n(),

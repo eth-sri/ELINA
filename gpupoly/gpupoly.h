@@ -60,8 +60,8 @@ extern "C" {
 		3. Certified for an evaluation that uses double precision IEEE754 arithmetic, with any summation order and any rounding mode.
 		4. Certified for an evaluation that uses single precision IEEE754 arithmetic, with any summation order and any rounding mode.
 
-	  By default, GPUPoly tries to deliver level 2 certifications, and will therefore output a result that will be either 0 or 2. The parameter soundness allows to disable floating-point soundness to speed up the computation (which then becomes roughly twice or three times faster). This mode doesn't offer any formal guarantee anymore, but yields in practice the same results. Without floating point soundness, GPUPoly outputs certification levels that can be 0 or 1.
-	  Conversely, it is possible to make GPUPoly search for stronger certification levels using the `STRONG_FP_SOUNDNESS` compile option. If GPUPoly is compiled with this option, the letter `S` will appear after its version number (instead of `W`), and it will output certification levels of 0, 3 or 4. If the floating-point soundness parameter is disabled, GPUPoly has the same behaviour with or without the `STRONG_FP_SOUNDNESS` option.
+	  By default, GPUPoly tries to deliver level 3 or 4 certifications. The parameter soundness allows to disable floating-point soundness to speed up the computation (which then becomes roughly twice or three times faster). This mode doesn't offer any formal guarantee anymore, but yields in practice the same results. Without floating point soundness, GPUPoly outputs certification levels of 1.
+	  Conversely, it is possible to make GPUPoly search for weaker certification levels using the `STRONG_FP_SOUNDNESS` compile option. If GPUPoly is compiled with this option, the letter `W` will appear after its version number (instead of `S`), and it will output certification levels of 1 and 2. If the floating-point soundness parameter is disabled, GPUPoly has the same behaviour with or without the `STRONG_FP_SOUNDNESS` option.
 	  */
 
       //!@{
@@ -321,11 +321,13 @@ extern "C" {
 	  Adds a ReLU layer to the network.
 
 	  \param parent index of the parent layer (or 0 for the input layer)
+	  \param useAreaHeuristic If false, always use a flat approximation for the lower bound (slope = 0).
 	  \returns the index of the newly created layer.
 	 */
 	GPUPOLY_EXPORT int addReLU(
 		NeuralNetwork* nn,
-		int parent
+		int parent,
+		bool useAreaHeuristic
 	);
 
 	//! MaxPool2D layer.

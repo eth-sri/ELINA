@@ -31,7 +31,7 @@
 
 
 template <int lgBlockSize, typename T>
-__global__ void listCriticalNeuronsReLU(int* dest, int* nbCritical, const Intv<T>* v, const int* oldList, size_t m)
+__global__ void listCriticalNeuronsCZ(int* dest, int* nbCritical, const Intv<T>* v, const int* oldList, size_t m)
 {
 	__shared__ int red[1 << lgBlockSize];
 	__shared__ int offset;
@@ -70,7 +70,7 @@ int ContainsZero<T>::listCriticalNeurons(int* dest, const Vector<T>& v, int* tmp
 	int an = 0;
 	gpuErrchk(cudaMemcpy(tmpInt, &an, sizeof(int), cudaMemcpyHostToDevice)); //TODO: replace with cudamemset
 	size_t m = oldList ? oldNbCritical : v.size();
-	listCriticalNeuronsReLU<8, T> << < (m + 255) / 256, 256 >> > (dest, tmpInt, v, oldList, m);
+	listCriticalNeuronsCZ<8, T> << < (m + 255) / 256, 256 >> > (dest, tmpInt, v, oldList, m);
 	gpuChkKer();
 	gpuErrchk(cudaMemcpy(&an, tmpInt, sizeof(int), cudaMemcpyDeviceToHost));
 	//std::cout << an << "/" << m << std::endl;

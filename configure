@@ -441,6 +441,24 @@ then
 fi
 
 
+# GPUPoly environment
+if test $has_cuda -eq 1
+then
+    searchbin "cmake"
+    if test $? -eq 1
+    then
+        echo "Configuring GPUPoly (using CMake)"
+        cd gpupoly
+        cmake -DCMAKE_INSTALL_PREFIX:PATH=$elina_prefix .
+        if test $? -ne 0; then echo "Failed to configure GPUPoly"; has_cuda=0; fi
+        cd ..
+    else
+        echo "GPUPoly requires CMake."
+        has_cuda=0
+    fi
+fi
+
+
 ##############################################
 # Custom tests
 ##############
@@ -491,6 +509,7 @@ detected configuration:
    optional OCaml support       $has_ocaml
    optional OCamlFind support   $has_ocamlfind
    optional Java support        $has_java
+   optional CUDA support        $has_cuda
 
    installation path            $elina_prefix
 
