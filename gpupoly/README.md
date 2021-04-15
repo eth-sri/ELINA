@@ -2,6 +2,7 @@
 GPUPoly is a deep neural network verifier library running on GPU. Given the structure and the weigths of a trained neural network, it checks whether an input box (given as a set of intervals) is guaranteed to fully classify as a given label.
 
 A short introduction to GPUPoly can be seen in the following video:
+
 [![Introduction video](https://img.youtube.com/vi/rM95uwgFFVw/hqdefault.jpg)](https://www.youtube.com/watch?v=rM95uwgFFVw)
 
 ## Strength of certification and floating-point soundness
