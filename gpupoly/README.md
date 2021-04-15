@@ -1,5 +1,25 @@
 # GPUPoly
 GPUPoly is a deep neural network verifier library running on GPU. Given the structure and the weigths of a trained neural network, it checks whether an input box (given as a set of intervals) is guaranteed to fully classify as a given label.
+<div class="block-content" id="ytplayer"></div>
+<script>
+  var tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/player_api";
+  var firstScriptTag = document.getElementsByTagName('script')[0];
+  firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+  var player;
+  function onYouTubePlayerAPIReady() {
+    player = new YT.Player('ytplayer', {
+      height: '432',
+      width: '768',
+      videoId: 'rM95uwgFFVw',
+	  playerVars:{
+	  autoplay: 1,
+	  cc_load_policy:1,
+	  modestbranding:1},
+	      events: {onReady: function(e) {e.target.mute();}}
+    });
+  }
+</script>
 
 A short introduction to GPUPoly can be seen in the following link:
 
