@@ -32,7 +32,7 @@ import numpy as np
 from gpupoly import Network
 
 ## Load a pre-trained Onnx network into the GPUPoly library.
-def onnx2gpupoly(graph):
+def onnx2gpupoly(graph, useAreaHeuristic=True):
     # dictionary that will containing the layer outputs/values that have already been processed.
     # Each value is a tuple containing an integer as a first element.
     # If the integer is -1, the value is a constant, and this constant is given as a numpy ndarray as a second element.
@@ -230,7 +230,7 @@ def onnx2gpupoly(graph):
             return outputIndex, outputShape
         if (layer.op_type == "Relu"):
             inputIndex, inputShape = getLayer(layer.input[0])
-            return nn.add_relu(inputIndex),inputShape
+            return nn.add_relu(inputIndex, useAreaHeuristic),inputShape
 
         if (layer.op_type == "Reshape"):
             inputIndex, inputShape = getLayer(layer.input[0])

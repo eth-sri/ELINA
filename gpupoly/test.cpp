@@ -34,7 +34,7 @@ int main()
 	);
 
 	// adds a ReLU layer
-	prev = addReLU(nn, prev);
+	prev = addReLU(nn, prev, true);
 
 	const double lowerBound1[] = { 1,2 };
 	const double upperBound1[] = { 1,2 }; // First image: two pixels, no epsilon

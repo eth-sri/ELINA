@@ -45,7 +45,7 @@ void ReLU::backSubstitute(typename AffineExpr<double>::Queue& queue, const Affin
 void ReLU::backSubstitute(typename AffineExpr<float>::Queue& queue, const AffineExpr<float>& expr) const {backSubstitute<float>(queue, expr);}
 
 
-template <typename T>
+template <typename T, bool useAreaHeuristic>
 __global__ void evalReLU(Intv<T>* dest, Intv<T>* activCst, Intv<T>* activFac, const Intv<T>* inputs, const size_t size)
 {
 	size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -66,7 +66,7 @@ __global__ void evalReLU(Intv<T>* dest, Intv<T>* activCst, Intv<T>* activFac, co
 	}
 	else // we're in between
 	{
-		T lambda = cur.high > -cur.low;
+		T lambda = useAreaHeuristic ? (cur.high > -cur.low) : 0;
 		activFac[idx].low = lambda;
 		activCst[idx].low = 0;
 		lambda = cur.high / (cur.high - cur.low);
@@ -87,7 +87,10 @@ void ReLU::eval(Vector<T>& dest, bool sound, bool precise)
 		nn.reEvaluateLayer(parent, ContainsZero<T>(), true, sound);
 		nn.reEvaluateLayer(parent, ContainsZero<T>(), false, sound);
 	}
-	evalReLU<T> << <(this->outputSize + 255) / 256, 256 >> > (dest, activCst<T>(), activFac<T>(), nn.getConcreteBounds<T>(parent), this->outputSize);
+	if(useAreaHeuristic)
+		evalReLU<T, true> << <(this->outputSize + 255) / 256, 256 >> > (dest, activCst<T>(), activFac<T>(), nn.getConcreteBounds<T>(parent), this->outputSize);
+	else
+		evalReLU<T, false> << <(this->outputSize + 255) / 256, 256 >> > (dest, activCst<T>(), activFac<T>(), nn.getConcreteBounds<T>(parent), this->outputSize);
 }
 
 

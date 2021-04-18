@@ -37,6 +37,7 @@ Back-substition model consists of one upper elementwise affine expression (activ
 */
 class ReLU : public NeuralNetwork::Layer {
 	const int parent; //!< Index of the parent layer
+	const bool useAreaHeuristic; //! If false, ReLU will always be modelled using a flat lower approximation.
 	Vector<double> activCstD; //!< Model constants
 	Vector<float> activCstS; //!< Model constants
 	Vector<double> activFacD; //!< Model factors
@@ -54,7 +55,7 @@ public:
   \param size Number of elements in the input (and therefore output).
   \param parent Index of the first parent layer (or 0 for the input layer).
 */
-	ReLU(NeuralNetwork& nn, int size, const int parent) :NeuralNetwork::Layer(nn, size), activCstD(size, true), activCstS(size,true), activFacS(size, true), activFacD(size, true), parent(parent) {}
+	ReLU(NeuralNetwork& nn, int size, bool useAreaHeuristic, const int parent) :NeuralNetwork::Layer(nn, size), activCstD(size, true), activCstS(size,true), activFacS(size, true), activFacD(size, true), useAreaHeuristic(useAreaHeuristic), parent(parent) {}
 	template <typename T>
 	void eval(Vector<T>& dest, bool sound, bool precise);
 	template <typename T>
