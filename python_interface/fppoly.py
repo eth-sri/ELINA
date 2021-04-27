@@ -246,6 +246,86 @@ def handle_fully_connected_layer(man, element,weights, bias,  size, num_pixels, 
 
     return
     
+    
+def handle_right_multiply_with_matrix(man, element, weights, num_weight_rows, num_weight_cols, num_out_cols, predecessors, num_predecessors):
+    """
+    handle the FFN layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    weights : POINTER(POINTER(c_double))
+        The weight matrix.
+    num_weight_rows: c_size_t
+	Number of rows in the matrix
+    num_weight_cols: c_size_t
+        Number of columns in the matrix
+    num_out_cols: c_size_t
+        Number of columns in the output
+    predecessors: POINTER(c_size_t)
+        the layers before the current layer
+    num_predecessors: c_size_t
+        the number of predecessors of the current layer
+    Returns
+    -------
+    res : ElinaAbstract0Ptr
+        Pointer to the new abstract object.
+
+    """
+
+    try:
+        handle_right_multiply_with_matrix_c = fppoly_api.handle_right_multiply_with_matrix
+        handle_right_multiply_with_matrix_c.restype = None
+        handle_right_multiply_with_matrix_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, c_size_t, c_size_t, c_size_t, POINTER(c_size_t), c_size_t]
+        handle_right_multiply_with_matrix_c(man,element,weights, num_weight_rows,  num_weight_cols, num_out_cols, predecessors, num_predecessors)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_right_multiply_with_matrix" from "libfppoly.so"')
+        print(inst)	
+
+    return
+
+
+def handle_multiply_row_with_bias(man, element, bias, num_rows, num_cols, predecessors, num_predecessors):
+    """
+    handle the FFN layer
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    element : ElinaAbstract0Ptr
+        Pointer to the ElinaAbstract0.
+    bias : POINTER(c_double)
+        The vector to multiply.
+    num_rows: c_size_t
+	Number of rows in the input
+    num_cols: c_size_t
+        Number of columns in the input
+    predecessors: POINTER(c_size_t)
+        the layers before the current layer
+    num_predecessors: c_size_t
+        the number of predecessors of the current layer
+    Returns
+    -------
+    res : ElinaAbstract0Ptr
+        Pointer to the new abstract object.
+
+    """
+
+    try:
+        handle_multiply_row_with_bias_c = fppoly_api.handle_multiply_row_with_bias
+        handle_multiply_row_with_bias_c.restype = None
+        handle_multiply_row_with_bias_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), c_size_t, c_size_t,  POINTER(c_size_t), c_size_t]
+        handle_multiply_row_with_bias_c(man,element, bias, num_rows,  num_cols, predecessors, num_predecessors)
+    except Exception as inst:
+        print('Problem with loading/calling "handle_multiply_row_with_bias" from "libfppoly.so"')
+        print(inst)	
+
+    return
+
 def handle_batch_normalization_layer(man, element,weights, bias,  size, predecessors, num_predecessors):
     """
     handle the batch normalization layer
