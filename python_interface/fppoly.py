@@ -495,7 +495,7 @@ def handle_relu_layer(man, element, num_neurons, predecessors, num_predecessors,
         print(inst)
 
 
-def handle_leakyrelu_layer(man, element, num_neurons, predecessors, num_predecessors, use_default_heuristics):
+def handle_leakyrelu_layer(man, element, num_neurons, predecessors, num_predecessors, alpha, use_default_heuristics):
     """
     handle LeakyReLU layer with alpha=0.01
     
@@ -511,6 +511,8 @@ def handle_leakyrelu_layer(man, element, num_neurons, predecessors, num_predeces
         the layers before the current layer
     num_predecessors: c_size_t
         the number of predecessors of the current layer
+    alpha: c_double
+        the slope in the negative regions
     use_default_heuristics: c_bool
         whether to use area heuristic
     Returns
@@ -522,8 +524,8 @@ def handle_leakyrelu_layer(man, element, num_neurons, predecessors, num_predeces
     try:
         handle_leakyrelu_layer_c = fppoly_api.handle_leakyrelu_layer
         handle_leakyrelu_layer_c.restype = None
-        handle_leakyrelu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t, c_bool]
-        handle_leakyrelu_layer_c(man, element, num_neurons, predecessors, num_predecessors, use_default_heuristics)
+        handle_leakyrelu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t, ctypes.c_double, c_bool]
+        handle_leakyrelu_layer_c(man, element, num_neurons, predecessors, num_predecessors, alpha, use_default_heuristics)
     except Exception as inst:
         print('Problem with loading/calling "handle_leakyrelu_layer" from "libfppoly.so"')
         print(inst)

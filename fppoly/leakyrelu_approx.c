@@ -1,6 +1,6 @@
 #include "leakyrelu_approx.h"
 
-expr_t * create_leakyrelu_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t i, bool use_default_heuristics, bool is_lower){
+expr_t * create_leakyrelu_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t i, double alpha, bool use_default_heuristics, bool is_lower){
 	expr_t * res = alloc_expr();  
 	res->inf_coeff = (double *)malloc(sizeof(double));
 	res->sup_coeff = (double *)malloc(sizeof(double));
@@ -13,13 +13,13 @@ expr_t * create_leakyrelu_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t
 	double lb = in_neuron->lb;
 	double ub = in_neuron->ub;
 	double width = ub + lb;
-	double num = ub + 0.01*lb;
+	double num = ub + alpha*lb;
 	double lambda_inf = -num/width;
 	double lambda_sup = num/width;
 	
 	if(ub<=0){
-		res->inf_coeff[0] = -0.01;
-		res->sup_coeff[0] = 0.01;
+		res->inf_coeff[0] = -alpha;
+		res->sup_coeff[0] = alpha;
 	}
 	else if(lb<0){
 		res->inf_coeff[0] = -1.0;
@@ -31,8 +31,8 @@ expr_t * create_leakyrelu_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t
 		double area2 = 0.5*lb*width;
 		if(use_default_heuristics){
 			if(area1 < area2){
-				res->inf_coeff[0] = -0.01;
-				res->sup_coeff[0] = 0.01;
+				res->inf_coeff[0] = -alpha;
+				res->sup_coeff[0] = alpha;
 			}
 			else{
 				res->inf_coeff[0] = -1.0;
@@ -40,8 +40,8 @@ expr_t * create_leakyrelu_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t
 			}
 		}
 		else{
-				res->inf_coeff[0] = -0.01;
-				res->sup_coeff[0] = 0.01;
+				res->inf_coeff[0] = -alpha;
+				res->sup_coeff[0] = alpha;
 		}
 	}
 	else{
@@ -57,7 +57,7 @@ expr_t * create_leakyrelu_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t
 }
 
 
-void handle_leakyrelu_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristics){
+void handle_leakyrelu_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, double alpha, bool use_default_heuristics){
 	
 	assert(num_predecessors==1);
 	fppoly_t *fp = fppoly_of_abstract0(element);
@@ -69,10 +69,10 @@ void handle_leakyrelu_layer(elina_manager_t *man, elina_abstract0_t* element, si
 	size_t i;
 	
 	for(i=0; i < num_neurons; i++){
-		out_neurons[i]->lb = -fmax(0.01*-in_neurons[i]->lb, -in_neurons[i]->lb);
-		out_neurons[i]->ub = fmax(0.01*in_neurons[i]->ub,in_neurons[i]->ub);
-		out_neurons[i]->lexpr = create_leakyrelu_expr(out_neurons[i], in_neurons[i], i, use_default_heuristics, true);
-		out_neurons[i]->uexpr = create_leakyrelu_expr(out_neurons[i], in_neurons[i], i, use_default_heuristics, false);
+		out_neurons[i]->lb = -fmax(alpha*-in_neurons[i]->lb, -in_neurons[i]->lb);
+		out_neurons[i]->ub = fmax(alpha*in_neurons[i]->ub,in_neurons[i]->ub);
+		out_neurons[i]->lexpr = create_leakyrelu_expr(out_neurons[i], in_neurons[i], i, alpha, use_default_heuristics, true);
+		out_neurons[i]->uexpr = create_leakyrelu_expr(out_neurons[i], in_neurons[i], i, alpha, use_default_heuristics, false);
 		
 	}
 	
