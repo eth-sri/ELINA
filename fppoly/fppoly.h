@@ -158,6 +158,10 @@ void handle_padding_layer(elina_manager_t* man, elina_abstract0_t* element, size
 
 void handle_fully_connected_layer(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons, size_t *predecessors, size_t num_predecessors);
 
+void handle_right_multiply_with_matrix(elina_manager_t* man, elina_abstract0_t* element, double **weights, size_t num_weight_rows, size_t num_weight_cols, size_t num_out_cols, size_t * predecessors, size_t num_predecessors);
+
+void handle_multiply_row_with_bias(elina_manager_t* man, elina_abstract0_t* element, double *bias, size_t num_rows, size_t num_cols, size_t * predecessors, size_t num_predecessors);
+
 void handle_batch_normalization_layer(elina_manager_t* man, elina_abstract0_t* element, double *weights, double * bias, size_t num_neurons, size_t *predecessors, size_t num_predecessors);
 
 void handle_fully_connected_layer_no_alloc(elina_manager_t* man, elina_abstract0_t* element, double **weights, double * bias, size_t num_out_neurons, size_t num_in_neurons, size_t *predecessors, size_t num_predecessors);
