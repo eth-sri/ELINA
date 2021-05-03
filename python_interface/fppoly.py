@@ -239,7 +239,7 @@ def handle_fully_connected_layer(man, element,weights, bias,  size, num_pixels, 
         handle_fully_connected_layer_c = fppoly_api.handle_fully_connected_layer
         handle_fully_connected_layer_c.restype = None
         handle_fully_connected_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double),  c_size_t, c_size_t, POINTER(c_size_t), c_size_t]
-        handle_fully_connected_layer_c(man,element,weights, bias,  size, num_pixels, predecessors, num_predecessors)
+        handle_fully_connected_layer_c(man, element, weights, bias,  size, num_pixels, predecessors, num_predecessors)
     except Exception as inst:
         print('Problem with loading/calling "handle_fully_connected_layer" from "libfppoly.so"')
         print(inst)	
