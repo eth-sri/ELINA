@@ -943,16 +943,27 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
                         
                         size_t *predecessors = fp->layers[k]->predecessors;
                         size_t num_predecessors = fp->layers[k]->num_predecessors;
-                        int common_predecessor = INT_MAX;
+                        int common_predecessor = -1;
+			 size_t * predecessor_map = (size_t *)calloc(k,sizeof(size_t));
+			 for(i=0; i < num_predecessors; i++){
+				int iter = predecessors[i]-1;
+				while(iter>=0){
+					predecessor_map[iter] = predecessor_map[iter]+1;
+					iter = fp->layers[iter]->predecessors[0]-1;
+				}
+			 }
+			 for(int i=k; i >=0; i-- ){
+				if(predecessor_map[i]==num_predecessors){
+					common_predecessor = i;
+					break;
+				}
+			 }
+			 free(predecessor_map);
                         expr_t ** sub_expr = (expr_t**)malloc(num_predecessors*sizeof(expr_t*));
                         //size_t index_start = 0;
                         
                         for(i=0; i < num_predecessors; i++){
-                                int pred = predecessors[i]-1;
-                                //size_t num_neurons = fp->layers[pred]->dims;
-                                if(pred < common_predecessor){
-                                        common_predecessor = pred;
-                                }
+                                
                                 sub_expr[i] = extract_subexpr_concatenate(uexpr,i, C,fp->layers[k]->dims, fp->layers[k]->num_channels);
                                 //index_start = index_start + num_neurons;
                                 //printf("subexpr %zu\n", fp->layers[k]->num_channels);
