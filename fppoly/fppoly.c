@@ -552,8 +552,8 @@ void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element
     fppoly_t *fp = fppoly_of_abstract0(element);
     size_t numlayers = fp->numlayers;
 
-    printf("Concat starts here: %zu, first input: %zu, last input: %zu\n", numlayers, predecessors[0], predecessors[num_predecessors - 1]);
-    fflush(stdout);
+    //printf("Concat starts here: %zu, first input: %zu, last input: %zu\n", numlayers, predecessors[0], predecessors[num_predecessors - 1]);
+    //fflush(stdout);
 
     size_t i, j, k, num_out_neurons = 0;
     for(i=0; i < num_predecessors; i++){
@@ -607,14 +607,14 @@ void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element
     }
     fp->layers[numlayers]->num_channels = num_channels;
 
-    printf("Concat : neurons in: %zu, neurons out: %zu\n", k, num_out_neurons);
-    fflush(stdout);
+    //printf("Concat : neurons in: %zu, neurons out: %zu\n", k, num_out_neurons);
+    //fflush(stdout);
 
     update_state_using_previous_layers_parallel(man, fp, numlayers);
 
-    expr_print(out_neurons[0]->lexpr);
-    expr_print(out_neurons[k-1]->lexpr);
-    fflush(stdout);
+    //expr_print(out_neurons[0]->lexpr);
+    //expr_print(out_neurons[k-1]->lexpr);
+    //fflush(stdout);
 
     //printf("return here2\n");
     //fppoly_fprint(stdout,man,fp,NULL);
