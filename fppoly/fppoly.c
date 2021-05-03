@@ -253,31 +253,39 @@ void handle_fully_connected_layer_with_backsubstitute(elina_manager_t* man, elin
     for(i=0; i < num_out_neurons; i++){
         
         double cst_i = cst[i];
-	if(OP==MUL){
-		out_neurons[i]->lexpr = create_sparse_expr(&cst_i, 0, &i, 1);
+        if(OP==MUL){
+            out_neurons[i]->lexpr = create_sparse_expr(&cst_i, 0, &i, 1);
+            }
+        else if(OP==SUB1){
+            double coeff = -1;
+            out_neurons[i]->lexpr = create_sparse_expr(&coeff, cst_i, &i, 1);
         }
-	else if(OP==SUB1){
-		double coeff = -1;
-		out_neurons[i]->lexpr = create_sparse_expr(&coeff, cst_i, &i, 1);
-	}
-	else if(OP==SUB2){
-		double coeff = 1;
-		out_neurons[i]->lexpr = create_sparse_expr(&coeff, -cst_i, &i, 1);
-	}
-    else{
-		double * weight_i = weights[i];
-        	out_neurons[i]->lexpr = create_dense_expr(weight_i,cst_i,num_in_neurons);
-	}
-	out_neurons[i]->uexpr = out_neurons[i]->lexpr;
+        else if(OP==SUB2){
+            double coeff = 1;
+            out_neurons[i]->lexpr = create_sparse_expr(&coeff, -cst_i, &i, 1);
+        }
+        else{
+            double * weight_i = weights[i];
+                out_neurons[i]->lexpr = create_dense_expr(weight_i,cst_i,num_in_neurons);
+        }
+	    out_neurons[i]->uexpr = out_neurons[i]->lexpr;
     }
-    
+
+//    if(numlayers==17){
+//        printf("return here1\n");
+////        layer_fprint(stdout,fp->layers[numlayers],NULL);
+////        expr_print(out_neurons[0]->lexpr);
+//        fflush(stdout);
+//        }
+
     update_state_using_previous_layers_parallel(man,fp,numlayers);
     
-    //printf("return here2\n");
-    //if(numlayers==18)
-    //layer_fprint(stdout,fp->layers[numlayers],NULL);
-    //expr_print(out_neurons[0]->lexpr);
-    //fflush(stdout);
+//    if(numlayers==17){
+//        printf("return here2\n");
+////        layer_fprint(stdout,fp->layers[numlayers],NULL);
+////        expr_print(out_neurons[0]->lexpr);
+//        fflush(stdout);
+//        }
     return;
 }
 
@@ -541,11 +549,12 @@ double *get_upper_bound_for_linexpr0(elina_manager_t *man, elina_abstract0_t *el
 
 
 void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element, size_t * predecessors, size_t num_predecessors, size_t *C){
-    //printf("FC start here %zu %zu %zu %zu\n",num_in_neurons,num_out_neurons,predecessors[0],num_predecessors);
-    //fflush(stdout);
     fppoly_t *fp = fppoly_of_abstract0(element);
     size_t numlayers = fp->numlayers;
-    
+
+    printf("Concat starts here: %zu, first input: %zu, last input: %zu\n", numlayers, predecessors[0], predecessors[num_predecessors - 1]);
+    fflush(stdout);
+
     size_t i, j, k, num_out_neurons = 0;
     for(i=0; i < num_predecessors; i++){
       size_t pred = predecessors[i];
@@ -556,12 +565,10 @@ void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element
       	num_out_neurons = num_out_neurons + fp->layers[pred-1]->dims;
       }
     }
-   
+
     fppoly_add_new_layer(fp,num_out_neurons, predecessors, num_predecessors, false);
     fp->layers[numlayers]->is_concat = true;
     fp->layers[numlayers]->C = C;
-    //printf("concat_layer: %zu, first inout: %zu, last input: %zu\n", numlayers, C[0], C[1]);
-    //fflush(stdout);
     neuron_t **out_neurons = fp->layers[numlayers]->neurons;
     k = 0;
     size_t num_channels = 0;
@@ -599,8 +606,16 @@ void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element
        }
     }
     fp->layers[numlayers]->num_channels = num_channels;
-    //update_state_using_previous_layers_parallel(man,fp,numlayers);
-    
+
+    printf("Concat : neurons in: %zu, neurons out: %zu\n", k, num_out_neurons);
+    fflush(stdout);
+
+    update_state_using_previous_layers_parallel(man, fp, numlayers);
+
+    expr_print(out_neurons[0]->lexpr);
+    expr_print(out_neurons[k-1]->lexpr);
+    fflush(stdout);
+
     //printf("return here2\n");
     //fppoly_fprint(stdout,man,fp,NULL);
     //fflush(stdout);
