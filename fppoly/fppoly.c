@@ -282,13 +282,13 @@ void handle_fully_connected_layer_with_backsubstitute(elina_manager_t* man, elin
 }
 
 void handle_right_multiply_with_matrix(elina_manager_t* man, elina_abstract0_t* element, double **weights, size_t num_weight_rows, size_t num_weight_cols, size_t num_out_cols, size_t * predecessors, size_t num_predecessors){
-    printf("right multiply\n");
-    fflush(stdout);
+    //printf("right multiply %zu %zu %zu\n", num_weight_rows, num_weight_cols,num_out_cols);
+    //fflush(stdout);
     assert(num_predecessors==1);
     fppoly_t *fp = fppoly_of_abstract0(element);
     
     size_t numlayers = fp->numlayers;
-    size_t num_out_neurons = num_weight_cols*num_out_cols;
+    size_t num_out_neurons = num_weight_rows*num_out_cols;
     fppoly_add_new_layer(fp,num_out_neurons, predecessors, num_predecessors, false);
     
     neuron_t **out_neurons = fp->layers[numlayers]->neurons;
@@ -296,6 +296,8 @@ void handle_right_multiply_with_matrix(elina_manager_t* man, elina_abstract0_t* 
     for(i=0; i < num_weight_rows; i++){
         for(j=0; j < num_out_cols; j++){
         	size_t index = i *num_out_cols + j;
+        	//printf("index %zu\n",index);
+        	//fflush(stdout);
         	double *coeff = (double *)malloc(num_weight_cols*sizeof(double));
         	size_t *dim = (size_t *)malloc(num_weight_cols*sizeof(size_t));
         	double cst = 0.0;
@@ -306,8 +308,8 @@ void handle_right_multiply_with_matrix(elina_manager_t* man, elina_abstract0_t* 
 		}
 		out_neurons[index]->lexpr = create_sparse_expr(coeff,cst,dim, num_weight_cols); 
 		out_neurons[index]->uexpr = out_neurons[index]->lexpr;
-		printf("i: %zu, j: %zu\n",i,j);
-		expr_print(out_neurons[index]->lexpr);
+		//printf("i: %zu, j: %zu\n",i,j);
+		//expr_print(out_neurons[index]->lexpr);
 	}
     }
     
@@ -543,33 +545,56 @@ void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element
     //fflush(stdout);
     fppoly_t *fp = fppoly_of_abstract0(element);
     size_t numlayers = fp->numlayers;
-    //printf("concat_layer: %zu, first inout: %zu, last input: %zu\n", numlayers, predecessors[0], predecessors[num_predecessors - 1]);
-    //fflush(stdout);
+    
     size_t i, j, k, num_out_neurons = 0;
     for(i=0; i < num_predecessors; i++){
       size_t pred = predecessors[i];
-      num_out_neurons = num_out_neurons + fp->layers[pred-1]->dims;
+      if(pred==0){
+      	num_out_neurons = num_out_neurons + fp->num_pixels;
+      }
+      else{
+      	num_out_neurons = num_out_neurons + fp->layers[pred-1]->dims;
+      }
     }
+   
     fppoly_add_new_layer(fp,num_out_neurons, predecessors, num_predecessors, false);
     fp->layers[numlayers]->is_concat = true;
     fp->layers[numlayers]->C = C;
+    //printf("concat_layer: %zu, first inout: %zu, last input: %zu\n", numlayers, C[0], C[1]);
+    //fflush(stdout);
     neuron_t **out_neurons = fp->layers[numlayers]->neurons;
     k = 0;
     size_t num_channels = 0;
     for(i=0; i < num_predecessors; i++){
 	size_t pred = predecessors[i];
 	num_channels = num_channels + C[i];
-        size_t num_in_neurons = fp->layers[pred-1]->dims;
+        size_t num_in_neurons;
+        if(pred==0){
+        	num_in_neurons = fp->num_pixels;
+        }
+        else{
+        	num_in_neurons = fp->layers[pred-1]->dims;
+        }
         for(j=0; j < num_in_neurons; j++){
 		double coeff = 1.0;
 		out_neurons[k]->lexpr = create_sparse_expr(&coeff, 0, &j, 1);
 		out_neurons[k]->uexpr = out_neurons[k]->lexpr;
-		out_neurons[k]->lb = fp->layers[pred-1]->neurons[j]->lb;
+		if(pred==0){
+			out_neurons[k]->lb = fp->input_inf[j];
+		}
+		else{
+			out_neurons[k]->lb = fp->layers[pred-1]->neurons[j]->lb;
+		}
 		//if(k==1){
 		//	printf("TRUE BOUNDS: %zu %g\n",k,fp->layers[pred-1]->neurons[j]->lb);
 		//	fflush(stdout);
 		//	}
-		out_neurons[k]->ub = fp->layers[pred-1]->neurons[j]->ub;
+		if(pred==0){
+			out_neurons[k]->ub = fp->input_sup[j];
+		}
+		else{
+			out_neurons[k]->ub = fp->layers[pred-1]->neurons[j]->ub;
+		}
 		k++;
        }
     }
