@@ -610,7 +610,7 @@ void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element
     //printf("Concat : neurons in: %zu, neurons out: %zu\n", k, num_out_neurons);
     //fflush(stdout);
 
-    update_state_using_previous_layers_parallel(man, fp, numlayers);
+    //update_state_using_previous_layers_parallel(man, fp, numlayers);
 
     //expr_print(out_neurons[0]->lexpr);
     //expr_print(out_neurons[k-1]->lexpr);
