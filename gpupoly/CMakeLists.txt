@@ -22,11 +22,11 @@
 #  CMake project to be used to compile GPUPoly on platforms not handled by ELINA.
 #
 
-cmake_minimum_required (VERSION 3.17.1)
+cmake_minimum_required (VERSION 3.18.6)
 project ("GPUPoly" VERSION 0.12.0 LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED True)
 
 find_package(CUDAToolkit)
