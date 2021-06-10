@@ -648,7 +648,7 @@ def tanh_zono_layerwise(man,destructive,elem,start_offset, num_dim):
 
     return res
 
-def pool_zono(man, destructive, elem, pool_size, input_size, src_offset, strides, dimensionality, dst_offset, pad_top, pad_left, output_shape, is_maxpool):
+def pool_zono(man, destructive, elem, pool_size, input_size, src_offset, strides, dimensionality, dst_offset, pad_top, pad_left, pad_bottom, pad_right, output_shape, is_maxpool):
     """
     Performs Pooling operations
     

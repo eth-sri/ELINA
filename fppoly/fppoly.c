@@ -253,22 +253,106 @@ void handle_fully_connected_layer_with_backsubstitute(elina_manager_t* man, elin
     for(i=0; i < num_out_neurons; i++){
         
         double cst_i = cst[i];
-	if(OP==MUL){
-		out_neurons[i]->lexpr = create_sparse_expr(&cst_i, 0, &i, 1);
+        if(OP==MUL){
+            out_neurons[i]->lexpr = create_sparse_expr(&cst_i, 0, &i, 1);
+            }
+        else if(OP==SUB1){
+            double coeff = -1;
+            out_neurons[i]->lexpr = create_sparse_expr(&coeff, cst_i, &i, 1);
         }
-	else if(OP==SUB1){
-		double coeff = -1;
-		out_neurons[i]->lexpr = create_sparse_expr(&coeff, cst_i, &i, 1);
+        else if(OP==SUB2){
+            double coeff = 1;
+            out_neurons[i]->lexpr = create_sparse_expr(&coeff, -cst_i, &i, 1);
+        }
+        else{
+            double * weight_i = weights[i];
+                out_neurons[i]->lexpr = create_dense_expr(weight_i,cst_i,num_in_neurons);
+        }
+	    out_neurons[i]->uexpr = out_neurons[i]->lexpr;
+    }
+
+//    if(numlayers==17){
+//        printf("return here1\n");
+////        layer_fprint(stdout,fp->layers[numlayers],NULL);
+////        expr_print(out_neurons[0]->lexpr);
+//        fflush(stdout);
+//        }
+
+    update_state_using_previous_layers_parallel(man,fp,numlayers);
+    
+//    if(numlayers==17){
+//        printf("return here2\n");
+////        layer_fprint(stdout,fp->layers[numlayers],NULL);
+////        expr_print(out_neurons[0]->lexpr);
+//        fflush(stdout);
+//        }
+    return;
+}
+
+void handle_right_multiply_with_matrix(elina_manager_t* man, elina_abstract0_t* element, double **weights, size_t num_weight_rows, size_t num_weight_cols, size_t num_out_cols, size_t * predecessors, size_t num_predecessors){
+    //printf("right multiply %zu %zu %zu\n", num_weight_rows, num_weight_cols,num_out_cols);
+    //fflush(stdout);
+    assert(num_predecessors==1);
+    fppoly_t *fp = fppoly_of_abstract0(element);
+    
+    size_t numlayers = fp->numlayers;
+    size_t num_out_neurons = num_weight_rows*num_out_cols;
+    fppoly_add_new_layer(fp,num_out_neurons, predecessors, num_predecessors, false);
+    
+    neuron_t **out_neurons = fp->layers[numlayers]->neurons;
+    size_t i,j, k;
+    for(i=0; i < num_weight_rows; i++){
+        for(j=0; j < num_out_cols; j++){
+        	size_t index = i *num_out_cols + j;
+        	//printf("index %zu\n",index);
+        	//fflush(stdout);
+        	double *coeff = (double *)malloc(num_weight_cols*sizeof(double));
+        	size_t *dim = (size_t *)malloc(num_weight_cols*sizeof(size_t));
+        	double cst = 0.0;
+        	for(k=0; k < num_weight_cols; k++){
+			coeff[k] = weights[i][k];
+			dim[k] = k*num_out_cols + j;
+        		
+		}
+		out_neurons[index]->lexpr = create_sparse_expr(coeff,cst,dim, num_weight_cols); 
+		out_neurons[index]->uexpr = out_neurons[index]->lexpr;
+		//printf("i: %zu, j: %zu\n",i,j);
+		//expr_print(out_neurons[index]->lexpr);
 	}
-	else if(OP==SUB2){
-		double coeff = 1;
-		out_neurons[i]->lexpr = create_sparse_expr(&coeff, -cst_i, &i, 1);
+    }
+    
+    update_state_using_previous_layers_parallel(man,fp,numlayers);
+    
+    //printf("return here2\n");
+    //if(numlayers==18)
+    //layer_fprint(stdout,fp->layers[numlayers],NULL);
+    //expr_print(out_neurons[0]->lexpr);
+    //fflush(stdout);
+    return;
+}
+
+
+void handle_multiply_row_with_bias(elina_manager_t* man, elina_abstract0_t* element, double *bias, size_t num_rows, size_t num_cols, size_t * predecessors, size_t num_predecessors){
+    assert(num_predecessors==1);
+    fppoly_t *fp = fppoly_of_abstract0(element);
+    
+    size_t numlayers = fp->numlayers;
+    size_t num_out_neurons = num_rows*num_cols;
+    fppoly_add_new_layer(fp,num_out_neurons, predecessors, num_predecessors, false);
+    
+    neuron_t **out_neurons = fp->layers[numlayers]->neurons;
+    size_t i,j;
+    for(i=0; i < num_rows; i++){
+        for(j=0; j < num_cols; j++){
+        	size_t index = i *num_cols + j;
+        	double *coeff = (double *)malloc(sizeof(double));
+        	size_t *dim = (size_t *)malloc(sizeof(size_t));
+        	double cst = 0.0;
+		coeff[0] = bias[i];
+		dim[0] = i*num_cols + j;
+		out_neurons[index]->lexpr = create_sparse_expr(coeff,cst,dim, 1); 
+		out_neurons[index]->uexpr = out_neurons[index]->lexpr;
 	}
-    else{
-		double * weight_i = weights[i];
-        	out_neurons[i]->lexpr = create_dense_expr(weight_i,cst_i,num_in_neurons);
-	}
-	out_neurons[i]->uexpr = out_neurons[i]->lexpr;
     }
     
     update_state_using_previous_layers_parallel(man,fp,numlayers);
@@ -302,11 +386,6 @@ void handle_fully_connected_layer_no_alloc(elina_manager_t* man, elina_abstract0
 void handle_fully_connected_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,   size_t size, size_t num_pixels, size_t *predecessors, size_t num_predecessors){
     handle_fully_connected_layer_with_backsubstitute(man, abs, weights, bias, size, num_pixels, predecessors, num_predecessors, true, MATMULT);
 }
-
-
-
-
-
 
 
 
@@ -470,17 +549,23 @@ double *get_upper_bound_for_linexpr0(elina_manager_t *man, elina_abstract0_t *el
 
 
 void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element, size_t * predecessors, size_t num_predecessors, size_t *C){
-    //printf("FC start here %zu %zu %zu %zu\n",num_in_neurons,num_out_neurons,predecessors[0],num_predecessors);
-    //fflush(stdout);
     fppoly_t *fp = fppoly_of_abstract0(element);
     size_t numlayers = fp->numlayers;
-    //printf("concat_layer: %zu, first inout: %zu, last input: %zu\n", numlayers, predecessors[0], predecessors[num_predecessors - 1]);
+
+    //printf("Concat starts here: %zu, first input: %zu, last input: %zu\n", numlayers, predecessors[0], predecessors[num_predecessors - 1]);
     //fflush(stdout);
+
     size_t i, j, k, num_out_neurons = 0;
     for(i=0; i < num_predecessors; i++){
       size_t pred = predecessors[i];
-      num_out_neurons = num_out_neurons + fp->layers[pred-1]->dims;
+      if(pred==0){
+      	num_out_neurons = num_out_neurons + fp->num_pixels;
+      }
+      else{
+      	num_out_neurons = num_out_neurons + fp->layers[pred-1]->dims;
+      }
     }
+
     fppoly_add_new_layer(fp,num_out_neurons, predecessors, num_predecessors, false);
     fp->layers[numlayers]->is_concat = true;
     fp->layers[numlayers]->C = C;
@@ -490,23 +575,47 @@ void handle_concatenation_layer(elina_manager_t* man, elina_abstract0_t* element
     for(i=0; i < num_predecessors; i++){
 	size_t pred = predecessors[i];
 	num_channels = num_channels + C[i];
-        size_t num_in_neurons = fp->layers[pred-1]->dims;
+        size_t num_in_neurons;
+        if(pred==0){
+        	num_in_neurons = fp->num_pixels;
+        }
+        else{
+        	num_in_neurons = fp->layers[pred-1]->dims;
+        }
         for(j=0; j < num_in_neurons; j++){
 		double coeff = 1.0;
 		out_neurons[k]->lexpr = create_sparse_expr(&coeff, 0, &j, 1);
 		out_neurons[k]->uexpr = out_neurons[k]->lexpr;
-		out_neurons[k]->lb = fp->layers[pred-1]->neurons[j]->lb;
+		if(pred==0){
+			out_neurons[k]->lb = fp->input_inf[j];
+		}
+		else{
+			out_neurons[k]->lb = fp->layers[pred-1]->neurons[j]->lb;
+		}
 		//if(k==1){
 		//	printf("TRUE BOUNDS: %zu %g\n",k,fp->layers[pred-1]->neurons[j]->lb);
 		//	fflush(stdout);
 		//	}
-		out_neurons[k]->ub = fp->layers[pred-1]->neurons[j]->ub;
+		if(pred==0){
+			out_neurons[k]->ub = fp->input_sup[j];
+		}
+		else{
+			out_neurons[k]->ub = fp->layers[pred-1]->neurons[j]->ub;
+		}
 		k++;
        }
     }
     fp->layers[numlayers]->num_channels = num_channels;
-    //update_state_using_previous_layers_parallel(man,fp,numlayers);
-    
+
+    //printf("Concat : neurons in: %zu, neurons out: %zu\n", k, num_out_neurons);
+    //fflush(stdout);
+
+    //update_state_using_previous_layers_parallel(man, fp, numlayers);
+
+    //expr_print(out_neurons[0]->lexpr);
+    //expr_print(out_neurons[k-1]->lexpr);
+    //fflush(stdout);
+
     //printf("return here2\n");
     //fppoly_fprint(stdout,man,fp,NULL);
     //fflush(stdout);
@@ -757,7 +866,12 @@ void free_neuron(neuron_t *neuron){
 	if(neuron->lexpr){
 		free_expr(neuron->lexpr);
 	}
-	
+	if(neuron->backsubstituted_lexpr!=neuron->backsubstituted_uexpr){
+		free_expr(neuron->backsubstituted_uexpr);
+	}
+	if(neuron->backsubstituted_lexpr){
+		free_expr(neuron->backsubstituted_lexpr);
+	}
 	free(neuron);
 }
 

@@ -418,12 +418,65 @@ double get_ub_using_predecessor_layer(fppoly_internal_t * pr,fppoly_t *fp, expr_
 	return res;
 }
 
+int get_lb_using_non_concatenate_layers(fppoly_internal_t * pr,fppoly_t *fp, expr_t **lexpr_ptr, int k, double *res){
+	expr_t *lexpr = *lexpr_ptr;
+	if(fp->layers[k]->num_predecessors==2){
+		expr_t * lexpr_copy = copy_expr(lexpr);
+		lexpr_copy->inf_cst = 0;
+		lexpr_copy->sup_cst = 0;
+		size_t predecessor1 = fp->layers[k]->predecessors[0]-1;
+		size_t predecessor2 = fp->layers[k]->predecessors[1]-1;
+				
+		char * predecessor_map = (char *)calloc(k,sizeof(char));
+				// Assume no nested residual layers
+		int iter = fp->layers[predecessor1]->predecessors[0]-1;
+		while(iter>=0){
+			predecessor_map[iter] = 1;
+			iter = fp->layers[iter]->predecessors[0]-1;
+		}
+		iter =  fp->layers[predecessor2]->predecessors[0]-1;
+		int common_predecessor = 0;
+		while(iter>=0){
+			if(predecessor_map[iter] == 1){
+				common_predecessor = iter;
+				break;
+			}
+			iter = fp->layers[iter]->predecessors[0]-1;
+		}
+				
+		iter = predecessor1;
+		while(iter!=common_predecessor){
+			get_lb_using_predecessor_layer(pr,fp, &lexpr,  iter);
+			iter = fp->layers[iter]->predecessors[0]-1;
+		}
+		iter =  predecessor2;
+		while(iter!=common_predecessor){
+			get_lb_using_predecessor_layer(pr,fp, &lexpr_copy,  iter);
+			iter = fp->layers[iter]->predecessors[0]-1;					
+		}
+		free(predecessor_map);
+		add_expr(pr,lexpr,lexpr_copy);
+				
+		free_expr(lexpr_copy);
+				
+				// Assume at least one non-residual layer between two residual layers
+		k = common_predecessor;		
+	}
+	else {
+								
+		 *res =fmin(*res,get_lb_using_predecessor_layer(pr,fp, &lexpr, k));
+		 k = fp->layers[k]->predecessors[0]-1;
+				
+	}
+	*lexpr_ptr = lexpr;
+	return k;
+}
+
 double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t **expr, size_t layerno){
 	size_t i;
 	int k;
 	//size_t numlayers = fp->numlayers;
-	//printf("COMING HERE\n");
-	//fflush(stdout);
+	
 	expr_t * lexpr = copy_expr(*expr);
         fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	if(fp->numlayers==layerno){
@@ -436,25 +489,40 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	else{
 		k = fp->layers[layerno]->predecessors[0]-1;
 	}	
+	
 	double res = INFINITY;
 	while(k >=0){
 	        if(fp->layers[k]->is_concat==true){
 		//	expr_print(lexpr);
 		//	fflush(stdout);
 			//printf("k: %zu\n", k);
+			//printf("COMING HERE %d \n", k);
+			//fflush(stdout);
 			size_t i;
 			size_t *C = fp->layers[k]->C;
+			//printf("concat_layer: first inout: %zu, last input: %zu\n", C[0], C[1]);
+    			//fflush(stdout);
 			size_t *predecessors = fp->layers[k]->predecessors;
 			size_t num_predecessors = fp->layers[k]->num_predecessors;
-			int common_predecessor = INT_MAX;
+			int common_predecessor = -1;
+			size_t * predecessor_map = (size_t *)calloc(k,sizeof(size_t));
+			for(i=0; i < num_predecessors; i++){
+				int iter = predecessors[i]-1;
+				while(iter>=0){
+					predecessor_map[iter] = predecessor_map[iter]+1;
+					iter = fp->layers[iter]->predecessors[0]-1;
+				}
+			}
+			for(int i=k; i >=0; i-- ){
+				if(predecessor_map[i]==num_predecessors){
+					common_predecessor = i;
+					break;
+				}
+			}
+			free(predecessor_map);
 			expr_t ** sub_expr = (expr_t**)malloc(num_predecessors*sizeof(expr_t*));
 			//size_t index_start = 0;
 			for(i=0; i < num_predecessors; i++){
-				int pred = predecessors[i]-1;
-				//size_t num_neurons = fp->layers[pred]->dims;
-				if(pred < common_predecessor){
-					common_predecessor = pred;
-				}
 				sub_expr[i] = extract_subexpr_concatenate(lexpr,i, C,fp->layers[k]->dims, fp->layers[k]->num_channels);
 			//printf("index start %zu %zu %zu\n", i,index_start,num_neurons);
 			//fflush(stdout);
@@ -471,10 +539,8 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 				if(sub_expr[i]->size>0){
 					
 					while(iter!=common_predecessor){
-						get_lb_using_predecessor_layer(pr,fp, &sub_expr[i],  iter);
-						//printf("iter %zu %d\n",sub_expr[i]->size, iter);
-						//fflush(stdout);
-						iter = fp->layers[iter]->predecessors[0]-1;
+						double res1 = INFINITY;
+						iter = get_lb_using_non_concatenate_layers(pr, fp, &sub_expr[i], iter, &res1);
 					}
 				}
 			}
@@ -513,55 +579,11 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 			//expr_print(lexpr);
 			//fflush(stdout);
 		}
-		else if(fp->layers[k]->num_predecessors==2){
-				expr_t * lexpr_copy = copy_expr(lexpr);
-				lexpr_copy->inf_cst = 0;
-				lexpr_copy->sup_cst = 0;
-				size_t predecessor1 = fp->layers[k]->predecessors[0]-1;
-				size_t predecessor2 = fp->layers[k]->predecessors[1]-1;
-				
-				char * predecessor_map = (char *)calloc(k,sizeof(char));
-				// Assume no nested residual layers
-				int iter = fp->layers[predecessor1]->predecessors[0]-1;
-				while(iter>=0){
-					predecessor_map[iter] = 1;
-					iter = fp->layers[iter]->predecessors[0]-1;
-				}
-				iter =  fp->layers[predecessor2]->predecessors[0]-1;
-				int common_predecessor = 0;
-				while(iter>=0){
-					if(predecessor_map[iter] == 1){
-						common_predecessor = iter;
-						break;
-					}
-					iter = fp->layers[iter]->predecessors[0]-1;
-				}
-				
-				iter = predecessor1;
-				while(iter!=common_predecessor){
-					get_lb_using_predecessor_layer(pr,fp, &lexpr,  iter);
-					iter = fp->layers[iter]->predecessors[0]-1;
-				}
-				iter =  predecessor2;
-				while(iter!=common_predecessor){
-					get_lb_using_predecessor_layer(pr,fp, &lexpr_copy,  iter);
-					iter = fp->layers[iter]->predecessors[0]-1;					
-				}
-				free(predecessor_map);
-				add_expr(pr,lexpr,lexpr_copy);
-				
-				free_expr(lexpr_copy);
-				
-				// Assume at least one non-residual layer between two residual layers
-				k = common_predecessor;		
-				continue;
-			}
-			else {
-								
-				 res =fmin(res,get_lb_using_predecessor_layer(pr,fp, &lexpr, k));
-				 k = fp->layers[k]->predecessors[0]-1;
-				
-			}
+		else {
+			
+			k = get_lb_using_non_concatenate_layers(pr, fp, &lexpr, k, &res);
+		
+		}
 			
 	}
 		
@@ -837,10 +859,65 @@ elina_linexpr0_t * get_output_lexpr_defined_over_previous_layers(elina_manager_t
 	
 }
 
+int get_ub_using_non_concatenate_layers(fppoly_internal_t * pr, fppoly_t *fp, expr_t **uexpr_ptr, int k, double *res){
+	expr_t *uexpr = *uexpr_ptr;
+	if(fp->layers[k]->num_predecessors==2){
+		expr_t * uexpr_copy = copy_expr(uexpr);
+		uexpr_copy->inf_cst = 0;
+		uexpr_copy->sup_cst = 0;
+		size_t predecessor1 = fp->layers[k]->predecessors[0]-1;
+		size_t predecessor2 = fp->layers[k]->predecessors[1]-1;
+				
+		char * predecessor_map = (char *)calloc(k,sizeof(char));
+		// Assume no nested residual layers
+		int iter = fp->layers[predecessor1]->predecessors[0]-1;
+		while(iter>=0){
+			predecessor_map[iter] = 1;
+			iter = fp->layers[iter]->predecessors[0]-1;
+		}
+		iter =  fp->layers[predecessor2]->predecessors[0]-1;
+		int common_predecessor = 0;
+		while(iter>=0){
+			if(predecessor_map[iter] == 1){
+				common_predecessor = iter;
+				break;
+			}
+			iter = fp->layers[iter]->predecessors[0]-1;
+		}
+				
+		iter = predecessor1;
+		while(iter!=common_predecessor){
+			get_ub_using_predecessor_layer(pr,fp, &uexpr,  iter);
+			iter = fp->layers[iter]->predecessors[0]-1;
+		}
+		iter =  predecessor2;
+		while(iter!=common_predecessor){
+			get_ub_using_predecessor_layer(pr,fp, &uexpr_copy,  iter);
+			iter = fp->layers[iter]->predecessors[0]-1;					
+		}
+		free(predecessor_map);
+		add_expr(pr,uexpr,uexpr_copy);
+				
+		free_expr(uexpr_copy);
+				
+				// Assume at least one non-residual layer between two residual layers
+		k = common_predecessor;		
+	}
+	else {
+				
+		*res= fmin(*res,get_ub_using_predecessor_layer(pr,fp, &uexpr, k));
+		k = fp->layers[k]->predecessors[0]-1;
+				 
+	}
+	*uexpr_ptr = uexpr;
+	return k;
+}
+
 
 double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t **expr, size_t layerno){
 	size_t i;
 	int k;
+	
 	//size_t numlayers = fp->numlayers;
 	expr_t * uexpr = copy_expr(*expr);
         fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
@@ -859,35 +936,58 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 		if(fp->layers[k]->is_concat==true){
                         //sort_expr(lexpr);
                         size_t i;
+                       // printf("Expression\n");
+                        //expr_print(uexpr);
+                        //fflush(stdout);
                         size_t *C = fp->layers[k]->C;
+                        
                         size_t *predecessors = fp->layers[k]->predecessors;
                         size_t num_predecessors = fp->layers[k]->num_predecessors;
-                        int common_predecessor = INT_MAX;
+                        int common_predecessor = -1;
+			 size_t * predecessor_map = (size_t *)calloc(k,sizeof(size_t));
+			 for(i=0; i < num_predecessors; i++){
+				int iter = predecessors[i]-1;
+				while(iter>=0){
+					predecessor_map[iter] = predecessor_map[iter]+1;
+					iter = fp->layers[iter]->predecessors[0]-1;
+				}
+			 }
+			 for(int i=k; i >=0; i-- ){
+				if(predecessor_map[i]==num_predecessors){
+					common_predecessor = i;
+					break;
+				}
+			 }
+			 free(predecessor_map);
                         expr_t ** sub_expr = (expr_t**)malloc(num_predecessors*sizeof(expr_t*));
                         //size_t index_start = 0;
+                        
                         for(i=0; i < num_predecessors; i++){
-                                int pred = predecessors[i]-1;
-                                //size_t num_neurons = fp->layers[pred]->dims;
-                                if(pred < common_predecessor){
-                                        common_predecessor = pred;
-                                }
+                                
                                 sub_expr[i] = extract_subexpr_concatenate(uexpr,i, C,fp->layers[k]->dims, fp->layers[k]->num_channels);
                                 //index_start = index_start + num_neurons;
+                                //printf("subexpr %zu\n", fp->layers[k]->num_channels);
+                                //expr_print(sub_expr[i]);
+                                //fflush(stdout);
                         }
+                      
                         for(i=0; i < num_predecessors; i++){
                                 int iter = predecessors[i]-1;
 				if(sub_expr[i]->size>0){
                                 	while(iter!=common_predecessor){
-                                        	get_ub_using_predecessor_layer(pr,fp, &sub_expr[i],  iter);
-                                        	iter = fp->layers[iter]->predecessors[0]-1;
+                                		double res1 = INFINITY;
+                                        	iter = get_ub_using_non_concatenate_layers(pr, fp, &sub_expr[i], iter, &res1); 
                                 	}
 				}
                         }
+                         
 			double inf_cst = uexpr->inf_cst;
 			double sup_cst = uexpr->sup_cst;
                         free_expr(uexpr);
 			bool flag = true;
                         for(i=0; i < num_predecessors; i++){
+                        	//printf("SUB EXPR\n");
+                        	//expr_print(sub_expr[i]);
 				if(sub_expr[i]->size>0){
 					if(flag==true){
 						uexpr = copy_expr(sub_expr[i]);
@@ -905,64 +1005,19 @@ double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 			uexpr->inf_cst = uexpr->inf_cst + inf_cst;
 			uexpr->sup_cst = uexpr->sup_cst + sup_cst;
                         k = common_predecessor;
+                       
                 }
 
 		
-		else if(fp->layers[k]->num_predecessors==2){
-				expr_t * uexpr_copy = copy_expr(uexpr);
-				uexpr_copy->inf_cst = 0;
-				uexpr_copy->sup_cst = 0;
-				size_t predecessor1 = fp->layers[k]->predecessors[0]-1;
-				size_t predecessor2 = fp->layers[k]->predecessors[1]-1;
-				
-				char * predecessor_map = (char *)calloc(k,sizeof(char));
-				// Assume no nested residual layers
-				int iter = fp->layers[predecessor1]->predecessors[0]-1;
-				while(iter>=0){
-					predecessor_map[iter] = 1;
-					iter = fp->layers[iter]->predecessors[0]-1;
-				}
-				iter =  fp->layers[predecessor2]->predecessors[0]-1;
-				int common_predecessor = 0;
-				while(iter>=0){
-					if(predecessor_map[iter] == 1){
-						common_predecessor = iter;
-						break;
-					}
-					iter = fp->layers[iter]->predecessors[0]-1;
-				}
-				
-				iter = predecessor1;
-				while(iter!=common_predecessor){
-					get_ub_using_predecessor_layer(pr,fp, &uexpr,  iter);
-					iter = fp->layers[iter]->predecessors[0]-1;
-				}
-				iter =  predecessor2;
-				while(iter!=common_predecessor){
-					get_ub_using_predecessor_layer(pr,fp, &uexpr_copy,  iter);
-					iter = fp->layers[iter]->predecessors[0]-1;					
-				}
-				free(predecessor_map);
-				add_expr(pr,uexpr,uexpr_copy);
-				
-				free_expr(uexpr_copy);
-				
-				// Assume at least one non-residual layer between two residual layers
-				k = common_predecessor;
-				
-				continue;
-			}
-			else {
-				
-				 res= fmin(res,get_ub_using_predecessor_layer(pr,fp, &uexpr, k));
-				 k = fp->layers[k]->predecessors[0]-1;
-				 
-			}
+		else {
+			k = get_ub_using_non_concatenate_layers(pr, fp, &uexpr, k, &res);
+		}
 			
 	}
 		
 	res = fmin(res,compute_ub_from_expr(pr,uexpr,fp,-1)); 
-        //printf("UPPER BOUND: %g\n",res);
+        //printf("UPPER BOUND:\n");
+        //expr_print(uexpr);
         //fflush(stdout);
         free_expr(*expr);
         *expr = uexpr;

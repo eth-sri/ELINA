@@ -558,6 +558,7 @@ expr_t * extract_subexpr_concatenate(expr_t * expr, size_t index, size_t* C, siz
 	for(i=0; i < index; i++){
 		offset = offset + C[i];
 	}
+	//printf("offset: %zu %zu %zu\n", offset, C[0],C[1]);
 	
 	if(expr->type==DENSE){
 		res->type = DENSE;
