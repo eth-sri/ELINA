@@ -35,7 +35,7 @@ class Network:
         _lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('gpupoly'))
     else: # Not running in Windows
         # _lib=ctypes.cdll.LoadLibrary('${GPUPoly_BINARY_DIR}/dpGPUlib.so.0.10')
-        _lib = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../gpupoly/libgpupoly.so.0.12"))
+        _lib = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../gpupoly/libgpupoly.so.0.13"))
         #_lib = ctypes.cdll.LoadLibrary('libgpupoly.so')
 
     def _nullable_ndptr(*args, **kwargs):
