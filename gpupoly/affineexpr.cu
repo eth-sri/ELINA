@@ -144,8 +144,8 @@ __global__ void AESelect(int* rows, const int* oldRows, const size_t n)
 template <typename T>
 void AffineExpr<T>::selectRows(size_t size, int* smallRows)
 {
-	A = A ? std::make_shared<const Matrix<T>>(A->template selectRows<T>(size, smallRows)) : nullptr;
-	b = b ? std::make_shared<const Vector<T>>(b->select(size, smallRows)) : nullptr;
+	A = A ? std::make_shared<const Matrix<T>>(A->template selectRows<T>(size, smallRows,false)) : nullptr;
+	b = b ? std::make_shared<const Vector<T>>(b->template select<T>(size, smallRows,false)) : nullptr;
 	dim3 block(1024, 1, 1);
 	dim3 grid((size + 1023) / 1024, 1, 1);
 	AESelect<10> << <grid, block >> > (smallRows, rows, size);

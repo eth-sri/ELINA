@@ -172,18 +172,31 @@ __global__ void VectorSelect(Tout* v, const int* annoyingList, const size_t n, c
 }
 
 template <typename T>
-Vector<T> Vector<T>::select(size_t size, const int* rows) const
+template <typename Td>
+Vector<Td> Vector<T>::select(size_t size, const int* rows, bool forceIntervalOut) const
 {
-	Vector<T> res(size, interval_);
+	//bool intervalOut = interval_ || (std::is_same<T, double>() && std::is_same<Td, float>());
+	bool intervalOut = interval_ || forceIntervalOut;
+	Vector<T> res(size, intervalOut);
 	dim3 block(1024, 1, 1);
 	dim3 grid((size + 1023) / 1024, 1, 1);
 	if (interval_)
 		VectorSelect<10, Intv<T>,Intv<T>> << <grid, block >> > (res, rows, size, *this);
 	else
-		VectorSelect<10, T, T> << <grid, block >> > (res, rows, size, *this);
+	{
+		if(intervalOut)
+			VectorSelect<10, T, Intv<T>> << <grid, block >> > (res, rows, size, *this);
+		else
+			VectorSelect<10, T, T> << <grid, block >> > (res, rows, size, *this);
+	}
 	gpuChkKer();
 	return res;
 }
+
+template Vector<double> Vector<double>::select(size_t size, const int* rows, bool forceIntervalOut) const;
+template Vector<float> Vector<double>::select(size_t size, const int* rows, bool forceIntervalOut) const;
+template Vector<double> Vector<float>::select(size_t size, const int* rows, bool forceIntervalOut) const;
+template Vector<float> Vector<float>::select(size_t size, const int* rows, bool forceIntervalOut) const;
 
 template <typename T>
 Vector<T>::Vector(const Vector<T>& other) : Vector(other.size(), other.interval())//n_(other.n_), interval_(other.interval_), capacity(memSize())

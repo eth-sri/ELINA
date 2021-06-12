@@ -126,26 +126,17 @@ Interface for the layers of a neural network
 	Vector<T>& getConcreteBounds(int layer);
 
 
-
-	// Evaluates affine combinations of neurons at a layer of a neural network by backsubstitution to the inputs.
-// These expressions have the form Ax+b, where x is the value of the neurons at layer fromLayer
-// PRE:
-// upper: true if the expressions we evaluate are upper bounds, false for concreteBound bounds
-// nn: Neural network
-// inputBounds: contains the concreteBound and upper bound of each element of the input in an interleaved way
-// coeffs: coefficients lambda and mu as described in Fig. 4 for previous layers
-// size: number of expressions to evaluate
-// dim: number of monomials in the expression
-// fromLayer: index of the layer from where the backsubstitution has to be performed
-// A: a size * dim matrix
-// b: a vector of size size
-// POST:
-// A vector containing the result of each expression
+	//! Evaluates an affine expression
+	/*!
+	  Evaluates affine combinations of neurons at a layer of a neural network by backsubstitution to the inputs.
+	  These expressions have the form Ax+b, where x is the value of the neurons at layer fromLayer
+	*/
 	template<typename T>
 	void evaluateAffine(Vector<T>& dest, const NeuronFilter<T>& al, int layer, bool up, bool sound, const std::shared_ptr<const Matrix<T>>& A = nullptr, const std::shared_ptr<const Vector<T>>& b = nullptr);
 
-
-
+	template<typename T>
+	AffineExpr<T> getSensitivityExpr(T* const destA, T* const destb, int layer, bool up, bool sound, const std::shared_ptr<const Matrix<T>>& A = nullptr, const std::shared_ptr<const Vector<T>>& b = nullptr);
+	
 	//! Orders a reevaluation (via back-substitution) of the concrete bounds of a layer
 	/*!
 	  \param layer Id of the layer to be reevaluated
