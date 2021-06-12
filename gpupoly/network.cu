@@ -96,87 +96,84 @@ void NeuralNetwork::evaluateAffine(Vector<T>& dest, const NeuronFilter<T>& al, i
 		gpuErrchk(cudaMalloc((void**)&annoyingNeuronList2, maxLayerSize * sizeof(int)));
 
 	int an = al.listCriticalNeurons(annoyingNeuronList, dest, annoyingNeurons);
-	if (an)
+	int maxNeurBP = (1 << 30) / (maxLayerSize * sizeof(Intv<T>));
+	for (int start = 0; start < an; start += maxNeurBP)
 	{
-		int maxNeurBP = (1 << 30) / (maxLayerSize * sizeof(Intv<T>));
-		for (int start = 0; start < an; start += maxNeurBP)
+		int length = std::min(maxNeurBP, an - start);
+		auto partialA = A ? std::make_shared<const Matrix<T>>(A->template selectRows<T> (length, annoyingNeuronList + start, false)) : nullptr;
+		auto partialb = b ? std::make_shared<const Vector<T>>(b->template select<T>(length, annoyingNeuronList+start,false)) : nullptr;
+		auto inExpr = AffineExpr<T>(length, layers[layer]->outputSize, layer, up, annoyingNeuronList + start,partialA,partialb,ConvShape(),sound);
+		typename AffineExpr<T>::Queue exprs;
+		exprs.push(inExpr);
+		int nbEval = 0;
+		while (!exprs.empty())
 		{
-			int length = std::min(maxNeurBP, an - start);
-			auto partialA = A ? std::make_shared<const Matrix<T>>(A->template selectRows<T> (length, annoyingNeuronList + start, false)) : nullptr;
-			auto partialb = b ? std::make_shared<const Vector<T>>(b->template select<T>(length, annoyingNeuronList+start,false)) : nullptr;
-			auto inExpr = AffineExpr<T>(length, layers[layer]->outputSize, layer, up, annoyingNeuronList + start,partialA,partialb,ConvShape(),sound);
-			typename AffineExpr<T>::Queue exprs;
-			exprs.push(inExpr);
-			int nbEval = 0;
-			while (!exprs.empty())
+			AffineExpr<T> tmp = exprs.top();
+			assert(tmp.sound == sound);
+			exprs.pop();
+			//assert(tmp.m == size);
+			assert(tmp.n == layers[tmp.layer]->outputSize);
+			if (exprs.empty())
 			{
-				AffineExpr<T> tmp = exprs.top();
-				assert(tmp.sound == sound);
-				exprs.pop();
-				//assert(tmp.m == size);
-				assert(tmp.n == layers[tmp.layer]->outputSize);
-				if (exprs.empty())
+				//concreteBounds[tmp.layer]->check();
+				tmp.evaluateAndUpdate(dest, getConcreteBounds<T>(tmp.layer));
+				//dest.check();
+				nbEval++;
+
+				if (nbEval > 1)
 				{
-					//concreteBounds[tmp.layer]->check();
-					tmp.evaluateAndUpdate(dest, getConcreteBounds<T>(tmp.layer));
-					//dest.check();
-					nbEval++;
-
-					if (nbEval > 1)
+					int an = al.listCriticalNeurons(annoyingNeuronList2, dest, annoyingNeurons, tmp.rows, tmp.m);
+					if (an < tmp.m)
 					{
-						int an = al.listCriticalNeurons(annoyingNeuronList2, dest, annoyingNeurons, tmp.rows, tmp.m);
-						if (an < tmp.m)
-						{
-							if (an == 0)
-								return;
-							tmp.selectRows(an, annoyingNeuronList2);
-						}
+						if (an == 0)
+							return;
+						tmp.selectRows(an, annoyingNeuronList2);
 					}
-
 				}
-				if (!exprs.empty() && exprs.top().layer == tmp.layer)
-				{
-					AffineExpr<T> tmp2 = exprs.top();
-					exprs.pop();
-					assert(tmp.sound == tmp2.sound);
-					auto A = std::make_shared<Matrix<T>>();
-					Matrix<T>::add(*A, *tmp.getA(), *tmp2.getA(),tmp.sound);
-					std::shared_ptr<const Vector<T>> b;
-					if (tmp.up)
-						b = Vector<T> ::template add_dr<true> (tmp.b, tmp2.b);
-					else
-						b = Vector<T> ::template add_dr<false> (tmp.b, tmp2.b);
-					ConvShape cs;
-					if (tmp.cs && tmp2.cs)
-					{
-						if (
-							tmp.cs.filters == tmp2.cs.filters &&
-							tmp.cs.output_rows == tmp2.cs.output_rows &&
-							tmp.cs.output_cols == tmp2.cs.output_cols &&
-							tmp.cs.input_rows == tmp2.cs.input_rows &&
-							tmp.cs.input_cols == tmp2.cs.input_cols &&
-							tmp.cs.input_channels == tmp2.cs.input_channels
-							)
-						{
-							if (tmp.cs.kernel_size_cols > tmp2.cs.kernel_size_cols)
-								cs = tmp.cs;
-							else
-								cs = tmp2.cs;
-						}
-						else
-						{
-							std::cout << "Error merging:" << std::endl;
-							tmp.cs.print();
-							tmp2.cs.print();
-							std::cout << std::endl;
-						}
 
-					}
-					exprs.emplace(tmp.m, tmp.n, tmp.layer, tmp.up, tmp.rows, A, b, cs,tmp.sound);
-				}
-				else
-					layers[tmp.layer]->backSubstitute(exprs, tmp);
 			}
+			if (!exprs.empty() && exprs.top().layer == tmp.layer)
+			{
+				AffineExpr<T> tmp2 = exprs.top();
+				exprs.pop();
+				assert(tmp.sound == tmp2.sound);
+				auto A = std::make_shared<Matrix<T>>();
+				Matrix<T>::add(*A, *tmp.getA(), *tmp2.getA(),tmp.sound);
+				std::shared_ptr<const Vector<T>> b;
+				if (tmp.up)
+					b = Vector<T> ::template add_dr<true> (tmp.b, tmp2.b);
+				else
+					b = Vector<T> ::template add_dr<false> (tmp.b, tmp2.b);
+				ConvShape cs;
+				if (tmp.cs && tmp2.cs)
+				{
+					if (
+						tmp.cs.filters == tmp2.cs.filters &&
+						tmp.cs.output_rows == tmp2.cs.output_rows &&
+						tmp.cs.output_cols == tmp2.cs.output_cols &&
+						tmp.cs.input_rows == tmp2.cs.input_rows &&
+						tmp.cs.input_cols == tmp2.cs.input_cols &&
+						tmp.cs.input_channels == tmp2.cs.input_channels
+						)
+					{
+						if (tmp.cs.kernel_size_cols > tmp2.cs.kernel_size_cols)
+							cs = tmp.cs;
+						else
+							cs = tmp2.cs;
+					}
+					else
+					{
+						std::cout << "Error merging:" << std::endl;
+						tmp.cs.print();
+						tmp2.cs.print();
+						std::cout << std::endl;
+					}
+
+				}
+				exprs.emplace(tmp.m, tmp.n, tmp.layer, tmp.up, tmp.rows, A, b, cs,tmp.sound);
+			}
+			else
+				layers[tmp.layer]->backSubstitute(exprs, tmp);
 		}
 	}
 }
@@ -284,18 +281,14 @@ AffineExpr<T> NeuralNetwork::getSensitivityExpr(T* const destA, T* const destb, 
 					gpuErrchk(cudaDeviceSynchronize());
 				}
 				else
-				{
 					resA = tmp.A->template selectRowsBlah<T>(length, tmp.rows, sound);
-				}
 				if (!tmp.b)
 				{
 					resb.resize(length, sound);
 					resb.zeroFill();
 				}
 				else
-				{
 					resb = tmp.b->template selectBlah<T>(length, tmp.rows, sound);
-				}
 				assert(resA.interval() == sound);
 				assert(resb.interval() == sound);
 				cudaMemcpy2D(
