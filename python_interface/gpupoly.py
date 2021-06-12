@@ -31,8 +31,7 @@ import numpy as np
 class Network:
     if os.name == 'nt': # Running in Windows
         os.add_dll_directory("${CUDAToolkit_BIN_DIR}")
-        os.add_dll_directory("${GPUPoly_BINARY_DIR}")
-        _lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('gpupoly'))
+        _lib = ctypes.cdll.LoadLibrary("${GPUPoly_BINARY_DIR}/gpupoly.dll")
     else: # Not running in Windows
         # _lib=ctypes.cdll.LoadLibrary('${GPUPoly_BINARY_DIR}/dpGPUlib.so.0.10')
         _lib = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../gpupoly/libgpupoly.so.0.13"))
@@ -417,6 +416,7 @@ class Network:
             strides = [strides, strides]
         if not isinstance(padding, list):
             padding = [padding, padding, padding, padding]
+        assert len(padding)==4
         if conv.dtype == np.float64:
             self._last_layer_id = self._lib.addConv2D_d(
                 self._nn,

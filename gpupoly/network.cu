@@ -74,11 +74,11 @@ template <typename T>
 void NeuralNetwork::evaluateAffine(Vector<T>& dest, const NeuronFilter<T>& al, int layer, bool up, bool sound, const std::shared_ptr<const Matrix<T>>& A, const std::shared_ptr<const Vector<T>>& b)
 {
 	// size of the expression
-	int n = A ? A->m() : layers[layer]->outputSize;
+	int m = dest.size();
 	// if it's bigger than current maxLayerSize, we change its value and deallocate existing annoyingNeuronLists
-	if (n > maxLayerSize)
+	if (m > maxLayerSize)
 	{
-		maxLayerSize = n;
+		maxLayerSize = m;
 		if (annoyingNeuronList)
 		{
 			cudaFree(annoyingNeuronList);
