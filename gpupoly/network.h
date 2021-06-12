@@ -135,7 +135,7 @@ Interface for the layers of a neural network
 	void evaluateAffine(Vector<T>& dest, const NeuronFilter<T>& al, int layer, bool up, bool sound, const std::shared_ptr<const Matrix<T>>& A = nullptr, const std::shared_ptr<const Vector<T>>& b = nullptr);
 
 	template<typename T>
-	AffineExpr<T> getSensitivityExpr(T* const destA, T* const destb, int layer, bool up, bool sound, const std::shared_ptr<const Matrix<T>>& A = nullptr, const std::shared_ptr<const Vector<T>>& b = nullptr);
+	void getSensitivity(T* const destA, T* const destb, int layer, bool up, bool sound, int m, const std::shared_ptr<const Matrix<T>>& A = nullptr, const std::shared_ptr<const Vector<T>>& b = nullptr);
 	
 	//! Orders a reevaluation (via back-substitution) of the concrete bounds of a layer
 	/*!

@@ -196,19 +196,16 @@ __global__ void makeIdMatrix(T* dest, size_t N, int outputSize, int start)
 	int row = blockIdx.y;
 	int output = row + start;
 	if (col < outputSize)
-		dest[row * N + col] = (output == col);
+		dest[row * N + col] = T(output == col);
 }
 
 template<typename T>
-AffineExpr<T> NeuralNetwork::getSensitivityExpr(T* const destA, T* const destb, int layer, bool up, bool sound, const std::shared_ptr<const Matrix<T>>& A, const std::shared_ptr<const Vector<T>>& b)
+void NeuralNetwork::getSensitivity(T* const destA, T* const destb, int layer, bool up, bool sound, int m, const std::shared_ptr<const Matrix<T>>& A, const std::shared_ptr<const Vector<T>>& b)
 {
-	// size of the expression
-	int n = A ? A->m : layers[layer]->outputSize;
-
-	// if it's bigger than current maxLayerSize, we change its value and deallocate existing annoyingNeuronLists
-	if (n > maxLayerSize)
+	// if the number of expressions is bigger than current maxLayerSize, we change its value and deallocate existing annoyingNeuronLists
+	if (m > maxLayerSize)
 	{
-		maxLayerSize = n;
+		maxLayerSize = m;
 		if (annoyingNeuronList)
 		{
 			cudaFree(annoyingNeuronList);
@@ -231,21 +228,21 @@ AffineExpr<T> NeuralNetwork::getSensitivityExpr(T* const destA, T* const destb, 
 	int maxNeurBP = (1 << 30) / (maxLayerSize * sizeof(Intv<T>));
 
 	// Initialize annoyingNeuronList with a sequence from 0 to n-1
-	thrust::sequence(thrust::device_pointer_cast<int>(annoyingNeuronList), thrust::device_pointer_cast<int>(annoyingNeuronList + n));
+	thrust::sequence(thrust::device_pointer_cast<int>(annoyingNeuronList), thrust::device_pointer_cast<int>(annoyingNeuronList + m));
 
 	// Initialize buffers for the resulting expression to be stored
 	Matrix<T> resA;
 	Vector<T> resb;
 	
 	// Split the expression into chunks, and process them one after the other	
-	for (int start = 0; start < n; start += maxNeurBP)
+	for (int start = 0; start < m; start += maxNeurBP)
 	{
 		// Size of current chunk
-		int length = std::min(maxNeurBP, n - start);
+		int length = std::min(maxNeurBP, m - start);
 
 		// Encapsulate the expression into an AffineExpr
-		auto partialA = A ? std::make_shared<const Matrix<T>>(A->template selectRows<T>(length, annoyingNeuronList + start)) : nullptr;
-		auto partialb = b ? std::make_shared<const Vector<T>>(b->select(length, annoyingNeuronList + start)) : nullptr;
+		auto partialA = A ? std::make_shared<const Matrix<T>>(A->template selectRows<T>(length, annoyingNeuronList + start,false)) : nullptr;
+		auto partialb = b ? std::make_shared<const Vector<T>>(b->template select<T>(length, annoyingNeuronList + start,false)) : nullptr;
 		thrust::sequence(thrust::device_pointer_cast<int>(annoyingNeuronList + start), thrust::device_pointer_cast<int>(annoyingNeuronList + start + length)); // Reindex the chunk so that it starts from 0; this will make the final ordering easier, but we have to take into account start when copying in the buffer.
 		auto inExpr = AffineExpr<T>(length, layers[layer]->outputSize, layer, up, annoyingNeuronList + start, partialA, partialb, ConvShape(), sound);
 
@@ -254,7 +251,6 @@ AffineExpr<T> NeuralNetwork::getSensitivityExpr(T* const destA, T* const destb, 
 		exprs.push(inExpr);
 
 		// Loop while this queue is not empty
-		int nbEval = 0;
 		while (!exprs.empty())
 		{
 			// Get the term on top
@@ -274,21 +270,21 @@ AffineExpr<T> NeuralNetwork::getSensitivityExpr(T* const destA, T* const destb, 
 					dim3 block(blockSize, 1, 1);
 					dim3 grid((tmp.n + blockSize - 1) / blockSize, tmp.m, 1);
 					if (sound)
-						makeIdMatrix<Intv<T>> << <grid, block >> > (*resA, resA->pitch(), tmp.n, start);
+						makeIdMatrix<Intv<T>> << <grid, block >> > (resA, resA.pitch(), tmp.n, start);
 					else
-						makeIdMatrix<T> << <grid, block >> > (*resA, resA->pitch(), tmp.n, start);
+						makeIdMatrix<T> << <grid, block >> > (resA, resA.pitch(), tmp.n, start);
 					gpuErrchk(cudaPeekAtLastError());
 					gpuErrchk(cudaDeviceSynchronize());
 				}
 				else
-					resA = tmp.A->template selectRowsBlah<T>(length, tmp.rows, sound);
+					resA = tmp.A->template selectRows<T>(length, tmp.rows, sound);
 				if (!tmp.b)
 				{
 					resb.resize(length, sound);
 					resb.zeroFill();
 				}
 				else
-					resb = tmp.b->template selectBlah<T>(length, tmp.rows, sound);
+					resb = tmp.b->template select<T>(length, tmp.rows, sound);
 				assert(resA.interval() == sound);
 				assert(resb.interval() == sound);
 				cudaMemcpy2D(
@@ -347,6 +343,11 @@ AffineExpr<T> NeuralNetwork::getSensitivityExpr(T* const destA, T* const destb, 
 		}
 	}
 }
+
+template void NeuralNetwork::getSensitivity(double* const destA, double* const destb, int layer, bool up, bool sound, int m, const std::shared_ptr<const Matrix<double>>& A, const std::shared_ptr<const Vector<double>>& b);
+template void NeuralNetwork::getSensitivity(float* const destA, float* const destb, int layer, bool up, bool sound, int m, const std::shared_ptr<const Matrix<float>>& A, const std::shared_ptr<const Vector<float>>& b);
+
+
 
 NeuralNetwork::NeuralNetwork(const size_t inputSize) :
 	layers(), maxLayerSize(0),
