@@ -213,16 +213,17 @@ extern "C" {
 	//!\}
 
 
-		//!@{
-	//! Evaluate single precision expressions.
+	//!@{
+	//! Get a sensivity affine expression based on a single precision expressions.
 	/*!
 	  \param nn Handle to the network
-	  \param dest An array of 2*m floats where the (interleaved) result will be written.
+	  \param destA A matrix where the linear part of the expression will be written. If soundness=true, elements of this matrix are intervals made of 2 floats; otherwise elemnts are floats.
+	  \param destb A vecotr where the constant part of the expression will be written. If soundness=true, elements of this vector are intervals made of 2 floats; otherwise elemnts are floats.
+	  \param up If true, computes the sensitivity expression of the upper bound. Otherwise the lower bound.
 	  \param layer Index of the layer
 	  \param m Number of expressions
 	  \param A Content of the matrix A in row major order. A has m rows, and its number of columns equals the outputSize of the layer.
 	  \param b Content of the vector b. b has m elements.
-	  \param backsubstitute If 0, only evaluate with the concrete bounds of layer. If 1, always backsubstitute back to the inputs. If 2, backsubstitute until 0 is not strictly included within the bounds.
 	  \param soundness Whether to use sound (but slower) arithmetic.
 	 */
 	GPUPOLY_EXPORT void getSensitivity_s(
@@ -236,15 +237,16 @@ extern "C" {
 		const float* b,
 		bool soundness
 	);
-	//! Evaluate double precision expressions.
+	//! Get a sensivity affine expression based on a double precision expressions.
 	/*!
 	  \param nn Handle to the network
-	  \param dest An array of 2*m doubles where the (interleaved) result will be written.
+	  \param destA A matrix where the linear part of the expression will be written. If soundness=true, elements of this matrix are intervals made of 2 doubles; otherwise elemnts are doubles.
+	  \param destb A vecotr where the constant part of the expression will be written. If soundness=true, elements of this vector are intervals made of 2 doubles; otherwise elemnts are doubles.
+	  \param up If true, computes the sensitivity expression of the upper bound. Otherwise the lower bound.
 	  \param layer Index of the layer
 	  \param m Number of expressions
 	  \param A Content of the matrix A in row major order. A has m rows, and its number of columns equals the outputSize of the layer.
 	  \param b Content of the vector b. b has m elements.
-	  \param backsubstitute If 0, only evaluate with the concrete bounds of layer. If 1, always backsubstitute back to the inputs. If 2, backsubstitute until 0 is not strictly included within the bounds.
 	  \param soundness Whether to use sound (but slower) arithmetic.
 	 */
 	GPUPOLY_EXPORT void getSensitivity_d(
