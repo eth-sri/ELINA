@@ -153,8 +153,6 @@ opt_oct_t* opt_oct_of_box(elina_manager_t* man, size_t intdim, size_t realdim,
   opt_oct_internal_t* pr = opt_oct_init_from_manager(man,ELINA_FUNID_OF_BOX,0);
   opt_oct_t* r = opt_oct_alloc_internal(pr,intdim+realdim,intdim);
   unsigned short int i;
-  printf("dim %zu %zu\n", intdim, realdim);
-  fflush(stdout);
   if (!t) return r; /* empty */
   for (i=0;i<r->dim;i++)
     if (elina_scalar_cmp(t[i]->inf,t[i]->sup)>0) return r; /* empty */
