@@ -74,8 +74,9 @@ LIBS = -lapron -lmpfr -lgmp -lm
 # Rules
 #---------------------------------------
 
-all: ml mlexample_poly.byte mlexample_poly.opt mlexample_oct.byte mlexample_oct.opt
+all: ml 
 
+example: mlexample_poly.byte mlexample_poly.opt mlexample_oct.byte mlexample_oct.opt
 
 ml: elina_poly.mli elina_poly.ml elina_poly.cmi elina_oct.mli elina_oct.ml elina_oct.cmi mllib 
 
