@@ -212,6 +212,57 @@ extern "C" {
 	);
 	//!\}
 
+
+	//!@{
+	//! Get a sensivity affine expression based on a single precision expressions.
+	/*!
+	  \param nn Handle to the network
+	  \param destA A matrix where the linear part of the expression will be written. If soundness=true, elements of this matrix are intervals made of 2 floats; otherwise elemnts are floats.
+	  \param destb A vecotr where the constant part of the expression will be written. If soundness=true, elements of this vector are intervals made of 2 floats; otherwise elemnts are floats.
+	  \param up If true, computes the sensitivity expression of the upper bound. Otherwise the lower bound.
+	  \param layer Index of the layer
+	  \param m Number of expressions
+	  \param A Content of the matrix A in row major order. A has m rows, and its number of columns equals the outputSize of the layer.
+	  \param b Content of the vector b. b has m elements.
+	  \param soundness Whether to use sound (but slower) arithmetic.
+	 */
+	GPUPOLY_EXPORT void getSensitivity_s(
+		NeuralNetwork* nn,
+		float* destA,
+		float* destb,
+		bool up,
+		int layer,
+		int m,
+		const float* A,
+		const float* b,
+		bool soundness
+	);
+	//! Get a sensivity affine expression based on a double precision expressions.
+	/*!
+	  \param nn Handle to the network
+	  \param destA A matrix where the linear part of the expression will be written. If soundness=true, elements of this matrix are intervals made of 2 doubles; otherwise elemnts are doubles.
+	  \param destb A vecotr where the constant part of the expression will be written. If soundness=true, elements of this vector are intervals made of 2 doubles; otherwise elemnts are doubles.
+	  \param up If true, computes the sensitivity expression of the upper bound. Otherwise the lower bound.
+	  \param layer Index of the layer
+	  \param m Number of expressions
+	  \param A Content of the matrix A in row major order. A has m rows, and its number of columns equals the outputSize of the layer.
+	  \param b Content of the vector b. b has m elements.
+	  \param soundness Whether to use sound (but slower) arithmetic.
+	 */
+	GPUPOLY_EXPORT void getSensitivity_d(
+		NeuralNetwork* nn,
+		double* destA,
+		double* destb,
+		bool up,
+		int layer,
+		int m,
+		const double* A,
+		const double* b,
+		bool soundness
+	);
+	//!\}
+
+
 	//! Gets the dimention of a given layer.
 	GPUPOLY_EXPORT int getOutputSize(NeuralNetwork* nn, int layer);
 

@@ -295,9 +295,9 @@ __global__ void backSubstituteDense(Tout* A,const size_t pitchOut, const int* an
 
 template<typename T>
 template<typename Td>
-Matrix<Td> Matrix<T>::selectRows(size_t size, const int* rows) const
+Matrix<Td> Matrix<T>::selectRows(size_t size, const int* rows, bool forceIntervalOut) const
 {
-	bool intervalOut = interval_ || (std::is_same<T, double>() && std::is_same<Td, float>());
+	bool intervalOut = interval_ || forceIntervalOut;
 	Matrix<Td> res(size, n_, intervalOut);
 	dim3 block(1024, 1, 1);
 	dim3 grid(size,(n_ + 1023) / 1024, 1);
@@ -312,10 +312,10 @@ Matrix<Td> Matrix<T>::selectRows(size_t size, const int* rows) const
 	return res;
 }
 
-template Matrix<double> Matrix<double>::selectRows(size_t size, const int* rows) const;
-template Matrix<float> Matrix<double>::selectRows(size_t size, const int* rows) const;
-template Matrix<double> Matrix<float>::selectRows(size_t size, const int* rows) const;
-template Matrix<float> Matrix<float>::selectRows(size_t size, const int* rows) const;
+template Matrix<double> Matrix<double>::selectRows(size_t size, const int* rows, bool forceIntervalOut) const;
+template Matrix<float> Matrix<double>::selectRows(size_t size, const int* rows, bool forceIntervalOut) const;
+template Matrix<double> Matrix<float>::selectRows(size_t size, const int* rows, bool forceIntervalOut) const;
+template Matrix<float> Matrix<float>::selectRows(size_t size, const int* rows, bool forceIntervalOut) const;
 
 
 template<typename T>

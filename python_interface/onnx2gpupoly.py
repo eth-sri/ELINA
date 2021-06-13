@@ -1,6 +1,6 @@
 #  GPUPoly library
 #  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
-#  ELINA is Copyright © 2020 Department of Computer Science, ETH Zurich
+#  ELINA is Copyright ï¿½ 2020 Department of Computer Science, ETH Zurich
 #  This software is distributed under GNU Lesser General Public License Version 3.0.
 #  For more information, see the ELINA project website at:
 #  http://elina.ethz.ch
@@ -115,17 +115,19 @@ def onnx2gpupoly(graph, useAreaHeuristic=True):
         if (layer.op_type == "Conv"):
             inputIndex, inputShape = getLayer(layer.input[0])
             dataIndex, data = getLayer(layer.input[1])
-            padding_rows = 0
-            padding_cols = 0
+            padding_top = 0
+            padding_left = 0
+            padding_bottom = 0
+            padding_right = 0
             stride_rows = 1
             stride_cols = 1
             group=1
             for attribute in layer.attribute:
                 if attribute.name == "pads":
-                    padding_rows = attribute.ints[0]
-                    assert padding_rows == attribute.ints[1]
-                    padding_cols = attribute.ints[2]
-                    assert padding_cols == attribute.ints[3]
+                    padding_top = attribute.ints[0]
+                    padding_left = attribute.ints[1]
+                    padding_bottom = attribute.ints[2]
+                    padding_right = attribute.ints[3]
                 if attribute.name == "strides":
                     stride_rows = attribute.ints[0]
                     stride_cols = attribute.ints[1]
@@ -144,9 +146,9 @@ def onnx2gpupoly(graph, useAreaHeuristic=True):
             assert data.shape[1] == inputShape[-3]
             outputShape = inputShape[:-3]
             outputShape.append(data.shape[0])
-            outputShape.append((inputShape[-2] + 2 * padding_rows - data.shape[-2] + stride_rows) // stride_rows)
-            outputShape.append((inputShape[-1] + 2 * padding_cols - data.shape[-1] + stride_cols) // stride_cols)
-            outputIndex = nn.add_conv_2d(inputShape[-2],inputShape[-1],np.transpose(data,[2,3,1,0]),[stride_rows,stride_cols],[padding_rows,padding_cols],inputIndex)
+            outputShape.append((inputShape[-2] + padding_top + padding_bottom - data.shape[-2] + stride_rows) // stride_rows)
+            outputShape.append((inputShape[-1] + padding_right + padding_left - data.shape[-1] + stride_cols) // stride_cols)
+            outputIndex = nn.add_conv_2d(inputShape[-2],inputShape[-1],np.transpose(data,[2,3,1,0]),[stride_rows,stride_cols],[padding_top,padding_left,padding_bottom,padding_right],inputIndex)
             if len(layer.input)==3:
                 dataIndex, data = getLayer(layer.input[2])
                 assert dataIndex==-1
