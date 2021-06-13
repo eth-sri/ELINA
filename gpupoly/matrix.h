@@ -190,7 +190,7 @@ public:
 	\param rows An array containing the index of the row to select (pointer to a GPU array)
 	*/
 	template <typename Td>
-	Matrix<Td> selectRows(size_t size, const int* rows) const;
+	Matrix<Td> selectRows(size_t size, const int* rows, bool forceIntervalOut) const;
 
 
 	template <typename To>

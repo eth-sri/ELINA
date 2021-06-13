@@ -83,20 +83,11 @@ print(f"{len(candidates)} candidates among {nbImages} images. ({len(candidates)/
 epsilon=args.eps
 x_down = ((np.clip(x_test - epsilon, 0, 1)-mean)/std).astype("float32")
 x_up = ((np.clip(x_test + epsilon, 0, 1)-mean)/std).astype("float32")
-success4 = success3 = success2 = success1 = 0
+success = 0
 start_time = time.perf_counter()
 for i in candidates:
-#for i in range(1):
-    
     res = nn.test(x_down[i], x_up[i], y_test[i], True)
-    #print("specLB ", x_down[i])
-    if res >= 1:
-        success1 += 1
-    if res >= 2:
-        success2 += 1
-    if res >= 3:
-        success3 += 1
-    if res == 4:
-        success4 += 1
+    if res:
+        success += 1
 elapsed = time.perf_counter() - start_time
-print(f"For epsilon = {epsilon}, {success1} image(s) certified over {len(candidates)} candidates ({success1 / len(candidates) * 100}%) in {elapsed / len(candidates) * 1000}ms per image.")
+print(f"For epsilon = {epsilon}, {success} image(s) certified over {len(candidates)} candidates ({success / len(candidates) * 100}%) in {elapsed / len(candidates) * 1000}ms per image.")

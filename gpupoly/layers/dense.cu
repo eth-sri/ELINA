@@ -54,7 +54,7 @@ void Dense<T>::backSubstitute(typename AffineExpr<double>::Queue& queue, const A
 		expr.A->mmm(A, *nA, expr.sound);
 	}
 	else
-		nA = std::make_shared<Matrix<double>>(A.template selectRows<double>(expr.m, expr.rows));
+		nA = std::make_shared<Matrix<double>>(A.template selectRows<double>(expr.m, expr.rows, false));
 	queue.emplace(expr.m, A.n(), parent, expr.up, expr.rows, nA, expr.b, ConvShape(), expr.sound);
 }
 template <typename T>
@@ -67,7 +67,7 @@ void Dense<T>::backSubstitute(typename AffineExpr<float>::Queue& queue, const Af
 		expr.A->mmm(A, *nA, expr.sound);
 	}
 	else
-		nA = std::make_shared<Matrix<float>>(A.template selectRows<float>(expr.m, expr.rows));
+		nA = std::make_shared<Matrix<float>>(A.template selectRows<float>(expr.m, expr.rows, expr.sound && std::is_same<T, double>()));
 	queue.emplace(expr.m, A.n(), parent, expr.up, expr.rows, nA, expr.b, ConvShape(), expr.sound);
 }
 
@@ -87,7 +87,7 @@ void Dense<double>::backSubstitute(typename AffineExpr<float>::Queue& queue, con
 		expr.A->mmm(*Af, *nA, expr.sound);
 	}
 	else
-		nA = std::make_shared<Matrix<float>>(Af->template selectRows<float>(expr.m, expr.rows));
+		nA = std::make_shared<Matrix<float>>(Af->template selectRows<float>(expr.m, expr.rows, expr.sound));
 	queue.emplace(expr.m, Af->n(), parent, expr.up, expr.rows, nA, expr.b, ConvShape(), expr.sound);
 }
 #endif

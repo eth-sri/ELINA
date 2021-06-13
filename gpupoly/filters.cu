@@ -80,16 +80,8 @@ int ContainsZero<T>::listCriticalNeurons(int* dest, const Vector<T>& v, int* tmp
 template <typename T>
 int AlwaysKeep<T>::listCriticalNeurons(int* dest, const Vector<T>& v, int* tmpInt, const int* oldList, const int oldNbCritical) const
 {
-	if (oldList)
-	{
-		cudaMemcpy(dest, oldList, oldNbCritical * sizeof(int), cudaMemcpyDeviceToDevice);
-		return oldNbCritical;
-	}
-	else
-	{
-		thrust::sequence(thrust::device_pointer_cast<int>(dest), thrust::device_pointer_cast<int>(dest + v.size()));
-		return v.size();
-	}
+	thrust::sequence(thrust::device_pointer_cast<int>(dest), thrust::device_pointer_cast<int>(dest + v.size())); //TODO: seems that the old list is always this
+	return v.size();
 }
 
 template class ContainsZero<double>;
