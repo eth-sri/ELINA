@@ -32,8 +32,9 @@ class Network:
     if os.name == 'nt': # Running in Windows
         os.add_dll_directory("${CUDAToolkit_BIN_DIR}")
         _lib = ctypes.cdll.LoadLibrary("${GPUPoly_BINARY_DIR}/gpupoly.dll")
+
     else: # Not running in Windows
-        # _lib=ctypes.cdll.LoadLibrary('${GPUPoly_BINARY_DIR}/dpGPUlib.so.0.10')
+        # _lib=ctypes.cdll.LoadLibrary('${GPUPoly_BINARY_DIR}/dpGPUlib.so.0.13')
         _lib = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../gpupoly/libgpupoly.so.0.13"))
         #_lib = ctypes.cdll.LoadLibrary('libgpupoly.so')
 
@@ -117,6 +118,31 @@ class Network:
         ctypes.c_bool
     ]
     _lib.evalAffineExpr_s.restype = None
+
+    _lib.getSensitivity_d.argtypes = [
+        ctypes.c_void_p,
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1),
+        ctypes.c_bool,
+        ctypes.c_int,
+        ctypes.c_int,
+        _nullable_ndptr(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
+        _nullable_ndptr(dtype=np.float64, ndim=1),
+        ctypes.c_bool
+    ]
+    _lib.getSensitivity_d.restype = None
+    _lib.getSensitivity_s.argtypes = [
+        ctypes.c_void_p,
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1),
+        ctypes.c_bool,
+        ctypes.c_int,
+        ctypes.c_int,
+        _nullable_ndptr(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
+        _nullable_ndptr(dtype=np.float32, ndim=1),
+        ctypes.c_bool
+    ]
+    _lib.getSensitivity_s.restype = None
 
     _lib.getOutputSize.argtypes = [ctypes.c_void_p, ctypes.c_int]
     _lib.getOutputSize.restype = ctypes.c_int
@@ -302,6 +328,7 @@ class Network:
     #
     # Evaluate the concrete bounds of a list of m affine expressions of the neurons of a given layer via back-substitution.
     # The affine expressions have the form Ax+b, where A is a m*n matrix, b a vector of size m, and x represents the n neurons of the layer layerId.
+    # Note that all preceding layers must be relaxed before using evalAffineExpr.
     # \param a A numpy array of dimension [m,n]. If None, equivalent to the identity.
     # \param b A numpy array of dimension [m]. If None, equivalent to a zero vector.
     # \param layer Index of the layer
@@ -343,6 +370,66 @@ class Network:
         # Evaluates an expression that computes the difference between expected label and each element of the output layer
         res = self.evalAffineExpr(a, b, layer, back_substitute, sound, dtype)
         return res
+
+
+    ## Get sensivity affine expressions on the inputs based on affine expressions.
+    #
+    # Get a sensivity affine expression based on a single precision expressions.
+    # The affine expressions have the form Ax+b, where A is a m*n matrix, b a vector of size m, and x represents the n neurons of the layer layerId.
+    # The output expression is represented in a matrix and a vector. Concrete bounds can be derived from this expression by computing resA*x+resb, where * is a matrix-interval vector multiplication.
+    # For instance, the following code can be used in case sound=False, x_up and x_down are vectors that represent the upper and lower concrete bounds of the input.
+    # Note that all preceding layers must be relaxed before using getSensitivity.
+    #
+    # def mvm_dr(lhs, rhs_up, rhs_down, offset, up):
+    #     res = np.ndarray(lhs.shape[0])
+    #     for i in range(lhs.shape[0]):
+    #         cur = offset[i]
+    #         for j in range(lhs.shape[1]):
+    #             tmp1 = lhs[i, j] * rhs_up[j]
+    #             tmp2 = lhs[i, j] * rhs_down[j]
+    #             cur += tmp1 if tmp1 > tmp2 and up else tmp2
+    #         res[i] = cur
+    #     return res
+    # resA, resb = nn.getSensitivity(True, sound=False) # Computes the upper sensitivity expression for all the output neurons.
+    # print(mvm_dr(resA, x_up, x_down, resb, True)) # Computes the corresponding concrete bounds.
+    # print(nn.evalAffineExpr(back_substitute=nn.FULL_BACKSUBSTITUTION)) # Check the corresponding expression computed by evalAffineExpr.
+    #
+    # It is possible that evalAffineExpr returns a tighter bound as the one computed above, as it uses as well expressions from intermediate layers.
+    # In the case where sound=True, then an interval matrix - interval multiplication is needed.
+    # \param upperBound A boolean that specifies the direction of the bound considered. If True, the computed expressions are an upper bound of the input expression; a lower bound otherwise.
+    # \param a A numpy array of dimension [m,n]. If None, equivalent to the identity.
+    # \param b A numpy array of dimension [m]. If None, equivalent to a zero vector.
+    # \param layer Index of the layer
+    # \param sound If True, use floating-point sound arithmetic (slower).
+    # \param dtype Datatype of the concrete bounds to be used. Can be np.float32, np.float64, or None, in which case it uses the same type as the last setLayerBox.
+    # \returns A matrix and a vector that represent the expression. If sound=True, then each elements are themselves an interval (that captures the rounding errors). Otherwise, these elements are scalars of type dtype
+    def getSensitivity(self, upperBound, a=None, b=None, layer=None, sound=True, dtype=None):
+        if layer is None:
+            layer = self._last_layer_id
+        if dtype is None:
+            dtype = self._last_dtype
+        n = self._lib.getOutputSize(self._nn, layer)
+        if a is None:
+            m = n
+        else:
+            assert a.ndim == 2
+            assert a.dtype == dtype
+            m = a.shape[0]
+            a = np.ascontiguousarray(a)
+        if b is not None:
+            assert b.shape == (m,)
+            assert b.dtype == dtype
+        inputSize = self._lib.getOutputSize(self._nn, 0)
+        aShape = (m, inputSize, 2) if sound else (m, inputSize)
+        bShape = (m, 2) if sound else (m,)
+        resA = np.ascontiguousarray(np.ndarray(aShape, dtype=dtype).flatten())
+        resb = np.ascontiguousarray(np.ndarray(bShape, dtype=dtype).flatten())
+        if dtype == np.float64:
+            self._lib.getSensitivity_d(self._nn, resA, resb, upperBound, layer, m, a, b, sound)
+        else:
+            self._lib.getSensitivity_s(self._nn, resA, resb, upperBound, layer, m, a, b, sound)
+        return np.reshape(resA, aShape), np.reshape(resb, bShape)
+
 
     ## Fully connected linear layer
     #

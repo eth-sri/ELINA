@@ -295,7 +295,7 @@ void NeuralNetwork::getSensitivity(T* const destA, T* const destb, int layer, bo
 					cudaMemcpyDeviceToHost);
 				cudaMemcpy(destb + start*sizeof(T)*(1+sound),
 					resb.data(),
-					tmp.n * sizeof(T) * (1 + sound),
+					tmp.m * sizeof(T) * (1 + sound),
 					cudaMemcpyDeviceToHost);
 			}
 			if (!exprs.empty() && exprs.top().layer == tmp.layer)
