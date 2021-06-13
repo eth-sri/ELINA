@@ -22,7 +22,7 @@ Conversely, it is possible to make GPUPoly search for weaker certification level
 The library is built with ELINA, but can also be built using CMake on both Windows and linux architectures. 
 
 ### Windows
-The library can be built using Visual Studio 2019 and the plugins `GitHub.VisualStudio` and `Visual Studio Tools for CMake`. With this configuration, it is possible to clone the repository from the start window of the IDE, and to compile and run it directly.
+The library can be built using Visual Studio 2021 and the plugins `GitHub.VisualStudio` and `Visual Studio Tools for CMake`. With this configuration, it is possible to clone the repository from the start window of the IDE, and to compile and run it directly.
 
 For older versions of Visual Studio, the CMake GUI can be used to create a Visual Studio project that can be used to compile and use the library.
 
