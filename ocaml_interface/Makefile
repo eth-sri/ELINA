@@ -1,7 +1,7 @@
 #
 #
 #  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
-#  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
+#  ELINA is Copyright © 2021 Department of Computer Science, ETH Zurich
 #  This software is distributed under GNU Lesser General Public License Version 3.0.
 #  For more information, see the ELINA project website at:
 #  http://elina.ethz.ch
@@ -55,7 +55,7 @@ APRON_CAML_INCLUDE = $(shell $(OCAMLFIND) query apron)
 CAML_TO_INSTALL = \
 elina_poly.idl elina_poly.mli elina_poly.ml elina_poly.cmi \
 elina_poly.a elina_poly.cma elina_poly.cmx elina_poly.cmxa \
-libelina_poly_caml.a \
+libelina_poly_caml.a dllelina_poly.so dllelina_poly_caml.so \
 
 ifneq ($(HAS_OCAMLOPT),)
 CAML_TO_INSTALL += 							\
@@ -68,9 +68,8 @@ LIBS = -lapron -lmpfr -lgmp -lm
 # Rules
 #---------------------------------------
 
-all: ml
+all: ml mlexample.byte mlexample.opt
 
-example: mlexample.byte mlexample.opt
 
 ml: elina_poly.mli elina_poly.ml elina_poly.cmi mllib 
 
