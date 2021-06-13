@@ -270,6 +270,12 @@ static inline bool double_set_mpq(double *a, mpq_t b)
   return res;
 }
 
+static inline bool double_set_mpfr(double *a, mpfr_t b)
+{
+  *a = mpfr_get_d(b,GMP_RNDU);
+  return !mpfr_cmp_d(b,*a);
+}
+
 static inline bool double_set_elina_scalar(double *r, elina_scalar_t *t){
 	switch(t->discr){
 		case ELINA_SCALAR_MPQ:
@@ -289,7 +295,16 @@ static inline bool double_set_elina_scalar(double *r, elina_scalar_t *t){
 		case ELINA_SCALAR_DOUBLE:
 			*r = t->val.dbl;
 			return true;
-
+		case AP_SCALAR_MPFR:
+    			if (mpfr_inf_p(t->val.mpfr)) {
+      				if (mpfr_sgn(t->val.mpfr)>0) *r = INFINITY;
+      				else *r = -INFINITY;
+      				return true;
+    			}
+    			else {
+      				return double_set_mpfr(r,t->val.mpfr);
+    			}
+    			break;
 		default:
 			abort();
 	}
