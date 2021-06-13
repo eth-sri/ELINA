@@ -1,7 +1,7 @@
 /*
  *
  *  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
- *  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
+ *  ELINA is Copyright © 2021 Department of Computer Science, ETH Zurich
  *  This software is distributed under GNU Lesser General Public License Version 3.0.
  *  For more information, see the ELINA project website at:
  *  http://elina.ethz.ch
@@ -251,11 +251,60 @@ static inline void opt_scalar_of_lower_bound(opt_oct_internal_t* pr,
   }
 }
 
+static inline bool double_set_mpq_tmp(double *a, mpq_t b, mpfr_t mpfr)
+{
+  int res = mpfr_set_q(mpfr,b,GMP_RNDU);
+#if defined(NUMFLT_DOUBLE)
+  *a = mpfr_get_d(mpfr,GMP_RNDU);/* Normally, exact conversion here (unless overfloww) */
+#else
+  *a = mpfr_get_ld(mpfr,GMP_RNDU);/* Normally, exact conversion here (unless overfloww) */
+#endif
+  return (res==0);
+}
+static inline bool double_set_mpq(double *a, mpq_t b)
+{
+  mpfr_t mpfr;
+  mpfr_init2(mpfr,DBL_MANT_DIG);
+  bool res = double_set_mpq_tmp(a,b,mpfr);
+  mpfr_clear(mpfr);
+  return res;
+}
+
+static inline bool double_set_mpfr(double *a, mpfr_t b)
+{
+  *a = mpfr_get_d(b,GMP_RNDU);
+  return !mpfr_cmp_d(b,*a);
+}
+
 static inline bool double_set_elina_scalar(double *r, elina_scalar_t *t){
 	switch(t->discr){
+		case ELINA_SCALAR_MPQ:
+    			if (mpz_sgn(mpq_denref(t->val.mpq))==0){
+    				if(mpz_sgn(mpq_numref(t->val.mpq))>0){
+    					*r = INFINITY;
+    				}
+    				else{
+    					*r = -INFINITY;
+    				}
+      				return true;
+    			}
+    			else {
+      				return double_set_mpq(r,t->val.mpq);
+    			}
+    			break;
 		case ELINA_SCALAR_DOUBLE:
 			*r = t->val.dbl;
 			return true;
+		case AP_SCALAR_MPFR:
+    			if (mpfr_inf_p(t->val.mpfr)) {
+      				if (mpfr_sgn(t->val.mpfr)>0) *r = INFINITY;
+      				else *r = -INFINITY;
+      				return true;
+    			}
+    			else {
+      				return double_set_mpfr(r,t->val.mpfr);
+    			}
+    			break;
 		default:
 			abort();
 	}
@@ -349,9 +398,11 @@ static inline void opt_oct_of_scalar(opt_oct_internal_t* pr,
 				   double * r, elina_scalar_t* t,
 				   bool neg, bool mul2)
 {
+
   if (neg) elina_scalar_neg(t,t);
-  double_set_elina_scalar(r,t); 
+  double_set_elina_scalar(r,t);
   pr->conv = true;
+  
   if (mul2) {
     *r = *r*2;
     pr->conv = true;
@@ -373,6 +424,7 @@ static inline bool opt_oct_of_interval(opt_oct_internal_t* pr,
   
   
   if(!elina_interval_is_top(itv)){
+  	
 	comp_list_t * cl = create_comp_list();
 	insert_comp(cl,i);
 	insert_comp_list(oo->acl,cl);
@@ -382,11 +434,13 @@ static inline bool opt_oct_of_interval(opt_oct_internal_t* pr,
 	int ind2 = i1 + ((i2+1)*(i2+1))/2;
 	int ind3 = i2 + ((i2+1)*(i2+1))/2;
 	int ind4 = i1 + ((i1+1)*(i1+1))/2;
+	
 	opt_oct_of_scalar(pr,&m[ind1],itv->inf,true,mul2);
   	opt_oct_of_scalar(pr,&m[ind2],itv->sup,false,mul2);
   	m[ind3] = 0;
   	m[ind4] = 0;
 	oo->nni+=2;
+	
 	return elina_scalar_cmp(itv->inf,itv->sup)>0;
   }
   

@@ -1,7 +1,7 @@
 #
 #
 #  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
-#  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
+#  ELINA is Copyright © 2021 Department of Computer Science, ETH Zurich
 #  This software is distributed under GNU Lesser General Public License Version 3.0.
 #  For more information, see the ELINA project website at:
 #  http://elina.ethz.ch
@@ -19,11 +19,13 @@
 #
 
 while (<>) {
-    s/Manager.ap_manager_ptr/'a t Apron.Manager.t/g; 
+    s/Manager.ap_manager_ptr/t Apron.Manager.t/g; 
     s/internal_ptr/internal/g;  
-    s/external elina_poly_/external /g;  
-    s/external manager_alloc_loose : unit -> 'a t Apron.Manager.t/external manager_alloc_loose : unit -> loose t Apron.Manager.t/g;
-    s/external manager_alloc_strict : unit -> 'a t Apron.Manager.t/external manager_alloc_strict : unit -> strict t Apron.Manager.t/g;
-    s/external manager_alloc_equalities : unit -> 'a t Apron.Manager.t/external manager_alloc_equalities : unit -> equalities t Apron.Manager.t/g;
+    s/external opt_oct_/external /g;  
+    s/Generator0.ap_generator0_array_t/Apron.Generator0.t array/g;
+    s/Scalar.ap_scalar_ptr/Apron.Scalar.t/g;
+    s/Scalar.ap_scalar_array_t/Apron.Scalar.t array/g;
+    s/Abstract0.ap_abstract0_ptr/t Apron.Abstract0.t/g;
+    s/external ap_abstract0_opt_oct_/external /g;
     print;
 }

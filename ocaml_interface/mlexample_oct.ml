@@ -1,8 +1,20 @@
-(* This file is part of the APRON Library, released under LGPL license
-   with an exception allowing the redistribution of statically linked
-   executables.
-   
-   Please read the COPYING file packaged in the distribution. *)
+(* This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
+   ELINA is Copyright © 2021 Department of Computer Science, ETH Zurich
+   This software is distributed under GNU Lesser General Public License Version 3.0.
+   For more information, see the ELINA project website at:
+   http://elina.ethz.ch
+ 
+   THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+   EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+   IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+   TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+   DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+   SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+   ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+   CONTRACT, TORT OR OTHERWISE).
+
+*)
 
 (*
 with default setting (if dynamic libraries):
@@ -11,22 +23,9 @@ ocaml -I $MLGMPIDL_INSTALL/lib -I $APRON_INSTALL/lib
 #load "bigarray.cma";;
 #load "gmp.cma";;
 #load "apron.cma";;
-#load "elina_poly.cma";;
+#load "elina_oct.cma";;
 
-#install_printer Apron.Linexpr1.print;;
-#install_printer Apron.Texpr1.print;;
-#install_printer Apron.Lincons1.print;;
-#install_printer Apron.Generator1.print;;
-#install_printer Apron.Abstract1.print;;
 
-let environment_print fmt x = Apron.Environment.print fmt x;;
-let lincons1_array_print fmt x = Apron.Lincons1.array_print fmt x;;
-let generator1_array_print fmt x = Apron.Generator1.array_print fmt x;;
-
-#install_printer Apron.Var.print;;
-#install_printer environment_print;;
-#install_printer lincons1_array_print;;
-#install_printer generator1_array_print;;
 
 *)
 
@@ -38,11 +37,9 @@ let print_array = Abstract0.print_array;;
 let lincons1_array_print fmt x =
   Lincons1.array_print fmt x
 ;;
-let generator1_array_print fmt x =
-  Generator1.array_print fmt x
-;;
 
-let man = Elina_poly.manager_alloc_loose ();;
+
+let man = Elina_oct.manager_alloc ();;
 
 let var_x = Var.of_string "x";;
 let var_y = Var.of_string "y";;
@@ -57,8 +54,8 @@ let ex1 (man:'a Manager.t) : 'a Abstract1.t =
   printf "Using Library: %s, version %s@." (Manager.get_library man) (Manager.get_version man);
 
   let env = Environment.make
-    [|var_x; var_y; var_z; var_w; var_u; var_v; var_a; var_b|]
-    [||]
+    [|var_x; var_y; var_z; var_w|]
+    [|var_u; var_v; var_a; var_b|]
   in
   let env2 = Environment.make [|var_x; var_y; var_z; var_w|] [||]
   in
@@ -79,7 +76,27 @@ let ex1 (man:'a Manager.t) : 'a Abstract1.t =
 
   let abs = Abstract1.of_lincons_array man env tab in
   printf "abs=%a@." Abstract1.print abs;
-  (*  Tests top and bottom *)
+
+  (* Extraction (we first extract values for existing constraints, then for
+     dimensions) *)
+  let box = Abstract1.to_box man abs in
+  printf "box=%a@." (print_array Interval.print) box.Abstract1.interval_array;
+  for i=0 to 4 do
+    let expr = Lincons1.get_linexpr1 (Lincons1.array_get tab i) in
+    let box = Abstract1.bound_linexpr man abs expr in
+    printf "Bound of %a = %a@."
+      Linexpr1.print expr
+      Interval.print box;
+  done;
+  (* 2. dimensions *)
+  (* 3. of box *)
+  let abs2 =
+    Abstract1.of_box man env
+      [|var_x; var_y; var_z; var_w; var_u; var_v; var_a; var_b|]
+      box.Abstract1.interval_array
+  in
+  printf "abs2=%a@." Abstract1.print abs2;
+  (* 4. Tests top and bottom *)
   let abs3 = Abstract1.bottom man env in
   printf "abs3=%a@.is_bottom(abs3)=%b@."
     Abstract1.print abs3
@@ -161,15 +178,15 @@ let ex3 (man:'a Manager.t) =
   printf "res2=%a@."
     Abstract1.print res2
   ;
-  let abs1 = Abstract1.assign_linexpr man res1 var_z linexpr1 None in
-  let abs2 = Abstract1.assign_linexpr man res1 var_z linexpr2 None in
+  let abs1 = Abstract1.substitute_linexpr man res1 var_z linexpr1 None in
+  let abs2 = Abstract1.substitute_linexpr man res1 var_z linexpr2 None in
   let res1 = Abstract1.join man abs1 abs2 in
   printf "abs1=%a@.abs2=%a@.res1=%a@."
     Abstract1.print abs1
     Abstract1.print abs2
     Abstract1.print res1
   ;
-  let res2 = Abstract1.assign_linexpr man res2 var_z linexpr None in
+  let res2 = Abstract1.substitute_linexpr man res2 var_z linexpr None in
   printf "res2=%a@."
     Abstract1.print res2
   ;
@@ -179,5 +196,3 @@ let ex3 (man:'a Manager.t) =
 let abs1 = ex1 man;;
 let abs2 = ex2 man;;
 let abs3 = ex3 man;;
-
-
