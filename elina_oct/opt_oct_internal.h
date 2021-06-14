@@ -295,7 +295,7 @@ static inline bool double_set_elina_scalar(double *r, elina_scalar_t *t){
 		case ELINA_SCALAR_DOUBLE:
 			*r = t->val.dbl;
 			return true;
-		case AP_SCALAR_MPFR:
+		case ELINA_SCALAR_MPFR:
     			if (mpfr_inf_p(t->val.mpfr)) {
       				if (mpfr_sgn(t->val.mpfr)>0) *r = INFINITY;
       				else *r = -INFINITY;
