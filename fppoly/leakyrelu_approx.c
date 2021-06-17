@@ -45,7 +45,7 @@ expr_t * create_leakyrelu_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t
 		}
 	}
 	else{
-		double mu_num = 0.99*ub*lb;
+		double mu_num = (1-alpha)*ub*lb;
 		double mu_inf = -mu_num/width;
 		double mu_sup = mu_num/width;
 		res->inf_coeff[0] = lambda_inf;
