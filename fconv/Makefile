@@ -28,12 +28,10 @@ INSTALLd = install -d
 
 OBJS = fconv.o relaxation.o decomposition.o split_in_quadrants.o octahedron.o quadrants.o pdd.o sparse_cover.o mpq.o utils.o dynamic_bitset.o fp_mat.o S_curve.o S_curve2.o
 
-LIBS = $(GMP_LIB_FLAG) -lgmp -lcddgmp
+LIBS = $(GMP_LIB_FLAG) -lgmp $(CDD_LIB_FLAG) -lcddgmp
 INCLUDES = $(GMP_INCLUDE_FLAG)
 
-ifneq ($(CDD_PREFIX),)
-	INCLUDES += -I$(CDD_PREFIX)
-endif
+INCLUDES += $(CDD_INCLUDE_FLAG)
 
 ifneq ($(BOOST_PREFIX),)
 	INCLUDES += -I$(BOOST_PREFIX)

@@ -560,6 +560,14 @@ USE_DEEPPOLY = $use_deeppoly
 USE_FCONV = $use_fconv
 CDD_PREFIX = $cdd_prefix
 
+ifneq (\$(CDD_PREFIX),)
+  CDD_INCLUDE_FLAG = -I\$(CDD_PREFIX)/include
+  CDD_LIB_FLAG = -L\$(CDD_PREFIX)/lib
+else
+  CDD_INCLUDE_FLAG =
+  CDD_LIB_FLAG =
+endif
+
 # if defined to VECTOR, compile GPUPoly (a GPU version of DeepPoly)
 IS_CUDA = $is_cuda
 
