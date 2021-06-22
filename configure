@@ -561,12 +561,12 @@ USE_FCONV = $use_fconv
 CDD_PREFIX = $cdd_prefix
 
 ifneq (\$(CDD_PREFIX),)
-  ifneq (,$(findstring /include/cddlib, \$(CDD_PREFIX)))
+  ifneq (,\$(findstring /include/cddlib, \$(CDD_PREFIX)))
     CDD_INCLUDE_FLAG = -I\$(CDD_PREFIX)
   else
     CDD_INCLUDE_FLAG = -I\$(CDD_PREFIX)/include
   endif
-  ifneq (,$(findstring /include/cddlib, \$(CDD_PREFIX)))
+  ifneq (,\$(findstring /include/cddlib, \$(CDD_PREFIX)))
     CDD_LIB_FLAG = -L\$(CDD_PREFIX)/../../lib
   else
     CDD_LIB_FLAG = -L\$(CDD_PREFIX)/lib
