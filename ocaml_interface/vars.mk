@@ -1,7 +1,7 @@
 #
 #
 #  This source file is part of ELINA (ETH LIbrary for Numerical Analysis).
-#  ELINA is Copyright © 2019 Department of Computer Science, ETH Zurich
+#  ELINA is Copyright © 2021 Department of Computer Science, ETH Zurich
 #  This software is distributed under GNU Lesser General Public License Version 3.0.
 #  For more information, see the ELINA project website at:
 #  http://elina.ethz.ch
@@ -42,6 +42,7 @@ ifneq ($(OCAMLFIND),)
 else
   MLGMPIDL_INCLUDE = $(MLGMPIDL_PREFIX)/include
   MLGMPIDL_LIB = $(MLGMPIDL_PREFIX)/lib
+  MLAPRONIDL_INCLUDE = $(APRON_SRCROOT)/mlapronidl
 endif
 
 # IC/LI-FLAGS

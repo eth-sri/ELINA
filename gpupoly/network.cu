@@ -73,96 +73,281 @@ __global__ void setFinal(T* A, int* rows, int label, size_t outputSize, size_t N
 template <typename T>
 void NeuralNetwork::evaluateAffine(Vector<T>& dest, const NeuronFilter<T>& al, int layer, bool up, bool sound, const std::shared_ptr<const Matrix<T>>& A, const std::shared_ptr<const Vector<T>>& b)
 {
+	// size of the expression
+	int m = dest.size();
+	// if it's bigger than current maxLayerSize, we change its value and deallocate existing annoyingNeuronLists
+	if (m > maxLayerSize)
+	{
+		maxLayerSize = m;
+		if (annoyingNeuronList)
+		{
+			cudaFree(annoyingNeuronList);
+			annoyingNeuronList = nullptr;
+		}
+		if (annoyingNeuronList2)
+		{
+			cudaFree(annoyingNeuronList2);
+			annoyingNeuronList2 = nullptr;
+		}
+	}
 	if (!annoyingNeuronList)
 		gpuErrchk(cudaMalloc((void**)&annoyingNeuronList, maxLayerSize * sizeof(int)));
 	if (!annoyingNeuronList2)
 		gpuErrchk(cudaMalloc((void**)&annoyingNeuronList2, maxLayerSize * sizeof(int)));
 
 	int an = al.listCriticalNeurons(annoyingNeuronList, dest, annoyingNeurons);
-	if (an)
+	int maxNeurBP = (1 << 30) / (maxLayerSize * sizeof(Intv<T>));
+	for (int start = 0; start < an; start += maxNeurBP)
 	{
-		int maxNeurBP = (1 << 30) / (maxLayerSize * sizeof(Intv<T>));
-		for (int start = 0; start < an; start += maxNeurBP)
+		int length = std::min(maxNeurBP, an - start);
+		auto partialA = A ? std::make_shared<const Matrix<T>>(A->template selectRows<T> (length, annoyingNeuronList + start, false)) : nullptr;
+		auto partialb = b ? std::make_shared<const Vector<T>>(b->template select<T>(length, annoyingNeuronList+start,false)) : nullptr;
+		auto inExpr = AffineExpr<T>(length, layers[layer]->outputSize, layer, up, annoyingNeuronList + start,partialA,partialb,ConvShape(),sound);
+		typename AffineExpr<T>::Queue exprs;
+		exprs.push(inExpr);
+		int nbEval = 0;
+		while (!exprs.empty())
 		{
-			int length = std::min(maxNeurBP, an - start);
-			auto partialA = A ? std::make_shared<const Matrix<T>>(A->template selectRows<T> (length, annoyingNeuronList + start)) : nullptr;
-			auto partialb = b ? std::make_shared<const Vector<T>>(b->select(length, annoyingNeuronList+start)) : nullptr;
-			auto inExpr = AffineExpr<T>(length, layers[layer]->outputSize, layer, up, annoyingNeuronList + start,partialA,partialb,ConvShape(),sound);
-			typename AffineExpr<T>::Queue exprs;
-			exprs.push(inExpr);
-			int nbEval = 0;
-			while (!exprs.empty())
+			AffineExpr<T> tmp = exprs.top();
+			assert(tmp.sound == sound);
+			exprs.pop();
+			//assert(tmp.m == size);
+			assert(tmp.n == layers[tmp.layer]->outputSize);
+			if (exprs.empty())
 			{
-				AffineExpr<T> tmp = exprs.top();
-				assert(tmp.sound == sound);
-				exprs.pop();
-				//assert(tmp.m == size);
-				assert(tmp.n == layers[tmp.layer]->outputSize);
-				if (exprs.empty())
+				//concreteBounds[tmp.layer]->check();
+				tmp.evaluateAndUpdate(dest, getConcreteBounds<T>(tmp.layer));
+				//dest.check();
+				nbEval++;
+
+				if (nbEval > 1)
 				{
-					//concreteBounds[tmp.layer]->check();
-					tmp.evaluateAndUpdate(dest, getConcreteBounds<T>(tmp.layer));
-					//dest.check();
-					nbEval++;
-
-					if (nbEval > 1)
+					int an = al.listCriticalNeurons(annoyingNeuronList2, dest, annoyingNeurons, tmp.rows, tmp.m);
+					if (an < tmp.m)
 					{
-						int an = al.listCriticalNeurons(annoyingNeuronList2, dest, annoyingNeurons, tmp.rows, tmp.m);
-						if (an < tmp.m)
-						{
-							if (an == 0)
-								return;
-							tmp.selectRows(an, annoyingNeuronList2);
-						}
+						if (an == 0)
+							return;
+						tmp.selectRows(an, annoyingNeuronList2);
 					}
-
 				}
-				if (!exprs.empty() && exprs.top().layer == tmp.layer)
-				{
-					AffineExpr<T> tmp2 = exprs.top();
-					exprs.pop();
-					assert(tmp.sound == tmp2.sound);
-					auto A = std::make_shared<Matrix<T>>();
-					Matrix<T>::add(*A, *tmp.getA(), *tmp2.getA(),tmp.sound);
-					std::shared_ptr<const Vector<T>> b;
-					if (tmp.up)
-						b = Vector<T> ::template add_dr<true> (tmp.b, tmp2.b);
-					else
-						b = Vector<T> ::template add_dr<false> (tmp.b, tmp2.b);
-					ConvShape cs;
-					if (tmp.cs && tmp2.cs)
-					{
-						if (
-							tmp.cs.filters == tmp2.cs.filters &&
-							tmp.cs.output_rows == tmp2.cs.output_rows &&
-							tmp.cs.output_cols == tmp2.cs.output_cols &&
-							tmp.cs.input_rows == tmp2.cs.input_rows &&
-							tmp.cs.input_cols == tmp2.cs.input_cols &&
-							tmp.cs.input_channels == tmp2.cs.input_channels
-							)
-						{
-							if (tmp.cs.kernel_size_cols > tmp2.cs.kernel_size_cols)
-								cs = tmp.cs;
-							else
-								cs = tmp2.cs;
-						}
-						else
-						{
-							std::cout << "Error merging:" << std::endl;
-							tmp.cs.print();
-							tmp2.cs.print();
-							std::cout << std::endl;
-						}
 
-					}
-					exprs.emplace(tmp.m, tmp.n, tmp.layer, tmp.up, tmp.rows, A, b, cs,tmp.sound);
-				}
-				else
-					layers[tmp.layer]->backSubstitute(exprs, tmp);
 			}
+			if (!exprs.empty() && exprs.top().layer == tmp.layer)
+			{
+				AffineExpr<T> tmp2 = exprs.top();
+				exprs.pop();
+				assert(tmp.sound == tmp2.sound);
+				auto A = std::make_shared<Matrix<T>>();
+				Matrix<T>::add(*A, *tmp.getA(), *tmp2.getA(),tmp.sound);
+				std::shared_ptr<const Vector<T>> b;
+				if (tmp.up)
+					b = Vector<T> ::template add_dr<true> (tmp.b, tmp2.b);
+				else
+					b = Vector<T> ::template add_dr<false> (tmp.b, tmp2.b);
+				ConvShape cs;
+				if (tmp.cs && tmp2.cs)
+				{
+					if (
+						tmp.cs.filters == tmp2.cs.filters &&
+						tmp.cs.output_rows == tmp2.cs.output_rows &&
+						tmp.cs.output_cols == tmp2.cs.output_cols &&
+						tmp.cs.input_rows == tmp2.cs.input_rows &&
+						tmp.cs.input_cols == tmp2.cs.input_cols &&
+						tmp.cs.input_channels == tmp2.cs.input_channels
+						)
+					{
+						if (tmp.cs.kernel_size_cols > tmp2.cs.kernel_size_cols)
+							cs = tmp.cs;
+						else
+							cs = tmp2.cs;
+					}
+					else
+					{
+						std::cout << "Error merging:" << std::endl;
+						tmp.cs.print();
+						tmp2.cs.print();
+						std::cout << std::endl;
+					}
+
+				}
+				exprs.emplace(tmp.m, tmp.n, tmp.layer, tmp.up, tmp.rows, A, b, cs,tmp.sound);
+			}
+			else
+				layers[tmp.layer]->backSubstitute(exprs, tmp);
 		}
 	}
 }
+
+
+template <int lgBlockSize>
+__global__ void getSensitivityExprPrepareRes(int* rows, const int* oldRows, const size_t n)
+{
+	size_t idx = (blockIdx.x << lgBlockSize) + threadIdx.x;
+	if (idx < n)
+	{
+		rows[idx] = oldRows[rows[idx]];
+	}
+}
+
+template<typename T>
+__global__ void makeIdMatrix(T* dest, size_t N, int outputSize, int start)
+{
+	int col = blockIdx.x * blockDim.x + threadIdx.x;
+	int row = blockIdx.y;
+	int output = row + start;
+	if (col < outputSize)
+		dest[row * N + col] = T(output == col);
+}
+
+template<typename T>
+void NeuralNetwork::getSensitivity(T* const destA, T* const destb, int layer, bool up, bool sound, int m, const std::shared_ptr<const Matrix<T>>& A, const std::shared_ptr<const Vector<T>>& b)
+{
+	// if the number of expressions is bigger than current maxLayerSize, we change its value and deallocate existing annoyingNeuronLists
+	if (m > maxLayerSize)
+	{
+		maxLayerSize = m;
+		if (annoyingNeuronList)
+		{
+			cudaFree(annoyingNeuronList);
+			annoyingNeuronList = nullptr;
+		}
+		if (annoyingNeuronList2)
+		{
+			cudaFree(annoyingNeuronList2);
+			annoyingNeuronList2 = nullptr;
+		}
+	}
+
+	// Allocate annoyingNeuronLists if needed
+	if (!annoyingNeuronList)
+		gpuErrchk(cudaMalloc((void**)&annoyingNeuronList, maxLayerSize * sizeof(int)));
+	if (!annoyingNeuronList2)
+		gpuErrchk(cudaMalloc((void**)&annoyingNeuronList2, maxLayerSize * sizeof(int)));
+
+	// Maximal size of a chunk
+	int maxNeurBP = (1 << 30) / (maxLayerSize * sizeof(Intv<T>));
+
+	// Initialize annoyingNeuronList with a sequence from 0 to n-1
+	thrust::sequence(thrust::device_pointer_cast<int>(annoyingNeuronList), thrust::device_pointer_cast<int>(annoyingNeuronList + m));
+
+	// Initialize buffers for the resulting expression to be stored
+	Matrix<T> resA;
+	Vector<T> resb;
+	
+	// Split the expression into chunks, and process them one after the other	
+	for (int start = 0; start < m; start += maxNeurBP)
+	{
+		// Size of current chunk
+		int length = std::min(maxNeurBP, m - start);
+
+		// Encapsulate the expression into an AffineExpr
+		auto partialA = A ? std::make_shared<const Matrix<T>>(A->template selectRows<T>(length, annoyingNeuronList + start,false)) : nullptr;
+		auto partialb = b ? std::make_shared<const Vector<T>>(b->template select<T>(length, annoyingNeuronList + start,false)) : nullptr;
+		thrust::sequence(thrust::device_pointer_cast<int>(annoyingNeuronList + start), thrust::device_pointer_cast<int>(annoyingNeuronList + start + length)); // Reindex the chunk so that it starts from 0; this will make the final ordering easier, but we have to take into account start when copying in the buffer.
+		auto inExpr = AffineExpr<T>(length, layers[layer]->outputSize, layer, up, annoyingNeuronList + start, partialA, partialb, ConvShape(), sound);
+
+		// Creates a queue that will stack expressions to be added together (in case of residual networks or partial sums). The part with the highest layer number stays on top.
+		typename AffineExpr<T>::Queue exprs;
+		exprs.push(inExpr);
+
+		// Loop while this queue is not empty
+		while (!exprs.empty())
+		{
+			// Get the term on top
+			AffineExpr<T> tmp = exprs.top();
+			assert(tmp.sound == sound);
+			exprs.pop();
+			assert(tmp.n == layers[tmp.layer]->outputSize);
+
+			// If the term is expressed in terms of the inputs, and we have only one term, we're done for this chunk.
+			if (tmp.layer == 0 && exprs.empty())
+			{
+				// Prepare the output in the correct format, and reorders rows
+				if (!tmp.A)
+				{
+					resA.reshape(tmp.m, tmp.n, sound);
+					const int blockSize = 256;
+					dim3 block(blockSize, 1, 1);
+					dim3 grid((tmp.n + blockSize - 1) / blockSize, tmp.m, 1);
+					if (sound)
+						makeIdMatrix<Intv<T>> << <grid, block >> > (resA, resA.pitch(), tmp.n, start);
+					else
+						makeIdMatrix<T> << <grid, block >> > (resA, resA.pitch(), tmp.n, start);
+					gpuErrchk(cudaPeekAtLastError());
+					gpuErrchk(cudaDeviceSynchronize());
+				}
+				else
+					resA = tmp.A->template selectRows<T>(length, tmp.rows, sound);
+				if (!tmp.b)
+				{
+					resb.resize(length, sound);
+					resb.zeroFill();
+				}
+				else
+					resb = tmp.b->template select<T>(length, tmp.rows, sound);
+				assert(resA.interval() == sound);
+				assert(resb.interval() == sound);
+				cudaMemcpy2D(
+					destA + start * tmp.n * sizeof(T) * (1 + sound),
+					tmp.n * sizeof(T) * (1+sound),
+					resA.data(), resA.pitchBytes(),
+					tmp.n * sizeof(T) * (1+sound), tmp.m,
+					cudaMemcpyDeviceToHost);
+				cudaMemcpy(destb + start*sizeof(T)*(1+sound),
+					resb.data(),
+					tmp.m * sizeof(T) * (1 + sound),
+					cudaMemcpyDeviceToHost);
+			}
+			if (!exprs.empty() && exprs.top().layer == tmp.layer)
+			{
+				AffineExpr<T> tmp2 = exprs.top();
+				exprs.pop();
+				assert(tmp.sound == tmp2.sound);
+				auto A = std::make_shared<Matrix<T>>();
+				Matrix<T>::add(*A, *tmp.getA(), *tmp2.getA(), tmp.sound);
+				std::shared_ptr<const Vector<T>> b;
+				if (tmp.up)
+					b = Vector<T> ::template add_dr<true>(tmp.b, tmp2.b);
+				else
+					b = Vector<T> ::template add_dr<false>(tmp.b, tmp2.b);
+				ConvShape cs;
+				if (tmp.cs && tmp2.cs)
+				{
+					if (
+						tmp.cs.filters == tmp2.cs.filters &&
+						tmp.cs.output_rows == tmp2.cs.output_rows &&
+						tmp.cs.output_cols == tmp2.cs.output_cols &&
+						tmp.cs.input_rows == tmp2.cs.input_rows &&
+						tmp.cs.input_cols == tmp2.cs.input_cols &&
+						tmp.cs.input_channels == tmp2.cs.input_channels
+						)
+					{
+						if (tmp.cs.kernel_size_cols > tmp2.cs.kernel_size_cols)
+							cs = tmp.cs;
+						else
+							cs = tmp2.cs;
+					}
+					else
+					{
+						std::cout << "Error merging:" << std::endl;
+						tmp.cs.print();
+						tmp2.cs.print();
+						std::cout << std::endl;
+					}
+
+				}
+				exprs.emplace(tmp.m, tmp.n, tmp.layer, tmp.up, tmp.rows, A, b, cs, tmp.sound);
+			}
+			else
+				layers[tmp.layer]->backSubstitute(exprs, tmp);
+		}
+	}
+}
+
+template void NeuralNetwork::getSensitivity(double* const destA, double* const destb, int layer, bool up, bool sound, int m, const std::shared_ptr<const Matrix<double>>& A, const std::shared_ptr<const Vector<double>>& b);
+template void NeuralNetwork::getSensitivity(float* const destA, float* const destb, int layer, bool up, bool sound, int m, const std::shared_ptr<const Matrix<float>>& A, const std::shared_ptr<const Vector<float>>& b);
+
+
 
 NeuralNetwork::NeuralNetwork(const size_t inputSize) :
 	layers(), maxLayerSize(0),

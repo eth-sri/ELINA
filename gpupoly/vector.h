@@ -113,15 +113,23 @@ public:
 	{
 		return data_;
 	}
-	/*inline T* data()
+	inline T* data()
 	{
 		return data_;
-	}*/
+	}
+
+	void zeroFill()
+	{
+		cudaMemset(data(), 0, size() * sizeof(T) * (1 + interval()));
+	}
+
+
 	inline bool interval() const
 	{
 		return interval_;
 	}
-	Vector<T> select(size_t size, const int* rows) const;
+	template <typename Td>
+	Vector<Td> select(size_t size, const int* rows, bool forceIntervalOut) const;
 	bool isPositive() const;
 	void print() const {
 		if (interval_)

@@ -181,6 +181,27 @@ void evalAffineExpr_d(NeuralNetwork* nn, double* dest, int layer, int m, const d
 	evalAffineExpr(nn, dest, layer, m, A, b, backsubstitute, soundness);
 }
 
+
+template <typename T>
+void getSensitivity(NeuralNetwork* nn, T* destA, T* destb, bool up, int layer, int m, const T* A, const T* b, bool soundness)
+{
+	size_t n = (*nn)[layer]->outputSize;
+	std::shared_ptr<Matrix<T>> mA = A ? std::make_shared<Matrix<T>>(m, n, A) : nullptr;
+	std::shared_ptr<Vector<T>> vb = b ? std::make_shared<Vector<T>>(m, b) : nullptr;
+	nn->getSensitivity<T>(destA, destb, layer, up, soundness, m, mA, vb);
+}
+
+void getSensitivity_s(NeuralNetwork* nn, float* destA, float* destb, bool up, int layer, int m, const float* A, const float* b, bool soundness)
+{
+	getSensitivity(nn, destA, destb, up, layer, m, A, b, soundness);
+}
+
+void getSensitivity_d(NeuralNetwork* nn, double* destA, double* destb, bool up, int layer, int m, const double* A, const double* b, bool soundness)
+{
+	getSensitivity(nn, destA, destb, up, layer, m, A, b, soundness);
+}
+
+
 int getOutputSize(NeuralNetwork* nn, int layer)
 {
 	return (*nn)[layer]->outputSize;
