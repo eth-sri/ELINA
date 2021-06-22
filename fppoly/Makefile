@@ -42,6 +42,7 @@ endif
 ifneq ($(USE_GUROBI),)
 DFLAGS += -DGUROBI
 LIBS += -L$(GUROBI_HOME)/lib/ -lgurobi90
+INCLUDES += -I$(GUROBI_HOME)/include
 endif
 
 INSTALL = install
