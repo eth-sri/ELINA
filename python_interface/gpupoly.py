@@ -348,8 +348,9 @@ class Network:
             assert a.ndim == 2
             assert a.dtype == dtype
             m = a.shape[0]
-            a = np.ascontiguousarray(a)
+            a = np.ascontiguousarray(a, dtype=dtype)
         if b is not None:
+            b = np.ascontiguousarray(b, dtype=dtype)
             assert b.shape == (m,)
             assert b.dtype == dtype
         res = np.ascontiguousarray(np.ndarray((m, 2), dtype=dtype))
@@ -360,7 +361,7 @@ class Network:
         return np.reshape(res, (m, 2))
 
 
-    def evalAffineExpr_withProp(self, down, up, a=None, b=None, layer=None, back_substitute=NO_BACKSUBSTITUTION, sound=True, dtype=None):
+    def evalAffineExpr_withProp(self, down, up, a=None, b=None, layer=None, back_substitute=BACKSUBSTITUTION_WHILE_CONTAINS_ZERO, sound=True, dtype=None):
         self.setLayerBox(down, up)  # Set input layer concrete bounds
 
         # relax all layers, using simple interval analysis first.
