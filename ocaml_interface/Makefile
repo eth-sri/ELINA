@@ -36,7 +36,7 @@ ICFLAGS += $(BASE_ICFLAGS) $(ML_ICFLAGS)
 LDFLAGS += $(BASE_LIFLAGS)
 CMXSINC = $(APRON_CMXSINC) -I .
 
-ICFLAGS += -I ../partitions_api -I ../elina_linearize -I ../elina_auxiliary -I ../elina_poly -I ../elina_oct
+ICFLAGS += -I ../partitions_api -I ../elina_linearize -I ../elina_auxiliary -I ../elina_poly -I ../elina_oct -I/home/gagandeepsi/.opam/default/share/apron/include/
 
 LDFLAGS += -L../partitions_api -L../elina_linearize  -L../elina_auxiliary -L../elina_poly -L../elina_oct -L.
 

@@ -1,17 +1,24 @@
-opam-version: "1.2"
+opam-version: "2.0"
 authors: ["Gagandeep Singh" "Markus Püschel" "Martin Vechev"]
 homepage: "http://elina.ethz.ch/"
-maintainer: "Gagandeep Singh <gsingh@inf.ethz.ch>"
-dev-repo: "https://github.com/eth-srl/ELINA.git"
+maintainer: "Gagandeep Singh <ggnds@illinois.edu>"
+dev-repo: "git+https://github.com/eth-srl/ELINA.git"
 bug-reports: "https://github.com/eth-srl/ELINA/issues"
-version: "1.1"
-license: "LGPL-3"
+version: "1.3"
+license: "LGPL-3.0-only"
 build: [
-  ["sh" "./configure" "--prefix" "%{share}%/elina"
-                      "--apron-prefix" "%{share}%/apron"
-                      "--use-opam"
-                      "--use-apron"
-                      "--absolute-dylibs" { os = "darwin" } ]
+  [
+  "sh"
+  "./configure"
+  "--prefix"
+  "%{share}%/elina"
+  "--apron-prefix"
+  "%{share}%/apron"
+  "--use-opam"
+  "--use-apron"
+  "--use-vector"
+  "--absolute-dylibs" {os = "macos"}
+]
   [make "-j%{jobs}%"]
 ]
 install: [
@@ -21,13 +28,23 @@ remove: [
   ["ocamlfind" "remove" "elina"]
   ["rm" "-r" "-f" "%{share}%/elina"]
 ]
-tags: [ "flags:light-uninstall" ]
 depends: [
+  "ocaml"
   "ocamlfind" {build}
   "camlidl"
   "mlgmpidl"
   "conf-perl"
   "apron"
 ]
-depopts: [ ]
-patches: [ ]
+flags: light-uninstall
+available: arch = "x86_32" | arch = "x86_64"
+
+synopsis: "ETH LIBRARY FOR NUMERICAL ANALYSIS"
+description: """
+ELINA contains optimized implementations of popular numerical abstract
+domains such as Polyhedra, Octagon and Zones for static
+analysis. ELINA uses improved algorithms, online decomposition as well
+as state of the art performance optimizations from linear algebra such
+as vectorization, locality of reference, scalar replacement etc. to
+significantly improve the performance of static analysis with the
+numerical domains."""
