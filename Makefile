@@ -93,7 +93,7 @@ ifneq ($(HAS_OCAML),)
 	(cd ocaml_interface; make install)
 ifneq ($(OCAMLFIND),)
 	$(OCAMLFIND) remove elina
-	$(OCAMLFIND) install elina ocaml_interface/META ocaml_interface/dllelina_poly_caml.so ocaml_interface/elina_poly.a ocaml_interface/elina_poly.cma ocaml_interface/elina_poly.cmi ocaml_interface/elina_poly.cmo ocaml_interface/elina_poly.cmx ocaml_interface/elina_poly.cmxa ocaml_interface/elina_poly.idl ocaml_interface/elina_poly.ml ocaml_interface/elina_poly.mli ocaml_interface/elina_poly.o ocaml_interface/elina_poly_caml.c ocaml_interface/elina_poly_caml.o ocaml_interface/libelina_poly_caml.a
+	$(OCAMLFIND) install elina ocaml_interface/META ocaml_interface/dllelina_poly_caml.so ocaml_interface/elina_poly.a ocaml_interface/elina_poly.cma ocaml_interface/elina_poly.cmi ocaml_interface/elina_poly.cmo ocaml_interface/elina_poly.cmx ocaml_interface/elina_poly.cmxa ocaml_interface/elina_poly.idl ocaml_interface/elina_poly.ml ocaml_interface/elina_poly.mli ocaml_interface/elina_poly.o ocaml_interface/elina_poly_caml.c ocaml_interface/elina_poly_caml.o ocaml_interface/libelina_poly_caml.a ocaml_interface/dllelina_oct_caml.so ocaml_interface/elina_oct.a ocaml_interface/elina_oct.cma ocaml_interface/elina_oct.cmi ocaml_interface/elina_oct.cmo ocaml_interface/elina_oct.cmx ocaml_interface/elina_oct.cmxa ocaml_interface/elina_oct.idl ocaml_interface/elina_oct.ml ocaml_interface/elina_oct.mli ocaml_interface/elina_oct.o ocaml_interface/elina_oct_caml.c ocaml_interface/elina_oct_caml.o ocaml_interface/libelina_oct_caml.a
 endif
 endif
 ifneq ($(HAS_JAVA),) 
