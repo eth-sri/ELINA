@@ -41,7 +41,7 @@ ICFLAGS += -I ../partitions_api -I ../elina_linearize -I ../elina_auxiliary -I .
 LDFLAGS += -L../partitions_api -L../elina_linearize  -L../elina_auxiliary -L../elina_poly -L../elina_oct -L.
 
 ifeq ($(USE_OPAM),)
-	LDFLAGS +=  -R../partitions_api -R../elina_linearize  -R../elina_auxiliary -R../elina_poly  -cclib -R../elina_oct -cclib -R.
+	LDFLAGS +=  -R../partitions_api -R../elina_linearize  -R../elina_auxiliary -R../elina_poly  -cclib -R../elina_oct -R.
 endif
 
 
