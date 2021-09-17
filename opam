@@ -13,7 +13,7 @@ build: [
   "--prefix"
   "%{lib}%/elina"
   "--apron-prefix"
-  "%{lib}%/apron"
+  "%{share}%/apron"
   "--use-opam"
   "--use-apron"
   "--use-vector"
