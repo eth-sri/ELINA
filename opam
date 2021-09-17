@@ -11,7 +11,7 @@ build: [
   "sh"
   "./configure"
   "--prefix"
-  "%{lib}%/elina"
+  "%{share}%/elina"
   "--apron-prefix"
   "%{share}%/apron"
   "--use-opam"
