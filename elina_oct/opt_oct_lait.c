@@ -162,6 +162,7 @@ void opt_oct_lait_init(char* python_path, char* model_path) {
 // loop_iter: the loop iteration index
 opt_oct_t* opt_oct_lait(elina_manager_t* man, bool destructive, opt_oct_t* o1, opt_oct_t* o2, opt_oct_t* o_res, opt_oct_t* o_head, int loop_iter) {
     o_res = destructive ? o_res : opt_oct_copy(man, o_res);
+    if (opt_oct_is_bottom(man, o_res)) return o_res;
 
     if (!o1->closed && !o1->m) return o_res;
     if (!o2->closed && !o2->m) return o_res;

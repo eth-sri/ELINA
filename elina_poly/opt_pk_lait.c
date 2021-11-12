@@ -179,6 +179,7 @@ void opt_pk_lait_init(char* python_path, char* model_path) {
 // loop_iter: the loop iteration index
 opt_pk_array_t* opt_pk_lait(elina_manager_t* man, bool destructive, opt_pk_array_t* oa, opt_pk_array_t* ob, opt_pk_array_t* res, opt_pk_array_t* head, int loop_iter) {
 	res = destructive ? res : opt_pk_copy(man, res);
+        if (opt_pk_is_bottom(man, res)) return res;
 
     opt_pk_internal_t* opk = opt_pk_init_from_manager(man, ELINA_FUNID_JOIN);
 	comp_list_t* cl;

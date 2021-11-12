@@ -9,7 +9,8 @@ Apart from the dependencies required by ELINA, Lait requires `python3` (we use p
 $ sudo apt install python3.6 python3.6-dev
 $ curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 $ python3.6 get-pip.py
-$ pip install torch torchvision scikit-learn
+$ pip install torch scikit-learn==0.21
+$ pip install --upgrade numpy scipy
 ```
 
 After installing the python dependencies, one can compile and install Lait by:
