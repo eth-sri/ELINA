@@ -87,8 +87,9 @@ void opt_poly_array_clear(opt_pk_internal_t *opk, opt_pk_array_t * op){
 		}
 	}
 	free(poly);
-	poly=NULL;
+	op->poly=NULL;
 	free_array_comp_list(acl);
+	op->acl=NULL;
   }
 }
 
