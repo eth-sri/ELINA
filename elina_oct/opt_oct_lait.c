@@ -31,7 +31,10 @@ void compute_partition(opt_oct_mat_t* oo, int dim, int *num_comp, int *num_cons_
   memset(*var_cons, 0, dim * sizeof(int));
   int num_cons = 0;
 
-  if (!oo->is_dense) {
+  if (!oo) {
+    *num_comp = 0;
+    *cons_count = (int*)malloc((*num_comp+1) * sizeof(int));
+  } else if (!oo->is_dense) {
     array_comp_list_t* acl = oo->acl;
     *num_comp = acl->size;
     *cons_count = (int*)malloc((*num_comp+1) * sizeof(int));

@@ -293,11 +293,12 @@ opt_pk_array_t* opt_pk_lait(elina_manager_t* man, bool destructive, opt_pk_array
 				features[index_cons][4] = 0; 
 				features[index_cons][5] = 0; 
 				features[index_cons][6] = 0; 
-				features[index_cons][7] = is_common_constraint(opk, res->maxcols, C->p[j], cl, oa) && is_common_constraint(opk, res->maxcols, C->p[j], cl, ob);
+				features[index_cons][7] = (!opt_pk_is_bottom(man, oa) && is_common_constraint(opk, res->maxcols, C->p[j], cl, oa))
+                                                       && (!opt_pk_is_bottom(man, ob) && is_common_constraint(opk, res->maxcols, C->p[j], cl, ob));
 				features[index_cons][8] = 0;
 				features[index_cons][9] = 0;
 				features[index_cons][10] = 0;
-				features[index_cons][11] = is_common_constraint(opk, res->maxcols, C->p[j], cl, head);
+				features[index_cons][11] = (!opt_pk_is_bottom(man, head) && is_common_constraint(opk, res->maxcols, C->p[j], cl, head));
 
 				int block_a = -1;
 				int block_b = -1;
