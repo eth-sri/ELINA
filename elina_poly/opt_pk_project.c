@@ -807,6 +807,13 @@ opt_pk_array_t* opt_pk_forget_array(elina_manager_t* man, bool destructive, opt_
 					free(nca);
 					poly[k1]->F = dst_mat;
 					opt_poly_chernikova(man,poly[k1],"forget non destructive");
+					if (opk->exn){
+                                                opk->exn = ELINA_EXC_NONE;
+                                                free(ca);
+                                                free(tdimk);
+                                                return opt_pk_top(man,oa->maxcols-2,0);
+                                        }
+
 				}
 				else{
 					poly[k1] = opt_poly_alloc(src->intdim,src->realdim);
