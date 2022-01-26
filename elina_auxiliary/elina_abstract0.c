@@ -631,7 +631,7 @@ void elina_abstract0_fprint(FILE* stream, elina_manager_t* man,
 			 char** name_of_dim)
 {
   if (elina_abstract0_checkman1(ELINA_FUNID_FPRINT,man,a)){
-    void (*ptr)(FILE*,elina_manager_t*,...) = man->funptr[ELINA_FUNID_FPRINT];
+    void (*ptr)(FILE*,elina_manager_t*,void*,char**) = man->funptr[ELINA_FUNID_FPRINT];
     ptr(stream,man,a->value,name_of_dim);
   }
   else {
@@ -645,7 +645,7 @@ void elina_abstract0_fprintdiff(FILE* stream, elina_manager_t* man,
 {
   if (elina_abstract0_checkman2(ELINA_FUNID_FPRINTDIFF,man,a,b) &&
       elina_abstract0_check_abstract2(ELINA_FUNID_FPRINTDIFF,man,a,b) ){
-    void (*ptr)(FILE*,elina_manager_t*,...) = man->funptr[ELINA_FUNID_FPRINTDIFF];
+    void (*ptr)(FILE*,elina_manager_t*,void*,void*,char**) = man->funptr[ELINA_FUNID_FPRINTDIFF];
     ptr(stream,man,a->value,b->value,name_of_dim);
   }
   else {
@@ -691,17 +691,17 @@ elina_abstract0_t* elina_abstract0_deserialize_raw(elina_manager_t* man, void* p
 /* ============================================================ */
 elina_abstract0_t* elina_abstract0_bottom(elina_manager_t* man, size_t intdim, size_t realdim)
 {
-  void* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_BOTTOM];
+  void* (*ptr)(elina_manager_t*,size_t,size_t) = man->funptr[ELINA_FUNID_BOTTOM];
   return elina_abstract0_cons(man,ptr(man,intdim,realdim));
 }
 elina_abstract0_t* elina_abstract0_top(elina_manager_t* man, size_t intdim, size_t realdim){
-  void* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_TOP];
+  void* (*ptr)(elina_manager_t*,size_t,size_t) = man->funptr[ELINA_FUNID_TOP];
   return elina_abstract0_cons(man,ptr(man,intdim,realdim));
 }
 elina_abstract0_t* elina_abstract0_of_box(elina_manager_t* man,
 				    size_t intdim, size_t realdim,
 				    elina_interval_t** tinterval){
-  void* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_OF_BOX];
+  void* (*ptr)(elina_manager_t*,size_t,size_t,elina_interval_t**) = man->funptr[ELINA_FUNID_OF_BOX];
   return elina_abstract0_cons(man,ptr(man,intdim,realdim,tinterval));
 }
 
@@ -776,7 +776,7 @@ bool elina_abstract0_sat_lincons(elina_manager_t* man, elina_abstract0_t* a, eli
 {
   if (elina_abstract0_checkman1(ELINA_FUNID_SAT_LINCONS,man,a) &&
       elina_abstract0_check_linexpr(ELINA_FUNID_SAT_LINCONS,man,_elina_abstract0_dimension(a),lincons->linexpr0) ){
-    bool (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_SAT_LINCONS];
+    bool (*ptr)(elina_manager_t*,void*,elina_lincons0_t*) = man->funptr[ELINA_FUNID_SAT_LINCONS];
     return ptr(man,a->value,lincons);
   }
   else {
@@ -788,7 +788,7 @@ bool elina_abstract0_sat_tcons(elina_manager_t* man, elina_abstract0_t* a, elina
 {
   if (elina_abstract0_checkman1(ELINA_FUNID_SAT_TCONS,man,a) &&
       elina_abstract0_check_texpr(ELINA_FUNID_SAT_TCONS,man,_elina_abstract0_dimension(a),tcons->texpr0) ){
-    bool (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_SAT_TCONS];
+    bool (*ptr)(elina_manager_t*,void*,elina_tcons0_t*) = man->funptr[ELINA_FUNID_SAT_TCONS];
     return ptr(man,a->value,tcons);
   }
   else {
@@ -801,7 +801,7 @@ bool elina_abstract0_sat_interval(elina_manager_t* man, elina_abstract0_t* a,
 {
   if (elina_abstract0_checkman1(ELINA_FUNID_SAT_INTERVAL,man,a) &&
       elina_abstract0_check_dim(ELINA_FUNID_SAT_INTERVAL,man,_elina_abstract0_dimension(a),dim)){
-    bool (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_SAT_INTERVAL];
+    bool (*ptr)(elina_manager_t*,void*,elina_dim_t,elina_interval_t*) = man->funptr[ELINA_FUNID_SAT_INTERVAL];
     return ptr(man,a->value,dim,interval);
   }
   else {
@@ -814,7 +814,7 @@ bool elina_abstract0_is_dimension_unconstrained(elina_manager_t* man, elina_abst
 {
   if (elina_abstract0_checkman1(ELINA_FUNID_IS_DIMENSION_UNCONSTRAINED,man,a) &&
       elina_abstract0_check_dim(ELINA_FUNID_IS_DIMENSION_UNCONSTRAINED,man,_elina_abstract0_dimension(a),dim)){
-    bool (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_IS_DIMENSION_UNCONSTRAINED];
+    bool (*ptr)(elina_manager_t*,void*,elina_dim_t) = man->funptr[ELINA_FUNID_IS_DIMENSION_UNCONSTRAINED];
     return ptr(man,a->value,dim);
   }
   else {
@@ -831,7 +831,7 @@ elina_interval_t* elina_abstract0_bound_linexpr(elina_manager_t* man,
 {
   if (elina_abstract0_checkman1(ELINA_FUNID_BOUND_LINEXPR,man,a) &&
       elina_abstract0_check_linexpr(ELINA_FUNID_BOUND_LINEXPR,man,_elina_abstract0_dimension(a),expr)){
-    elina_interval_t* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_BOUND_LINEXPR];
+    elina_interval_t* (*ptr)(elina_manager_t*,void*,elina_linexpr0_t*) = man->funptr[ELINA_FUNID_BOUND_LINEXPR];
     return ptr(man,a->value,expr);
   }
   else {
@@ -846,7 +846,7 @@ elina_interval_t* elina_abstract0_bound_texpr(elina_manager_t* man,
 {
   if (elina_abstract0_checkman1(ELINA_FUNID_BOUND_TEXPR,man,a) &&
       elina_abstract0_check_texpr(ELINA_FUNID_BOUND_TEXPR,man,_elina_abstract0_dimension(a),expr)){
-    elina_interval_t* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_BOUND_TEXPR];
+    elina_interval_t* (*ptr)(elina_manager_t*,void*,elina_texpr0_t*) = man->funptr[ELINA_FUNID_BOUND_TEXPR];
     return ptr(man,a->value,expr);
   }
   else {
@@ -861,7 +861,7 @@ elina_interval_t* elina_abstract0_bound_dimension(elina_manager_t* man,
 {
   if (elina_abstract0_checkman1(ELINA_FUNID_BOUND_DIMENSION,man,a) &&
       elina_abstract0_check_dim(ELINA_FUNID_BOUND_DIMENSION,man,_elina_abstract0_dimension(a),dim)){
-    elina_interval_t* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_BOUND_DIMENSION];
+    elina_interval_t* (*ptr)(elina_manager_t*,void*,elina_dim_t) = man->funptr[ELINA_FUNID_BOUND_DIMENSION];
     return ptr(man,a->value,dim);
   }
   else {
@@ -949,7 +949,7 @@ elina_abstract0_t* elina_abstract0_meetjoin_array(elina_funid_t funid, elina_man
       elina_abstract0_check_abstract_array(funid,man,tab,size)){
     size_t i;
     elina_abstract0_t* res;
-    void* (*ptr)(elina_manager_t*,...) = man->funptr[funid];
+    void* (*ptr)(elina_manager_t*,void**,size_t) = man->funptr[funid];
     void** ntab = malloc(size*sizeof(void*));
     for (i=0;i<size;i++) ntab[i] = tab[i]->value;
     res = elina_abstract0_cons(man,ptr(man,ntab,size));
@@ -980,7 +980,7 @@ elina_abstract0_t* elina_abstract0_meet_lincons_array(elina_manager_t* man,
   elina_dimension_t dimension = _elina_abstract0_dimension(a);
   if (elina_abstract0_checkman1(ELINA_FUNID_MEET_LINCONS_ARRAY,man,a) &&
       elina_abstract0_check_lincons_array(ELINA_FUNID_MEET_LINCONS_ARRAY,man,dimension,array) ){
-    void* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_MEET_LINCONS_ARRAY];
+    void* (*ptr)(elina_manager_t*,bool,void*,elina_lincons0_array_t*) = man->funptr[ELINA_FUNID_MEET_LINCONS_ARRAY];
     void* value = ptr(man,destructive,a->value,array);
     return elina_abstract0_cons2(man,destructive,a,value);
   }
@@ -999,7 +999,7 @@ elina_abstract0_t* elina_abstract0_meet_tcons_array(elina_manager_t* man,
   elina_dimension_t dimension = _elina_abstract0_dimension(a);
   if (elina_abstract0_checkman1(ELINA_FUNID_MEET_TCONS_ARRAY,man,a) &&
       elina_abstract0_check_tcons_array(ELINA_FUNID_MEET_TCONS_ARRAY,man,dimension,array) ){
-    void* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_MEET_TCONS_ARRAY];
+    void* (*ptr)(elina_manager_t*,bool,void*,elina_tcons0_array_t*) = man->funptr[ELINA_FUNID_MEET_TCONS_ARRAY];
     void* value = ptr(man,destructive,a->value,array);
     return elina_abstract0_cons2(man,destructive,a,value);
   }
@@ -1042,7 +1042,7 @@ elina_abstract0_t* elina_abstract0_asssub_linexpr_array(elina_funid_t funid,
 	(dest!=NULL ? (elina_abstract0_checkman1(funid,man,dest) && elina_abstract0_check_abstract2(funid,man,a,dest)) : true) &&
 	elina_abstract0_check_dim_array(funid,man,dimension,tdim,size) &&
 	elina_abstract0_check_linexpr_array(funid,man,dimension,texpr,size) ){
-      void* (*ptr)(elina_manager_t*,...) = man->funptr[funid];
+      void* (*ptr)(elina_manager_t*,bool,void*,elina_dim_t*,elina_linexpr0_t**,size_t,void*) = man->funptr[funid];
       void* value = ptr(man,destructive,a->value,tdim,texpr,size,dest ? dest->value : NULL);
       return elina_abstract0_cons2(man,destructive,a,value);
     }
@@ -1102,7 +1102,7 @@ elina_abstract0_t* elina_abstract0_asssub_texpr_array(elina_funid_t funid,
 	(dest!=NULL ? (elina_abstract0_checkman1(funid,man,dest) && elina_abstract0_check_abstract2(funid,man,a,dest)) : true) &&
 	elina_abstract0_check_dim_array(funid,man,dimension,tdim,size) &&
 	elina_abstract0_check_texpr_array(funid,man,dimension,texpr,size) ){
-      void* (*ptr)(elina_manager_t*,...) = man->funptr[funid];
+      void* (*ptr)(elina_manager_t*,bool,void*,elina_dim_t*,elina_texpr0_t**,size_t,void*) = man->funptr[funid];
       void* value = ptr(man,destructive,a->value,tdim,texpr,size,dest ? dest->value : NULL);
       return elina_abstract0_cons2(man,destructive,a,value);
     }
@@ -1159,7 +1159,7 @@ elina_abstract0_t* elina_abstract0_forget_array(elina_manager_t* man,
     elina_dimension_t dimension = _elina_abstract0_dimension(a);
     if (elina_abstract0_checkman1(ELINA_FUNID_FORGET_ARRAY,man,a) &&
 	elina_abstract0_check_dim_array(ELINA_FUNID_FORGET_ARRAY,man,dimension,tdim,size)){
-      void* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_FORGET_ARRAY];
+      void* (*ptr)(elina_manager_t*,bool,void*,elina_dim_t*,size_t,bool) = man->funptr[ELINA_FUNID_FORGET_ARRAY];
       void* value = ptr(man,destructive,a->value,tdim,size,project);
       return elina_abstract0_cons2(man,destructive,a,value);
     }
@@ -1194,7 +1194,7 @@ elina_abstract0_t* elina_abstract0_add_dimensions(elina_manager_t* man,
     elina_dimension_t dimension = _elina_abstract0_dimension(a);
     if (elina_abstract0_checkman1(ELINA_FUNID_ADD_DIMENSIONS,man,a) &&
 	elina_abstract0_check_elina_dimchange_add(ELINA_FUNID_ADD_DIMENSIONS,man,dimension,dimchange)){
-      void* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_ADD_DIMENSIONS];
+      void* (*ptr)(elina_manager_t*,bool,void*,elina_dimchange_t*,bool) = man->funptr[ELINA_FUNID_ADD_DIMENSIONS];
       void* value = ptr(man,destructive,a->value,dimchange,project);
       return elina_abstract0_cons2(man,destructive,a,value);
     }
@@ -1223,7 +1223,7 @@ elina_abstract0_t* elina_abstract0_remove_dimensions(elina_manager_t* man,
     elina_dimension_t dimension = _elina_abstract0_dimension(a);
     if (elina_abstract0_checkman1(ELINA_FUNID_REMOVE_DIMENSIONS,man,a) &&
 	elina_abstract0_check_elina_dimchange_remove(ELINA_FUNID_REMOVE_DIMENSIONS,man,dimension,dimchange)){
-      void* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_REMOVE_DIMENSIONS];
+      void* (*ptr)(elina_manager_t*,bool,void*,elina_dimchange_t*) = man->funptr[ELINA_FUNID_REMOVE_DIMENSIONS];
       void* value = ptr(man,destructive,a->value,dimchange);
       return elina_abstract0_cons2(man,destructive,a,value);
     }
@@ -1243,7 +1243,7 @@ elina_abstract0_t* elina_abstract0_permute_dimensions(elina_manager_t* man,
   elina_dimension_t dimension = _elina_abstract0_dimension(a);
   if (elina_abstract0_checkman1(ELINA_FUNID_PERMUTE_DIMENSIONS,man,a) &&
       elina_abstract0_check_dimperm(ELINA_FUNID_PERMUTE_DIMENSIONS,man,dimension,perm)){
-    void* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_PERMUTE_DIMENSIONS];
+    void* (*ptr)(elina_manager_t*,bool,void*,elina_dimperm_t*) = man->funptr[ELINA_FUNID_PERMUTE_DIMENSIONS];
     void* value = ptr(man,destructive,a->value,perm);
     return elina_abstract0_cons2(man,destructive,a,value);
   }
@@ -1277,7 +1277,7 @@ elina_abstract0_t* elina_abstract0_expand(elina_manager_t* man,
     elina_dimension_t dimension = _elina_abstract0_dimension(a);
     if (elina_abstract0_checkman1(ELINA_FUNID_EXPAND,man,a) &&
 	elina_abstract0_check_dim(ELINA_FUNID_EXPAND,man,dimension,dim)){
-      void* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_EXPAND];
+      void* (*ptr)(elina_manager_t*,bool,void*,elina_dim_t,size_t) = man->funptr[ELINA_FUNID_EXPAND];
       void* value = ptr(man,destructive,a->value,dim,n);
       return elina_abstract0_cons2(man,destructive,a,value);
     }
@@ -1335,7 +1335,7 @@ elina_abstract0_t* elina_abstract0_fold(elina_manager_t* man,
       }
     }
     else {
-      void* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_FOLD];
+      void* (*ptr)(elina_manager_t*,bool,void*,elina_dim_t*,size_t) = man->funptr[ELINA_FUNID_FOLD];
       void* value = ptr(man,destructive,a->value,tdim,size);
       return elina_abstract0_cons2(man,destructive,a,value);
     }
@@ -1515,7 +1515,7 @@ elina_abstract0_t* elina_abstract0_widening_threshold(elina_manager_t* man,
     }
     if (i>0){
       array->size = i;
-      void* (*ptr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_MEET_LINCONS_ARRAY];
+      void* (*ptr)(elina_manager_t*,bool,void*,elina_lincons0_array_t*) = man->funptr[ELINA_FUNID_MEET_LINCONS_ARRAY];
       value = ptr(man,true,value,array);
       array->size = size;
     }
