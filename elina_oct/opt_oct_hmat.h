@@ -79,7 +79,10 @@ extern "C" {
 	extern double sat_lincons_time;
 	extern double assign_linexpr_time;
 	extern double oct_is_unconstrained_time;
-        extern double narrowing_time;
+	extern double narrowing_time;
+#else
+    #define start_timing()
+    #define record_timing(X)
 #endif
 
 #define min fmin

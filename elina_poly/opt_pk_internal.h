@@ -72,6 +72,11 @@ extern "C" {
 	extern double opt_conversion_time;
 	extern long int join_count;
 	extern double poly_is_unconstrained_time;
+#else
+    #define start_timing()
+    #define record_timing(X)
+
+    static long int join_count;
 #endif
 /* ********************************************************************** */
 /* I. Types */

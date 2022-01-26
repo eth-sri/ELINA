@@ -39,6 +39,7 @@
 extern "C" {
 #endif
 
+#if defined(TIMING)
 #define start_timing()				\
 tsc_counter start, end;				\
 double cycles;					\
@@ -59,6 +60,10 @@ counter += cycles
     extern double zonoml_conv_matmult_time;
     extern double zonoml_ffn_matmult_time;
 
+#else
+    #define start_timing()
+    #define record_timing(X)
+#endif
 
 
  
