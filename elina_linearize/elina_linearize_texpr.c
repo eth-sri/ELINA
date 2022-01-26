@@ -567,7 +567,7 @@ elina_texpr_rtype_t elina_texpr0_round(elina_linexpr0_t* l /* in/out */, elina_i
     elina_float_const_clear(float_cst);
     break;
   case ELINA_RTYPE_EXTENDED:
-    if (org==ELINA_RTYPE_SINGLE && org==ELINA_RTYPE_DOUBLE && org==ELINA_RTYPE_EXTENDED)
+    if (org==ELINA_RTYPE_SINGLE || org==ELINA_RTYPE_DOUBLE || org==ELINA_RTYPE_EXTENDED)
       return org;
     float_cst = (elina_float_const*)malloc(sizeof(elina_float_const));
     elina_make_float_const(63,15,16383,float_cst,discr);
