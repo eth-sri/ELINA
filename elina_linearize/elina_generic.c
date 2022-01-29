@@ -10,7 +10,7 @@
  *  EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
  *  THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
  *  IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
- *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY     
+ *  TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL ETH ZURICH BE LIABLE FOR ANY
  *  DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
  *  SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
  *  ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
@@ -45,8 +45,8 @@ bool elina_generic_sat_tcons(elina_manager_t* man, void* abs, elina_tcons0_t* co
 			     elina_scalar_discr_t discr,
 			     bool quasilinearize)
 {
-  bool (*is_bottom)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_IS_BOTTOM];
-  bool (*sat_lincons)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_SAT_LINCONS];
+  bool (*is_bottom)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_IS_BOTTOM];
+  bool (*sat_lincons)(elina_manager_t*,void*,elina_lincons0_t*) = man->funptr[ELINA_FUNID_SAT_LINCONS];
   bool exact;
   elina_lincons0_t lincons0;
   bool res;
@@ -75,8 +75,8 @@ bool elina_generic_sat_tcons(elina_manager_t* man, void* abs, elina_tcons0_t* co
 elina_interval_t* elina_generic_bound_texpr(elina_manager_t* man, void* abs, elina_texpr0_t* expr,
 				      elina_scalar_discr_t discr, bool quasilinearize)
 {
-  bool (*is_bottom)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_IS_BOTTOM];
-  elina_interval_t* (*bound_linexpr)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_BOUND_LINEXPR];
+  bool (*is_bottom)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_IS_BOTTOM];
+  elina_interval_t* (*bound_linexpr)(elina_manager_t*,void*,elina_linexpr0_t*) = man->funptr[ELINA_FUNID_BOUND_LINEXPR];
   bool exact;
   elina_linexpr0_t* linexpr0;
   elina_interval_t* res;
@@ -102,7 +102,7 @@ elina_interval_t* elina_generic_bound_texpr(elina_manager_t* man, void* abs, eli
 elina_tcons0_array_t elina_generic_to_tcons_array(elina_manager_t* man,
 					    void* abs)
 {
-  elina_lincons0_array_t (*to_lincons_array)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_TO_LINCONS_ARRAY];
+  elina_lincons0_array_t (*to_lincons_array)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_TO_LINCONS_ARRAY];
   elina_lincons0_array_t array = to_lincons_array(man,abs);
   elina_tcons0_array_t res = elina_tcons0_array_make(array.size);
   size_t i;
@@ -130,8 +130,8 @@ void* elina_generic_meetjoin_array(bool meet,
 				elina_manager_t* man,
 				void** tab, size_t size)
 {
-  void* (*copy)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_COPY];
-  void* (*meetjoin)(elina_manager_t*,...) = man->funptr[meet ? ELINA_FUNID_MEET : ELINA_FUNID_JOIN];
+  void* (*copy)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_COPY];
+  void* (*meetjoin)(elina_manager_t*,bool,void*,void*) = man->funptr[meet ? ELINA_FUNID_MEET : ELINA_FUNID_JOIN];
   size_t i;
   void* res;
   bool exact,best;
@@ -171,8 +171,8 @@ elina_generic_meet_quasilinearize_lincons_array(elina_manager_t* man,
   bool exact;
   elina_lincons0_array_t array2;
   void* res;
-  void* (*copy)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_COPY];
-  bool (*is_bottom)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_IS_BOTTOM];
+  void* (*copy)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_COPY];
+  bool (*is_bottom)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_IS_BOTTOM];
 
   man->result.flag_exact = man->result.flag_best = true;
 
@@ -207,8 +207,8 @@ elina_generic_meet_intlinearize_tcons_array(elina_manager_t* man,
   bool exact;
   elina_lincons0_array_t array2;
   void* res;
-  void* (*copy)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_COPY];
-  bool (*is_bottom)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_IS_BOTTOM];
+  void* (*copy)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_COPY];
+  bool (*is_bottom)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_IS_BOTTOM];
   elina_abstract0_t a0;
 
   man->result.flag_exact = man->result.flag_best = true;
@@ -224,7 +224,7 @@ elina_generic_meet_intlinearize_tcons_array(elina_manager_t* man,
     if (!exact){
       man->result.flag_exact = man->result.flag_best = false;
     }
-	
+
     elina_lincons0_array_clear(&array2);
   }
   return res;
@@ -263,15 +263,15 @@ void* elina_generic_asssub_linexpr_array(bool assign,
 				      bool destructive, void* abs, elina_dim_t* tdim, elina_linexpr0_t** texpr, size_t size,
 				      void* dest)
 {
-  bool (*is_bottom)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_IS_BOTTOM];
-  void* (*copy)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_COPY];
-  void* (*add_dimensions)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_ADD_DIMENSIONS];
-  void* (*permute_dimensions)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_PERMUTE_DIMENSIONS];
-  void* (*remove_dimensions)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_REMOVE_DIMENSIONS];
-  void* (*meet_lincons_array)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_MEET_LINCONS_ARRAY];
-  void* (*meet)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_MEET];
-  void (*elina_free)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_FREE];
-  elina_dimension_t (*dimension)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_DIMENSION];
+  bool (*is_bottom)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_IS_BOTTOM];
+  void* (*copy)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_COPY];
+  void* (*add_dimensions)(elina_manager_t*,bool,void*,elina_dimchange_t*,bool) = man->funptr[ELINA_FUNID_ADD_DIMENSIONS];
+  void* (*permute_dimensions)(elina_manager_t*,bool,void*,elina_dimperm_t*) = man->funptr[ELINA_FUNID_PERMUTE_DIMENSIONS];
+  void* (*remove_dimensions)(elina_manager_t*,bool,void*,elina_dimchange_t*) = man->funptr[ELINA_FUNID_REMOVE_DIMENSIONS];
+  void* (*meet_lincons_array)(elina_manager_t*,bool,void*,elina_lincons0_array_t*) = man->funptr[ELINA_FUNID_MEET_LINCONS_ARRAY];
+  void* (*meet)(elina_manager_t*,bool,void*,void*) = man->funptr[ELINA_FUNID_MEET];
+  void (*elina_free)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_FREE];
+  elina_dimension_t (*dimension)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_DIMENSION];
   size_t i;
   elina_dimension_t d, dsup;
   elina_dimchange_t dimchange;
@@ -398,15 +398,15 @@ void* elina_generic_asssub_texpr_array(bool assign,
 				    bool destructive, void* abs, elina_dim_t* tdim, elina_texpr0_t** texpr, size_t size,
 				    void* dest)
 {
-  bool (*is_bottom)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_IS_BOTTOM];
-  void* (*copy)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_COPY];
-  void* (*add_dimensions)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_ADD_DIMENSIONS];
-  void* (*permute_dimensions)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_PERMUTE_DIMENSIONS];
-  void* (*remove_dimensions)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_REMOVE_DIMENSIONS];
-  void* (*meet_tcons_array)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_MEET_TCONS_ARRAY];
-  void* (*meet)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_MEET];
-  void (*elina_free)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_FREE];
-  elina_dimension_t (*dimension)(elina_manager_t*,...) = man->funptr[ELINA_FUNID_DIMENSION];
+  bool (*is_bottom)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_IS_BOTTOM];
+  void* (*copy)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_COPY];
+  void* (*add_dimensions)(elina_manager_t*,bool,void*,elina_dimchange_t*,bool) = man->funptr[ELINA_FUNID_ADD_DIMENSIONS];
+  void* (*permute_dimensions)(elina_manager_t*,bool,void*,elina_dimperm_t*) = man->funptr[ELINA_FUNID_PERMUTE_DIMENSIONS];
+  void* (*remove_dimensions)(elina_manager_t*,bool,void*,elina_dimchange_t*) = man->funptr[ELINA_FUNID_REMOVE_DIMENSIONS];
+  void* (*meet_tcons_array)(elina_manager_t*,bool,void*,elina_tcons0_array_t*) = man->funptr[ELINA_FUNID_MEET_TCONS_ARRAY];
+  void* (*meet)(elina_manager_t*,bool,void*,void*) = man->funptr[ELINA_FUNID_MEET];
+  void (*elina_free)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_FREE];
+  elina_dimension_t (*dimension)(elina_manager_t*,void*) = man->funptr[ELINA_FUNID_DIMENSION];
   size_t i;
   elina_dimension_t d, dsup;
   elina_dimchange_t dimchange;
