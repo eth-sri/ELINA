@@ -470,6 +470,8 @@ fi
 absolute_dylib_install_names=;
 if test "x$(uname -s)" = "xDarwin"
 then
+    has_timing=0
+    has_native=0
     if test $force_absolute_dylib_install_names -eq 1
     then
 	echo "using absolute dynamic library install names as requested"
@@ -491,6 +493,8 @@ then
 	fi
     fi
 else
+    has_timing=1
+    has_native=1
     if test $force_absolute_dylib_install_names -eq 1
     then
 	echo "ignoring option \`-absolute-dylibs', only meaningful under OSX";
@@ -528,6 +532,8 @@ if test "$has_ocaml" -eq 0; then has_ocaml=; fi
 if test "$has_java" -eq 0; then has_java=; fi
 if test "$has_apron" -eq 0; then has_apron=; else has_apron=-DHAS_APRON; fi
 if test "$has_vector" -eq 0; then is_vector=; else is_vector=-DVECTOR; fi
+if test "$has_timing" -eq 0; then has_timing=; else has_timing=-DTIMING; fi
+if test "$has_native" -eq 0; then has_native=; else has_native=-march=native; fi
 if test "$has_cuda" -eq 0; then is_cuda=; else is_cuda=-DCUDA; fi
 if test "$use_gurobi" -eq 0; then use_gurobi=; fi
 if test "$use_fconv" -eq 0; then use_fconv=; fi
@@ -551,6 +557,12 @@ IS_APRON = $has_apron
 
 # if defined to VECTOR, uses SIMD instructions for the Octagon library
 IS_VECTOR = $is_vector
+
+# if defined to TIMING, uses the rdtsc timer for measuring clock times
+HAS_TIMING = $has_timing
+
+# if defined to NATIVE, uses the -march=native compilation option
+HAS_NATIVE = $has_native
 
 # if define to USE_DEEPPOLY, compile DeepPoly
 USE_DEEPPOLY = $use_deeppoly
@@ -657,8 +669,9 @@ JNIINC = -I$java_home/include/
 CFLAGS = $cflags
 
 # Architecture specific flags
-AFLAGS = -D_GNU_SOURCE -pthread -fno-tree-vectorize -m64 -march=native -ffp-contract=off
-DFLAGS = -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 -DTIMING \$(AFLAGS) \$(IS_APRON) \$(IS_VECTOR) 
+AFLAGS = -D_GNU_SOURCE -pthread -fno-tree-vectorize -m64 -ffp-contract=off \$(HAS_NATIVE)
+DFLAGS = -g  -DNUM_LONGLONGRAT -DNUM_DOUBLE -DTHRESHOLD=0.75 \$(AFLAGS) \$(IS_APRON) \$(IS_VECTOR) \$(HAS_TIMING)
+
 
 # ocamlc compilation flags
 OCAMLFLAGS = -g
