@@ -375,7 +375,7 @@ void elina_interval_magnitude(elina_scalar_t *a, elina_interval_t *b)
 void elina_interval_range_rel(elina_scalar_t *a, elina_interval_t *b, elina_scalar_discr_t discr)
 {
   elina_scalar_reinit(a,discr);
-  elina_scalar_add(a,b->sup,b->inf,discr);
+  elina_scalar_sub(a,b->sup,b->inf,discr);
   if (!elina_scalar_infty(a)) {
      elina_scalar_t * tmp = elina_scalar_alloc();
      elina_interval_magnitude(tmp,b);
