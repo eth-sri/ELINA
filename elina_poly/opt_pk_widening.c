@@ -242,6 +242,7 @@ comp_list_t * vector_to_comp_list(opt_pk_internal_t *opk, opt_numint_t *v, unsig
 **************************/
 
 void opt_poly_widening_gen(elina_manager_t *man, opt_pk_array_t **out, opt_pk_array_t *oa, opt_pk_array_t *ob){
+	
 	opt_pk_array_t *op = *out;
 	opt_pk_internal_t * opk = opt_pk_init_from_manager(man,ELINA_FUNID_WIDENING);
 	unsigned short int maxcols = oa->maxcols;
@@ -596,6 +597,7 @@ void opt_poly_widening_gen(elina_manager_t *man, opt_pk_array_t **out, opt_pk_ar
 }
 
 opt_pk_array_t* opt_pk_widening(elina_manager_t* man, opt_pk_array_t* oa, opt_pk_array_t* ob){
+	assert(opt_pk_is_leq(man,oa,ob));
 	#if defined(TIMING)
  	    start_timing();
    	#endif 
