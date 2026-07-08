@@ -37,6 +37,9 @@ void print_array_comp_list(array_comp_list_t *acl, unsigned short int n){
 }
 
 void clear_array_comp_list(array_comp_list_t *acl){
+	// If acl is already NULL, there's nothing to clear.
+	if (!acl) return;
+
 	comp_list_t *cl = acl->head;
 	
 	while(cl!=NULL){
@@ -45,6 +48,10 @@ void clear_array_comp_list(array_comp_list_t *acl){
 		free_comp_list(temp);
 		temp = NULL;
 	}
+
+	// Set head to NULL and size to 0 after clearing the list.
+	acl->head = NULL;
+	acl->size = 0;
 }
 
 void free_array_comp_list(array_comp_list_t * acl){
