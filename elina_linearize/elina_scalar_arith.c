@@ -507,8 +507,13 @@ void elina_scalar_pow(elina_scalar_t *up, elina_scalar_t *down, elina_scalar_t *
   }
   //elina_scalar_reinit(b,discr);
   if (elina_scalar_infty(b)) {
-    elina_scalar_set_infty(up, 1);
-    elina_scalar_set_infty(down, 1);
+	// Odd power preserves sign of infinity; even power always gives +inf. So:
+	// - If n is odd, we set the sign of the infinity to be the same as b.
+	// - If n is even, we set both up and down to +inf.
+	bool n_is_odd = (n & 1);
+	int sgn = n_is_odd ? elina_scalar_sgn(b) : 1;
+	elina_scalar_set_infty(up, sgn);
+	elina_scalar_set_infty(down, sgn);
   }
   else{
     bool res = true;
